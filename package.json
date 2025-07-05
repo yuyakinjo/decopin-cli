@@ -14,6 +14,7 @@
     "build:app": "tsc -p app/tsconfig.json",
     "build:all": "npm run build && npm run build:app",
     "test": "vitest run",
+    "test:app": "npm run build:app && npm run test && npm run clean:app",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "lint": "biome lint .",
