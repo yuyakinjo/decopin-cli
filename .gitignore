@@ -140,6 +140,10 @@ dist/
 build/
 out/
 
+# App directory compiled files
+app/**/*.js
+app/**/*.js.map
+
 # Test coverage
 coverage/
 
@@ -148,6 +152,7 @@ test-app/
 test-app-integration/
 test-commands/
 test-output/
+test-app-version/
 
 # Temporary files
 *.tmp

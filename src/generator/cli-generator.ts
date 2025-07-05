@@ -3,6 +3,7 @@ import { join } from 'node:path';
 import type { CommandStructure } from '../scanner/directory-scanner.js';
 import type { ParsedASTResult } from '../parser/ast-parser.js';
 import type { ParsedCommand } from '../types/command.js';
+import { getVersionInfo, type VersionInfo } from '../parser/version-parser.js';
 
 /**
  * CLI生成設定
@@ -35,10 +36,11 @@ export interface GeneratedFiles {
 /**
  * メインCLIコードを生成
  */
-function generateMainCLI(config: GeneratorConfig, commands: ParsedCommand[]): string {
+function generateMainCLI(config: GeneratorConfig, commands: ParsedCommand[], versionInfo?: VersionInfo): string {
   const cliName = config.cliName;
-  const version = config.version || '1.0.0';
-  const description = config.description || 'File-based CLI built with decopin-cli';
+  const version = versionInfo?.version || config.version || '1.0.0';
+  const description = versionInfo?.metadata?.description || config.description || 'File-based CLI built with decopin-cli';
+  const cliDisplayName = versionInfo?.metadata?.name || cliName;
 
   // コマンドルートの生成
   const commandRoutes = commands.map(cmd => {
@@ -121,7 +123,7 @@ function matchCommand(segments) {
 }
 
 function showHelp() {
-  console.log(\`${cliName} v${version}
+  console.log(\`${cliDisplayName} ${version}
 ${description}
 
 Usage:
@@ -147,7 +149,8 @@ async function main() {
 
   // バージョンオプション
   if (options.version || options.v) {
-    console.log('${version}');
+    console.log('${version}');${versionInfo?.metadata?.author ? `
+    console.log('Author: ${versionInfo.metadata.author}');` : ''}
     return;
   }
 
@@ -262,8 +265,11 @@ export async function generateCLI(
 ): Promise<GeneratedFiles> {
   const files: string[] = [];
 
+  // app/version.tsからバージョン情報を取得
+  const versionInfo = await getVersionInfo(config.appDir, config.version);
+
   // メインCLIファイルを生成
-  const mainCLICode = generateMainCLI(config, commands);
+  const mainCLICode = generateMainCLI(config, commands, versionInfo);
   const mainFile = join(config.outputDir, 'cli.js');
   await writeFile(mainFile, mainCLICode, 'utf-8');
   files.push(mainFile);

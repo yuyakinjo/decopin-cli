@@ -6,7 +6,7 @@ import { buildCLI, listCommands, builderInfo } from './index.js';
  * ヘルプテキストを表示
  */
 function showHelp() {
-  console.log(`${builderInfo.name} v${builderInfo.version}
+  console.log(`${builderInfo.name} ${builderInfo.version}
 ${builderInfo.description}
 
 Usage:
