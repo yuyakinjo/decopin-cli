@@ -1,0 +1,57 @@
+{
+  "name": "decopin-cli",
+  "version": "0.1.0",
+  "description": "Next.js App Router風のファイルベースCLIビルダー",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "bin": {
+    "decopin": "dist/cli.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "build:app": "tsc -p app/tsconfig.json",
+    "build:all": "npm run build && npm run build:app",
+    "lint": "biome lint .",
+    "lint:fix": "biome lint --apply .",
+    "format": "biome format .",
+    "format:fix": "biome format --write .",
+    "clean": "rm -rf dist",
+    "clean:app": "find app -name '*.js' -type f -delete",
+    "clean:all": "npm run clean && npm run clean:app",
+    "prepublishOnly": "npm run clean && npm run build"
+  },
+  "keywords": [
+    "cli",
+    "builder",
+    "typescript",
+    "file-based",
+    "nextjs-style"
+  ],
+  "author": "",
+  "license": "MIT",
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "valibot": "^0.25.0"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.0.6",
+    "@types/node": "^20.10.0",
+    "typescript": "^5.3.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/username/decopin-cli.git"
+  },
+  "bugs": {
+    "url": "https://github.com/username/decopin-cli/issues"
+  },
+  "homepage": "https://github.com/username/decopin-cli#readme"
+}

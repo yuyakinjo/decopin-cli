@@ -1,0 +1,24 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "node",
+    "lib": ["ES2022"],
+    "outDir": "./",
+    "rootDir": "./",
+    "strict": false,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "allowSyntheticDefaultImports": true,
+    "noEmitOnError": false,
+    "declaration": false,
+    "sourceMap": false
+  },
+  "include": [
+    "**/*.ts"
+  ],
+  "exclude": [
+    "**/*.js"
+  ]
+}
