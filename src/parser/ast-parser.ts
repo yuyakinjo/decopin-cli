@@ -15,30 +15,80 @@ export interface ParsedASTResult {
 }
 
 /**
- * デフォルトエクスポートからCommandDefinitionを抽出
+ * ファイルからCommandDefinitionを抽出
  */
 function extractCommandDefinition(sourceFile: ts.SourceFile): CommandDefinition | null {
   let commandDefinition: CommandDefinition | null = null;
+  let hasHandler = false;
+  let metadata: CommandMetadata | undefined;
+  let schema: CommandSchema | undefined;
 
   function visit(node: ts.Node) {
     // export default { ... } の形式を探す
     if (ts.isExportAssignment(node) && !node.isExportEquals) {
       if (ts.isObjectLiteralExpression(node.expression)) {
         commandDefinition = parseObjectLiteralAsCommandDefinition(node.expression);
+        hasHandler = true;
+      }
+      // export default function() { ... } の形式
+      else if (ts.isFunctionExpression(node.expression) || ts.isArrowFunction(node.expression)) {
+        hasHandler = true;
+      }
+      // export default function name() { ... } の形式
+      else if (ts.isFunctionDeclaration(node.expression)) {
+        hasHandler = true;
       }
     }
 
-    // export default function() { ... } の形式も対応
-    if (ts.isExportAssignment(node) && ts.isFunctionExpression(node.expression)) {
-      commandDefinition = {
-        handler: async () => {}, // 実際の関数は動的にインポートで取得
-      };
+    // export default function name() { ... } の形式（関数宣言）
+    if (ts.isFunctionDeclaration(node)) {
+      const modifiers = ts.canHaveModifiers(node) ? ts.getModifiers(node) : undefined;
+      const hasExport = modifiers?.some(m => m.kind === ts.SyntaxKind.ExportKeyword);
+      const hasDefault = modifiers?.some(m => m.kind === ts.SyntaxKind.DefaultKeyword);
+      if (hasExport && hasDefault) {
+        hasHandler = true;
+      }
+    }
+
+    // 名前付きエクスポートを探す: export const metadata = { ... }
+    if (ts.isVariableStatement(node)) {
+      const modifiers = ts.canHaveModifiers(node) ? ts.getModifiers(node) : undefined;
+      if (modifiers?.some(m => m.kind === ts.SyntaxKind.ExportKeyword)) {
+        for (const declaration of node.declarationList.declarations) {
+          if (ts.isIdentifier(declaration.name)) {
+            const name = declaration.name.text;
+            if (name === 'metadata' && declaration.initializer && ts.isObjectLiteralExpression(declaration.initializer)) {
+              metadata = parseMetadata(declaration.initializer);
+            }
+            if (name === 'schema' && declaration.initializer && ts.isObjectLiteralExpression(declaration.initializer)) {
+              schema = parseSchema(declaration.initializer);
+            }
+          }
+        }
+      }
     }
 
     ts.forEachChild(node, visit);
   }
 
   visit(sourceFile);
+
+  // 分離された形式の場合、結合する
+  if (hasHandler && (metadata || schema)) {
+    commandDefinition = {
+      handler: async () => {}, // 実際の関数は動的にインポートで取得
+      ...(metadata && { metadata }),
+      ...(schema && { schema }),
+    };
+  }
+
+  // handlerのみが存在する場合
+  if (hasHandler && !commandDefinition) {
+    commandDefinition = {
+      handler: async () => {},
+    };
+  }
+
   return commandDefinition;
 }
 
