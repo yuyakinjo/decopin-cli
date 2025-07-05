@@ -119,12 +119,18 @@ async function scanDirectoryRecursive(
 /**
  * command.tsファイルからコマンド構造を構築
  */
-function buildCommandStructures(entries: DirectoryEntry[], appDir: string): CommandStructure[] {
+function buildCommandStructures(
+  entries: DirectoryEntry[],
+  appDir: string
+): CommandStructure[] {
   const commandFiles = entries.filter((entry) => entry.isCommand);
   const structures: CommandStructure[] = [];
 
   for (const commandFile of commandFiles) {
-    const dirPath = relative(appDir, commandFile.path.replace('/command.ts', ''));
+    const dirPath = relative(
+      appDir,
+      commandFile.path.replace('/command.ts', '')
+    );
     const segments = dirPath === '' ? [] : dirPath.split('/');
     const dynamicParams: DynamicParam[] = [];
 
@@ -155,7 +161,9 @@ function buildCommandStructures(entries: DirectoryEntry[], appDir: string): Comm
 /**
  * appディレクトリをスキャンしてコマンド構造を取得
  */
-export async function scanAppDirectory(appDir: string): Promise<CommandStructure[]> {
+export async function scanAppDirectory(
+  appDir: string
+): Promise<CommandStructure[]> {
   try {
     // appディレクトリの存在確認
     await stat(appDir);

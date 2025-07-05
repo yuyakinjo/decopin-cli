@@ -1,7 +1,11 @@
 import { mkdir } from 'node:fs/promises';
 import { scanAppDirectory } from './scanner/directory-scanner.js';
 import { parseMultipleCommandFiles } from './parser/ast-parser.js';
-import { generateCLI, combineCommandData, type GeneratorConfig } from './generator/cli-generator.js';
+import {
+  generateCLI,
+  combineCommandData,
+  type GeneratorConfig,
+} from './generator/cli-generator.js';
 
 /**
  * ビルド設定
@@ -82,7 +86,7 @@ export async function buildCLI(config: BuildConfig): Promise<BuildResult> {
       console.log('🔧 Parsing command files...');
     }
 
-    const filePaths = structures.map(s => s.commandFilePath);
+    const filePaths = structures.map((s) => s.commandFilePath);
     const astResults = await parseMultipleCommandFiles(filePaths);
 
     // エラーと警告を収集
@@ -140,7 +144,6 @@ export async function buildCLI(config: BuildConfig): Promise<BuildResult> {
         buildTime,
       },
     };
-
   } catch (error) {
     errors.push(`Build failed: ${error}`);
     return {
@@ -175,10 +178,12 @@ export async function buildWithDefaults(
 /**
  * 利用可能なコマンド一覧を取得
  */
-export async function listCommands(appDir: string = './app'): Promise<string[]> {
+export async function listCommands(
+  appDir: string = './app'
+): Promise<string[]> {
   try {
     const structures = await scanAppDirectory(appDir);
-    return structures.map(s => s.path.replace(/\//g, ' '));
+    return structures.map((s) => s.path.replace(/\//g, ' '));
   } catch (error) {
     console.error(`Failed to list commands: ${error}`);
     return [];
@@ -195,7 +200,17 @@ export const builderInfo = {
 };
 
 // 主要な型をエクスポート
-export type { CommandDefinition, CommandContext, CommandHandler } from './types/command.js';
-export type { DirectoryEntry, CommandStructure } from './scanner/directory-scanner.js';
+export type {
+  CommandDefinition,
+  CommandContext,
+  CommandHandler,
+} from './types/command.js';
+export type {
+  DirectoryEntry,
+  CommandStructure,
+} from './scanner/directory-scanner.js';
 export type { ParsedASTResult } from './parser/ast-parser.js';
-export type { GeneratorConfig, GeneratedFiles } from './generator/cli-generator.js';
+export type {
+  GeneratorConfig,
+  GeneratedFiles,
+} from './generator/cli-generator.js';

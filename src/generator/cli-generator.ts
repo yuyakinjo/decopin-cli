@@ -36,25 +36,36 @@ export interface GeneratedFiles {
 /**
  * メインCLIコードを生成
  */
-function generateMainCLI(config: GeneratorConfig, commands: ParsedCommand[], versionInfo?: VersionInfo): string {
+function generateMainCLI(
+  config: GeneratorConfig,
+  commands: ParsedCommand[],
+  versionInfo?: VersionInfo
+): string {
   const cliName = config.cliName;
   const version = versionInfo?.version || config.version || '1.0.0';
-  const description = versionInfo?.metadata?.description || config.description || 'File-based CLI built with decopin-cli';
+  const description =
+    versionInfo?.metadata?.description ||
+    config.description ||
+    'File-based CLI built with decopin-cli';
   const cliDisplayName = versionInfo?.metadata?.name || cliName;
 
   // コマンドルートの生成
-  const commandRoutes = commands.map(cmd => {
-    const routeKey = cmd.path || 'root';
-    const importPath = '../' + cmd.filePath.replace('.ts', '.js');
-    return `  '${routeKey}': () => import('${importPath}').then(m => m.default)`;
-  }).join(',\n');
+  const commandRoutes = commands
+    .map((cmd) => {
+      const routeKey = cmd.path || 'root';
+      const importPath = `../${cmd.filePath.replace('.ts', '.js')}`;
+      return `  '${routeKey}': () => import('${importPath}').then(m => m.default)`;
+    })
+    .join(',\n');
 
   // ヘルプテキストの生成
-  const helpCommands = commands.map(cmd => {
-    const cmdPath = (cmd.path || 'root').replace(/\//g, ' ');
-    const desc = cmd.definition.metadata?.description || 'No description';
-    return `  console.log('  ${cmdPath.padEnd(20)} ${desc}');`;
-  }).join('\n');
+  const helpCommands = commands
+    .map((cmd) => {
+      const cmdPath = (cmd.path || 'root').replace(/\//g, ' ');
+      const desc = cmd.definition.metadata?.description || 'No description';
+      return `  console.log('  ${cmdPath.padEnd(20)} ${desc}');`;
+    })
+    .join('\n');
 
   return `#!/usr/bin/env node
 
@@ -94,30 +105,42 @@ function matchCommand(segments) {
   const params = {};
 
   // 静的コマンドをチェック
-  ${commands.filter(cmd => cmd.dynamicParams.length === 0).map(cmd => `
+  ${commands
+    .filter((cmd) => cmd.dynamicParams.length === 0)
+    .map(
+      (cmd) => `
   if (segments.length === ${cmd.segments.length} && ${cmd.segments.map((s, i) => `segments[${i}] === '${s}'`).join(' && ')}) {
     return { command: ${JSON.stringify(cmd)}, params };
-  }`).join('')}
+  }`
+    )
+    .join('')}
 
   // 動的コマンドをチェック
-  ${commands.filter(cmd => cmd.dynamicParams.length > 0).map(cmd => `
+  ${commands
+    .filter((cmd) => cmd.dynamicParams.length > 0)
+    .map(
+      (cmd) => `
   if (segments.length === ${cmd.segments.length}) {
     let match = true;
     const tempParams = {};
-    ${cmd.segments.map((segment, index) => {
-      if (segment.startsWith('[') && segment.endsWith(']')) {
-        const paramName = segment.slice(1, -1);
-        return `    tempParams['${paramName}'] = segments[${index}];`;
-      } else {
-        return `    if (segments[${index}] !== '${segment}') match = false;`;
-      }
-    }).join('\n')}
+    ${cmd.segments
+      .map((segment, index) => {
+        if (segment.startsWith('[') && segment.endsWith(']')) {
+          const paramName = segment.slice(1, -1);
+          return `    tempParams['${paramName}'] = segments[${index}];`;
+        } else {
+          return `    if (segments[${index}] !== '${segment}') match = false;`;
+        }
+      })
+      .join('\n')}
 
     if (match) {
       Object.assign(params, tempParams);
       return { command: ${JSON.stringify(cmd)}, params };
     }
-  }`).join('')}
+  }`
+    )
+    .join('')}
 
   return { command: null, params };
 }
@@ -149,8 +172,12 @@ async function main() {
 
   // バージョンオプション
   if (options.version || options.v) {
-    console.log('${version}');${versionInfo?.metadata?.author ? `
-    console.log('Author: ${versionInfo.metadata.author}');` : ''}
+    console.log('${version}');${
+      versionInfo?.metadata?.author
+        ? `
+    console.log('Author: ${versionInfo.metadata.author}');`
+        : ''
+    }
     return;
   }
 
@@ -249,7 +276,7 @@ export interface CLICommand {
 declare global {
   namespace CLI {
     interface Commands {
-${commands.map(cmd => `      '${cmd.path}': CLICommand;`).join('\n')}
+${commands.map((cmd) => `      '${cmd.path}': CLICommand;`).join('\n')}
     }
   }
 }

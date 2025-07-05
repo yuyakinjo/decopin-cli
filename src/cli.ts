@@ -144,7 +144,9 @@ async function main() {
 
         if (result.success) {
           console.log(`\n✅ Build completed successfully!`);
-          console.log(`📊 Generated ${result.stats.commandCount} commands in ${result.stats.buildTime}ms`);
+          console.log(
+            `📊 Generated ${result.stats.commandCount} commands in ${result.stats.buildTime}ms`
+          );
 
           if (result.warnings.length > 0) {
             console.log(`\n⚠️  Warnings:`);
@@ -204,7 +206,6 @@ async function main() {
         console.error('Use "decopin help" to see available commands');
         process.exit(1);
     }
-
   } catch (error) {
     console.error(`❌ Command failed: ${error}`);
     process.exit(1);

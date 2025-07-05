@@ -53,23 +53,38 @@ function extractVersionInfo(sourceFile: ts.SourceFile): VersionInfo | null {
 
   function visit(node: ts.Node) {
     // export const version = "1.0.0" の形式
-    if (ts.isVariableStatement(node) && node.modifiers?.some(m => m.kind === ts.SyntaxKind.ExportKeyword)) {
+    if (
+      ts.isVariableStatement(node) &&
+      node.modifiers?.some((m) => m.kind === ts.SyntaxKind.ExportKeyword)
+    ) {
       const declaration = node.declarationList.declarations[0];
       if (declaration && ts.isIdentifier(declaration.name)) {
         const varName = declaration.name.text;
 
-        if (varName === 'version' && declaration.initializer && ts.isStringLiteral(declaration.initializer)) {
+        if (
+          varName === 'version' &&
+          declaration.initializer &&
+          ts.isStringLiteral(declaration.initializer)
+        ) {
           version = declaration.initializer.text;
         }
 
-        if (varName === 'metadata' && declaration.initializer && ts.isObjectLiteralExpression(declaration.initializer)) {
+        if (
+          varName === 'metadata' &&
+          declaration.initializer &&
+          ts.isObjectLiteralExpression(declaration.initializer)
+        ) {
           metadata = parseObjectLiteral(declaration.initializer);
         }
       }
     }
 
     // export default "1.0.0" の形式
-    if (ts.isExportAssignment(node) && !node.isExportEquals && ts.isStringLiteral(node.expression)) {
+    if (
+      ts.isExportAssignment(node) &&
+      !node.isExportEquals &&
+      ts.isStringLiteral(node.expression)
+    ) {
       if (!version) {
         version = node.expression.text;
       }
@@ -83,7 +98,7 @@ function extractVersionInfo(sourceFile: ts.SourceFile): VersionInfo | null {
   if (version) {
     versionInfo = {
       version,
-      ...(metadata && { metadata })
+      ...(metadata && { metadata }),
     };
   }
 
@@ -141,7 +156,9 @@ function extractLiteralValue(node: ts.Expression): any {
 /**
  * version.tsファイルを解析
  */
-export async function parseVersionFile(appDir: string): Promise<VersionParseResult> {
+export async function parseVersionFile(
+  appDir: string
+): Promise<VersionParseResult> {
   const errors: string[] = [];
   const warnings: string[] = [];
   const versionPath = join(appDir, 'version.ts');
@@ -152,7 +169,7 @@ export async function parseVersionFile(appDir: string): Promise<VersionParseResu
       return {
         versionInfo: null,
         errors: [],
-        warnings: ['version.ts file not found in app directory']
+        warnings: ['version.ts file not found in app directory'],
       };
     }
 
@@ -169,12 +186,15 @@ export async function parseVersionFile(appDir: string): Promise<VersionParseResu
     );
 
     // 構文エラーをチェック
-    const diagnostics = ts.getPreEmitDiagnostics(ts.createProgram([versionPath], {}));
+    const diagnostics = ts.getPreEmitDiagnostics(
+      ts.createProgram([versionPath], {})
+    );
     for (const diagnostic of diagnostics) {
       if (diagnostic.messageText) {
-        const message = typeof diagnostic.messageText === 'string'
-          ? diagnostic.messageText
-          : diagnostic.messageText.messageText;
+        const message =
+          typeof diagnostic.messageText === 'string'
+            ? diagnostic.messageText
+            : diagnostic.messageText.messageText;
         errors.push(message);
       }
     }
@@ -189,15 +209,14 @@ export async function parseVersionFile(appDir: string): Promise<VersionParseResu
     return {
       versionInfo,
       errors,
-      warnings
+      warnings,
     };
-
   } catch (error) {
     errors.push(`Failed to parse version.ts: ${error}`);
     return {
       versionInfo: null,
       errors,
-      warnings
+      warnings,
     };
   }
 }
@@ -205,7 +224,10 @@ export async function parseVersionFile(appDir: string): Promise<VersionParseResu
 /**
  * バージョン情報を取得（フォールバック付き）
  */
-export async function getVersionInfo(appDir: string, fallbackVersion?: string): Promise<VersionInfo> {
+export async function getVersionInfo(
+  appDir: string,
+  fallbackVersion?: string
+): Promise<VersionInfo> {
   const result = await parseVersionFile(appDir);
 
   if (result.versionInfo) {
@@ -216,7 +238,7 @@ export async function getVersionInfo(appDir: string, fallbackVersion?: string): 
   return {
     version: fallbackVersion || '1.0.0',
     metadata: {
-      description: 'CLI built with decopin-cli'
-    }
+      description: 'CLI built with decopin-cli',
+    },
   };
 }

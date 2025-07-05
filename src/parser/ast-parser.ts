@@ -1,6 +1,10 @@
 import { readFile } from 'node:fs/promises';
 import * as ts from 'typescript';
-import type { CommandDefinition, CommandMetadata, CommandSchema } from '../types/command.js';
+import type {
+  CommandDefinition,
+  CommandMetadata,
+  CommandSchema,
+} from '../types/command.js';
 
 /**
  * TypeScript AST解析結果
@@ -17,7 +21,9 @@ export interface ParsedASTResult {
 /**
  * ファイルからCommandDefinitionを抽出
  */
-function extractCommandDefinition(sourceFile: ts.SourceFile): CommandDefinition | null {
+function extractCommandDefinition(
+  sourceFile: ts.SourceFile
+): CommandDefinition | null {
   let commandDefinition: CommandDefinition | null = null;
   let hasHandler = false;
   let metadata: CommandMetadata | undefined;
@@ -27,11 +33,16 @@ function extractCommandDefinition(sourceFile: ts.SourceFile): CommandDefinition 
     // export default { ... } の形式を探す
     if (ts.isExportAssignment(node) && !node.isExportEquals) {
       if (ts.isObjectLiteralExpression(node.expression)) {
-        commandDefinition = parseObjectLiteralAsCommandDefinition(node.expression);
+        commandDefinition = parseObjectLiteralAsCommandDefinition(
+          node.expression
+        );
         hasHandler = true;
       }
       // export default function() { ... } の形式
-      else if (ts.isFunctionExpression(node.expression) || ts.isArrowFunction(node.expression)) {
+      else if (
+        ts.isFunctionExpression(node.expression) ||
+        ts.isArrowFunction(node.expression)
+      ) {
         hasHandler = true;
       }
       // export default function name() { ... } の形式
@@ -42,9 +53,15 @@ function extractCommandDefinition(sourceFile: ts.SourceFile): CommandDefinition 
 
     // export default function name() { ... } の形式（関数宣言）
     if (ts.isFunctionDeclaration(node)) {
-      const modifiers = ts.canHaveModifiers(node) ? ts.getModifiers(node) : undefined;
-      const hasExport = modifiers?.some(m => m.kind === ts.SyntaxKind.ExportKeyword);
-      const hasDefault = modifiers?.some(m => m.kind === ts.SyntaxKind.DefaultKeyword);
+      const modifiers = ts.canHaveModifiers(node)
+        ? ts.getModifiers(node)
+        : undefined;
+      const hasExport = modifiers?.some(
+        (m) => m.kind === ts.SyntaxKind.ExportKeyword
+      );
+      const hasDefault = modifiers?.some(
+        (m) => m.kind === ts.SyntaxKind.DefaultKeyword
+      );
       if (hasExport && hasDefault) {
         hasHandler = true;
       }
@@ -52,15 +69,25 @@ function extractCommandDefinition(sourceFile: ts.SourceFile): CommandDefinition 
 
     // 名前付きエクスポートを探す: export const metadata = { ... }
     if (ts.isVariableStatement(node)) {
-      const modifiers = ts.canHaveModifiers(node) ? ts.getModifiers(node) : undefined;
-      if (modifiers?.some(m => m.kind === ts.SyntaxKind.ExportKeyword)) {
+      const modifiers = ts.canHaveModifiers(node)
+        ? ts.getModifiers(node)
+        : undefined;
+      if (modifiers?.some((m) => m.kind === ts.SyntaxKind.ExportKeyword)) {
         for (const declaration of node.declarationList.declarations) {
           if (ts.isIdentifier(declaration.name)) {
             const name = declaration.name.text;
-            if (name === 'metadata' && declaration.initializer && ts.isObjectLiteralExpression(declaration.initializer)) {
+            if (
+              name === 'metadata' &&
+              declaration.initializer &&
+              ts.isObjectLiteralExpression(declaration.initializer)
+            ) {
               metadata = parseMetadata(declaration.initializer);
             }
-            if (name === 'schema' && declaration.initializer && ts.isObjectLiteralExpression(declaration.initializer)) {
+            if (
+              name === 'schema' &&
+              declaration.initializer &&
+              ts.isObjectLiteralExpression(declaration.initializer)
+            ) {
               schema = parseSchema(declaration.initializer);
             }
           }
@@ -138,7 +165,9 @@ function parseObjectLiteralAsCommandDefinition(
 /**
  * メタデータオブジェクトを解析
  */
-function parseMetadata(objectLiteral: ts.ObjectLiteralExpression): CommandMetadata {
+function parseMetadata(
+  objectLiteral: ts.ObjectLiteralExpression
+): CommandMetadata {
   const metadata: CommandMetadata = {};
 
   for (const property of objectLiteral.properties) {
@@ -221,7 +250,9 @@ function extractLiteralValue(node: ts.Expression): any {
 /**
  * TypeScriptファイルを解析してコマンド定義を抽出
  */
-export async function parseCommandFile(filePath: string): Promise<ParsedASTResult> {
+export async function parseCommandFile(
+  filePath: string
+): Promise<ParsedASTResult> {
   const errors: string[] = [];
   const warnings: string[] = [];
 
@@ -239,12 +270,15 @@ export async function parseCommandFile(filePath: string): Promise<ParsedASTResul
     );
 
     // 構文エラーをチェック
-    const diagnostics = ts.getPreEmitDiagnostics(ts.createProgram([filePath], {}));
+    const diagnostics = ts.getPreEmitDiagnostics(
+      ts.createProgram([filePath], {})
+    );
     for (const diagnostic of diagnostics) {
       if (diagnostic.messageText) {
-        const message = typeof diagnostic.messageText === 'string'
-          ? diagnostic.messageText
-          : diagnostic.messageText.messageText;
+        const message =
+          typeof diagnostic.messageText === 'string'
+            ? diagnostic.messageText
+            : diagnostic.messageText.messageText;
         errors.push(message);
       }
     }
@@ -266,7 +300,6 @@ export async function parseCommandFile(filePath: string): Promise<ParsedASTResul
       errors,
       warnings,
     };
-
   } catch (error) {
     errors.push(`Failed to parse file ${filePath}: ${error}`);
     return {

@@ -1,0 +1,101 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        bun-version: [1.x, latest]
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Bun ${{ matrix.bun-version }}
+      uses: oven-sh/setup-bun@v1
+      with:
+        bun-version: ${{ matrix.bun-version }}
+
+    - name: Install dependencies
+      run: bun install
+
+    - name: Build project
+      run: bun run build
+
+    - name: Run tests
+      run: bun run test:app
+
+  lint-and-format:
+    name: Lint and Format Check
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Bun
+      uses: oven-sh/setup-bun@v1
+      with:
+        bun-version: latest
+
+    - name: Install dependencies
+      run: bun install
+
+    - name: Build project
+      run: bun run build
+
+    - name: Run lint check
+      run: bun run lint
+
+    - name: Check code formatting
+      run: |
+        echo "🔍 Checking code formatting..."
+        if bun run format:check; then
+          echo "✅ Code formatting is correct."
+        else
+          echo "❌ Code formatting issues detected!"
+          echo "Please run 'bun run format:fix' to fix formatting issues."
+          exit 1
+        fi
+
+  build-check:
+    name: Build Check
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Bun
+      uses: oven-sh/setup-bun@v1
+      with:
+        bun-version: latest
+
+    - name: Install dependencies
+      run: bun install
+
+    - name: Build main project
+      run: bun run build
+
+    - name: Build app directory
+      run: bun run build:app
+
+    - name: Check build artifacts
+      run: |
+        if [ ! -d "dist" ]; then
+          echo "❌ Main build failed - dist directory not found"
+          exit 1
+        fi
+        if [ ! -f "dist/index.js" ]; then
+          echo "❌ Main build failed - dist/index.js not found"
+          exit 1
+        fi
+        echo "✅ Build artifacts verified successfully"
