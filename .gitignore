@@ -143,6 +143,12 @@ out/
 # Test coverage
 coverage/
 
+# Test directories (created during testing)
+test-app/
+test-app-integration/
+test-commands/
+test-output/
+
 # Temporary files
 *.tmp
 *.temp
