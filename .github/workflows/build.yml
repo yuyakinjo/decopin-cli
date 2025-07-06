@@ -1,0 +1,35 @@
+name: Build Check
+
+on:
+  push:
+    branches: [main, develop]
+
+jobs:
+  build-check:
+    name: Build Check
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Bun Environment
+      uses: ./.github/actions/setup
+
+    - name: Build main project
+      run: bun run build
+
+    - name: Build app directory
+      run: bun run build:app
+
+    - name: Check build artifacts
+      run: |
+        if [ ! -d "dist" ]; then
+          echo "❌ Main build failed - dist directory not found"
+          exit 1
+        fi
+        if [ ! -f "dist/index.js" ]; then
+          echo "❌ Main build failed - dist/index.js not found"
+          exit 1
+        fi
+        echo "✅ Build artifacts verified successfully"

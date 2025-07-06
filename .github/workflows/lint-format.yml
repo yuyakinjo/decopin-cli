@@ -1,0 +1,34 @@
+name: Lint and Format
+
+on:
+  push:
+    branches: [main, develop]
+
+jobs:
+  lint-and-format:
+    name: Lint and Format Check
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Bun Environment
+      uses: ./.github/actions/setup
+
+    - name: Build project
+      run: bun run build
+
+    - name: Run lint check
+      run: bun run lint
+
+    - name: Check code formatting
+      run: |
+        echo "🔍 Checking code formatting..."
+        if bun run format:check; then
+          echo "✅ Code formatting is correct."
+        else
+          echo "❌ Code formatting issues detected!"
+          echo "Please run 'bun run format:fix' to fix formatting issues."
+          exit 1
+        fi
