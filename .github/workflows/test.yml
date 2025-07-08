@@ -19,5 +19,5 @@ jobs:
     - name: Build project
       run: bun run build
 
-    - name: Run tests
-      run: bun run test:app
+    - name: Run comprehensive tests
+      run: bun run test:all
