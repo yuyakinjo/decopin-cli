@@ -17,6 +17,8 @@ export interface BuildConfig {
   outputDir: string;
   /** CLI名 */
   cliName: string;
+  /** 出力ファイル名（デフォルト: 'cli.js'） */
+  outputFileName?: string;
   /** バージョン */
   version?: string;
   /** 説明 */
@@ -118,6 +120,7 @@ export async function buildCLI(config: BuildConfig): Promise<BuildResult> {
       outputDir: config.outputDir,
       cliName: config.cliName,
       appDir: config.appDir,
+      ...(config.outputFileName && { outputFileName: config.outputFileName }),
       ...(config.version && { version: config.version }),
       ...(config.description && { description: config.description }),
     };

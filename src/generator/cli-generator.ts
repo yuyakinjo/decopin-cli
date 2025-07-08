@@ -15,6 +15,8 @@ export interface GeneratorConfig {
   cliName: string;
   /** appディレクトリのパス */
   appDir: string;
+  /** 出力ファイル名（デフォルト: 'cli.js'） */
+  outputFileName?: string;
   /** バージョン */
   version?: string;
   /** 説明 */
@@ -297,7 +299,8 @@ export async function generateCLI(
 
   // メインCLIファイルを生成
   const mainCLICode = generateMainCLI(config, commands, versionInfo);
-  const mainFile = join(config.outputDir, 'cli.js');
+  const fileName = config.outputFileName || 'cli.js';
+  const mainFile = join(config.outputDir, fileName);
   await writeFile(mainFile, mainCLICode, 'utf-8');
   files.push(mainFile);
 

@@ -23,6 +23,7 @@ Build Options:
   --app-dir <path>         App directory path (default: ./app)
   --output-dir <path>      Output directory path (default: ./dist)
   --cli-name <name>        CLI name (default: cli)
+  --output-filename <name> Output filename (default: cli.js)
   --version <version>      CLI version
   --description <desc>     CLI description
   --verbose               Show verbose output
@@ -137,6 +138,7 @@ async function main() {
           appDir: (options['app-dir'] as string) || './app',
           outputDir: (options['output-dir'] as string) || './dist',
           cliName: (options['cli-name'] as string) || 'cli',
+          outputFileName: options['output-filename'] as string,
           version: options.version as string,
           description: options.description as string,
           verbose: Boolean(options.verbose),
