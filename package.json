@@ -42,12 +42,13 @@
     "file-based",
     "nextjs-style"
   ],
-  "author": "",
+  "author": "yuyakinjo",
   "license": "MIT",
   "files": [
     "dist",
     "package-lock.json",
-    "README.md"
+    "README.md",
+    "LICENSE"
   ],
   "engines": {
     "node": ">=24.0.0"
