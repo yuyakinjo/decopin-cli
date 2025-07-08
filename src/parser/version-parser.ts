@@ -49,7 +49,7 @@ export async function hasVersionFile(appDir: string): Promise<boolean> {
 function extractVersionInfo(sourceFile: ts.SourceFile): VersionInfo | null {
   let versionInfo: VersionInfo | null = null;
   let version: string | null = null;
-  let metadata: unknown = null;
+  let metadata: VersionInfo['metadata'] | null = null;
 
   function visit(node: ts.Node) {
     // export const version = "1.0.0" の形式
@@ -74,7 +74,7 @@ function extractVersionInfo(sourceFile: ts.SourceFile): VersionInfo | null {
           declaration.initializer &&
           ts.isObjectLiteralExpression(declaration.initializer)
         ) {
-          metadata = parseObjectLiteral(declaration.initializer);
+          metadata = parseObjectLiteral(declaration.initializer) as VersionInfo['metadata'];
         }
       }
     }
@@ -98,7 +98,7 @@ function extractVersionInfo(sourceFile: ts.SourceFile): VersionInfo | null {
   if (version) {
     versionInfo = {
       version,
-      ...(metadata && { metadata }),
+      ...(metadata ? { metadata } : {}),
     };
   }
 
@@ -108,8 +108,8 @@ function extractVersionInfo(sourceFile: ts.SourceFile): VersionInfo | null {
 /**
  * オブジェクトリテラルを解析
  */
-function parseObjectLiteral(objectLiteral: ts.ObjectLiteralExpression): unknown {
-  const result: unknown = {};
+function parseObjectLiteral(objectLiteral: ts.ObjectLiteralExpression): Record<string, unknown> {
+  const result: Record<string, unknown> = {};
 
   for (const property of objectLiteral.properties) {
     if (ts.isPropertyAssignment(property) && ts.isIdentifier(property.name)) {
