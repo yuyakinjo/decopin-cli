@@ -27,9 +27,9 @@ export interface CommandSchema {
  */
 export interface CommandContext {
   /** 解析された引数 */
-  args: Record<string, any>;
+  args: Record<string, unknown>;
   /** 解析されたオプション */
-  options: Record<string, any>;
+  options: Record<string, unknown>;
   /** 動的パラメータ（[id]など） */
   params: Record<string, string>;
   /** ヘルプテキスト表示関数 */

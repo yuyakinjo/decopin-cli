@@ -1,4 +1,6 @@
-export default {
+import type { CommandDefinition, CommandContext } from '../../../src/types/command.js';
+
+const command: CommandDefinition = {
   metadata: {
     name: 'create',
     description: 'Create a new user',
@@ -7,7 +9,7 @@ export default {
       'user create john john@example.com'
     ]
   },
-  handler: async (context: any) => {
+  handler: async (context: CommandContext) => {
     const name = context.options.name || context.args[0];
     const email = context.options.email || context.args[1];
 
@@ -21,3 +23,5 @@ export default {
     console.log('✅ User created successfully!');
   }
 };
+
+export default command;

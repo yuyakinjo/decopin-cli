@@ -1,4 +1,6 @@
-export default {
+import type { CommandDefinition, CommandContext } from '../../src/types/command.js';
+
+const command: CommandDefinition = {
   metadata: {
     name: 'hello',
     description: 'Say hello to someone',
@@ -7,8 +9,10 @@ export default {
       'hello --name Alice'
     ]
   },
-  handler: async (context: any) => {
+  handler: async (context: CommandContext) => {
     const name = context.options.name || context.args[0] || 'World';
     console.log(`Hello, ${name}!`);
   }
 };
+
+export default command;
