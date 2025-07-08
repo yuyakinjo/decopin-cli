@@ -5,8 +5,7 @@
     "moduleResolution": "node",
     "lib": ["ES2022"],
     "outDir": "./",
-    "rootDir": "./",
-    "strict": false,
+    "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
@@ -16,7 +15,8 @@
     "sourceMap": false
   },
   "include": [
-    "**/*.ts"
+    "**/*.ts",
+    "../src/types/**/*.ts"
   ],
   "exclude": [
     "**/*.js"
