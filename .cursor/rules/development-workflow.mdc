@@ -1,0 +1,80 @@
+---
+description: 開発ワークフローと重要なコマンド
+globs: []
+alwaysApply: true
+---
+
+# 🔧 Development Commands
+
+## Essential Scripts
+```bash
+# Development workflow
+npm run dev          # Show development setup
+npm run dev:src      # Watch source files
+npm run dev:app      # Watch app directory
+npm run dev:regen    # Regenerate CLI after changes
+npm run dev:test     # Test generated CLI
+
+# Building
+npm run build        # Build TypeScript source
+npm run build:app    # Build app directory
+npm run build:all    # Build everything
+
+# Testing (57 tests)
+npm test             # Run all tests + type checking
+npm run test:types   # Type checking only
+npm run test:coverage # Coverage report
+npm run test:watch   # Watch mode
+
+# Cleaning (CRITICAL after TypeScript compilation)
+npm run clean:app    # Remove generated .js files from app/
+npm run clean:src    # Remove generated .js files from src/
+npm run clean:all    # Clean everything
+```
+
+## 🚨 Critical Development Notes
+
+### TypeScript Compilation
+- **NEVER** commit `.js` files in `src/` or `app/` directories
+- Always run cleanup commands after compilation
+- Use separate tsconfig.json for `app/` directory
+- The main tsconfig.json excludes `app/` to prevent conflicts
+
+### File Management
+- Generated JS files should ONLY exist in `dist/`
+- Use `npm run clean:app` after any app compilation
+- Use `npm run clean:src` if JS files appear in src/
+- The project uses `"noEmitOnError": true` for safety
+
+### Testing Strategy
+- 57 tests across 7 test suites - DO NOT BREAK THESE
+- Test files: `*.test.ts` in relevant directories
+- Use `npm run test:watch` for TDD workflow
+- Always run full test suite before major changes
+
+## 🚀 Workflow Tips
+
+### For New Features
+1. Start with tests (`*.test.ts`)
+2. Implement in TypeScript
+3. Update examples in `app/` if needed
+4. Update documentation
+5. Run full test suite
+
+### For Bug Fixes
+1. Write failing test first
+2. Fix the implementation
+3. Ensure all tests pass
+4. Clean up any generated files
+
+### For Refactoring
+1. Ensure tests cover existing behavior
+2. Make incremental changes
+3. Run tests frequently
+4. Update documentation last
+
+### Debugging Issues
+1. Check TypeScript compilation: `npm run test:types`
+2. Run specific test suite: `vitest run path/to/test.ts`
+3. Clean generated files: `npm run clean:all`
+4. Rebuild everything: `npm run build:all`

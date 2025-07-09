@@ -8,10 +8,11 @@ A TypeScript-first CLI builder inspired by Next.js App Router's file-based routi
 - **🔧 TypeScript-first**: Full TypeScript support with proper type definitions
 - **⚡ Dynamic imports**: Generated CLIs use dynamic imports for instant command loading
 - **🔍 AST parsing**: TypeScript AST parsing for automatic command metadata extraction
-- **🛡️ Type-safe**: Built-in validation with valibot for robust argument parsing
+- **🛡️ Type-safe validation**: Built-in validation with valibot for robust argument parsing
+- **🎯 Flexible argument handling**: Support for both positional arguments and named options
 - **🔄 Real-time development**: Changes reflect instantly without restarts
 - **📦 Zero configuration**: Works out of the box with sensible defaults
-- **🧪 Comprehensive testing**: Full test coverage with Vitest
+- **🧪 Comprehensive testing**: Full test coverage with 57 tests across 7 test suites
 
 ## 🚀 Quick Start
 
@@ -31,7 +32,7 @@ bunx decopin-cli
 ```bash
 mkdir my-cli && cd my-cli
 npm init -y
-npm install decopin-cli
+npm install decopin-cli valibot
 ```
 
 2. **Create app directory and your first command**:
@@ -54,18 +55,34 @@ export default {
 };
 ```
 
-4. **Generate your CLI**:
+4. **Create `app/hello/params.ts` for type-safe argument validation**:
+```typescript
+import * as v from 'valibot';
+
+export const schema = v.object({
+  name: v.optional(v.string(), 'World')
+});
+
+export const fieldMappings = {
+  name: { position: 0, option: 'name' }
+};
+```
+
+5. **Generate your CLI**:
 ```bash
 npx decopin-cli build
 ```
 
-5. **Test your CLI**:
+6. **Test your CLI**:
 ```bash
 node dist/cli.js hello
 # Output: Hello, World!
 
-node dist/cli.js hello --name Alice
+node dist/cli.js hello Alice
 # Output: Hello, Alice!
+
+node dist/cli.js hello --name Bob
+# Output: Hello, Bob!
 ```
 
 ## 📁 File Structure
@@ -75,17 +92,22 @@ my-cli/
 ├── app/                    # Commands directory
 │   ├── version.ts         # Version configuration (optional)
 │   ├── hello/
-│   │   └── command.ts     # Simple command
+│   │   ├── command.ts     # Command implementation
+│   │   └── params.ts      # Argument validation (optional)
 │   ├── user/
 │   │   ├── create/
-│   │   │   └── command.ts # Nested command: user create
+│   │   │   ├── command.ts # Nested command: user create
+│   │   │   └── params.ts  # Validation for user create
 │   │   └── list/
-│   │       └── command.ts # Nested command: user list
+│   │       ├── command.ts # Nested command: user list
+│   │       └── params.ts  # Validation for user list
 │   └── database/
 │       ├── migrate/
-│       │   └── command.ts # Nested command: database migrate
+│       │   ├── command.ts # Nested command: database migrate
+│       │   └── params.ts  # Validation for database migrate
 │       └── seed/
-│           └── command.ts # Nested command: database seed
+│           ├── command.ts # Nested command: database seed
+│           └── params.ts  # Validation for database seed
 ├── dist/                  # Generated CLI output
 │   └── cli.js            # Your generated CLI
 ├── src/                   # Source code (if extending)
@@ -114,7 +136,7 @@ export default {
 };
 ```
 
-### Advanced Command with Options
+### Advanced Command with Type-Safe Validation
 
 ```typescript
 // app/user/create/command.ts
@@ -124,22 +146,83 @@ export default {
     description: 'Create a new user',
     examples: [
       'user create --name "John Doe" --email john@example.com',
-      'user create --name "Jane Smith" --email jane@example.com --admin'
+      'user create "Jane Smith" jane@example.com --admin'
     ]
   },
   handler: async (context: any) => {
     const { name, email, admin } = context.options;
-
-    if (!name || !email) {
-      console.error('Error: --name and --email are required');
-      process.exit(1);
-    }
 
     console.log(`Creating user: ${name} (${email})`);
     if (admin) {
       console.log('User will have admin privileges');
     }
   }
+};
+```
+
+```typescript
+// app/user/create/params.ts
+import * as v from 'valibot';
+
+export const schema = v.object({
+  name: v.pipe(v.string(), v.minLength(1, 'Name is required')),
+  email: v.pipe(v.string(), v.email('Valid email is required')),
+  admin: v.optional(v.boolean(), false)
+});
+
+export const fieldMappings = {
+  name: { position: 0, option: 'name' },
+  email: { position: 1, option: 'email' },
+  admin: { option: 'admin' }
+};
+```
+
+## 🎯 Argument Handling
+
+decopin-cli supports flexible argument handling with both positional arguments and named options:
+
+### Positional Arguments
+```bash
+my-cli user create "John Doe" "john@example.com"
+```
+
+### Named Options
+```bash
+my-cli user create --name "John Doe" --email "john@example.com" --admin
+```
+
+### Mixed Arguments (positions have higher priority)
+```bash
+my-cli user create "Jane" --email "jane@example.com" --admin
+# name will be "Jane" (from position 0), not from --name option
+```
+
+### Validation with valibot
+
+The `params.ts` files use valibot for type-safe validation:
+
+```typescript
+import * as v from 'valibot';
+
+export const schema = v.object({
+  // Required string with minimum length
+  name: v.pipe(v.string(), v.minLength(1, 'Name is required')),
+
+  // Required email validation
+  email: v.pipe(v.string(), v.email('Valid email is required')),
+
+  // Optional number with default value
+  age: v.optional(v.pipe(v.number(), v.minValue(0)), 18),
+
+  // Optional boolean flag
+  admin: v.optional(v.boolean(), false)
+});
+
+export const fieldMappings = {
+  name: { position: 0, option: 'name' },
+  email: { position: 1, option: 'email' },
+  age: { position: 2, option: 'age' },
+  admin: { option: 'admin' }  // Only available as option
 };
 ```
 
@@ -159,44 +242,72 @@ export const author = 'Your Name';
 
 The development experience is designed to be as smooth as Next.js development:
 
-### 1. Watch Mode Development
+### 1. Quick Development Setup
 
 ```bash
-# Terminal 1: Watch TypeScript compilation
-npm run dev:src    # Watch source files
-npm run dev:app    # Watch app directory
+# Show development commands
+npm run dev
 
-# Terminal 2: Development cycle
-npm run dev:regen  # Regenerate CLI
-npm run dev:test   # Test generated CLI
+# Terminal 1: Watch source files
+npm run dev:src
+
+# Terminal 2: Watch app directory
+npm run dev:app
+
+# After changes: Regenerate CLI
+npm run dev:regen
+
+# Test generated CLI
+npm run dev:test
+npm run dev:test:all
 ```
 
-### 2. Real-time Development
-
-Thanks to dynamic imports, changes to your commands are reflected instantly:
+### 2. Build Commands
 
 ```bash
-# Make changes to app/hello/command.ts
-# The changes are automatically compiled to JavaScript
-# Test immediately without restart:
-node dist/cli.js hello
+# Build TypeScript source
+npm run build
+
+# Build app directory
+npm run build:app
+
+# Build everything
+npm run build:all
 ```
 
-### 3. Package Scripts
+### 3. Testing Commands
 
-Add these scripts to your `package.json`:
+```bash
+# Run all tests (57 tests across 7 suites)
+npm test
 
-```json
-{
-  "scripts": {
-    "build": "decopin-cli build",
-    "dev:src": "tsc --watch",
-    "dev:app": "tsc app/**/*.ts --watch --outDir app --target es2022 --module es2022 --moduleResolution node",
-    "dev:regen": "npm run build && echo 'CLI regenerated!'",
-    "dev:test": "node dist/cli.js --help",
-    "test": "vitest"
-  }
-}
+# Type checking only
+npm run test:types
+
+# Unit tests with coverage
+npm run test:coverage
+
+# Watch mode for development
+npm run test:watch
+
+# Test app compilation
+npm run test:app
+```
+
+### 4. Cleaning Commands
+
+```bash
+# Clean dist directory
+npm run clean
+
+# Clean generated .js files from app directory
+npm run clean:app
+
+# Clean generated .js files from src directory
+npm run clean:src
+
+# Clean everything
+npm run clean:all
 ```
 
 ## 📋 CLI Options
@@ -211,6 +322,8 @@ decopin-cli build [options]
 - `--output-dir <dir>`: Output directory (default: `dist`)
 - `--output-file <file>`: Output filename (default: `cli.js`)
 - `--app-dir <dir>`: App directory path (default: `app`)
+- `--cli-name <name>`: CLI name for generated file
+- `--output-filename <file>`: Custom output filename
 
 ### Help Command
 
@@ -236,31 +349,42 @@ decopin-cli comes with a comprehensive test suite using Vitest:
 npm test
 ```
 
-**Test Coverage:**
-- Directory scanning (7 tests)
-- AST parsing (7 tests)
-- Version parsing (13 tests)
-- Integration tests (6 tests)
+**Test Coverage (57 tests across 7 suites):**
+- Directory scanning (6 tests)
+- AST parsing (8 tests)
+- Version parsing (6 tests)
+- Validation utility (9 tests)
+- Params validation (9 tests)
+- CLI generator (6 tests)
+- Integration tests (13 tests)
 
 ### Example Test Structure
 
 ```typescript
-// __tests__/commands.test.ts
+// src/utils/validation.test.ts
 import { describe, it, expect } from 'vitest';
-import { exec } from 'child_process';
-import { promisify } from 'util';
+import { extractData, createValidationFunction } from './validation';
+import * as v from 'valibot';
 
-const execAsync = promisify(exec);
-
-describe('Generated CLI', () => {
-  it('should execute hello command', async () => {
-    const { stdout } = await execAsync('node dist/cli.js hello');
-    expect(stdout.trim()).toBe('Hello, World!');
+describe('Validation Utils', () => {
+  const schema = v.object({
+    name: v.optional(v.string(), 'default'),
+    age: v.optional(v.number(), 25)
   });
 
-  it('should execute hello command with name', async () => {
-    const { stdout } = await execAsync('node dist/cli.js hello --name Alice');
-    expect(stdout.trim()).toBe('Hello, Alice!');
+  const fieldMappings = {
+    name: { position: 0, option: 'name' },
+    age: { position: 1, option: 'age' }
+  };
+
+  it('should extract data with positional arguments', () => {
+    const result = extractData(['Alice', '30'], {}, fieldMappings, schema);
+    expect(result).toEqual({ name: 'Alice', age: 30 });
+  });
+
+  it('should extract data with options', () => {
+    const result = extractData([], { name: 'Bob', age: '25' }, fieldMappings, schema);
+    expect(result).toEqual({ name: 'Bob', age: 25 });
   });
 });
 ```
@@ -309,6 +433,15 @@ export default {
 };
 ```
 
+### TypeScript Configuration
+
+The project uses an optimized TypeScript configuration:
+
+- Separate compilation for `src/` and `app/` directories
+- Automatic cleanup of generated JavaScript files
+- Incremental compilation for faster builds
+- Strict type checking with comprehensive error reporting
+
 ## 📦 Distribution
 
 ### NPM Package
@@ -320,6 +453,7 @@ To distribute your CLI as an npm package:
 {
   "name": "my-awesome-cli",
   "version": "1.0.0",
+  "type": "module",
   "bin": {
     "my-cli": "./dist/cli.js"
   },
@@ -329,13 +463,16 @@ To distribute your CLI as an npm package:
   ],
   "engines": {
     "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "valibot": "^1.1.0"
   }
 }
 ```
 
 2. **Build and publish**:
 ```bash
-npm run build
+npm run build:all
 npm publish
 ```
 
@@ -355,7 +492,7 @@ We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) f
 git clone https://github.com/your-username/decopin-cli.git
 cd decopin-cli
 npm install
-npm run build
+npm run build:all
 npm test
 ```
 
@@ -368,6 +505,7 @@ MIT License - see [LICENSE](LICENSE) for details.
 - Inspired by Next.js App Router's file-based routing
 - Built with TypeScript and modern Node.js features
 - Powered by valibot for type-safe validation
+- Comprehensive testing with Vitest
 
 ---
 

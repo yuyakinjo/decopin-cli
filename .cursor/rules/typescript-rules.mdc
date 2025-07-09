@@ -1,0 +1,55 @@
+---
+description: TypeScript、テスト、コード品質のルール
+globs: ["src/**/*.ts", "**/*.test.ts"]
+alwaysApply: false
+---
+
+# 🛡️ Code Quality Rules
+
+## TypeScript
+- Strict mode enabled
+- No `any` types in new code (use proper typing)
+- Use valibot for all validation logic
+- Type imports with `import type` when possible
+
+## Testing
+- Write tests for all new utilities
+- Cover both success and error cases
+- Use descriptive test names
+- Mock external dependencies
+
+## Configuration Files
+- `tsconfig.json` - Main TypeScript config (excludes app/)
+- `app/tsconfig.json` - App-specific TypeScript config
+- `vitest.config.ts` - Test configuration
+- `biome.jsonc` - Linting/formatting config
+
+## Core Source Files
+- `src/cli.ts` - Main CLI entry point
+- `src/generator/cli-generator.ts` - CLI generation logic
+- `src/parser/ast-parser.ts` - TypeScript AST parsing
+- `src/scanner/directory-scanner.ts` - File system scanning
+- `src/utils/validation.ts` - Argument validation utilities
+
+## Testing Guidelines
+
+### Test Structure
+- Each module should have corresponding `*.test.ts` file
+- Group related tests using `describe` blocks
+- Use clear, descriptive test names
+- Follow Arrange-Act-Assert pattern
+
+### Coverage Requirements
+- Aim for high test coverage on core utilities
+- Test both happy path and error scenarios
+- Mock external dependencies and file system operations
+- Use `npm run test:coverage` to check coverage
+
+### Test Commands
+```bash
+npm test             # Run all tests + type checking
+npm run test:types   # Type checking only
+npm run test:coverage # Coverage report
+npm run test:watch   # Watch mode for TDD
+vitest run path/to/test.ts  # Run specific test file
+```

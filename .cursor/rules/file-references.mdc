@@ -1,0 +1,54 @@
+---
+description: プロジェクトの重要なファイル一覧とリファレンス
+globs: []
+alwaysApply: false
+---
+
+# 📚 Important Files to Know
+
+## Core Source Files
+- `src/cli.ts` - Main CLI entry point
+- `src/generator/cli-generator.ts` - CLI generation logic
+- `src/parser/ast-parser.ts` - TypeScript AST parsing
+- `src/parser/version-parser.ts` - Version parsing utilities
+- `src/scanner/directory-scanner.ts` - File system scanning
+- `src/utils/validation.ts` - Argument validation utilities
+- `src/types/command.ts` - Core type definitions
+
+## Configuration Files
+- `tsconfig.json` - Main TypeScript config (excludes app/)
+- `app/tsconfig.json` - App-specific TypeScript config
+- `vitest.config.ts` - Test configuration
+- `biome.jsonc` - Linting/formatting config
+- `package.json` - Dependencies and scripts
+
+## Test Files
+- `src/index.test.ts` - Main integration tests
+- `src/parser/ast-parser.test.ts` - AST parsing tests
+- `src/parser/version-parser.test.ts` - Version parsing tests
+- `src/scanner/directory-scanner.test.ts` - Directory scanning tests
+- `src/utils/validation.test.ts` - Validation utility tests
+- `src/utils/params.test.ts` - Params validation tests
+- `src/generator/cli-generator.test.ts` - CLI generator tests
+
+## Example Files
+- `app/hello/command.ts` - Simple command example
+- `app/hello/params.ts` - Simple validation example
+- `app/user/create/command.ts` - Complex command with validation
+- `app/user/create/params.ts` - Complex validation schema
+- `app/user/list/command.ts` - Simple nested command
+- `app/version.ts` - CLI metadata example
+
+## Generated/Build Files (DO NOT EDIT)
+- `dist/` - Compiled output directory
+- Any `.js` files in `src/` or `app/` (should be cleaned)
+
+## Documentation
+- `README.md` - Project documentation
+- `.cursor/rules/` - Development rules (this directory)
+- `.cursorrules` - Legacy rules file (to be removed)
+
+## Git/Development
+- `.gitignore` - Ignored files configuration
+- `bun.lock` / `package-lock.json` - Dependency locks
+- `LICENSE` - Project license
