@@ -1,4 +1,4 @@
-import type { ErrorHandler, ValidationError } from '../../../src/types/command.js';
+import type { ErrorHandler, ValidationError } from '../../../dist/types/command.js';
 
 const errorHandler: ErrorHandler = async (error: ValidationError) => {
   console.error('❌ User creation failed:');

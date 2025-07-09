@@ -139,6 +139,7 @@ Desktop.ini
 dist/
 build/
 out/
+examples/
 
 # App directory compiled files
 app/**/*.js

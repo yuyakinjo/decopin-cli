@@ -1,5 +1,5 @@
 import * as v from 'valibot';
-import type { ParamsDefinition } from '../../../src/types/command.js';
+import type { ParamsDefinition } from '../../../dist/types/command.js';
 
 // ユーザー作成データのスキーマ
 const CreateUserSchema = v.object({

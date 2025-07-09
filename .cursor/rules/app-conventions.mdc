@@ -59,7 +59,7 @@ export const fieldMappings = {
 1. Create `app/path/to/command/command.ts`
 2. Optionally add `app/path/to/command/params.ts`
 3. Run `npm run build:app`
-4. Test with `npm run dev:regen && npm run dev:test`
+4. Test with `node ./dist/generated-cli.js <your-command>`
 5. Write tests in appropriate `*.test.ts` file
 
 ### Adding Validation

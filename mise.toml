@@ -1,0 +1,13 @@
+# decopin-cli 開発環境設定
+
+[tasks.regenerate]
+description = "TypeScript をビルドしてCLIを再生成"
+run = [
+  "npm run dev:build",
+  "npm run dev:regen",
+  "sed -i '' 's|\\.\\./app/|\\.\\./examples/|g' dist/generated-cli.js",
+]
+sources = ["src/**/*.ts", "app/**/*.ts"]
+
+[env]
+NODE_ENV = "development"

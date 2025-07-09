@@ -1,80 +1,129 @@
----
-description: 開発ワークフローと重要なコマンド
-globs: []
-alwaysApply: true
----
 
-# 🔧 Development Commands
+# 🚀 Development Workflow
 
-## Essential Scripts
+## Quick Start
 ```bash
-# Development workflow
-npm run dev          # Show development setup
-npm run dev:src      # Watch source files
-npm run dev:app      # Watch app directory
-npm run dev:regen    # Regenerate CLI after changes
-npm run dev:test     # Test generated CLI
-
-# Building
-npm run build        # Build TypeScript source
-npm run build:app    # Build app directory
-npm run build:all    # Build everything
-
-# Testing (57 tests)
-npm test             # Run all tests + type checking
-npm run test:types   # Type checking only
-npm run test:coverage # Coverage report
-npm run test:watch   # Watch mode
-
-# Cleaning (CRITICAL after TypeScript compilation)
-npm run clean:app    # Remove generated .js files from app/
-npm run clean:src    # Remove generated .js files from src/
-npm run clean:all    # Clean everything
+npm run dev  # Complete development setup - build + watch
 ```
 
-## 🚨 Critical Development Notes
+That's it! This single command:
+1. Builds TypeScript (src/ → dist/)
+2. Builds app examples (app/ → examples/)
+3. Starts **mise** file watching for automatic regeneration
 
-### TypeScript Compilation
-- **NEVER** commit `.js` files in `src/` or `app/` directories
-- Always run cleanup commands after compilation
-- Use separate tsconfig.json for `app/` directory
-- The main tsconfig.json excludes `app/` to prevent conflicts
+## Core Commands
 
-### File Management
-- Generated JS files should ONLY exist in `dist/`
-- Use `npm run clean:app` after any app compilation
-- Use `npm run clean:src` if JS files appear in src/
-- The project uses `"noEmitOnError": true` for safety
+### Development
+- `npm run dev` - **Main development command** (mise handles watching)
+- `npm run dev:build` - Build both src/ and app/
+- `npm run dev:regen` - Regenerate CLI manually
 
-### Testing Strategy
-- 57 tests across 7 test suites - DO NOT BREAK THESE
-- Test files: `*.test.ts` in relevant directories
-- Use `npm run test:watch` for TDD workflow
-- Always run full test suite before major changes
+### Testing & Quality
+- `npm run test` - Run all tests
+- `npm run test:watch` - Watch mode testing
+- `npm run lint` - Check code quality
+- `npm run lint:fix` - Fix linting issues
+- `npm run format` - Format code
 
-## 🚀 Workflow Tips
+### Building
+- `npm run build` - Build src/ only
+- `npm run build:app` - Build app/ only
 
-### For New Features
-1. Start with tests (`*.test.ts`)
-2. Implement in TypeScript
-3. Update examples in `app/` if needed
-4. Update documentation
-5. Run full test suite
+## File Watching with mise
 
-### For Bug Fixes
-1. Write failing test first
-2. Fix the implementation
-3. Ensure all tests pass
-4. Clean up any generated files
+Development uses **[mise](https://mise.jdx.dev/)** for file watching:
 
-### For Refactoring
-1. Ensure tests cover existing behavior
-2. Make incremental changes
-3. Run tests frequently
-4. Update documentation last
+```toml
+# mise.toml
+[tasks.regenerate]
+description = "TypeScript をビルドしてCLIを再生成"
+run = [
+  "npm run dev:build",
+  "npm run dev:regen",
+  "sed -i '' 's|\\.\\./app/|\\.\\./examples/|g' dist/generated-cli.js"
+]
+sources = ["src/**/*.ts", "app/**/*.ts"]
+```
 
-### Debugging Issues
-1. Check TypeScript compilation: `npm run test:types`
-2. Run specific test suite: `vitest run path/to/test.ts`
-3. Clean generated files: `npm run clean:all`
-4. Rebuild everything: `npm run build:all`
+**Benefits:**
+- ✅ Clean separation of concerns
+- ✅ Cross-platform file watching
+- ✅ No Node.js watch complexities
+- ✅ Simple `npm run dev` command
+
+## Development Flow
+
+1. **Start development:**
+```bash
+npm run dev
+```
+
+2. **Edit files:**
+  - Change `src/**/*.ts` → Auto rebuild core
+  - Change `app/**/*.ts` → Auto rebuild examples + regenerate CLI
+
+3. **Test your changes:**
+```bash
+node dist/generated-cli.js <your-command>
+```
+
+4. **Run tests:**
+```bash
+npm run test:watch
+```
+
+## File Structure Management
+
+### Source Files (TypeScript only)
+- `src/` - Core source code
+- `app/` - Example CLI application
+
+### Build Output
+- `dist/` - Compiled core (`src/` → `dist/`)
+- `examples/` - Compiled examples (`app/` → `examples/`)
+- `dist/generated-cli.js` - Final CLI with fixed import paths
+
+### Key Files
+- `mise.toml` - File watching and task definitions
+- `tsconfig.json` - Core TypeScript config
+- `app/tsconfig.json` - App-specific config with `outDir: "../examples"`
+
+## Dependencies
+
+### Required for Development
+- **mise** - File watching and task runner
+- **watchexec** - File watching backend (installed via brew)
+
+### Installation
+```bash
+# Install mise (one-time setup)
+curl https://mise.jdx.dev/install.sh | sh
+echo 'eval "$(~/.local/bin/mise activate zsh)"' >> ~/.zshrc
+
+# Install watchexec
+brew install watchexec
+
+# Trust project mise config
+# (prompted automatically on first run)
+```
+
+## Troubleshooting
+
+### mise not found
+```bash
+# Add to shell profile
+echo 'eval "$(~/.local/bin/mise activate zsh)"' >> ~/.zshrc
+source ~/.zshrc
+```
+
+### File watching not working
+```bash
+# Check watchexec installation
+which watchexec
+
+# Check mise tasks
+~/.local/bin/mise tasks ls
+```
+
+### Import path issues
+The development setup automatically fixes import paths from `../app/` to `../examples/` in the generated CLI.

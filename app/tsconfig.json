@@ -11,7 +11,8 @@
     "allowSyntheticDefaultImports": true,
     "noEmitOnError": false,
     "declaration": false,
-    "sourceMap": false
+    "sourceMap": false,
+    "outDir": "../examples"
   },
   "include": [
     "**/*.ts"

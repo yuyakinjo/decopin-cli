@@ -1,4 +1,4 @@
-import type { CommandDefinition, CommandContext } from '../../src/types/command.js';
+import type { CommandDefinition, CommandContext } from '../../dist/types/command.js';
 import type { HelloData } from './params.js';
 
 const command: CommandDefinition<HelloData> = {

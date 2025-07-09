@@ -15,9 +15,10 @@ This is a CLI builder that generates command-line interfaces from file-based rou
 ## 📁 Current Architecture
 
 ### Key Directories
-- `src/` - Core TypeScript source code (no generated files)
-- `app/` - Example CLI application structure (gets compiled to JS)
-- `dist/` - Compiled output directory
+- `src/` - Core TypeScript source code (NO .js files)
+- `app/` - Example CLI application structure (NO .js files)
+- `dist/` - Compiled output from `src/` (TypeScript → JavaScript)
+- `examples/` - Compiled output from `app/` (used by generated CLI)
 
 ### Recent Major Changes (IMPORTANT)
 - **REFACTORED**: `arguments.ts` → `params.ts` files

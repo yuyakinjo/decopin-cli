@@ -341,7 +341,7 @@ To distribute your CLI as an npm package:
 
 2. **Build and publish**:
 ```bash
-npm run build:all
+npm run build && npm run build:app
 npm publish
 ```
 

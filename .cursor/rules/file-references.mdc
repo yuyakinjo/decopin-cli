@@ -1,8 +1,6 @@
----
-description: プロジェクトの重要なファイル一覧とリファレンス
-globs: []
-alwaysApply: false
----
+file-references
+
+プロジェクトの重要なファイル一覧とリファレンス
 
 # 📚 Important Files to Know
 
@@ -16,6 +14,7 @@ alwaysApply: false
 - `src/types/command.ts` - Core type definitions
 
 ## Configuration Files
+- `mise.toml` - File watching and task definitions (mise)
 - `tsconfig.json` - Main TypeScript config (excludes app/)
 - `app/tsconfig.json` - App-specific TypeScript config
 - `vitest.config.ts` - Test configuration
@@ -41,12 +40,24 @@ alwaysApply: false
 
 ## Generated/Build Files (DO NOT EDIT)
 - `dist/` - Compiled output directory
+- `examples/` - Compiled app examples directory
 - Any `.js` files in `src/` or `app/` (should be cleaned)
 
 ## Documentation
 - `README.md` - Project documentation
 - `.cursor/rules/` - Development rules (this directory)
-- `.cursorrules` - Legacy rules file (to be removed)
+
+## Git/Development
+- `.gitignore` - Ignored files configuration
+- `bun.lock` / `package-lock.json` - Dependency locks
+- `LICENSE` - Project license
+
+## Tool Configuration
+- **mise** (`mise.toml`) - File watching, task runner, development environment
+- **watchexec** (system dependency) - File watching backend for mise
+- **TypeScript** (`tsconfig.json`, `app/tsconfig.json`) - Compilation settings
+- **Vitest** (`vitest.config.ts`) - Testing framework configuration
+- **Biome** (`biome.jsonc`) - Linting and formatting
 
 ## Git/Development
 - `.gitignore` - Ignored files configuration
