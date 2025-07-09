@@ -120,6 +120,9 @@ pids
 
 # VS Code settings
 .vscode/
+# ただし、プロジェクト設定は共有
+!.vscode/settings.json
+!.vscode/extensions.json
 
 # WebStorm settings
 .idea/
