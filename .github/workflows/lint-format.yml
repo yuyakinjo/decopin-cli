@@ -2,7 +2,11 @@ name: Lint and Format
 
 on:
   push:
-    branches: [main, develop]
+
+# 重複実行を防ぐconcurrency設定
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   lint-and-format:
