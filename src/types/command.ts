@@ -66,7 +66,9 @@ export interface CommandContext<T = any> {
 /**
  * コマンドハンドラーの型
  */
-export type CommandHandler<T = any> = (context: CommandContext<T>) => Promise<void> | void;
+export type CommandHandler<T = any> = (
+  context: CommandContext<T>
+) => Promise<void> | void;
 
 /**
  * ミドルウェア関数の型

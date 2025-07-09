@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { buildCLI, listCommands, builderInfo } from './index.js';
+import { buildCLI, builderInfo, listCommands } from './index.js';
 
 /**
  * ヘルプテキストを表示

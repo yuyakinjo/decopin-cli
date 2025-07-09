@@ -1,9 +1,9 @@
 import { writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import type { CommandStructure } from '../scanner/directory-scanner.js';
 import type { ParsedASTResult } from '../parser/ast-parser.js';
-import type { ParsedCommand } from '../types/command.js';
 import { getVersionInfo, type VersionInfo } from '../parser/version-parser.js';
+import type { CommandStructure } from '../scanner/directory-scanner.js';
+import type { ParsedCommand } from '../types/command.js';
 
 /**
  * CLI生成設定

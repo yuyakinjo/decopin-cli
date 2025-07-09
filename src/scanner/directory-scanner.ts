@@ -1,5 +1,5 @@
 import { readdir, stat } from 'node:fs/promises';
-import { join, relative, basename } from 'node:path';
+import { basename, join, relative } from 'node:path';
 import type { DynamicParam } from '../types/command.js';
 
 /**

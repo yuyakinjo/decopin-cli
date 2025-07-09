@@ -1,7 +1,7 @@
-import { describe, it, expect } from 'vitest';
 import * as v from 'valibot';
-import { extractData, createValidationFunction } from './validation.js';
+import { describe, expect, it } from 'vitest';
 import type { ParamsDefinition } from '../types/command.js';
+import { createValidationFunction, extractData } from './validation.js';
 
 describe('validation utils', () => {
   describe('extractData', () => {
@@ -9,12 +9,12 @@ describe('validation utils', () => {
       const paramsDefinition: ParamsDefinition = {
         schema: v.object({
           name: v.string(),
-          age: v.number()
+          age: v.number(),
         }),
         mappings: [
           { field: 'name', option: 'name' },
-          { field: 'age', option: 'age' }
-        ]
+          { field: 'age', option: 'age' },
+        ],
       };
 
       const result = extractData(
@@ -31,12 +31,12 @@ describe('validation utils', () => {
       const paramsDefinition: ParamsDefinition = {
         schema: v.object({
           name: v.string(),
-          email: v.string()
+          email: v.string(),
         }),
         mappings: [
           { field: 'name', argIndex: 0 },
-          { field: 'email', argIndex: 1 }
-        ]
+          { field: 'email', argIndex: 1 },
+        ],
       };
 
       const result = extractData(
@@ -53,12 +53,12 @@ describe('validation utils', () => {
       const paramsDefinition: ParamsDefinition = {
         schema: v.object({
           name: v.string(),
-          email: v.string()
+          email: v.string(),
         }),
         mappings: [
           { field: 'name', option: 'name', argIndex: 0 },
-          { field: 'email', option: 'email', argIndex: 1 }
-        ]
+          { field: 'email', option: 'email', argIndex: 1 },
+        ],
       };
 
       const result = extractData(
@@ -70,7 +70,7 @@ describe('validation utils', () => {
 
       expect(result).toEqual({
         name: 'OptionName', // オプションが優先される
-        email: 'position@example.com' // 位置引数が使用される
+        email: 'position@example.com', // 位置引数が使用される
       });
     });
 
@@ -78,20 +78,15 @@ describe('validation utils', () => {
       const paramsDefinition: ParamsDefinition = {
         schema: v.object({
           name: v.string(),
-          greeting: v.string()
+          greeting: v.string(),
         }),
         mappings: [
           { field: 'name', option: 'name', argIndex: 0 },
-          { field: 'greeting', option: 'greeting', defaultValue: 'Hello' }
-        ]
+          { field: 'greeting', option: 'greeting', defaultValue: 'Hello' },
+        ],
       };
 
-      const result = extractData(
-        ['John'],
-        {},
-        {},
-        paramsDefinition
-      );
+      const result = extractData(['John'], {}, {}, paramsDefinition);
 
       expect(result).toEqual({ name: 'John', greeting: 'Hello' });
     });
@@ -101,13 +96,13 @@ describe('validation utils', () => {
         schema: v.object({
           name: v.string(),
           age: v.number(),
-          city: v.string()
+          city: v.string(),
         }),
         mappings: [
           { field: 'name', option: 'name', argIndex: 0 },
           { field: 'age', option: 'age', argIndex: 1 },
-          { field: 'city', option: 'city', defaultValue: 'Tokyo' }
-        ]
+          { field: 'city', option: 'city', defaultValue: 'Tokyo' },
+        ],
       };
 
       const result = extractData(
@@ -120,7 +115,7 @@ describe('validation utils', () => {
       expect(result).toEqual({
         name: 'John',
         age: 25,
-        city: 'Osaka' // オプションでデフォルト値を上書き
+        city: 'Osaka', // オプションでデフォルト値を上書き
       });
     });
   });
@@ -130,21 +125,17 @@ describe('validation utils', () => {
       const paramsDefinition: ParamsDefinition = {
         schema: v.object({
           name: v.pipe(v.string(), v.minLength(1)),
-          email: v.pipe(v.string(), v.email())
+          email: v.pipe(v.string(), v.email()),
         }),
         mappings: [
           { field: 'name', option: 'name', argIndex: 0 },
-          { field: 'email', option: 'email', argIndex: 1 }
-        ]
+          { field: 'email', option: 'email', argIndex: 1 },
+        ],
       };
 
       const validate = createValidationFunction(paramsDefinition);
 
-      const result = await validate(
-        ['John', 'john@example.com'],
-        {},
-        {}
-      );
+      const result = await validate(['John', 'john@example.com'], {}, {});
 
       expect(result.success).toBe(true);
       expect(result.data).toEqual({ name: 'John', email: 'john@example.com' });
@@ -154,21 +145,17 @@ describe('validation utils', () => {
       const paramsDefinition: ParamsDefinition = {
         schema: v.object({
           name: v.pipe(v.string(), v.minLength(1)),
-          email: v.pipe(v.string(), v.email())
+          email: v.pipe(v.string(), v.email()),
         }),
         mappings: [
           { field: 'name', option: 'name', argIndex: 0 },
-          { field: 'email', option: 'email', argIndex: 1 }
-        ]
+          { field: 'email', option: 'email', argIndex: 1 },
+        ],
       };
 
       const validate = createValidationFunction(paramsDefinition);
 
-      const result = await validate(
-        ['', 'invalid-email'],
-        {},
-        {}
-      );
+      const result = await validate(['', 'invalid-email'], {}, {});
 
       expect(result.success).toBe(false);
       expect(result.error).toBeDefined();
@@ -181,21 +168,17 @@ describe('validation utils', () => {
       const paramsDefinition: ParamsDefinition = {
         schema: v.object({
           name: v.pipe(v.string(), v.minLength(1)),
-          greeting: v.string()
+          greeting: v.string(),
         }),
         mappings: [
           { field: 'name', option: 'name', argIndex: 0 },
-          { field: 'greeting', option: 'greeting', defaultValue: 'Hello' }
-        ]
+          { field: 'greeting', option: 'greeting', defaultValue: 'Hello' },
+        ],
       };
 
       const validate = createValidationFunction(paramsDefinition);
 
-      const result = await validate(
-        ['World'],
-        {},
-        {}
-      );
+      const result = await validate(['World'], {}, {});
 
       expect(result.success).toBe(true);
       expect(result.data).toEqual({ name: 'World', greeting: 'Hello' });
@@ -204,20 +187,14 @@ describe('validation utils', () => {
     it('should handle validation errors gracefully', async () => {
       const paramsDefinition: ParamsDefinition = {
         schema: v.object({
-          count: v.number()
+          count: v.number(),
         }),
-        mappings: [
-          { field: 'count', option: 'count', argIndex: 0 }
-        ]
+        mappings: [{ field: 'count', option: 'count', argIndex: 0 }],
       };
 
       const validate = createValidationFunction(paramsDefinition);
 
-      const result = await validate(
-        ['not-a-number'],
-        {},
-        {}
-      );
+      const result = await validate(['not-a-number'], {}, {});
 
       expect(result.success).toBe(false);
       expect(result.error).toBeDefined();

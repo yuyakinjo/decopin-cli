@@ -1,6 +1,6 @@
-import { describe, it, expect } from 'vitest';
-import { generateCLI } from './cli-generator.js';
+import { describe, expect, it } from 'vitest';
 import type { ParsedCommand } from '../types/command.js';
+import { generateCLI } from './cli-generator.js';
 
 describe('CLI Generator - Params Support', () => {
   it('should generate CLI with params mapping', async () => {
@@ -12,12 +12,12 @@ describe('CLI Generator - Params Support', () => {
         definition: {
           metadata: {
             name: 'create',
-            description: 'Create a new user'
+            description: 'Create a new user',
           },
-          handler: async () => {}
+          handler: async () => {},
         },
-        dynamicParams: []
-      }
+        dynamicParams: [],
+      },
     ];
 
     const config = {
@@ -25,7 +25,7 @@ describe('CLI Generator - Params Support', () => {
       cliName: 'test-cli',
       appDir: 'app',
       version: '1.0.0',
-      description: 'Test CLI'
+      description: 'Test CLI',
     };
 
     const result = await generateCLI(config, commands);
@@ -44,11 +44,11 @@ describe('CLI Generator - Params Support', () => {
         definition: {
           metadata: {
             name: 'create',
-            description: 'Create a new user'
+            description: 'Create a new user',
           },
-          handler: async () => {}
+          handler: async () => {},
         },
-        dynamicParams: []
+        dynamicParams: [],
       },
       {
         path: 'hello',
@@ -57,12 +57,12 @@ describe('CLI Generator - Params Support', () => {
         definition: {
           metadata: {
             name: 'hello',
-            description: 'Say hello'
+            description: 'Say hello',
           },
-          handler: async () => {}
+          handler: async () => {},
         },
-        dynamicParams: []
-      }
+        dynamicParams: [],
+      },
     ];
 
     const config = {
@@ -70,7 +70,7 @@ describe('CLI Generator - Params Support', () => {
       cliName: 'test-cli',
       appDir: 'app',
       version: '1.0.0',
-      description: 'Test CLI'
+      description: 'Test CLI',
     };
 
     const result = await generateCLI(config, commands);
@@ -89,15 +89,17 @@ describe('CLI Generator - Params Support', () => {
         definition: {
           metadata: {
             name: 'user-detail',
-            description: 'Get user details'
+            description: 'Get user details',
           },
-          handler: async () => {}
+          handler: async () => {},
         },
-        dynamicParams: [{
-          name: 'id',
-          optional: false
-        }]
-      }
+        dynamicParams: [
+          {
+            name: 'id',
+            optional: false,
+          },
+        ],
+      },
     ];
 
     const config = {
@@ -105,7 +107,7 @@ describe('CLI Generator - Params Support', () => {
       cliName: 'test-cli',
       appDir: 'app',
       version: '1.0.0',
-      description: 'Test CLI'
+      description: 'Test CLI',
     };
 
     const result = await generateCLI(config, commands);
@@ -123,7 +125,7 @@ describe('CLI Generator - Params Support', () => {
       cliName: 'test-cli',
       appDir: 'app',
       version: '1.0.0',
-      description: 'Test CLI'
+      description: 'Test CLI',
     };
 
     const result = await generateCLI(config, commands);
@@ -142,12 +144,12 @@ describe('CLI Generator - Params Support', () => {
         definition: {
           metadata: {
             name: 'test',
-            description: 'Test command'
+            description: 'Test command',
           },
-          handler: async () => {}
+          handler: async () => {},
         },
-        dynamicParams: []
-      }
+        dynamicParams: [],
+      },
     ];
 
     const config = {
@@ -156,7 +158,7 @@ describe('CLI Generator - Params Support', () => {
       appDir: 'app',
       outputFileName: 'custom.js',
       version: '2.0.0',
-      description: 'My custom CLI'
+      description: 'My custom CLI',
     };
 
     const result = await generateCLI(config, commands);
@@ -175,12 +177,12 @@ describe('CLI Generator - Params Support', () => {
         definition: {
           metadata: {
             name: 'create',
-            description: 'Create a new user'
+            description: 'Create a new user',
           },
-          handler: async () => {}
+          handler: async () => {},
         },
-        dynamicParams: []
-      }
+        dynamicParams: [],
+      },
     ];
 
     const config = {
@@ -188,7 +190,7 @@ describe('CLI Generator - Params Support', () => {
       cliName: 'test-cli',
       appDir: 'app',
       version: '1.0.0',
-      description: 'Test CLI'
+      description: 'Test CLI',
     };
 
     const result = await generateCLI(config, commands);

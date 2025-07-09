@@ -1,5 +1,4 @@
-import { readFile } from 'node:fs/promises';
-import { stat } from 'node:fs/promises';
+import { readFile, stat } from 'node:fs/promises';
 import { join } from 'node:path';
 import * as ts from 'typescript';
 
@@ -74,7 +73,9 @@ function extractVersionInfo(sourceFile: ts.SourceFile): VersionInfo | null {
           declaration.initializer &&
           ts.isObjectLiteralExpression(declaration.initializer)
         ) {
-          metadata = parseObjectLiteral(declaration.initializer) as VersionInfo['metadata'];
+          metadata = parseObjectLiteral(
+            declaration.initializer
+          ) as VersionInfo['metadata'];
         }
       }
     }
@@ -108,7 +109,9 @@ function extractVersionInfo(sourceFile: ts.SourceFile): VersionInfo | null {
 /**
  * オブジェクトリテラルを解析
  */
-function parseObjectLiteral(objectLiteral: ts.ObjectLiteralExpression): Record<string, unknown> {
+function parseObjectLiteral(
+  objectLiteral: ts.ObjectLiteralExpression
+): Record<string, unknown> {
   const result: Record<string, unknown> = {};
 
   for (const property of objectLiteral.properties) {

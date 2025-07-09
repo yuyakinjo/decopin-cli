@@ -84,7 +84,9 @@ function extractCommandDefinition(
       const modifiers = ts.canHaveModifiers(node)
         ? ts.getModifiers(node)
         : undefined;
-      const isExported = modifiers?.some((m) => m.kind === ts.SyntaxKind.ExportKeyword);
+      const isExported = modifiers?.some(
+        (m) => m.kind === ts.SyntaxKind.ExportKeyword
+      );
 
       for (const declaration of node.declarationList.declarations) {
         if (ts.isIdentifier(declaration.name)) {
@@ -128,11 +130,13 @@ function extractCommandDefinition(
                 declaration.initializer
               );
               // handlerプロパティの存在をチェック
-              const hasHandlerProperty = declaration.initializer.properties.some(
-                (prop) => ts.isPropertyAssignment(prop) &&
-                         ts.isIdentifier(prop.name) &&
-                         prop.name.text === 'handler'
-              );
+              const hasHandlerProperty =
+                declaration.initializer.properties.some(
+                  (prop) =>
+                    ts.isPropertyAssignment(prop) &&
+                    ts.isIdentifier(prop.name) &&
+                    prop.name.text === 'handler'
+                );
               if (hasHandlerProperty) {
                 variableDefinitions.set(name, definition);
               }

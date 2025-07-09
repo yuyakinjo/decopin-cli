@@ -1,8 +1,5 @@
-import { describe, it, expect } from 'vitest';
 import * as v from 'valibot';
-import { readFile } from 'node:fs/promises';
-import { join } from 'node:path';
-import { pathToFileURL } from 'node:url';
+import { describe, expect, it } from 'vitest';
 
 describe('params.ts files', () => {
   describe('user/create/params.ts', () => {
@@ -43,13 +40,13 @@ describe('params.ts files', () => {
       // スキーマで正常なデータを検証
       const validResult = v.safeParse(paramsDefinition.schema as any, {
         name: 'John Doe',
-        email: 'john@example.com'
+        email: 'john@example.com',
       });
 
       expect(validResult.success).toBe(true);
       expect(validResult.output).toEqual({
         name: 'John Doe',
-        email: 'john@example.com'
+        email: 'john@example.com',
       });
     });
 
@@ -60,7 +57,7 @@ describe('params.ts files', () => {
       // 無効なデータ（空のname）
       const invalidResult1 = v.safeParse(paramsDefinition.schema as any, {
         name: '',
-        email: 'john@example.com'
+        email: 'john@example.com',
       });
 
       expect(invalidResult1.success).toBe(false);
@@ -68,7 +65,7 @@ describe('params.ts files', () => {
       // 無効なデータ（不正なemail）
       const invalidResult2 = v.safeParse(paramsDefinition.schema as any, {
         name: 'John',
-        email: 'invalid-email'
+        email: 'invalid-email',
       });
 
       expect(invalidResult2.success).toBe(false);
@@ -115,12 +112,12 @@ describe('params.ts files', () => {
 
       // スキーマで正常なデータを検証
       const validResult = v.safeParse(paramsDefinition.schema as any, {
-        name: 'Alice'
+        name: 'Alice',
       });
 
       expect(validResult.success).toBe(true);
       expect(validResult.output).toEqual({
-        name: 'Alice'
+        name: 'Alice',
       });
     });
 
@@ -130,7 +127,7 @@ describe('params.ts files', () => {
 
       // 無効なデータ（空のname）
       const invalidResult = v.safeParse(paramsDefinition.schema as any, {
-        name: ''
+        name: '',
       });
 
       expect(invalidResult.success).toBe(false);

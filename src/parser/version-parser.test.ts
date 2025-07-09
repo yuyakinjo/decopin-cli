@@ -1,10 +1,10 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { mkdir, writeFile, rm } from 'node:fs/promises';
+import { mkdir, rm, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import {
+  getVersionInfo,
   hasVersionFile,
   parseVersionFile,
-  getVersionInfo,
 } from './version-parser.js';
 
 describe('Version Parser', () => {

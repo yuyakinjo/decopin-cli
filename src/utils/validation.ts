@@ -1,8 +1,5 @@
 import * as v from 'valibot';
-import type {
-  ParamsDefinition,
-  ValidationFunction
-} from '../types/command.js';
+import type { ParamsDefinition, ValidationFunction } from '../types/command.js';
 
 /**
  * パラメータからデータを抽出
@@ -23,7 +20,10 @@ export function extractData(
       value = options[mapping.option];
     }
     // 位置引数から値を取得
-    else if (mapping.argIndex !== undefined && args[mapping.argIndex] !== undefined) {
+    else if (
+      mapping.argIndex !== undefined &&
+      args[mapping.argIndex] !== undefined
+    ) {
       value = args[mapping.argIndex];
     }
     // デフォルト値を使用
@@ -61,8 +61,8 @@ export function createValidationFunction(
           success: false,
           error: {
             message: 'Validation failed',
-            issues: result.issues.map(issue => ({
-              path: issue.path?.map((p: any) => p.key as string) || [],
+            issues: result.issues.map((issue) => ({
+              path: issue.path?.map((p: { key: string }) => p.key) || [],
               message: issue.message,
             })),
           },
@@ -72,7 +72,8 @@ export function createValidationFunction(
       return {
         success: false,
         error: {
-          message: error instanceof Error ? error.message : 'Unknown validation error',
+          message:
+            error instanceof Error ? error.message : 'Unknown validation error',
         },
       };
     }
