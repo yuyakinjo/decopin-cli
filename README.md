@@ -12,7 +12,6 @@ A TypeScript-first CLI builder inspired by Next.js App Router's file-based routi
 - **🎯 Flexible argument handling**: Support for both positional arguments and named options
 - **🔄 Real-time development**: Changes reflect instantly without restarts
 - **📦 Zero configuration**: Works out of the box with sensible defaults
-- **🧪 Comprehensive testing**: Full test coverage with 57 tests across 7 test suites
 
 ## 🚀 Quick Start
 
@@ -110,7 +109,6 @@ my-cli/
 │           └── params.ts  # Validation for database seed
 ├── dist/                  # Generated CLI output
 │   └── cli.js            # Your generated CLI
-├── src/                   # Source code (if extending)
 └── package.json
 ```
 
@@ -238,78 +236,6 @@ export const description = 'An awesome CLI built with decopin-cli';
 export const author = 'Your Name';
 ```
 
-## ⚡ Development Workflow
-
-The development experience is designed to be as smooth as Next.js development:
-
-### 1. Quick Development Setup
-
-```bash
-# Show development commands
-npm run dev
-
-# Terminal 1: Watch source files
-npm run dev:src
-
-# Terminal 2: Watch app directory
-npm run dev:app
-
-# After changes: Regenerate CLI
-npm run dev:regen
-
-# Test generated CLI
-npm run dev:test
-npm run dev:test:all
-```
-
-### 2. Build Commands
-
-```bash
-# Build TypeScript source
-npm run build
-
-# Build app directory
-npm run build:app
-
-# Build everything
-npm run build:all
-```
-
-### 3. Testing Commands
-
-```bash
-# Run all tests (57 tests across 7 suites)
-npm test
-
-# Type checking only
-npm run test:types
-
-# Unit tests with coverage
-npm run test:coverage
-
-# Watch mode for development
-npm run test:watch
-
-# Test app compilation
-npm run test:app
-```
-
-### 4. Cleaning Commands
-
-```bash
-# Clean dist directory
-npm run clean
-
-# Clean generated .js files from app directory
-npm run clean:app
-
-# Clean generated .js files from src directory
-npm run clean:src
-
-# Clean everything
-npm run clean:all
-```
-
 ## 📋 CLI Options
 
 ### Build Command
@@ -340,54 +266,6 @@ decopin-cli --version
 ```
 
 Shows the current version of decopin-cli.
-
-## 🧪 Testing
-
-decopin-cli comes with a comprehensive test suite using Vitest:
-
-```bash
-npm test
-```
-
-**Test Coverage (57 tests across 7 suites):**
-- Directory scanning (6 tests)
-- AST parsing (8 tests)
-- Version parsing (6 tests)
-- Validation utility (9 tests)
-- Params validation (9 tests)
-- CLI generator (6 tests)
-- Integration tests (13 tests)
-
-### Example Test Structure
-
-```typescript
-// src/utils/validation.test.ts
-import { describe, it, expect } from 'vitest';
-import { extractData, createValidationFunction } from './validation';
-import * as v from 'valibot';
-
-describe('Validation Utils', () => {
-  const schema = v.object({
-    name: v.optional(v.string(), 'default'),
-    age: v.optional(v.number(), 25)
-  });
-
-  const fieldMappings = {
-    name: { position: 0, option: 'name' },
-    age: { position: 1, option: 'age' }
-  };
-
-  it('should extract data with positional arguments', () => {
-    const result = extractData(['Alice', '30'], {}, fieldMappings, schema);
-    expect(result).toEqual({ name: 'Alice', age: 30 });
-  });
-
-  it('should extract data with options', () => {
-    const result = extractData([], { name: 'Bob', age: '25' }, fieldMappings, schema);
-    expect(result).toEqual({ name: 'Bob', age: 25 });
-  });
-});
-```
 
 ## 🔍 Advanced Features
 
@@ -433,15 +311,6 @@ export default {
 };
 ```
 
-### TypeScript Configuration
-
-The project uses an optimized TypeScript configuration:
-
-- Separate compilation for `src/` and `app/` directories
-- Automatic cleanup of generated JavaScript files
-- Incremental compilation for faster builds
-- Strict type checking with comprehensive error reporting
-
 ## 📦 Distribution
 
 ### NPM Package
@@ -482,19 +351,17 @@ npm install -g my-awesome-cli
 my-cli hello
 ```
 
+## 🧪 Testing
+
+decopin-cli includes comprehensive testing capabilities. Run tests with:
+
+```bash
+npm test
+```
+
 ## 🤝 Contributing
 
 We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
-
-### Development Setup
-
-```bash
-git clone https://github.com/your-username/decopin-cli.git
-cd decopin-cli
-npm install
-npm run build:all
-npm test
-```
 
 ## 📝 License
 
@@ -505,7 +372,6 @@ MIT License - see [LICENSE](LICENSE) for details.
 - Inspired by Next.js App Router's file-based routing
 - Built with TypeScript and modern Node.js features
 - Powered by valibot for type-safe validation
-- Comprehensive testing with Vitest
 
 ---
 
