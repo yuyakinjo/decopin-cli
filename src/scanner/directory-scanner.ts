@@ -16,6 +16,12 @@ export interface DirectoryEntry {
   isDirectory: boolean;
   /** command.tsファイルかどうか */
   isCommand: boolean;
+  /** validate.tsファイルかどうか */
+  isValidate: boolean;
+  /** error.tsファイルかどうか */
+  isError: boolean;
+  /** params.tsファイルかどうか */
+  isParams: boolean;
   /** 動的パラメータかどうか（[id]形式） */
   isDynamic: boolean;
   /** 動的パラメータ情報 */
@@ -34,6 +40,12 @@ export interface CommandStructure {
   dynamicParams: DynamicParam[];
   /** command.tsファイルのパス */
   commandFilePath: string;
+  /** validate.tsファイルのパス */
+  validateFilePath?: string;
+  /** error.tsファイルのパス */
+  errorFilePath?: string;
+  /** params.tsファイルのパス */
+  paramsFilePath?: string;
   /** 深度 */
   depth: number;
 }
@@ -76,6 +88,9 @@ async function parseDirectoryEntry(
     relativePath,
     isDirectory: stats.isDirectory(),
     isCommand: name === 'command.ts',
+    isValidate: name === 'validate.ts',
+    isError: name === 'error.ts',
+    isParams: name === 'params.ts',
     isDynamic: isDynamicSegment(name),
   };
 
@@ -146,13 +161,39 @@ function buildCommandStructures(
 
     const commandPath = processedSegments.join('/');
 
-    structures.push({
+    // 同じディレクトリ内のvalidate.ts、error.ts、params.tsを検索
+    const commandDir = commandFile.path.replace('/command.ts', '');
+    const validateFile = entries.find(
+      (entry) => entry.path === `${commandDir}/validate.ts`
+    );
+    const errorFile = entries.find(
+      (entry) => entry.path === `${commandDir}/error.ts`
+    );
+    const paramsFile = entries.find(
+      (entry) => entry.path === `${commandDir}/params.ts`
+    );
+
+    const structure: CommandStructure = {
       path: commandPath,
       segments: processedSegments,
       dynamicParams,
       commandFilePath: commandFile.path,
       depth: segments.length,
-    });
+    };
+
+    if (validateFile) {
+      structure.validateFilePath = validateFile.path;
+    }
+
+    if (errorFile) {
+      structure.errorFilePath = errorFile.path;
+    }
+
+    if (paramsFile) {
+      structure.paramsFilePath = paramsFile.path;
+    }
+
+    structures.push(structure);
   }
 
   return structures.sort((a, b) => a.depth - b.depth);

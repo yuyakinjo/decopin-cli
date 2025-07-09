@@ -34,8 +34,9 @@
     "format:check": "biome format .",
     "format:fix": "biome format --write .",
     "clean": "rm -rf dist",
-    "clean:app": "find app -name '*.js' -type f -delete",
-    "clean:all": "npm run clean && npm run clean:app",
+    "clean:app": "find app -name '*.js' -type f -delete && find app -name '*.d.ts' -type f -delete && find app -name '*.js.map' -type f -delete && find app -name '*.d.ts.map' -type f -delete",
+    "clean:src": "find src -name '*.js' -type f -delete && find src -name '*.d.ts' -type f -delete && find src -name '*.js.map' -type f -delete && find src -name '*.d.ts.map' -type f -delete",
+    "clean:all": "npm run clean && npm run clean:app && npm run clean:src",
     "prepublishOnly": "npm run clean && npm run build"
   },
   "keywords": [

@@ -116,7 +116,7 @@ function extractCommandDefinition(
             // 型注釈をチェック
             if (declaration.type) {
               const typeText = declaration.type.getText();
-              if (typeText === 'CommandDefinition') {
+              if (typeText.startsWith('CommandDefinition')) {
                 const definition = parseObjectLiteralAsCommandDefinition(
                   declaration.initializer
                 );

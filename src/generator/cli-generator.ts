@@ -60,6 +60,26 @@ function generateMainCLI(
     })
     .join(',\n');
 
+  // バリデーションルートの生成
+  const validateRoutes = commands
+    .map((cmd) => {
+      const routeKey = cmd.path || 'root';
+      const dirPath = cmd.filePath.replace('/command.ts', '');
+      const validatePath = `../${dirPath}/validate.js`;
+      return `  '${routeKey}': () => import('${validatePath}').then(m => m.default).catch(() => null)`;
+    })
+    .join(',\n');
+
+  // エラーハンドラールートの生成
+  const errorRoutes = commands
+    .map((cmd) => {
+      const routeKey = cmd.path || 'root';
+      const dirPath = cmd.filePath.replace('/command.ts', '');
+      const errorPath = `../${dirPath}/error.js`;
+      return `  '${routeKey}': () => import('${errorPath}').then(m => m.default).catch(() => null)`;
+    })
+    .join(',\n');
+
   // ヘルプテキストの生成
   const helpCommands = commands
     .map((cmd) => {
@@ -73,6 +93,14 @@ function generateMainCLI(
 
 const commandRoutes = {
 ${commandRoutes}
+};
+
+const validateRoutes = {
+${validateRoutes}
+};
+
+const errorRoutes = {
+${errorRoutes}
 };
 
 function parseArguments(args) {
@@ -111,7 +139,7 @@ function matchCommand(segments) {
     .filter((cmd) => cmd.dynamicParams.length === 0)
     .map(
       (cmd) => `
-  if (segments.length === ${cmd.segments.length} && ${cmd.segments.map((s, i) => `segments[${i}] === '${s}'`).join(' && ')}) {
+  if (segments.length >= ${cmd.segments.length} && ${cmd.segments.map((s, i) => `segments[${i}] === '${s}'`).join(' && ')}) {
     return { command: ${JSON.stringify(cmd)}, params };
   }`
     )
@@ -122,7 +150,7 @@ function matchCommand(segments) {
     .filter((cmd) => cmd.dynamicParams.length > 0)
     .map(
       (cmd) => `
-  if (segments.length === ${cmd.segments.length}) {
+  if (segments.length >= ${cmd.segments.length}) {
     let match = true;
     const tempParams = {};
     ${cmd.segments
@@ -197,6 +225,10 @@ async function main() {
     const commandModule = await commandRoutes[command.path]();
     const commandDefinition = commandModule;
 
+    // バリデーションとエラーハンドラーを動的にインポート
+    const validateFunction = validateRoutes[command.path] ? await validateRoutes[command.path]() : null;
+    const errorHandler = errorRoutes[command.path] ? await errorRoutes[command.path]() : null;
+
     // コンテキストを作成
     const context = {
       args: positional.slice(command.segments.length),
@@ -209,6 +241,30 @@ async function main() {
         }
       }
     };
+
+    // バリデーションを実行
+    if (validateFunction) {
+      const validationResult = await validateFunction(context.args, context.options, context.params);
+
+      if (!validationResult.success) {
+        if (errorHandler) {
+          await errorHandler(validationResult.error);
+        } else {
+          console.error('❌ Validation failed:', validationResult.error.message);
+          if (validationResult.error.issues) {
+            for (const issue of validationResult.error.issues) {
+              const field = issue.path.length > 0 ? issue.path.join('.') : 'unknown';
+              console.error(\`  • \${field}: \${issue.message}\`);
+            }
+          }
+          process.exit(1);
+        }
+        return;
+      }
+
+      // バリデーション成功時、コンテキストにバリデーション済みデータを追加
+      context.validatedData = validationResult.data;
+    }
 
     // ミドルウェアを実行
     if (commandDefinition.middleware) {
