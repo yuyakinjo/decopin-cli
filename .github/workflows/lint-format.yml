@@ -2,8 +2,6 @@ name: Lint and Format
 
 on:
   push:
-  pull_request:
-    branches: [main, develop]
 
 # 重複実行を防ぐconcurrency設定
 concurrency:
