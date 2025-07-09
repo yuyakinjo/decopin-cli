@@ -13,6 +13,31 @@ export interface CommandMetadata {
 }
 
 /**
+ * バリデーション結果
+ */
+export interface ValidationResult<T = any> {
+  /** バリデーションが成功したかどうか */
+  success: boolean;
+  /** バリデーション成功時のデータ */
+  data?: T;
+  /** バリデーション失敗時のエラー */
+  error?: ValidationError;
+}
+
+/**
+ * バリデーションエラー
+ */
+export interface ValidationError {
+  /** エラーメッセージ */
+  message: string;
+  /** フィールド固有のエラー */
+  issues?: Array<{
+    path: string[];
+    message: string;
+  }>;
+}
+
+/**
  * コマンドの引数とオプションの定義
  */
 export interface CommandSchema {
@@ -25,13 +50,15 @@ export interface CommandSchema {
 /**
  * コマンドの実行コンテキスト
  */
-export interface CommandContext {
+export interface CommandContext<T = any> {
   /** 解析された引数 */
-  args: Record<string, any>;
+  args: unknown[];
   /** 解析されたオプション */
-  options: Record<string, any>;
+  options: Record<string, unknown>;
   /** 動的パラメータ（[id]など） */
   params: Record<string, string>;
+  /** バリデーション済みのデータ */
+  validatedData?: T;
   /** ヘルプテキスト表示関数 */
   showHelp: () => void;
 }
@@ -39,28 +66,68 @@ export interface CommandContext {
 /**
  * コマンドハンドラーの型
  */
-export type CommandHandler = (context: CommandContext) => Promise<void> | void;
+export type CommandHandler<T = any> = (
+  context: CommandContext<T>
+) => Promise<void> | void;
 
 /**
  * ミドルウェア関数の型
  */
-export type MiddlewareFunction = (
-  context: CommandContext,
+export type MiddlewareFunction<T = any> = (
+  context: CommandContext<T>,
   next: () => Promise<void> | void
 ) => Promise<void> | void;
 
 /**
+ * バリデーション関数の型
+ */
+export type ValidationFunction = (
+  args: unknown[],
+  options: Record<string, unknown>,
+  params: Record<string, string>
+) => Promise<ValidationResult> | ValidationResult;
+
+/**
+ * パラメータのマッピング定義
+ */
+export interface ParamMapping {
+  /** フィールド名 */
+  field: string;
+  /** オプション名（--name など） */
+  option?: string;
+  /** 位置引数のインデックス */
+  argIndex?: number;
+  /** デフォルト値 */
+  defaultValue?: unknown;
+}
+
+/**
+ * パラメータの定義
+ */
+export interface ParamsDefinition {
+  /** valibotのschema */
+  schema: unknown;
+  /** パラメータのマッピング */
+  mappings: ParamMapping[];
+}
+
+/**
+ * エラーハンドラーの型
+ */
+export type ErrorHandler = (error: ValidationError) => Promise<void> | void;
+
+/**
  * command.tsファイルでエクスポートすべき型
  */
-export interface CommandDefinition {
+export interface CommandDefinition<T = any> {
   /** コマンドのメタデータ */
   metadata?: CommandMetadata;
   /** 引数とオプションのスキーマ */
   schema?: CommandSchema;
   /** ミドルウェア関数 */
-  middleware?: MiddlewareFunction[];
+  middleware?: MiddlewareFunction<T>[];
   /** メインのハンドラー関数 */
-  handler: CommandHandler;
+  handler: CommandHandler<T>;
 }
 
 /**
@@ -76,7 +143,7 @@ export interface DynamicParam {
 /**
  * 解析されたコマンド情報
  */
-export interface ParsedCommand {
+export interface ParsedCommand<T = any> {
   /** コマンドパス（例: 'user/create'） */
   path: string;
   /** セグメント（例: ['user', 'create']） */
@@ -86,5 +153,9 @@ export interface ParsedCommand {
   /** ファイルパス */
   filePath: string;
   /** コマンド定義 */
-  definition: CommandDefinition;
+  definition: CommandDefinition<T>;
+  /** バリデーション関数 */
+  validate?: ValidationFunction;
+  /** エラーハンドラー */
+  errorHandler?: ErrorHandler;
 }

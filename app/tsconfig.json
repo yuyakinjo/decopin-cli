@@ -4,16 +4,15 @@
     "module": "ESNext",
     "moduleResolution": "node",
     "lib": ["ES2022"],
-    "outDir": "./",
-    "rootDir": "./",
-    "strict": false,
+    "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "allowSyntheticDefaultImports": true,
     "noEmitOnError": false,
     "declaration": false,
-    "sourceMap": false
+    "sourceMap": false,
+    "outDir": "../examples"
   },
   "include": [
     "**/*.ts"

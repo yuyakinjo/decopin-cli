@@ -1,5 +1,4 @@
-import { readFile } from 'node:fs/promises';
-import { stat } from 'node:fs/promises';
+import { readFile, stat } from 'node:fs/promises';
 import { join } from 'node:path';
 import * as ts from 'typescript';
 
@@ -14,7 +13,7 @@ export interface VersionInfo {
     name?: string;
     description?: string;
     author?: string;
-    [key: string]: any;
+    [key: string]: unknown;
   };
 }
 
@@ -49,7 +48,7 @@ export async function hasVersionFile(appDir: string): Promise<boolean> {
 function extractVersionInfo(sourceFile: ts.SourceFile): VersionInfo | null {
   let versionInfo: VersionInfo | null = null;
   let version: string | null = null;
-  let metadata: any = null;
+  let metadata: VersionInfo['metadata'] | null = null;
 
   function visit(node: ts.Node) {
     // export const version = "1.0.0" の形式
@@ -74,7 +73,9 @@ function extractVersionInfo(sourceFile: ts.SourceFile): VersionInfo | null {
           declaration.initializer &&
           ts.isObjectLiteralExpression(declaration.initializer)
         ) {
-          metadata = parseObjectLiteral(declaration.initializer);
+          metadata = parseObjectLiteral(
+            declaration.initializer
+          ) as VersionInfo['metadata'];
         }
       }
     }
@@ -98,7 +99,7 @@ function extractVersionInfo(sourceFile: ts.SourceFile): VersionInfo | null {
   if (version) {
     versionInfo = {
       version,
-      ...(metadata && { metadata }),
+      ...(metadata ? { metadata } : {}),
     };
   }
 
@@ -108,8 +109,10 @@ function extractVersionInfo(sourceFile: ts.SourceFile): VersionInfo | null {
 /**
  * オブジェクトリテラルを解析
  */
-function parseObjectLiteral(objectLiteral: ts.ObjectLiteralExpression): any {
-  const result: any = {};
+function parseObjectLiteral(
+  objectLiteral: ts.ObjectLiteralExpression
+): Record<string, unknown> {
+  const result: Record<string, unknown> = {};
 
   for (const property of objectLiteral.properties) {
     if (ts.isPropertyAssignment(property) && ts.isIdentifier(property.name)) {
@@ -127,7 +130,7 @@ function parseObjectLiteral(objectLiteral: ts.ObjectLiteralExpression): any {
 /**
  * リテラル値を抽出
  */
-function extractLiteralValue(node: ts.Expression): any {
+function extractLiteralValue(node: ts.Expression): unknown {
   if (ts.isStringLiteral(node)) {
     return node.text;
   }

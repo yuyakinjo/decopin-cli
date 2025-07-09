@@ -2,7 +2,11 @@ name: Test
 
 on:
   push:
-    branches: [main, develop]
+
+# 重複実行を防ぐconcurrency設定
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   test:
@@ -19,5 +23,5 @@ jobs:
     - name: Build project
       run: bun run build
 
-    - name: Run tests
-      run: bun run test:app
+    - name: Run comprehensive tests
+      run: bun run test

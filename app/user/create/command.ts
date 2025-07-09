@@ -1,4 +1,7 @@
-export default {
+import type { CommandDefinition, CommandContext } from '../../../dist/types/command.js';
+import type { CreateUserData } from './params.js';
+
+const command: CommandDefinition<CreateUserData> = {
   metadata: {
     name: 'create',
     description: 'Create a new user',
@@ -7,17 +10,17 @@ export default {
       'user create john john@example.com'
     ]
   },
-  handler: async (context: any) => {
-    const name = context.options.name || context.args[0];
-    const email = context.options.email || context.args[1];
+  handler: async (context: CommandContext<CreateUserData>) => {
+    // バリデーション済みのデータを使用
+    const { name, email } = context.validatedData!;
 
-    if (!name || !email) {
-      console.error('Error: Name and email are required');
-      context.showHelp();
-      return;
-    }
+    console.log(`🔄 Creating user: ${name} (${email})`);
 
-    console.log(`Creating user: ${name} (${email})`);
+    // 実際の処理をここに実装
+    // 例: await createUser({ name, email });
+
     console.log('✅ User created successfully!');
   }
 };
+
+export default command;

@@ -1,0 +1,129 @@
+
+# 🚀 Development Workflow
+
+## Quick Start
+```bash
+npm run dev  # Complete development setup - build + watch
+```
+
+That's it! This single command:
+1. Builds TypeScript (src/ → dist/)
+2. Builds app examples (app/ → examples/)
+3. Starts **mise** file watching for automatic regeneration
+
+## Core Commands
+
+### Development
+- `npm run dev` - **Main development command** (mise handles watching)
+- `npm run dev:build` - Build both src/ and app/
+- `npm run dev:regen` - Regenerate CLI manually
+
+### Testing & Quality
+- `npm run test` - Run all tests
+- `npm run test:watch` - Watch mode testing
+- `npm run lint` - Check code quality
+- `npm run lint:fix` - Fix linting issues
+- `npm run format` - Format code
+
+### Building
+- `npm run build` - Build src/ only
+- `npm run build:app` - Build app/ only
+
+## File Watching with mise
+
+Development uses **[mise](https://mise.jdx.dev/)** for file watching:
+
+```toml
+# mise.toml
+[tasks.regenerate]
+description = "TypeScript をビルドしてCLIを再生成"
+run = [
+  "npm run dev:build",
+  "npm run dev:regen",
+  "sed -i '' 's|\\.\\./app/|\\.\\./examples/|g' dist/generated-cli.js"
+]
+sources = ["src/**/*.ts", "app/**/*.ts"]
+```
+
+**Benefits:**
+- ✅ Clean separation of concerns
+- ✅ Cross-platform file watching
+- ✅ No Node.js watch complexities
+- ✅ Simple `npm run dev` command
+
+## Development Flow
+
+1. **Start development:**
+```bash
+npm run dev
+```
+
+2. **Edit files:**
+  - Change `src/**/*.ts` → Auto rebuild core
+  - Change `app/**/*.ts` → Auto rebuild examples + regenerate CLI
+
+3. **Test your changes:**
+```bash
+node dist/generated-cli.js <your-command>
+```
+
+4. **Run tests:**
+```bash
+npm run test:watch
+```
+
+## File Structure Management
+
+### Source Files (TypeScript only)
+- `src/` - Core source code
+- `app/` - Example CLI application
+
+### Build Output
+- `dist/` - Compiled core (`src/` → `dist/`)
+- `examples/` - Compiled examples (`app/` → `examples/`)
+- `dist/generated-cli.js` - Final CLI with fixed import paths
+
+### Key Files
+- `mise.toml` - File watching and task definitions
+- `tsconfig.json` - Core TypeScript config
+- `app/tsconfig.json` - App-specific config with `outDir: "../examples"`
+
+## Dependencies
+
+### Required for Development
+- **mise** - File watching and task runner
+- **watchexec** - File watching backend (installed via brew)
+
+### Installation
+```bash
+# Install mise (one-time setup)
+curl https://mise.jdx.dev/install.sh | sh
+echo 'eval "$(~/.local/bin/mise activate zsh)"' >> ~/.zshrc
+
+# Install watchexec
+brew install watchexec
+
+# Trust project mise config
+# (prompted automatically on first run)
+```
+
+## Troubleshooting
+
+### mise not found
+```bash
+# Add to shell profile
+echo 'eval "$(~/.local/bin/mise activate zsh)"' >> ~/.zshrc
+source ~/.zshrc
+```
+
+### File watching not working
+```bash
+# Check watchexec installation
+which watchexec
+
+# Check mise tasks
+~/.local/bin/mise tasks ls
+```
+
+### Import path issues
+The development setup automatically fixes import paths from `../app/` to `../examples/` in the generated CLI.

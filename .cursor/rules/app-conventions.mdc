@@ -1,0 +1,80 @@
+---
+description: app/ディレクトリのファイル規約とテンプレート
+globs: ["app/**/*"]
+alwaysApply: false
+---
+
+# 📋 File Conventions
+
+## Command Structure
+```
+app/
+├── hello/
+│   ├── command.ts    # Command implementation (required)
+│   └── params.ts     # Argument validation (optional)
+├── user/
+│   ├── create/
+│   │   ├── command.ts
+│   │   └── params.ts
+│   └── list/
+│       ├── command.ts
+│       └── params.ts
+└── version.ts        # CLI metadata (optional)
+```
+
+## Command Files (`command.ts`)
+```typescript
+export default {
+  metadata: {
+    name: 'command-name',
+    description: 'Command description',
+    examples: ['example usage']
+  },
+  handler: async (context: any) => {
+    // Command logic here
+  }
+};
+```
+
+## Validation Files (`params.ts`)
+```typescript
+import * as v from 'valibot';
+
+export const schema = v.object({
+  name: v.pipe(v.string(), v.minLength(1)),
+  email: v.pipe(v.string(), v.email()),
+  age: v.optional(v.number(), 18)
+});
+
+export const fieldMappings = {
+  name: { position: 0, option: 'name' },
+  email: { position: 1, option: 'email' },
+  age: { option: 'age' }  // option-only
+};
+```
+
+## 🔄 Common Development Patterns
+
+### Adding New Commands
+1. Create `app/path/to/command/command.ts`
+2. Optionally add `app/path/to/command/params.ts`
+3. Run `npm run build:app`
+4. Test with `node ./dist/generated-cli.js <your-command>`
+5. Write tests in appropriate `*.test.ts` file
+
+### Adding Validation
+1. Import valibot: `import * as v from 'valibot'`
+2. Define schema with proper validation rules
+3. Create fieldMappings for position/option mapping
+4. Test both positional and option arguments
+
+### Validation Logic
+- Always use `src/utils/validation.ts` utilities
+- Define valibot schemas in `params.ts` files
+- Use `fieldMappings` for position/option mapping
+- Handle both string and parsed argument types
+
+## Generated Examples
+- `app/hello/` - Simple command example
+- `app/user/create/` - Complex command with validation
+- `app/user/list/` - Simple nested command

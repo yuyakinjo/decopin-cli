@@ -29,6 +29,9 @@ function extractCommandDefinition(
   let metadata: CommandMetadata | undefined;
   let schema: CommandSchema | undefined;
 
+  // 変数宣言を追跡するためのマップ
+  const variableDefinitions = new Map<string, CommandDefinition>();
+
   function visit(node: ts.Node) {
     // export default { ... } の形式を探す
     if (ts.isExportAssignment(node) && !node.isExportEquals) {
@@ -49,6 +52,15 @@ function extractCommandDefinition(
       else if (ts.isFunctionDeclaration(node.expression)) {
         hasHandler = true;
       }
+      // export default identifier の形式（変数を参照）
+      else if (ts.isIdentifier(node.expression)) {
+        const variableName = node.expression.text;
+        const variableDefinition = variableDefinitions.get(variableName);
+        if (variableDefinition) {
+          commandDefinition = variableDefinition;
+          hasHandler = true;
+        }
+      }
     }
 
     // export default function name() { ... } の形式（関数宣言）
@@ -67,15 +79,21 @@ function extractCommandDefinition(
       }
     }
 
-    // 名前付きエクスポートを探す: export const metadata = { ... }
+    // 変数宣言を探す
     if (ts.isVariableStatement(node)) {
       const modifiers = ts.canHaveModifiers(node)
         ? ts.getModifiers(node)
         : undefined;
-      if (modifiers?.some((m) => m.kind === ts.SyntaxKind.ExportKeyword)) {
-        for (const declaration of node.declarationList.declarations) {
-          if (ts.isIdentifier(declaration.name)) {
-            const name = declaration.name.text;
+      const isExported = modifiers?.some(
+        (m) => m.kind === ts.SyntaxKind.ExportKeyword
+      );
+
+      for (const declaration of node.declarationList.declarations) {
+        if (ts.isIdentifier(declaration.name)) {
+          const name = declaration.name.text;
+
+          // export const metadata = { ... } の形式
+          if (isExported) {
             if (
               name === 'metadata' &&
               declaration.initializer &&
@@ -89,6 +107,39 @@ function extractCommandDefinition(
               ts.isObjectLiteralExpression(declaration.initializer)
             ) {
               schema = parseSchema(declaration.initializer);
+            }
+          }
+
+          // const command: CommandDefinition = { ... } の形式
+          if (
+            declaration.initializer &&
+            ts.isObjectLiteralExpression(declaration.initializer)
+          ) {
+            // 型注釈をチェック
+            if (declaration.type) {
+              const typeText = declaration.type.getText();
+              if (typeText.startsWith('CommandDefinition')) {
+                const definition = parseObjectLiteralAsCommandDefinition(
+                  declaration.initializer
+                );
+                variableDefinitions.set(name, definition);
+              }
+            } else {
+              // 型注釈がない場合でも、オブジェクトリテラルの構造をチェック
+              const definition = parseObjectLiteralAsCommandDefinition(
+                declaration.initializer
+              );
+              // handlerプロパティの存在をチェック
+              const hasHandlerProperty =
+                declaration.initializer.properties.some(
+                  (prop) =>
+                    ts.isPropertyAssignment(prop) &&
+                    ts.isIdentifier(prop.name) &&
+                    prop.name.text === 'handler'
+                );
+              if (hasHandlerProperty) {
+                variableDefinitions.set(name, definition);
+              }
             }
           }
         }
@@ -208,11 +259,11 @@ function parseSchema(objectLiteral: ts.ObjectLiteralExpression): CommandSchema {
       switch (propertyName) {
         case 'args':
           // valibot スキーマの解析（簡略化）
-          schema.args = {} as any;
+          schema.args = {} as unknown;
           break;
         case 'options':
           // valibot スキーマの解析（簡略化）
-          schema.options = {} as any;
+          schema.options = {} as unknown;
           break;
       }
     }
@@ -224,7 +275,7 @@ function parseSchema(objectLiteral: ts.ObjectLiteralExpression): CommandSchema {
 /**
  * リテラル値を抽出
  */
-function extractLiteralValue(node: ts.Expression): any {
+function extractLiteralValue(node: ts.Expression): unknown {
   if (ts.isStringLiteral(node)) {
     return node.text;
   }

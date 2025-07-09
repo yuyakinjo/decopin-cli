@@ -1,4 +1,6 @@
-export default {
+import type { CommandDefinition, CommandContext } from '../../../dist/types/command.js';
+
+const command: CommandDefinition = {
   metadata: {
     name: 'list',
     description: 'List all users',
@@ -7,7 +9,7 @@ export default {
       'user list --limit 10'
     ]
   },
-  handler: async (context: any) => {
+  handler: async (context: CommandContext) => {
     const limit = Number(context.options.limit) || 10;
 
     console.log('📋 User List:');
@@ -17,3 +19,5 @@ export default {
     console.log(`\n📊 Showing ${limit} users`);
   }
 };
+
+export default command;

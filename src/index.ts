@@ -1,11 +1,11 @@
 import { mkdir } from 'node:fs/promises';
-import { scanAppDirectory } from './scanner/directory-scanner.js';
-import { parseMultipleCommandFiles } from './parser/ast-parser.js';
 import {
-  generateCLI,
   combineCommandData,
   type GeneratorConfig,
+  generateCLI,
 } from './generator/cli-generator.js';
+import { parseMultipleCommandFiles } from './parser/ast-parser.js';
+import { scanAppDirectory } from './scanner/directory-scanner.js';
 
 /**
  * ビルド設定
@@ -17,6 +17,8 @@ export interface BuildConfig {
   outputDir: string;
   /** CLI名 */
   cliName: string;
+  /** 出力ファイル名（デフォルト: 'cli.js'） */
+  outputFileName?: string;
   /** バージョン */
   version?: string;
   /** 説明 */
@@ -118,6 +120,7 @@ export async function buildCLI(config: BuildConfig): Promise<BuildResult> {
       outputDir: config.outputDir,
       cliName: config.cliName,
       appDir: config.appDir,
+      ...(config.outputFileName && { outputFileName: config.outputFileName }),
       ...(config.version && { version: config.version }),
       ...(config.description && { description: config.description }),
     };
@@ -199,18 +202,18 @@ export const builderInfo = {
   description: 'Next.js App Router風のファイルベースCLIビルダー',
 };
 
-// 主要な型をエクスポート
 export type {
-  CommandDefinition,
-  CommandContext,
-  CommandHandler,
-} from './types/command.js';
-export type {
-  DirectoryEntry,
-  CommandStructure,
-} from './scanner/directory-scanner.js';
+  GeneratedFiles,
+  GeneratorConfig,
+} from './generator/cli-generator.js';
 export type { ParsedASTResult } from './parser/ast-parser.js';
 export type {
-  GeneratorConfig,
-  GeneratedFiles,
-} from './generator/cli-generator.js';
+  CommandStructure,
+  DirectoryEntry,
+} from './scanner/directory-scanner.js';
+// 主要な型をエクスポート
+export type {
+  CommandContext,
+  CommandDefinition,
+  CommandHandler,
+} from './types/command.js';

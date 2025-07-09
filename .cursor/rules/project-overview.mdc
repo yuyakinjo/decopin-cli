@@ -1,0 +1,53 @@
+---
+description: decopin-cli プロジェクト概要とアーキテクチャ
+globs: []
+alwaysApply: true
+---
+
+# decopin-cli Development Rules
+
+You are working on **decopin-cli**, a TypeScript-first CLI builder inspired by Next.js App Router's file-based routing system.
+
+## 🎯 Project Overview
+
+This is a CLI builder that generates command-line interfaces from file-based routing patterns, similar to Next.js App Router. Commands are defined in an `app/` directory with automatic TypeScript compilation and type-safe argument validation.
+
+## 📁 Current Architecture
+
+### Key Directories
+- `src/` - Core TypeScript source code (NO .js files)
+- `app/` - Example CLI application structure (NO .js files)
+- `dist/` - Compiled output from `src/` (TypeScript → JavaScript)
+- `examples/` - Compiled output from `app/` (used by generated CLI)
+
+### Recent Major Changes (IMPORTANT)
+- **REFACTORED**: `arguments.ts` → `params.ts` files
+- **NEW**: `src/utils/validation.ts` for argument processing
+- **NEW**: Valibot integration for type-safe validation
+- **NEW**: Support for both positional arguments AND named options
+- **ENHANCED**: 57 tests across 7 test suites with comprehensive coverage
+
+## 🔍 Key Dependencies
+
+### Runtime
+- `valibot` - Type-safe validation (CRITICAL - used in params.ts)
+- `typescript` - Core language
+- `@types/node` - Node.js types
+
+### Development
+- `vitest` - Testing framework
+- `@biomejs/biome` - Linting and formatting
+
+## 🎯 Argument Handling Philosophy
+
+### Flexible Input Support
+- **Positional**: `my-cli user create "John" "john@email.com"`
+- **Options**: `my-cli user create --name "John" --email "john@email.com"`
+- **Mixed**: `my-cli user create "John" --email "john@email.com"`
+
+### Priority Rules
+1. Positional arguments take precedence over options
+2. Options fill in missing positional arguments
+3. Default values from valibot schema apply last
+
+Remember: This project prioritizes developer experience and type safety. Every change should maintain or improve both aspects!
