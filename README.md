@@ -359,9 +359,6 @@ decopin-cli includes comprehensive testing capabilities. Run tests with:
 npm test
 ```
 
-## 🤝 Contributing
-
-We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
 
 ## 📝 License
 
