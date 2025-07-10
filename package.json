@@ -44,7 +44,12 @@
   },
   "devDependencies": {
     "@biomejs/biome": "^2.1.1",
+    "@types/d3-hierarchy": "^3.1.7",
+    "@types/d3-scale": "^4.0.9",
     "@types/node": "^24.0.0",
+    "d3-hierarchy": "^3.1.2",
+    "d3-scale": "^4.0.2",
+    "simple-git": "^3.28.0",
     "typescript": "^5.8.3",
     "vitest": "^3.2.4"
   },
