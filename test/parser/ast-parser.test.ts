@@ -55,11 +55,12 @@ export default function handler() {
 
     const result = await parseCommandFile(commandFile);
 
-    // パフォーマンス最適化により詳細な構文エラー検出は無効化
-    // 基本的なパースは可能で、デフォルトハンドラーが設定されることを確認
+    // 構文エラーにより有効なコマンド定義が見つからないが、
+    // デフォルトハンドラーが設定されることを確認
     expect(result.definition).toBeDefined();
     expect(result.definition.handler).toBeDefined();
-    expect(result.errors.length).toBe(0); // 構文エラー検出は無効化済み
+    expect(result.errors.length).toBe(1); // コマンド定義が見つからないエラーが発生
+    expect(result.errors[0]).toContain('No valid command definition found');
   });
 
   it('should handle file not found', async () => {
