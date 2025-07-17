@@ -1,6 +1,8 @@
 import { readFile } from 'node:fs/promises';
 import * as ts from 'typescript';
+import * as v from 'valibot';
 import type { CommandHelpMetadata } from '../types/command.js';
+import { extractLiteralValue } from '../utils/ast-utils.js';
 
 /**
  * help.tsファイルからCommandHelpMetadataを抽出
@@ -39,9 +41,7 @@ export async function parseHelpFile(
               declaration.initializer &&
               ts.isObjectLiteralExpression(declaration.initializer)
             ) {
-              helpMetadata = parseObjectLiteralAsHelpMetadata(
-                declaration.initializer
-              );
+              helpMetadata = parseHelpMetadata(declaration.initializer);
             }
           }
         }
@@ -62,56 +62,56 @@ export async function parseHelpFile(
 }
 
 /**
- * オブジェクトリテラルをCommandHelpMetadataとして解析
+ * ヘルプメタデータ解析用のスキーマ
+ * Parse, Don't Validate: 必須フィールドと任意フィールドを明確に定義
  */
-function parseObjectLiteralAsHelpMetadata(
+const HelpMetadataSchema = v.object({
+  name: v.string(),
+  description: v.string(),
+  examples: v.optional(
+    v.pipe(
+      v.array(v.unknown()),
+      v.transform((arr) =>
+        arr.filter((item): item is string => typeof item === 'string')
+      )
+    )
+  ),
+  aliases: v.optional(
+    v.pipe(
+      v.array(v.unknown()),
+      v.transform((arr) =>
+        arr.filter((item): item is string => typeof item === 'string')
+      )
+    )
+  ),
+  additionalHelp: v.optional(v.string()),
+});
+
+/**
+ * オブジェクトリテラルからヘルプメタデータを解析
+ * Parse, Don't Validate パターンを適用
+ */
+export function parseHelpMetadata(
   objectLiteral: ts.ObjectLiteralExpression
 ): CommandHelpMetadata | null {
-  const metadata: Partial<CommandHelpMetadata> = {};
+  // AST から生のオブジェクトを抽出
+  const rawMetadata: Record<string, unknown> = {};
 
   for (const property of objectLiteral.properties) {
     if (ts.isPropertyAssignment(property) && ts.isIdentifier(property.name)) {
       const key = property.name.text;
-      const value = property.initializer;
-
-      switch (key) {
-        case 'name':
-          if (ts.isStringLiteral(value)) {
-            metadata.name = value.text;
-          }
-          break;
-        case 'description':
-          if (ts.isStringLiteral(value)) {
-            metadata.description = value.text;
-          }
-          break;
-        case 'examples':
-          if (ts.isArrayLiteralExpression(value)) {
-            metadata.examples = value.elements
-              .filter(ts.isStringLiteral)
-              .map((el) => el.text);
-          }
-          break;
-        case 'aliases':
-          if (ts.isArrayLiteralExpression(value)) {
-            metadata.aliases = value.elements
-              .filter(ts.isStringLiteral)
-              .map((el) => el.text);
-          }
-          break;
-        case 'additionalHelp':
-          if (ts.isStringLiteral(value)) {
-            metadata.additionalHelp = value.text;
-          }
-          break;
-      }
+      const value = extractLiteralValue(property.initializer);
+      rawMetadata[key] = value;
     }
   }
 
-  // name と description は必須
-  if (metadata.name && metadata.description) {
-    return metadata as CommandHelpMetadata;
+  // valibotでパース - 必須フィールドの検証も含む
+  const parseResult = v.safeParse(HelpMetadataSchema, rawMetadata);
+
+  if (parseResult.success) {
+    return parseResult.output as CommandHelpMetadata;
   }
 
+  // パースに失敗した場合はnullを返す（必須フィールド不足など）
   return null;
 }

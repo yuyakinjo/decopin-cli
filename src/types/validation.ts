@@ -1,3 +1,5 @@
+import type * as v from 'valibot';
+
 /**
  * バリデーション結果
  */
@@ -52,8 +54,8 @@ export interface ParamMapping {
 export interface ParamsDefinition {
   /** パラメータマッピングのリスト */
   mappings: ParamMapping[];
-  /** 追加のスキーマ情報 */
-  schema?: unknown;
+  /** valibotスキーマ */
+  schema: v.GenericSchema;
 }
 
 /**

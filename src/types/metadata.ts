@@ -10,6 +10,8 @@ export interface CommandMetadata {
   examples?: string[];
   /** エイリアス */
   aliases?: string[];
+  /** 追加のヘルプ情報 */
+  additionalHelp?: string;
 }
 
 /**

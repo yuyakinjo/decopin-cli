@@ -1,4 +1,5 @@
 import * as ts from 'typescript';
+import * as v from 'valibot';
 import type {
   CommandDefinition,
   CommandMetadata,
@@ -189,40 +190,45 @@ export function parseObjectLiteralAsCommandDefinition(
 }
 
 /**
+ * メタデータ解析用のスキーマ
+ * Parse, Don't Validate: 不正な値は除外され、有効な値のみが残る
+ */
+const MetadataSchema = v.object({
+  name: v.fallback(v.optional(v.string()), undefined),
+  description: v.fallback(v.optional(v.string()), undefined),
+  examples: v.fallback(v.optional(v.array(v.string())), undefined),
+  aliases: v.fallback(v.optional(v.array(v.string())), undefined),
+  additionalHelp: v.fallback(v.optional(v.string()), undefined),
+});
+
+/**
  * メタデータオブジェクトを解析
+ * Parse, Don't Validate パターンを適用
  */
 export function parseMetadata(
   objectLiteral: ts.ObjectLiteralExpression
 ): CommandMetadata {
-  const metadata: Partial<CommandMetadata> = {};
+  // AST から生のオブジェクトを抽出
+  const rawMetadata: Record<string, unknown> = {};
 
   for (const property of objectLiteral.properties) {
     if (ts.isPropertyAssignment(property) && ts.isIdentifier(property.name)) {
       const key = property.name.text;
       const value = extractLiteralValue(property.initializer);
-
-      switch (key) {
-        case 'name':
-          if (typeof value === 'string') metadata.name = value;
-          break;
-        case 'description':
-          if (typeof value === 'string') metadata.description = value;
-          break;
-        case 'examples':
-          if (Array.isArray(value)) metadata.examples = value;
-          break;
-        case 'aliases':
-          if (Array.isArray(value)) metadata.aliases = value;
-          break;
-        case 'additionalHelp':
-          if (typeof value === 'string')
-            (metadata as any).additionalHelp = value;
-          break;
-      }
+      rawMetadata[key] = value;
     }
   }
 
-  return metadata as CommandMetadata;
+  // valibotでパース - 無効な値は自動的に除外される
+  const parseResult = v.safeParse(MetadataSchema, rawMetadata);
+
+  if (parseResult.success) {
+    // パース済みデータを直接返す（型安全）
+    return parseResult.output as CommandMetadata;
+  }
+
+  // パースに失敗した場合も空のメタデータを返す
+  return {};
 }
 
 /**

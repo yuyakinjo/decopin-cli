@@ -49,7 +49,7 @@ export function createValidationFunction(
       const data = extractData(args, options, params, paramsDefinition);
 
       // valibotでバリデーション
-      const result = v.safeParse(paramsDefinition.schema as any, data);
+      const result = v.safeParse(paramsDefinition.schema, data);
 
       if (result.success) {
         return {
@@ -62,7 +62,7 @@ export function createValidationFunction(
           error: {
             message: 'Validation failed',
             issues: result.issues.map((issue) => ({
-              path: issue.path?.map((p: { key: string }) => p.key) || [],
+              path: issue.path?.map((p) => String(p.key)) || [],
               message: issue.message,
             })),
           },
