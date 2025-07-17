@@ -1,28 +1,20 @@
 # decopin-cli 開発環境設定
 
-[tasks.regenerate]
-description = "TypeScript をビルドしてCLIを再生成"
-run = [
-  "npm run dev:build",
-  "npm run dev:regen",
-  "sed -i '' 's|\\.\\./app/|\\.\\./examples/|g' dist/generated-cli.js",
-]
-sources = ["src/**/*.ts", "app/**/*.ts"]
-
-[tasks.build-app]
-description = "appフォルダのTypeScriptファイルをビルド"
-run = "npm run build:app"
-sources = ["app/**/*.ts"]
-
-[tasks.watch-app]
-description = "appフォルダの変更を監視してビルド"
-run = "mise watch build-app"
-
-[tasks.dev-mode]
-description = "開発モード（appフォルダを監視して自動ビルド）"
+[tasks.dev-watch]
+description = "app配下のファイル変更を監視してCLIを自動再生成"
 run = [
   "echo '🚀 Starting development mode...'",
   "npm run build:app",
-  "echo '✅ Initial build complete. Watching for changes...'",
-  "mise watch build-app"
+  "npm run dev:regen",
+  "echo '✅ Initial CLI generation complete. Watching for changes in app/ directory...'",
 ]
+sources = ["app/**/*.ts"]
+
+[tasks.build-app]
+description = "appフォルダのTypeScriptファイルをビルド"
+run = [
+  "npm run build:app",
+  "npm run dev:regen",
+  "echo '🔄 CLI regenerated successfully!'"
+]
+sources = ["app/**/*.ts"]

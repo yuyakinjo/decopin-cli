@@ -298,12 +298,69 @@ Options:
   --version, -v Show version\`);
 }
 
+function showCommandHelp(command) {
+  const cmdPath = (command.path || 'root').replace(/\\//g, ' ');
+  const metadata = command.definition.metadata || {};
+
+  console.log(\`${cliDisplayName} ${version}\`);
+  console.log(\`Command: \${cmdPath}\`);
+  console.log();
+
+  if (metadata.description) {
+    console.log(\`Description:\`);
+    console.log(\`  \${metadata.description}\`);
+    console.log();
+  }
+
+  console.log(\`Usage:\`);
+  console.log(\`  ${cliName} \${cmdPath} [options]\`);
+  console.log();
+
+  if (metadata.examples && metadata.examples.length > 0) {
+    console.log(\`Examples:\`);
+    for (const example of metadata.examples) {
+      console.log(\`  \${example}\`);
+    }
+    console.log();
+  }
+
+  if (metadata.aliases && metadata.aliases.length > 0) {
+    console.log(\`Aliases:\`);
+    console.log(\`  \${metadata.aliases.join(', ')}\`);
+    console.log();
+  }
+
+  if (metadata.additionalHelp) {
+    console.log(\`Additional Information:\`);
+    console.log(\`  \${metadata.additionalHelp}\`);
+    console.log();
+  }
+
+  console.log(\`Options:\`);
+  console.log(\`  --help, -h    Show this help message\`);
+}
+
 async function main() {
   const args = process.argv.slice(2);
   const { options, positional } = parseArguments(args);
 
   // ヘルプオプション
-  if (options.help || options.h || args.length === 0) {
+  if (options.help || options.h) {
+    // 特定のコマンドのヘルプが要求された場合
+    if (positional.length > 0) {
+      const { command } = matchCommand(positional);
+      if (command) {
+        showCommandHelp(command);
+        return;
+      }
+    }
+    // 全体のヘルプを表示
+    showHelp();
+    return;
+  }
+
+  // 引数なしの場合は全体のヘルプを表示
+  if (args.length === 0) {
     showHelp();
     return;
   }

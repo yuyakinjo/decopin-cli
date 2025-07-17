@@ -11,10 +11,9 @@
   "scripts": {
     "build": "tsc",
     "build:app": "tsc -p app/tsconfig.json",
-    "dev": "npm run dev:build && mise watch regenerate",
-    "dev:build": "npm run build && npm run build:app",
-    "dev:regen": "node dist/cli.js build --app-dir app --cli-name my-cli --output-filename generated-cli.js",
-    "dev:watch-app": "tsc -p app/tsconfig.json --watch",
+    "dev": "npm run build && mise watch dev-watch",
+    "dev:build-all": "npm run build && npm run build:app",
+    "dev:regen": "node dist/decopin-cli.js build --app-dir app --output-dir examples --cli-name cli --verbose",
     "test": "vitest run",
     "test:watch": "vitest",
     "clean": "rm -rf dist examples",
