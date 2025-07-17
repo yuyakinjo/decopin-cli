@@ -1,18 +1,18 @@
 # decopin-cli
 
-A TypeScript-first CLI builder inspired by Next.js App Router's file-based routing system. Create powerful command-line interfaces with zero configuration using familiar file-based conventions.
+A TypeScript-first CLI builder inspired by Next.js App Router's file-based routing system. Create powerful command-line interfaces with zero configuration using familiar file-based conventions and pre-validated, type-safe command contexts.
 
 ## ✨ Features
 
 - **📁 File-based routing**: Commands defined in `app/` directory with intuitive folder structure
 - **🔧 TypeScript-first**: Full TypeScript support with proper type definitions
-- **⚡ Dynamic imports**: Generated CLIs use dynamic imports for instant command loading
+- **⚡ Pre-validated data**: Commands receive type-safe, pre-validated data from `params.ts`
 - **🔍 AST parsing**: TypeScript AST parsing for automatic command metadata extraction
-- **🛡️ Type-safe validation**: Built-in validation with valibot for robust argument parsing
-- **🎯 Flexible argument handling**: Support for both positional arguments and named options
-- **🔄 Real-time development**: Changes reflect instantly without restarts
+- **🛡️ Integrated validation**: Built-in validation with valibot, no separate `validate.ts` needed
+- **🎯 Function-based commands**: Clean function-based command definitions with dependency injection
+- **🔄 Real-time development**: Changes reflect instantly with mise watch tasks
 - **📦 Zero configuration**: Works out of the box with sensible defaults
-- **🔧 Function-based exports**: Both object and function-based exports supported for command definitions
+- **⚡ Dynamic imports**: Generated CLIs use dynamic imports for instant command loading
 
 ## 🚀 Quick Start
 
@@ -40,64 +40,96 @@ npm install decopin-cli valibot
 mkdir -p app/hello
 ```
 
-3. **Create `app/hello/command.ts`**:
+3. **Create `app/hello/params.ts` for type-safe argument validation**:
+```typescript
+import { object, string, pipe, minLength } from 'valibot';
+
+export interface HelloData {
+  name: string;
+}
+
+export const schema = object({
+  name: pipe(string(), minLength(1))
+});
+```
+
+4. **Create `app/hello/command.ts`**:
 ```typescript
 import type { CommandDefinition, CommandContext } from 'decopin-cli';
+import type { HelloData } from './params.js';
 
-export default function createCommand(): CommandDefinition {
+export default function createCommand(context: CommandContext<HelloData>): CommandDefinition<HelloData> {
+  // バリデーション済みのデータを使用
+  const { name } = context.validatedData!;
+
   return {
     metadata: {
       name: 'hello',
       description: 'Say hello to someone',
-      examples: ['hello world', 'hello --name Alice']
+      examples: ['hello Alice', 'hello --name Bob']
     },
-    handler: async (context: CommandContext) => {
-      const name = context.options.name || context.args[0] || 'World';
+    handler: async () => {
       console.log(`Hello, ${name}!`);
     }
   };
 }
 ```
 
-4. **Create `app/hello/params.ts` for type-safe argument validation**:
-```typescript
-import * as v from 'valibot';
-import type { ParamsDefinition } from 'decopin-cli';
-
-const HelloSchema = v.object({
-  name: v.optional(v.string(), 'World')
-});
-
-export default function createParams(): ParamsDefinition {
-  return {
-    schema: HelloSchema,
-    mappings: [
-      {
-        field: 'name',
-        option: 'name',
-        argIndex: 0,
-        defaultValue: 'World',
-      },
-    ],
-  };
-}
-```
-
 5. **Generate your CLI**:
+
 ```bash
 npx decopin-cli build
 ```
 
 6. **Test your CLI**:
-```bash
-node dist/cli.js hello
-# Output: Hello, World!
 
+```bash
 node dist/cli.js hello Alice
 # Output: Hello, Alice!
 
 node dist/cli.js hello --name Bob
 # Output: Hello, Bob!
+```
+
+## 🏗️ Architecture
+
+### Function-Based Command Pattern
+
+decopin-cli uses a factory pattern where commands are functions that receive pre-validated context:
+
+```typescript
+// Traditional approach (old)
+export default {
+  handler: async (context) => {
+    // Manual validation needed
+    const name = context.args[0] || 'World';
+    console.log(`Hello, ${name}!`);
+  }
+};
+
+// decopin-cli approach (current)
+export default function createCommand(context: CommandContext<HelloData>): CommandDefinition<HelloData> {
+  const { name } = context.validatedData!; // Already validated and typed!
+
+  return {
+    handler: async () => {
+      console.log(`Hello, ${name}!`);
+    }
+  };
+}
+```
+
+### Integrated Validation
+
+Validation is automatically integrated - no separate `validate.ts` files needed:
+
+```
+app/hello/
+├── params.ts    # ✅ Types + Validation Schema
+└── command.ts   # ✅ Command Logic (receives validated data)
+
+# No longer needed:
+# ├── validate.ts  # ❌ Removed - validation integrated into params.ts
 ```
 
 ## 📁 File Structure
@@ -107,22 +139,21 @@ my-cli/
 ├── app/                    # Commands directory
 │   ├── version.ts         # Version configuration (optional)
 │   ├── hello/
-│   │   ├── command.ts     # Command implementation
-│   │   └── params.ts      # Argument validation (optional)
+│   │   ├── command.ts     # Command implementation (function-based)
+│   │   └── params.ts      # Type definitions & validation
 │   ├── user/
 │   │   ├── create/
 │   │   │   ├── command.ts # Nested command: user create
-│   │   │   └── params.ts  # Validation for user create
+│   │   │   └── params.ts  # Type definitions & validation
 │   │   └── list/
-│   │       ├── command.ts # Nested command: user list
-│   │       └── params.ts  # Validation for user list
+│   │       └── command.ts # Nested command: user list (no params needed)
 │   └── database/
 │       ├── migrate/
 │       │   ├── command.ts # Nested command: database migrate
-│       │   └── params.ts  # Validation for database migrate
+│       │   └── params.ts  # Type definitions & validation
 │       └── seed/
 │           ├── command.ts # Nested command: database seed
-│           └── params.ts  # Validation for database seed
+│           └── params.ts  # Type definitions & validation
 ├── dist/                  # Generated CLI output
 │   └── cli.js            # Your generated CLI
 └── package.json
@@ -130,114 +161,138 @@ my-cli/
 
 ## 🛠️ Command Structure
 
-### Basic Command
+### Function-Based Command with Pre-Validated Data
+
+```typescript
+// app/hello/params.ts
+import { object, string, pipe, minLength } from 'valibot';
+
+export interface HelloData {
+  name: string;
+}
+
+export const schema = object({
+  name: pipe(string(), minLength(1))
+});
+```
 
 ```typescript
 // app/hello/command.ts
-export default {
-  metadata: {
-    name: 'hello',
-    description: 'Say hello to someone',
-    examples: [
-      'hello world',
-      'hello --name Alice'
-    ]
-  },
-  handler: async (context: any) => {
-    const name = context.options.name || context.args[0] || 'World';
-    console.log(`Hello, ${name}!`);
-  }
-};
-```
+import type { CommandDefinition, CommandContext } from 'decopin-cli';
+import type { HelloData } from './params.js';
 
-### Advanced Command with Type-Safe Validation
+export default function createCommand(context: CommandContext<HelloData>): CommandDefinition<HelloData> {
+  // バリデーション済みのデータを使用
+  const { name } = context.validatedData!;
 
-```typescript
-// app/user/create/command.ts
-export default {
-  metadata: {
-    name: 'create',
-    description: 'Create a new user',
-    examples: [
-      'user create --name "John Doe" --email john@example.com',
-      'user create "Jane Smith" jane@example.com --admin'
-    ]
-  },
-  handler: async (context: any) => {
-    const { name, email, admin } = context.options;
-
-    console.log(`Creating user: ${name} (${email})`);
-    if (admin) {
-      console.log('User will have admin privileges');
+  return {
+    metadata: {
+      name: 'hello',
+      description: 'Say hello to someone',
+      examples: ['hello Alice', 'hello --name Bob']
+    },
+    handler: async () => {
+      console.log(`Hello, ${name}!`);
     }
-  }
-};
+  };
+}
 ```
 
+### Simple Command without Parameters
+
 ```typescript
-// app/user/create/params.ts
-import * as v from 'valibot';
+// app/user/list/command.ts
+import type { CommandDefinition } from 'decopin-cli';
 
-export const schema = v.object({
-  name: v.pipe(v.string(), v.minLength(1, 'Name is required')),
-  email: v.pipe(v.string(), v.email('Valid email is required')),
-  admin: v.optional(v.boolean(), false)
-});
-
-export const fieldMappings = {
-  name: { position: 0, option: 'name' },
-  email: { position: 1, option: 'email' },
-  admin: { option: 'admin' }
-};
+export default function createCommand(): CommandDefinition {
+  return {
+    metadata: {
+      name: 'list',
+      description: 'List all users',
+      examples: ['user list']
+    },
+    handler: async () => {
+      // コマンドロジック
+      console.log('📋 User List:');
+      // ... list users
+    }
+  };
+}
 ```
 
 ## 🎯 Argument Handling
 
-decopin-cli supports flexible argument handling with both positional arguments and named options:
+decopin-cli automatically handles argument validation and type conversion based on your `params.ts` configuration:
 
-### Positional Arguments
+### Type-Safe Parameter Definition
+
+```typescript
+// app/user/create/params.ts
+import { object, string, email, pipe, minLength, number, minValue, optional, boolean } from 'valibot';
+
+export interface CreateUserData {
+  name: string;
+  email: string;
+  age?: number;
+  admin?: boolean;
+}
+
+export const schema = object({
+  name: pipe(string(), minLength(1, 'Name is required')),
+  email: pipe(string(), email('Valid email is required')),
+  age: optional(pipe(number(), minValue(0))),
+  admin: optional(boolean())
+});
+```
+
+### Command Implementation with Pre-Validated Data
+
+```typescript
+// app/user/create/command.ts
+import type { CommandDefinition, CommandContext } from 'decopin-cli';
+import type { CreateUserData } from './params.js';
+
+export default function createCommand(context: CommandContext<CreateUserData>): CommandDefinition<CreateUserData> {
+  const { name, email, age, admin } = context.validatedData!;
+
+  return {
+    metadata: {
+      name: 'create',
+      description: 'Create a new user',
+      examples: [
+        'user create John john@example.com',
+        'user create "Jane Smith" jane@example.com --age 25 --admin'
+      ]
+    },
+    handler: async () => {
+      console.log(`🔄 Creating user: ${name} (${email})`);
+      if (age) console.log(`Age: ${age}`);
+      if (admin) console.log('👑 Admin privileges granted');
+      console.log('✅ User created successfully!');
+    }
+  };
+}
+```
+
+### Usage Examples
+
+#### Positional Arguments
+
 ```bash
 my-cli user create "John Doe" "john@example.com"
 ```
 
-### Named Options
+#### Named Options
+
 ```bash
 my-cli user create --name "John Doe" --email "john@example.com" --admin
 ```
 
-### Mixed Arguments (positions have higher priority)
+#### Mixed Arguments (positions have higher priority)
+
 ```bash
 my-cli user create "Jane" --email "jane@example.com" --admin
 # name will be "Jane" (from position 0), not from --name option
-```
-
-### Validation with valibot
-
-The `params.ts` files use valibot for type-safe validation:
-
-```typescript
-import * as v from 'valibot';
-
-export const schema = v.object({
-  // Required string with minimum length
-  name: v.pipe(v.string(), v.minLength(1, 'Name is required')),
-
-  // Required email validation
-  email: v.pipe(v.string(), v.email('Valid email is required')),
-
-  // Optional number with default value
-  age: v.optional(v.pipe(v.number(), v.minValue(0)), 18),
-
-  // Optional boolean flag
-  admin: v.optional(v.boolean(), false)
-});
-
-export const fieldMappings = {
-  name: { position: 0, option: 'name' },
-  email: { position: 1, option: 'email' },
-  age: { position: 2, option: 'age' },
-  admin: { option: 'admin' }  // Only available as option
-};
 ```
 
 ## 🔧 Version Configuration
@@ -252,6 +307,33 @@ export const description = 'An awesome CLI built with decopin-cli';
 export const author = 'Your Name';
 ```
 
+## � Development
+
+### Auto-Regeneration with Mise
+
+For development, use the built-in mise configuration for automatic CLI regeneration:
+
+```bash
+# Install mise (if not already installed)
+curl https://mise.run | sh
+
+# Start development mode with auto-regeneration
+npm run dev
+```
+
+This will:
+1. Build the project
+2. Watch for changes in `app/` directory
+3. Automatically regenerate the CLI when files change
+4. Hot-reload your commands without manual rebuilds
+
+### Manual Build
+
+```bash
+npm run build
+npx decopin-cli build --app-dir app --output-dir examples
+```
+
 ## 📋 CLI Options
 
 ### Build Command
@@ -261,6 +343,7 @@ decopin-cli build [options]
 ```
 
 **Options:**
+
 - `--output-dir <dir>`: Output directory (default: `dist`)
 - `--output-file <file>`: Output filename (default: `cli.js`)
 - `--app-dir <dir>`: App directory path (default: `app`)
@@ -285,32 +368,63 @@ Shows the current version of decopin-cli.
 
 ## 🔍 Advanced Features
 
-### Context Object
+### Command Context
 
-Every command handler receives a context object:
+Commands with parameters receive a `CommandContext<T>` with pre-validated data:
 
 ```typescript
-interface CommandContext {
-  args: string[];           // Positional arguments
-  options: Record<string, any>; // Named options
-  command: string;          // Command name
-  subcommand?: string;      // Subcommand name (if nested)
+interface CommandContext<T = any> {
+  validatedData?: T;        // Pre-validated and typed data from params.ts
+  rawArgs: string[];        // Original raw arguments
+  rawOptions: Record<string, any>; // Original raw options
+}
+```
+
+### Commands without Parameters
+
+For commands that don't need parameters, simply omit the `params.ts` file:
+
+```typescript
+// app/status/command.ts
+import type { CommandDefinition } from 'decopin-cli';
+
+export default function createCommand(): CommandDefinition {
+  return {
+    metadata: {
+      name: 'status',
+      description: 'Show application status',
+      examples: ['status']
+    },
+    handler: async () => {
+      console.log('✅ Application is running');
+    }
+  };
 }
 ```
 
 ### Error Handling
 
 ```typescript
-export default {
-  handler: async (context: any) => {
-    try {
-      // Your command logic here
-    } catch (error) {
-      console.error('Error:', error.message);
-      process.exit(1);
+export default function createCommand(context: CommandContext<UserData>): CommandDefinition<UserData> {
+  const { name, email } = context.validatedData!;
+
+  return {
+    metadata: {
+      name: 'create',
+      description: 'Create a new user'
+    },
+    handler: async () => {
+      try {
+        // Your command logic here
+        await createUser(name, email);
+        console.log('✅ User created successfully!');
+      } catch (error) {
+        console.error('❌ Error:', error.message);
+        process.exit(1);
+      }
     }
-  }
-};
+  };
+}
 ```
 
 ### Async Commands
@@ -318,13 +432,21 @@ export default {
 All commands support async operations:
 
 ```typescript
-export default {
-  handler: async (context: any) => {
-    const response = await fetch('https://api.example.com/data');
-    const data = await response.json();
-    console.log(data);
-  }
-};
+export default function createCommand(context: CommandContext<ApiData>): CommandDefinition<ApiData> {
+  const { endpoint } = context.validatedData!;
+
+  return {
+    metadata: {
+      name: 'fetch',
+      description: 'Fetch data from API'
+    },
+    handler: async () => {
+      const response = await fetch(endpoint);
+      const data = await response.json();
+      console.log(data);
+    }
+  };
+}
 ```
 
 ## 📦 Distribution

@@ -142,11 +142,11 @@ function createValidationFunction(paramsDefinition) {
   return async (args, options, params) => {
     try {
       const data = {};
-      
+
       // マッピング定義に基づいてデータを収集
       for (const mapping of paramsDefinition.mappings) {
         let value = mapping.defaultValue;
-        
+
         // オプション値をチェック
         if (mapping.option && options[mapping.option] !== undefined) {
           value = options[mapping.option];
@@ -155,16 +155,16 @@ function createValidationFunction(paramsDefinition) {
         else if (mapping.argIndex !== undefined && args[mapping.argIndex] !== undefined) {
           value = args[mapping.argIndex];
         }
-        
+
         data[mapping.field] = value;
       }
-      
+
       // 基本的なバリデーション（必須フィールドチェックなど）
       const issues = [];
-      
+
       for (const mapping of paramsDefinition.mappings) {
         const value = data[mapping.field];
-        
+
         // 基本的な型チェック
         if (value === undefined || value === null || value === '') {
           // デフォルト値があれば使用
@@ -178,7 +178,7 @@ function createValidationFunction(paramsDefinition) {
           }
         }
       }
-      
+
       if (issues.length > 0) {
         return {
           success: false,
@@ -188,7 +188,7 @@ function createValidationFunction(paramsDefinition) {
           }
         };
       }
-      
+
       return {
         success: true,
         data: data
