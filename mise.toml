@@ -9,5 +9,20 @@ run = [
 ]
 sources = ["src/**/*.ts", "app/**/*.ts"]
 
-[env]
-NODE_ENV = "development"
+[tasks.build-app]
+description = "appフォルダのTypeScriptファイルをビルド"
+run = "npm run build:app"
+sources = ["app/**/*.ts"]
+
+[tasks.watch-app]
+description = "appフォルダの変更を監視してビルド"
+run = "mise watch build-app"
+
+[tasks.dev-mode]
+description = "開発モード（appフォルダを監視して自動ビルド）"
+run = [
+  "echo '🚀 Starting development mode...'",
+  "npm run build:app",
+  "echo '✅ Initial build complete. Watching for changes...'",
+  "mise watch build-app"
+]
