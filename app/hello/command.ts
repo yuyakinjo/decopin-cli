@@ -6,11 +6,6 @@ export default function createCommand(context: CommandContext<HelloData>): Comma
   const { name } = context.validatedData!;
 
   return {
-    metadata: {
-      name: 'hello',
-      description: 'Say hello to someone',
-      examples: ['hello world', 'hello --name Alice']
-    },
     handler: async () => {
       console.log(`Hello, ${name}!!!`);
     }

@@ -1,6 +1,7 @@
 import { writeFile } from 'node:fs/promises';
 import { join, relative, resolve } from 'node:path';
 import type { ParsedASTResult } from '../parser/ast-parser.js';
+import { parseHelpFile } from '../parser/ast-parser.js';
 import { getVersionInfo, type VersionInfo } from '../parser/version-parser.js';
 import type { CommandStructure } from '../scanner/directory-scanner.js';
 import type { ParsedCommand } from '../types/command.js';
@@ -560,10 +561,10 @@ export async function generateCLI(
 /**
  * コマンド構造とAST解析結果を結合
  */
-export function combineCommandData(
+export async function combineCommandData(
   structures: CommandStructure[],
   astResults: Map<string, ParsedASTResult>
-): ParsedCommand[] {
+): Promise<ParsedCommand[]> {
   const commands: ParsedCommand[] = [];
 
   for (const structure of structures) {
@@ -579,12 +580,34 @@ export function combineCommandData(
       continue;
     }
 
+    // help.tsファイルがある場合はメタデータを読み込む
+    let helpMetadata = null;
+    if (structure.helpFilePath) {
+      const helpResult = await parseHelpFile(structure.helpFilePath);
+      if (helpResult.help) {
+        helpMetadata = {
+          name: helpResult.help.name,
+          description: helpResult.help.description,
+          examples: helpResult.help.examples || [],
+          aliases: helpResult.help.aliases || []
+        };
+      } else if (helpResult.errors.length > 0) {
+        console.warn(`Errors in ${structure.helpFilePath}:`, helpResult.errors);
+      }
+    }
+
+    // help.tsのメタデータがある場合は優先して使用
+    const definition = { ...astResult.definition };
+    if (helpMetadata) {
+      definition.metadata = helpMetadata;
+    }
+
     commands.push({
       path: structure.path,
       segments: structure.segments,
       dynamicParams: structure.dynamicParams,
       filePath: structure.commandFilePath,
-      definition: astResult.definition,
+      definition: definition,
     });
   }
 

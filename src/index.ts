@@ -102,7 +102,7 @@ export async function buildCLI(config: BuildConfig): Promise<BuildResult> {
     }
 
     // 3. コマンドデータを結合
-    const commands = combineCommandData(structures, astResults);
+    const commands = await combineCommandData(structures, astResults);
 
     if (config.verbose) {
       console.log(`✅ Successfully parsed ${commands.length} commands`);

@@ -16,6 +16,8 @@ export interface DirectoryEntry {
   isDirectory: boolean;
   /** command.tsファイルかどうか */
   isCommand: boolean;
+  /** help.tsファイルかどうか */
+  isHelp: boolean;
   /** validate.tsファイルかどうか */
   isValidate: boolean;
   /** error.tsファイルかどうか */
@@ -40,6 +42,8 @@ export interface CommandStructure {
   dynamicParams: DynamicParam[];
   /** command.tsファイルのパス */
   commandFilePath: string;
+  /** help.tsファイルのパス */
+  helpFilePath?: string;
   /** validate.tsファイルのパス */
   validateFilePath?: string;
   /** error.tsファイルのパス */
@@ -88,6 +92,7 @@ async function parseDirectoryEntry(
     relativePath,
     isDirectory: stats.isDirectory(),
     isCommand: name === 'command.ts',
+    isHelp: name === 'help.ts',
     isValidate: name === 'validate.ts',
     isError: name === 'error.ts',
     isParams: name === 'params.ts',
@@ -161,8 +166,11 @@ function buildCommandStructures(
 
     const commandPath = processedSegments.join('/');
 
-    // 同じディレクトリ内のvalidate.ts、error.ts、params.tsを検索
+    // 同じディレクトリ内のhelp.ts、validate.ts、error.ts、params.tsを検索
     const commandDir = commandFile.path.replace('/command.ts', '');
+    const helpFile = entries.find(
+      (entry) => entry.path === `${commandDir}/help.ts`
+    );
     const validateFile = entries.find(
       (entry) => entry.path === `${commandDir}/validate.ts`
     );
@@ -180,6 +188,10 @@ function buildCommandStructures(
       commandFilePath: commandFile.path,
       depth: segments.length,
     };
+
+    if (helpFile) {
+      structure.helpFilePath = helpFile.path;
+    }
 
     if (validateFile) {
       structure.validateFilePath = validateFile.path;

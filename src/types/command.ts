@@ -176,3 +176,19 @@ export interface ParsedCommand<T = unknown> {
   /** エラーハンドラー */
   errorHandler?: ErrorHandler;
 }
+
+/**
+ * ヘルプメタデータ（help.tsファイル用）
+ */
+export interface CommandHelpMetadata {
+  /** コマンドの名前 */
+  name: string;
+  /** コマンドの説明 */
+  description: string;
+  /** 使用例 */
+  examples?: string[];
+  /** エイリアス */
+  aliases?: string[];
+  /** 追加のヘルプテキスト */
+  additionalHelp?: string;
+}
