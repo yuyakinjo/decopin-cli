@@ -589,7 +589,7 @@ export async function combineCommandData(
           name: helpResult.help.name,
           description: helpResult.help.description,
           examples: helpResult.help.examples || [],
-          aliases: helpResult.help.aliases || []
+          aliases: helpResult.help.aliases || [],
         };
       } else if (helpResult.errors.length > 0) {
         console.warn(`Errors in ${structure.helpFilePath}:`, helpResult.errors);

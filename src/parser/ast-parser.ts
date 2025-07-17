@@ -2,9 +2,9 @@ import { readFile } from 'node:fs/promises';
 import * as ts from 'typescript';
 import type {
   CommandDefinition,
+  CommandHelpMetadata,
   CommandMetadata,
   CommandSchema,
-  CommandHelpMetadata,
 } from '../types/command.js';
 
 /**
@@ -433,15 +433,19 @@ export async function parseHelpFile(
         const isExported = modifiers?.some(
           (m) => m.kind === ts.SyntaxKind.ExportKeyword
         );
-        
+
         if (isExported) {
           for (const declaration of node.declarationList.declarations) {
-            if (ts.isVariableDeclaration(declaration) && 
-                ts.isIdentifier(declaration.name) &&
-                declaration.name.text === 'help' &&
-                declaration.initializer &&
-                ts.isObjectLiteralExpression(declaration.initializer)) {
-              helpMetadata = parseObjectLiteralAsHelpMetadata(declaration.initializer);
+            if (
+              ts.isVariableDeclaration(declaration) &&
+              ts.isIdentifier(declaration.name) &&
+              declaration.name.text === 'help' &&
+              declaration.initializer &&
+              ts.isObjectLiteralExpression(declaration.initializer)
+            ) {
+              helpMetadata = parseObjectLiteralAsHelpMetadata(
+                declaration.initializer
+              );
             }
           }
         }
@@ -454,7 +458,9 @@ export async function parseHelpFile(
   } catch (error) {
     return {
       help: null,
-      errors: [`Failed to parse help file: ${error instanceof Error ? error.message : String(error)}`]
+      errors: [
+        `Failed to parse help file: ${error instanceof Error ? error.message : String(error)}`,
+      ],
     };
   }
 }
@@ -487,14 +493,14 @@ function parseObjectLiteralAsHelpMetadata(
           if (ts.isArrayLiteralExpression(value)) {
             metadata.examples = value.elements
               .filter(ts.isStringLiteral)
-              .map(el => el.text);
+              .map((el) => el.text);
           }
           break;
         case 'aliases':
           if (ts.isArrayLiteralExpression(value)) {
             metadata.aliases = value.elements
               .filter(ts.isStringLiteral)
-              .map(el => el.text);
+              .map((el) => el.text);
           }
           break;
         case 'additionalHelp':

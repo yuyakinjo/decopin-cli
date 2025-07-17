@@ -5,7 +5,7 @@ describe('params.ts files', () => {
   describe('user/create/params.ts', () => {
     it('should export valid params definition', async () => {
       const paramsModule = await import('../../app/user/create/params.js');
-      const paramsDefinition = paramsModule.default;
+      const paramsDefinition = paramsModule.default();
 
       expect(paramsDefinition).toBeDefined();
       expect(paramsDefinition.schema).toBeDefined();
@@ -16,7 +16,7 @@ describe('params.ts files', () => {
 
     it('should have correct field mappings', async () => {
       const paramsModule = await import('../../app/user/create/params.js');
-      const paramsDefinition = paramsModule.default;
+      const paramsDefinition = paramsModule.default();
 
       const mappings = paramsDefinition.mappings;
 
@@ -35,7 +35,7 @@ describe('params.ts files', () => {
 
     it('should have valid valibot schema', async () => {
       const paramsModule = await import('../../app/user/create/params.js');
-      const paramsDefinition = paramsModule.default;
+      const paramsDefinition = paramsModule.default();
 
       // スキーマで正常なデータを検証
       const validResult = v.safeParse(paramsDefinition.schema as any, {
@@ -52,7 +52,7 @@ describe('params.ts files', () => {
 
     it('should reject invalid data', async () => {
       const paramsModule = await import('../../app/user/create/params.js');
-      const paramsDefinition = paramsModule.default;
+      const paramsDefinition = paramsModule.default();
 
       // 無効なデータ（空のname）
       const invalidResult1 = v.safeParse(paramsDefinition.schema as any, {
@@ -83,7 +83,7 @@ describe('params.ts files', () => {
   describe('hello/params.ts', () => {
     it('should export valid params definition', async () => {
       const paramsModule = await import('../../app/hello/params.js');
-      const paramsDefinition = paramsModule.default;
+      const paramsDefinition = paramsModule.default();
 
       expect(paramsDefinition).toBeDefined();
       expect(paramsDefinition.schema).toBeDefined();
@@ -94,7 +94,7 @@ describe('params.ts files', () => {
 
     it('should have correct field mappings with default value', async () => {
       const paramsModule = await import('../../app/hello/params.js');
-      const paramsDefinition = paramsModule.default;
+      const paramsDefinition = paramsModule.default();
 
       const mappings = paramsDefinition.mappings;
 
@@ -108,7 +108,7 @@ describe('params.ts files', () => {
 
     it('should have valid valibot schema', async () => {
       const paramsModule = await import('../../app/hello/params.js');
-      const paramsDefinition = paramsModule.default;
+      const paramsDefinition = paramsModule.default();
 
       // スキーマで正常なデータを検証
       const validResult = v.safeParse(paramsDefinition.schema as any, {
@@ -123,7 +123,7 @@ describe('params.ts files', () => {
 
     it('should reject invalid data', async () => {
       const paramsModule = await import('../../app/hello/params.js');
-      const paramsDefinition = paramsModule.default;
+      const paramsDefinition = paramsModule.default();
 
       // 無効なデータ（空のname）
       const invalidResult = v.safeParse(paramsDefinition.schema as any, {

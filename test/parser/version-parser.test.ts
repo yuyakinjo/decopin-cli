@@ -5,7 +5,7 @@ import {
   getVersionInfo,
   hasVersionFile,
   parseVersionFile,
-} from './version-parser.js';
+} from '../../src/parser/version-parser.js';
 
 describe('Version Parser', () => {
   const testAppDir = join(process.cwd(), 'test-app-version');

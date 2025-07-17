@@ -1,7 +1,7 @@
 import * as v from 'valibot';
 import { describe, expect, it } from 'vitest';
-import type { ParamsDefinition } from '../types/command.js';
-import { createValidationFunction, extractData } from './validation.js';
+import type { ParamsDefinition } from '../../src/types/command.js';
+import { createValidationFunction, extractData } from '../../src/utils/validation.js';
 
 describe('validation utils', () => {
   describe('extractData', () => {

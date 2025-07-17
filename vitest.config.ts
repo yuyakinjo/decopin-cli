@@ -3,7 +3,7 @@ import { defineConfig } from 'vitest/config'
 export default defineConfig({
   test: {
     // Test files pattern
-    include: ['src/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'],
+    include: ['test/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'],
     exclude: ['node_modules', 'dist', 'app'],
 
     // Environment
@@ -16,7 +16,7 @@ export default defineConfig({
         'node_modules/',
         'dist/',
         'app/',
-        'src/**/*.{test,spec}.{js,ts}',
+        'test/**/*.{test,spec}.{js,ts}',
         'src/cli.ts', // CLI entry point
       ],
     },

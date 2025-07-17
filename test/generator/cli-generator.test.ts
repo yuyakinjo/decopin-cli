@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import type { ParsedCommand } from '../types/command.js';
-import { generateCLI } from './cli-generator.js';
+import type { ParsedCommand } from '../../src/types/command.js';
+import { generateCLI } from '../../src/generator/cli-generator.js';
 
 describe('CLI Generator - Params Support', () => {
   it('should generate CLI with params mapping', async () => {
