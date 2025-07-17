@@ -71,6 +71,36 @@ export async function generateCLI(
 }
 
 /**
+ * help.tsからメタデータを読み込むための専用関数
+ */
+async function loadHelpMetadata(filePath: string | undefined) {
+  // ファイルパスがなければ、何もせず null を返す (ガード節)
+  if (!filePath) {
+    return null;
+  }
+
+  const helpResult = await parseHelpFile(filePath);
+
+  // エラーがあれば警告を表示する
+  if (helpResult.errors.length > 0) {
+    console.warn(`Errors in ${filePath}:`, helpResult.errors);
+  }
+
+  // help.ts の解析結果からメタデータがあれば、整形して返す
+  if (helpResult.help) {
+    return {
+      name: helpResult.help.name,
+      description: helpResult.help.description,
+      examples: helpResult.help.examples || [],
+      aliases: helpResult.help.aliases || [],
+    };
+  }
+
+  // メタデータが見つからなければ null を返す
+  return null;
+}
+
+/**
  * コマンド構造とAST解析結果を結合
  */
 export async function combineCommandData(
@@ -92,23 +122,10 @@ export async function combineCommandData(
       continue;
     }
 
-    // help.tsファイルがある場合はメタデータを読み込む
-    let helpMetadata = null;
-    if (structure.helpFilePath) {
-      const helpResult = await parseHelpFile(structure.helpFilePath);
-      if (helpResult.help) {
-        helpMetadata = {
-          name: helpResult.help.name,
-          description: helpResult.help.description,
-          examples: helpResult.help.examples || [],
-          aliases: helpResult.help.aliases || [],
-        };
-      } else if (helpResult.errors.length > 0) {
-        console.warn(`Errors in ${structure.helpFilePath}:`, helpResult.errors);
-      }
-    }
+    // 1行でメタデータの読み込みを試行し、結果を const で受け取る
+    const helpMetadata = await loadHelpMetadata(structure.helpFilePath);
 
-    // help.tsのメタデータがある場合は優先して使用
+    // 三項演算子を使って、メタデータがあればマージする
     const definitionWithMetadata = helpMetadata
       ? { ...astResult.definition, metadata: helpMetadata }
       : astResult.definition;
