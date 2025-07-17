@@ -1,5 +1,9 @@
 # decopin-cli
 
+[![Test](https://github.com/yuyakinjo/decopin-cli/actions/workflows/test.yml/badge.svg)](https://github.com/yuyakinjo/decopin-cli/actions/workflows/test.yml)
+[![Build Check](https://github.com/yuyakinjo/decopin-cli/actions/workflows/build.yml/badge.svg)](https://github.com/yuyakinjo/decopin-cli/actions/workflows/build.yml)
+[![Lint and Format](https://github.com/yuyakinjo/decopin-cli/actions/workflows/lint-format.yml/badge.svg)](https://github.com/yuyakinjo/decopin-cli/actions/workflows/lint-format.yml)
+
 A TypeScript-first CLI builder inspired by Next.js App Router's file-based routing system. Create powerful command-line interfaces with zero configuration using familiar file-based conventions and pre-validated, type-safe command contexts.
 
 ## ✨ Features
@@ -41,19 +45,35 @@ mkdir -p app/hello
 ```
 
 3. **Create `app/hello/params.ts` for type-safe argument validation**:
+
 ```typescript
-import { object, string, pipe, minLength } from 'valibot';
+import * as v from 'valibot';
+import type { ParamsDefinition } from 'decopin-cli';
 
-export interface HelloData {
-  name: string;
-}
-
-export const schema = object({
-  name: pipe(string(), minLength(1))
+// Hello コマンドのデータスキーマ
+const HelloSchema = v.object({
+  name: v.pipe(v.string(), v.minLength(1, 'Name cannot be empty')),
 });
+
+export type HelloData = v.InferInput<typeof HelloSchema>;
+
+export default function createParams(): ParamsDefinition {
+  return {
+    schema: HelloSchema,
+    mappings: [
+      {
+        field: 'name',
+        option: 'name',
+        argIndex: 0,
+        defaultValue: 'World',
+      },
+    ],
+  };
+}
 ```
 
 4. **Create `app/hello/command.ts`**:
+
 ```typescript
 import type { CommandDefinition, CommandContext } from 'decopin-cli';
 import type { HelloData } from './params.js';
@@ -63,14 +83,9 @@ export default function createCommand(context: CommandContext<HelloData>): Comma
   const { name } = context.validatedData!;
 
   return {
-    metadata: {
-      name: 'hello',
-      description: 'Say hello to someone',
-      examples: ['hello Alice', 'hello --name Bob']
-    },
     handler: async () => {
-      console.log(`Hello, ${name}!`);
-    }
+      console.log(`Hello, ${name}!!!`);
+    },
   };
 }
 ```
@@ -98,23 +113,14 @@ node dist/cli.js hello --name Bob
 decopin-cli uses a factory pattern where commands are functions that receive pre-validated context:
 
 ```typescript
-// Traditional approach (old)
-export default {
-  handler: async (context) => {
-    // Manual validation needed
-    const name = context.args[0] || 'World';
-    console.log(`Hello, ${name}!`);
-  }
-};
-
 // decopin-cli approach (current)
 export default function createCommand(context: CommandContext<HelloData>): CommandDefinition<HelloData> {
   const { name } = context.validatedData!; // Already validated and typed!
 
   return {
     handler: async () => {
-      console.log(`Hello, ${name}!`);
-    }
+      console.log(`Hello, ${name}!!!`);
+    },
   };
 }
 ```
@@ -123,9 +129,9 @@ export default function createCommand(context: CommandContext<HelloData>): Comma
 
 Validation is automatically integrated - no separate `validate.ts` files needed:
 
-```
+```text
 app/hello/
-├── params.ts    # ✅ Types + Validation Schema
+├── params.ts    # ✅ Types + Validation Schema + Mappings
 └── command.ts   # ✅ Command Logic (receives validated data)
 
 # No longer needed:
@@ -165,15 +171,29 @@ my-cli/
 
 ```typescript
 // app/hello/params.ts
-import { object, string, pipe, minLength } from 'valibot';
+import * as v from 'valibot';
+import type { ParamsDefinition } from 'decopin-cli';
 
-export interface HelloData {
-  name: string;
-}
-
-export const schema = object({
-  name: pipe(string(), minLength(1))
+// Hello コマンドのデータスキーマ
+const HelloSchema = v.object({
+  name: v.pipe(v.string(), v.minLength(1, 'Name cannot be empty')),
 });
+
+export type HelloData = v.InferInput<typeof HelloSchema>;
+
+export default function createParams(): ParamsDefinition {
+  return {
+    schema: HelloSchema,
+    mappings: [
+      {
+        field: 'name',
+        option: 'name',
+        argIndex: 0,
+        defaultValue: 'World',
+      },
+    ],
+  };
+}
 ```
 
 ```typescript
@@ -186,14 +206,9 @@ export default function createCommand(context: CommandContext<HelloData>): Comma
   const { name } = context.validatedData!;
 
   return {
-    metadata: {
-      name: 'hello',
-      description: 'Say hello to someone',
-      examples: ['hello Alice', 'hello --name Bob']
-    },
     handler: async () => {
-      console.log(`Hello, ${name}!`);
-    }
+      console.log(`Hello, ${name}!!!`);
+    },
   };
 }
 ```
@@ -202,19 +217,18 @@ export default function createCommand(context: CommandContext<HelloData>): Comma
 
 ```typescript
 // app/user/list/command.ts
-import type { CommandDefinition } from 'decopin-cli';
+import type { CommandDefinition, CommandContext } from 'decopin-cli';
 
-export default function createCommand(): CommandDefinition {
+export default function createCommand(context: CommandContext): CommandDefinition {
   return {
-    metadata: {
-      name: 'list',
-      description: 'List all users',
-      examples: ['user list']
-    },
-    handler: async () => {
-      // コマンドロジック
+    handler: async (context: CommandContext) => {
+      const limit = Number(context.options.limit) || 10;
+
       console.log('📋 User List:');
-      // ... list users
+      for (let i = 1; i <= limit; i++) {
+        console.log(`  ${i}. User ${i} (user${i}@example.com)`);
+      }
+      console.log(`\n📊 Showing ${limit} users`);
     }
   };
 }
@@ -228,21 +242,34 @@ decopin-cli automatically handles argument validation and type conversion based 
 
 ```typescript
 // app/user/create/params.ts
-import { object, string, email, pipe, minLength, number, minValue, optional, boolean } from 'valibot';
+import * as v from 'valibot';
+import type { ParamsDefinition } from 'decopin-cli';
 
-export interface CreateUserData {
-  name: string;
-  email: string;
-  age?: number;
-  admin?: boolean;
-}
-
-export const schema = object({
-  name: pipe(string(), minLength(1, 'Name is required')),
-  email: pipe(string(), email('Valid email is required')),
-  age: optional(pipe(number(), minValue(0))),
-  admin: optional(boolean())
+// ユーザー作成データのスキーマ
+const CreateUserSchema = v.object({
+  name: v.pipe(v.string(), v.minLength(1, 'Name is required')),
+  email: v.pipe(v.string(), v.email('Invalid email format')),
 });
+
+export type CreateUserData = v.InferInput<typeof CreateUserSchema>;
+
+export default function createParams(): ParamsDefinition {
+  return {
+    schema: CreateUserSchema,
+    mappings: [
+      {
+        field: 'name',
+        option: 'name',
+        argIndex: 0,
+      },
+      {
+        field: 'email',
+        option: 'email',
+        argIndex: 1,
+      },
+    ],
+  };
+}
 ```
 
 ### Command Implementation with Pre-Validated Data
@@ -253,21 +280,16 @@ import type { CommandDefinition, CommandContext } from 'decopin-cli';
 import type { CreateUserData } from './params.js';
 
 export default function createCommand(context: CommandContext<CreateUserData>): CommandDefinition<CreateUserData> {
-  const { name, email, age, admin } = context.validatedData!;
+  // バリデーション済みのデータを使用
+  const { name, email } = context.validatedData!;
 
   return {
-    metadata: {
-      name: 'create',
-      description: 'Create a new user',
-      examples: [
-        'user create John john@example.com',
-        'user create "Jane Smith" jane@example.com --age 25 --admin'
-      ]
-    },
     handler: async () => {
       console.log(`🔄 Creating user: ${name} (${email})`);
-      if (age) console.log(`Age: ${age}`);
-      if (admin) console.log('👑 Admin privileges granted');
+
+      // 実際の処理をここに実装
+      // 例: await createUser({ name, email });
+
       console.log('✅ User created successfully!');
     }
   };
@@ -285,13 +307,13 @@ my-cli user create "John Doe" "john@example.com"
 #### Named Options
 
 ```bash
-my-cli user create --name "John Doe" --email "john@example.com" --admin
+my-cli user create --name "John Doe" --email "john@example.com"
 ```
 
 #### Mixed Arguments (positions have higher priority)
 
 ```bash
-my-cli user create "Jane" --email "jane@example.com" --admin
+my-cli user create "Jane" --email "jane@example.com"
 # name will be "Jane" (from position 0), not from --name option
 ```
 
