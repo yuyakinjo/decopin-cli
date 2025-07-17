@@ -12,6 +12,7 @@ A TypeScript-first CLI builder inspired by Next.js App Router's file-based routi
 - **🎯 Flexible argument handling**: Support for both positional arguments and named options
 - **🔄 Real-time development**: Changes reflect instantly without restarts
 - **📦 Zero configuration**: Works out of the box with sensible defaults
+- **🔧 Function-based exports**: Both object and function-based exports supported for command definitions
 
 ## 🚀 Quick Start
 
@@ -41,30 +42,45 @@ mkdir -p app/hello
 
 3. **Create `app/hello/command.ts`**:
 ```typescript
-export default {
-  metadata: {
-    name: 'hello',
-    description: 'Say hello to someone',
-    examples: ['hello world', 'hello --name Alice']
-  },
-  handler: async (context: any) => {
-    const name = context.options.name || context.args[0] || 'World';
-    console.log(`Hello, ${name}!`);
-  }
-};
+import type { CommandDefinition, CommandContext } from 'decopin-cli';
+
+export default function createCommand(): CommandDefinition {
+  return {
+    metadata: {
+      name: 'hello',
+      description: 'Say hello to someone',
+      examples: ['hello world', 'hello --name Alice']
+    },
+    handler: async (context: CommandContext) => {
+      const name = context.options.name || context.args[0] || 'World';
+      console.log(`Hello, ${name}!`);
+    }
+  };
+}
 ```
 
 4. **Create `app/hello/params.ts` for type-safe argument validation**:
 ```typescript
 import * as v from 'valibot';
+import type { ParamsDefinition } from 'decopin-cli';
 
-export const schema = v.object({
+const HelloSchema = v.object({
   name: v.optional(v.string(), 'World')
 });
 
-export const fieldMappings = {
-  name: { position: 0, option: 'name' }
-};
+export default function createParams(): ParamsDefinition {
+  return {
+    schema: HelloSchema,
+    mappings: [
+      {
+        field: 'name',
+        option: 'name',
+        argIndex: 0,
+        defaultValue: 'World',
+      },
+    ],
+  };
+}
 ```
 
 5. **Generate your CLI**:

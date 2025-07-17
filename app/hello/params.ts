@@ -8,16 +8,16 @@ const HelloSchema = v.object({
 
 export type HelloData = v.InferInput<typeof HelloSchema>;
 
-const paramsDefinition: ParamsDefinition = {
-  schema: HelloSchema,
-  mappings: [
-    {
-      field: 'name',
-      option: 'name',
-      argIndex: 0,
-      defaultValue: 'World',
-    },
-  ],
-};
-
-export default paramsDefinition;
+export default function createParams(): ParamsDefinition {
+  return {
+    schema: HelloSchema,
+    mappings: [
+      {
+        field: 'name',
+        option: 'name',
+        argIndex: 0,
+        defaultValue: 'World',
+      },
+    ],
+  };
+}

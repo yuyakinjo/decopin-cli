@@ -15,7 +15,7 @@ export interface CommandMetadata {
 /**
  * バリデーション結果
  */
-export interface ValidationResult<T = any> {
+export interface ValidationResult<T = unknown> {
   /** バリデーションが成功したかどうか */
   success: boolean;
   /** バリデーション成功時のデータ */
@@ -50,7 +50,7 @@ export interface CommandSchema {
 /**
  * コマンドの実行コンテキスト
  */
-export interface CommandContext<T = any> {
+export interface CommandContext<T = unknown> {
   /** 解析された引数 */
   args: unknown[];
   /** 解析されたオプション */
@@ -66,14 +66,14 @@ export interface CommandContext<T = any> {
 /**
  * コマンドハンドラーの型
  */
-export type CommandHandler<T = any> = (
+export type CommandHandler<T = unknown> = (
   context: CommandContext<T>
 ) => Promise<void> | void;
 
 /**
  * ミドルウェア関数の型
  */
-export type MiddlewareFunction<T = any> = (
+export type MiddlewareFunction<T = unknown> = (
   context: CommandContext<T>,
   next: () => Promise<void> | void
 ) => Promise<void> | void;
@@ -119,7 +119,7 @@ export type ErrorHandler = (error: ValidationError) => Promise<void> | void;
 /**
  * command.tsファイルでエクスポートすべき型
  */
-export interface CommandDefinition<T = any> {
+export interface CommandDefinition<T = unknown> {
   /** コマンドのメタデータ */
   metadata?: CommandMetadata;
   /** 引数とオプションのスキーマ */
@@ -129,6 +129,16 @@ export interface CommandDefinition<T = any> {
   /** メインのハンドラー関数 */
   handler: CommandHandler<T>;
 }
+
+/**
+ * command.tsファイルの関数形式のexport
+ */
+export type CommandDefinitionFunction<T = unknown> = () => CommandDefinition<T>;
+
+/**
+ * params.tsファイルの関数形式のexport
+ */
+export type ParamsDefinitionFunction = () => ParamsDefinition;
 
 /**
  * 動的パラメータ情報
@@ -143,7 +153,7 @@ export interface DynamicParam {
 /**
  * 解析されたコマンド情報
  */
-export interface ParsedCommand<T = any> {
+export interface ParsedCommand<T = unknown> {
   /** コマンドパス（例: 'user/create'） */
   path: string;
   /** セグメント（例: ['user', 'create']） */

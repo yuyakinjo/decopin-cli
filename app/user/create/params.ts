@@ -9,20 +9,20 @@ const CreateUserSchema = v.object({
 
 export type CreateUserData = v.InferInput<typeof CreateUserSchema>;
 
-const paramsDefinition: ParamsDefinition = {
-  schema: CreateUserSchema,
-  mappings: [
-    {
-      field: 'name',
-      option: 'name',
-      argIndex: 0,
-    },
-    {
-      field: 'email',
-      option: 'email',
-      argIndex: 1,
-    },
-  ],
-};
-
-export default paramsDefinition;
+export default function createParams(): ParamsDefinition {
+  return {
+    schema: CreateUserSchema,
+    mappings: [
+      {
+        field: 'name',
+        option: 'name',
+        argIndex: 0,
+      },
+      {
+        field: 'email',
+        option: 'email',
+        argIndex: 1,
+      },
+    ],
+  };
+}

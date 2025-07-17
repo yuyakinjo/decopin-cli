@@ -199,7 +199,8 @@ export async function listCommands(
 export const builderInfo = {
   name: 'decopin-cli',
   version: '0.1.0',
-  description: 'Next.js App Router風のファイルベースCLIビルダー',
+  description:
+    'Next.js App Router風のファイルベースCLIビルダー（関数形式export対応）',
 };
 
 export type {

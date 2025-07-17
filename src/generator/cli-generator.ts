@@ -1,5 +1,5 @@
 import { writeFile } from 'node:fs/promises';
-import { join } from 'node:path';
+import { join, relative, resolve } from 'node:path';
 import type { ParsedASTResult } from '../parser/ast-parser.js';
 import { getVersionInfo, type VersionInfo } from '../parser/version-parser.js';
 import type { CommandStructure } from '../scanner/directory-scanner.js';
@@ -55,7 +55,13 @@ function generateMainCLI(
   const commandRoutes = commands
     .map((cmd) => {
       const routeKey = cmd.path || 'root';
-      const importPath = `../${cmd.filePath.replace('.ts', '.js')}`;
+      // appディレクトリを基準とした相対パスを生成
+      const absoluteAppDir = resolve(config.appDir);
+      const relativePath = relative(absoluteAppDir, cmd.filePath).replace(
+        '.ts',
+        '.js'
+      );
+      const importPath = `./${relativePath}`;
       return `  '${routeKey}': () => import('${importPath}').then(m => m.default)`;
     })
     .join(',\n');
@@ -64,8 +70,12 @@ function generateMainCLI(
   const validateRoutes = commands
     .map((cmd) => {
       const routeKey = cmd.path || 'root';
-      const dirPath = cmd.filePath.replace('/command.ts', '');
-      const validatePath = `../${dirPath}/validate.js`;
+      const absoluteAppDir = resolve(config.appDir);
+      const dirPath = relative(
+        absoluteAppDir,
+        cmd.filePath.replace('/command.ts', '')
+      );
+      const validatePath = `./${dirPath}/validate.js`;
       return `  '${routeKey}': () => import('${validatePath}').then(m => m.default).catch(() => null)`;
     })
     .join(',\n');
@@ -74,8 +84,12 @@ function generateMainCLI(
   const errorRoutes = commands
     .map((cmd) => {
       const routeKey = cmd.path || 'root';
-      const dirPath = cmd.filePath.replace('/command.ts', '');
-      const errorPath = `../${dirPath}/error.js`;
+      const absoluteAppDir = resolve(config.appDir);
+      const dirPath = relative(
+        absoluteAppDir,
+        cmd.filePath.replace('/command.ts', '')
+      );
+      const errorPath = `./${dirPath}/error.js`;
       return `  '${routeKey}': () => import('${errorPath}').then(m => m.default).catch(() => null)`;
     })
     .join(',\n');
@@ -223,11 +237,29 @@ async function main() {
   try {
     // コマンドを動的にインポート
     const commandModule = await commandRoutes[command.path]();
-    const commandDefinition = commandModule;
+    let commandDefinition = commandModule;
+
+    // 関数形式の場合は呼び出してCommandDefinitionを取得
+    if (typeof commandDefinition === 'function') {
+      commandDefinition = commandDefinition();
+    }
 
     // バリデーションとエラーハンドラーを動的にインポート
-    const validateFunction = validateRoutes[command.path] ? await validateRoutes[command.path]() : null;
-    const errorHandler = errorRoutes[command.path] ? await errorRoutes[command.path]() : null;
+    const validateModule = validateRoutes[command.path] ? await validateRoutes[command.path]() : null;
+    let validateFunction = validateModule;
+
+    // 関数形式の場合は呼び出してバリデーション関数を取得
+    if (typeof validateFunction === 'function' && validateFunction.length === 0) {
+      validateFunction = validateFunction();
+    }
+
+    const errorModule = errorRoutes[command.path] ? await errorRoutes[command.path]() : null;
+    let errorHandler = errorModule;
+
+    // 関数形式の場合は呼び出してエラーハンドラーを取得
+    if (typeof errorHandler === 'function' && errorHandler.length === 0) {
+      errorHandler = errorHandler();
+    }
 
     // コンテキストを作成
     const context = {

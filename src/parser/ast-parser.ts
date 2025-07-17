@@ -41,15 +41,21 @@ function extractCommandDefinition(
         );
         hasHandler = true;
       }
-      // export default function() { ... } の形式
+      // export default function() { ... } の形式（関数形式のcommandDefinition）
       else if (
         ts.isFunctionExpression(node.expression) ||
         ts.isArrowFunction(node.expression)
       ) {
+        commandDefinition = {
+          handler: async () => {}, // 実際の関数は動的にインポートで取得
+        };
         hasHandler = true;
       }
-      // export default function name() { ... } の形式
+      // export default function name() { ... } の形式（関数形式のcommandDefinition）
       else if (ts.isFunctionDeclaration(node.expression)) {
+        commandDefinition = {
+          handler: async () => {}, // 実際の関数は動的にインポートで取得
+        };
         hasHandler = true;
       }
       // export default identifier の形式（変数を参照）
@@ -60,6 +66,13 @@ function extractCommandDefinition(
           commandDefinition = variableDefinition;
           hasHandler = true;
         }
+      }
+      // export default 関数呼び出し（関数形式のcommandDefinition）
+      else if (ts.isCallExpression(node.expression)) {
+        commandDefinition = {
+          handler: async () => {}, // 実際の関数は動的にインポートで取得
+        };
+        hasHandler = true;
       }
     }
 
