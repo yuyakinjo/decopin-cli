@@ -1,6 +1,6 @@
 ---
 globs: *.ts
-alwaysApply: false
+alwaysApply: true
 ---
 # Decopin CLI - コーディング指示
 
