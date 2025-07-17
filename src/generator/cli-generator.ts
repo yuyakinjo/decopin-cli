@@ -654,17 +654,16 @@ export async function combineCommandData(
     }
 
     // help.tsのメタデータがある場合は優先して使用
-    const definition = { ...astResult.definition };
-    if (helpMetadata) {
-      definition.metadata = helpMetadata;
-    }
+    const definitionWithMetadata = helpMetadata
+      ? { ...astResult.definition, metadata: helpMetadata }
+      : astResult.definition;
 
     commands.push({
       path: structure.path,
       segments: structure.segments,
       dynamicParams: structure.dynamicParams,
       filePath: structure.commandFilePath,
-      definition: definition,
+      definition: definitionWithMetadata,
     });
   }
 

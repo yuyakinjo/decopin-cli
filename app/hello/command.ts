@@ -8,6 +8,6 @@ export default function createCommand(context: CommandContext<HelloData>): Comma
   return {
     handler: async () => {
       console.log(`Hello, ${name}!!!`);
-    }
+    },
   };
 }

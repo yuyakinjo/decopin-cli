@@ -120,10 +120,6 @@ export type ErrorHandler = (error: ValidationError) => Promise<void> | void;
  * command.tsファイルでエクスポートすべき型
  */
 export interface CommandDefinition<T = unknown> {
-  /** コマンドのメタデータ */
-  metadata?: CommandMetadata;
-  /** 引数とオプションのスキーマ */
-  schema?: CommandSchema;
   /** ミドルウェア関数 */
   middleware?: MiddlewareFunction<T>[];
   /** メインのハンドラー関数 */
@@ -170,7 +166,10 @@ export interface ParsedCommand<T = unknown> {
   /** ファイルパス */
   filePath: string;
   /** コマンド定義 */
-  definition: CommandDefinition<T>;
+  definition: CommandDefinition<T> & {
+    /** help.tsから読み込まれたメタデータ */
+    metadata?: CommandMetadata;
+  };
   /** バリデーション関数 */
   validate?: ValidationFunction;
   /** エラーハンドラー */

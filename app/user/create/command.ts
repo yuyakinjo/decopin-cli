@@ -6,14 +6,6 @@ export default function createCommand(context: CommandContext<CreateUserData>): 
   const { name, email } = context.validatedData!;
 
   return {
-    metadata: {
-      name: 'create',
-      description: 'Create a new user',
-      examples: [
-        'user create --name john --email john@example.com',
-        'user create john john@example.com'
-      ]
-    },
     handler: async () => {
       console.log(`🔄 Creating user: ${name} (${email})`);
 

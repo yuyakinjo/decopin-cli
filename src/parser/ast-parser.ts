@@ -197,16 +197,6 @@ function parseObjectLiteralAsCommandDefinition(
       const propertyName = property.name.text;
 
       switch (propertyName) {
-        case 'metadata':
-          if (ts.isObjectLiteralExpression(property.initializer)) {
-            definition.metadata = parseMetadata(property.initializer);
-          }
-          break;
-        case 'schema':
-          if (ts.isObjectLiteralExpression(property.initializer)) {
-            definition.schema = parseSchema(property.initializer);
-          }
-          break;
         case 'middleware':
           // middleware は配列として解析（詳細は省略）
           definition.middleware = [];
@@ -214,6 +204,12 @@ function parseObjectLiteralAsCommandDefinition(
         case 'handler':
           // handler は関数として解析（実際の実装は動的インポートで取得）
           definition.handler = async () => {};
+          break;
+        // metadata と schema は command.ts では処理しない
+        // (help.ts と params.ts で個別に管理)
+        case 'metadata':
+        case 'schema':
+          // 何もしない - 後方互換性のためのケース
           break;
       }
     }
