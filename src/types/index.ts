@@ -1,11 +1,12 @@
-// 後方互換性のため、統合的に型を再エクスポート
-// 新しいコードでは src/types/index.ts を使用することを推奨
+// 型定義の統合エクスポート
 
+// 実行コンテキスト関連
 export type {
   CommandContext,
   CommandHandler,
   MiddlewareFunction,
 } from './context.js';
+// コマンド定義関連
 export type {
   CommandDefinition,
   CommandDefinitionFactory,
@@ -14,11 +15,13 @@ export type {
   ParsedCommand,
 } from './definition.js';
 
+// メタデータ関連
 export type {
   CommandMetadata,
   CommandHelpMetadata,
   CommandSchema,
 } from './metadata.js';
+// バリデーション関連
 export type {
   ErrorHandler,
   ParamMapping,

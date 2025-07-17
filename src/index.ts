@@ -212,9 +212,24 @@ export type {
   CommandStructure,
   DirectoryEntry,
 } from './scanner/directory-scanner.js';
-// 主要な型をエクスポート
+// 統合型エクスポート
 export type {
   CommandContext,
   CommandDefinition,
+  CommandDefinitionFactory,
+  CommandDefinitionFunction,
   CommandHandler,
-} from './types/command.js';
+  CommandHelpMetadata,
+  CommandMetadata,
+  CommandSchema,
+  DynamicParam,
+  ErrorHandler,
+  MiddlewareFunction,
+  ParamMapping,
+  ParamsDefinition,
+  ParamsDefinitionFunction,
+  ParsedCommand,
+  ValidationError,
+  ValidationFunction,
+  ValidationResult,
+} from './types/index.js';
