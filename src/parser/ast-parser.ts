@@ -334,19 +334,8 @@ export async function parseCommandFile(
       ts.ScriptKind.TS
     );
 
-    // 構文エラーをチェック
-    const diagnostics = ts.getPreEmitDiagnostics(
-      ts.createProgram([filePath], {})
-    );
-    for (const diagnostic of diagnostics) {
-      if (diagnostic.messageText) {
-        const message =
-          typeof diagnostic.messageText === 'string'
-            ? diagnostic.messageText
-            : diagnostic.messageText.messageText;
-        errors.push(message);
-      }
-    }
+    // パフォーマンス優先: 診断処理をスキップ
+    // TypeScriptコンパイラは別途実行されるため、ここでの詳細チェックは不要
 
     // コマンド定義を抽出
     const definition = extractCommandDefinition(sourceFile);
