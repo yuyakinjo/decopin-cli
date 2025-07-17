@@ -131,6 +131,13 @@ export interface CommandDefinition<T = unknown> {
 }
 
 /**
+ * command.tsファイルの新しい関数形式のexport（バリデーション済みコンテキスト付き）
+ */
+export type CommandDefinitionFactory<T = unknown> = (
+  context: CommandContext<T>
+) => CommandDefinition<T>;
+
+/**
  * command.tsファイルの関数形式のexport
  */
 export type CommandDefinitionFunction<T = unknown> = () => CommandDefinition<T>;

@@ -1,7 +1,10 @@
 import type { CommandDefinition, CommandContext } from '../../../dist/types/command.js';
 import type { CreateUserData } from './params.js';
 
-export default function createCommand(): CommandDefinition<CreateUserData> {
+export default function createCommand(context: CommandContext<CreateUserData>): CommandDefinition<CreateUserData> {
+  // バリデーション済みのデータを使用
+  const { name, email } = context.validatedData!;
+
   return {
     metadata: {
       name: 'create',
@@ -11,10 +14,7 @@ export default function createCommand(): CommandDefinition<CreateUserData> {
         'user create john john@example.com'
       ]
     },
-    handler: async (context: CommandContext<CreateUserData>) => {
-      // バリデーション済みのデータを使用
-      const { name, email } = context.validatedData!;
-
+    handler: async () => {
       console.log(`🔄 Creating user: ${name} (${email})`);
 
       // 実際の処理をここに実装
