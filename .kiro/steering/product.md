@@ -1,24 +1,60 @@
-# Product Overview
+---
+inclusion: always
+---
 
-**decopin-cli** is a TypeScript-first CLI builder inspired by Next.js App Router's file-based routing system.
+# Product Overview & Development Guidelines
 
-## Core Purpose
-Create powerful command-line interfaces with zero configuration using familiar file-based conventions. Commands are defined in an `app/` directory structure that mirrors Next.js App Router patterns.
+**decopin-cli** is a TypeScript-first CLI builder that uses Next.js App Router-inspired file-based routing to create command-line interfaces with zero configuration.
 
-## Key Features
-- **File-based routing**: Commands defined in `app/` directory with intuitive folder structure
-- **TypeScript-first**: Full TypeScript support with proper type definitions
-- **Dynamic imports**: Generated CLIs use dynamic imports for instant command loading
-- **AST parsing**: TypeScript AST parsing for automatic command metadata extraction
-- **Type-safe validation**: Built-in validation with valibot for robust argument parsing
-- **Flexible argument handling**: Support for both positional arguments and named options
-- **Real-time development**: Changes reflect instantly without restarts
-- **Zero configuration**: Works out of the box with sensible defaults
+## Core Architecture Principles
 
-## Target Users
-Developers who want to build CLIs with the same developer experience as building Next.js applications - file-based, type-safe, and convention-over-configuration.
+Commands are defined in the `app/` directory using file-based conventions:
 
-## Philosophy
-- **Parse, Don't Validate**: Use valibot to parse inputs into type-safe structures rather than just validating
-- **Developer Experience First**: Prioritize ease of use and type safety
-- **Convention over Configuration**: Sensible defaults with minimal setup required
+- Each command lives in its own folder (e.g., `app/hello/`, `app/user/create/`)
+- Required files: `command.ts` (command implementation)
+- Optional files: `params.ts` (validation schema), `help.ts`, `error.ts`
+- Nested commands supported through folder nesting
+
+## Development Rules
+
+### File Structure Requirements
+
+- **Source code**: Only `.ts` files in `src/` and `app/` directories
+- **Build outputs**: `src/` compiles to `dist/`, `app/` compiles to `examples/`
+- **Command files**: Must export default with proper TypeScript types
+- **Import conventions**: Use `.js` extensions when importing from compiled output
+
+### Type Safety Requirements
+
+- All command handlers must use `CommandDefinition<T>` type
+- Validation schemas must use valibot with proper type inference
+- Parameter mappings required for argument/option binding
+- Context objects must be properly typed with `CommandContext<T>`
+
+### Code Patterns to Follow
+
+```typescript
+// Command structure
+const command: CommandDefinition<DataType> = {
+  metadata: { name, description, examples },
+  handler: async (context: CommandContext<DataType>) => { /* implementation */ }
+};
+
+// Validation pattern
+const Schema = v.object({ /* valibot schema */ });
+export type DataType = v.InferInput<typeof Schema>;
+```
+
+## Key Constraints
+
+- **Parse, Don't Validate**: Always use valibot to parse inputs into type-safe structures
+- **Dynamic imports**: Generated CLIs must use dynamic imports for command loading
+- **ESM modules**: Pure ES modules with `"type": "module"`
+- **Zero configuration**: Commands work without additional setup files
+
+## Development Workflow
+
+- Changes to `app/` directory automatically reflect in generated CLI
+- Use `npm run dev:regen` to regenerate CLI after structural changes
+- Test commands using the generated CLI in `examples/` directory
+- Maintain type safety throughout the entire command pipeline
