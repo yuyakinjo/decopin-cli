@@ -142,10 +142,10 @@ export function extractCommandDefinition(
   // メタデータとスキーマが個別にエクスポートされている場合は統合
   if (commandDefinition && (metadata || schema)) {
     if (metadata) {
-      (commandDefinition as any).metadata = metadata;
+      Object.assign(commandDefinition, { metadata });
     }
     if (schema) {
-      (commandDefinition as any).schema = schema;
+      Object.assign(commandDefinition, { schema });
     }
   }
 
@@ -170,12 +170,16 @@ export function parseObjectLiteralAsCommandDefinition(
           break;
         case 'metadata':
           if (ts.isObjectLiteralExpression(property.initializer)) {
-            (definition as any).metadata = parseMetadata(property.initializer);
+            Object.assign(definition, {
+              metadata: parseMetadata(property.initializer),
+            });
           }
           break;
         case 'schema':
           if (ts.isObjectLiteralExpression(property.initializer)) {
-            (definition as any).schema = parseSchema(property.initializer);
+            Object.assign(definition, {
+              schema: parseSchema(property.initializer),
+            });
           }
           break;
         case 'middleware':

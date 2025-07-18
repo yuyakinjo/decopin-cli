@@ -21,13 +21,13 @@ describe('params.ts files', () => {
       const mappings = paramsDefinition.mappings;
 
       // name フィールドのマッピング
-      const nameMapping = mappings.find((m: any) => m.field === 'name');
+      const nameMapping = mappings.find((m) => m.field === 'name');
       expect(nameMapping).toBeDefined();
       expect(nameMapping?.option).toBe('name');
       expect(nameMapping?.argIndex).toBe(0);
 
       // email フィールドのマッピング
-      const emailMapping = mappings.find((m: any) => m.field === 'email');
+      const emailMapping = mappings.find((m) => m.field === 'email');
       expect(emailMapping).toBeDefined();
       expect(emailMapping?.option).toBe('email');
       expect(emailMapping?.argIndex).toBe(1);
@@ -38,7 +38,7 @@ describe('params.ts files', () => {
       const paramsDefinition = paramsModule.default();
 
       // スキーマで正常なデータを検証
-      const validResult = v.safeParse(paramsDefinition.schema as any, {
+      const validResult = v.safeParse(paramsDefinition.schema, {
         name: 'John Doe',
         email: 'john@example.com',
       });
@@ -55,7 +55,7 @@ describe('params.ts files', () => {
       const paramsDefinition = paramsModule.default();
 
       // 無効なデータ（空のname）
-      const invalidResult1 = v.safeParse(paramsDefinition.schema as any, {
+      const invalidResult1 = v.safeParse(paramsDefinition.schema, {
         name: '',
         email: 'john@example.com',
       });
@@ -63,7 +63,7 @@ describe('params.ts files', () => {
       expect(invalidResult1.success).toBe(false);
 
       // 無効なデータ（不正なemail）
-      const invalidResult2 = v.safeParse(paramsDefinition.schema as any, {
+      const invalidResult2 = v.safeParse(paramsDefinition.schema, {
         name: 'John',
         email: 'invalid-email',
       });
@@ -99,7 +99,7 @@ describe('params.ts files', () => {
       const mappings = paramsDefinition.mappings;
 
       // name フィールドのマッピング
-      const nameMapping = mappings.find((m: any) => m.field === 'name');
+      const nameMapping = mappings.find((m) => m.field === 'name');
       expect(nameMapping).toBeDefined();
       expect(nameMapping?.option).toBe('name');
       expect(nameMapping?.argIndex).toBe(0);
@@ -111,7 +111,7 @@ describe('params.ts files', () => {
       const paramsDefinition = paramsModule.default();
 
       // スキーマで正常なデータを検証
-      const validResult = v.safeParse(paramsDefinition.schema as any, {
+      const validResult = v.safeParse(paramsDefinition.schema, {
         name: 'Alice',
       });
 
@@ -126,7 +126,7 @@ describe('params.ts files', () => {
       const paramsDefinition = paramsModule.default();
 
       // 無効なデータ（空のname）
-      const invalidResult = v.safeParse(paramsDefinition.schema as any, {
+      const invalidResult = v.safeParse(paramsDefinition.schema, {
         name: '',
       });
 
