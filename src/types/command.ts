@@ -15,8 +15,8 @@ export type {
 } from './definition.js';
 
 export type {
-  CommandMetadata,
   CommandHelpMetadata,
+  CommandMetadata,
   CommandSchema,
 } from './metadata.js';
 export type {

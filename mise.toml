@@ -10,11 +10,12 @@ run = [
 ]
 sources = ["app/**/*.ts"]
 
-[tasks.build-app]
-description = "appフォルダのTypeScriptファイルをビルド"
+[tasks.dev-rebuild]
+description = "ファイル変更時の再ビルド"
 run = [
+  "echo '🔄 File change detected, rebuilding...'",
   "npm run build:app",
   "npm run dev:regen",
-  "echo '🔄 CLI regenerated successfully!'"
+  "echo '✅ CLI regenerated successfully!'"
 ]
 sources = ["app/**/*.ts"]

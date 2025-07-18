@@ -17,8 +17,8 @@ export type {
 
 // メタデータ関連
 export type {
-  CommandMetadata,
   CommandHelpMetadata,
+  CommandMetadata,
   CommandSchema,
 } from './metadata.js';
 // バリデーション関連
