@@ -101,9 +101,10 @@ The project uses `mise` for file watching. When `npm run dev` is running:
 - TypeScript strict mode is enforced
 - Use `const` over `let` 
 - Functions should be under 150 lines
-- No `any` types - use proper typing
+- **No `any` types** - use proper typing with generics or specific interfaces
 - Import with destructuring when possible
 - All command handlers must use `CommandDefinition<T>` type
+- Use `Object.assign()` instead of type assertions when extending objects
 
 ## Common Tasks
 
