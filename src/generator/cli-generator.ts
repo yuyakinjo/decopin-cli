@@ -6,7 +6,7 @@ import { parseHelpFile } from '../parser/ast-parser.js';
 import { getVersionInfo } from '../parser/version-parser.js';
 import type { CommandStructure } from '../scanner/directory-scanner.js';
 import type { ParsedCommand } from '../types/command.js';
-import { generateMainCLITemplate } from './template-generator.js';
+import { generateMainCLITemplate } from './main-template.js';
 import { generateTypeDefinitions } from './type-generator.js';
 
 /**
