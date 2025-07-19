@@ -3,7 +3,7 @@ import type { CreateUserData } from './params.js';
 
 export default function createCommand(context: CommandContext<CreateUserData>): CommandDefinition<CreateUserData> {
   // バリデーション済みのデータを使用
-  const { name, email } = context.validatedData!;
+  const { name, email } = context.validatedData;
 
   return {
     handler: async () => {

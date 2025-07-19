@@ -3,7 +3,7 @@ import type { ValidationTestData } from './params.js';
 
 export default function validationCommand(context: CommandContext<ValidationTestData>): CommandDefinition<ValidationTestData> {
   // バリデーション済みのデータを使用
-  const { message, count } = context.validatedData!;
+  const { message, count } = context.validatedData;
 
   return {
     handler: async () => {

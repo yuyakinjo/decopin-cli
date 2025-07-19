@@ -1,7 +1,7 @@
 /**
- * コマンドの実行コンテキスト
+ * 基本的なコマンドコンテキスト（params.tsなし）
  */
-export interface CommandContext<T = unknown> {
+interface BaseCommandContext {
   /** 位置引数 */
   args: string[];
   /** オプション引数 */
@@ -10,21 +10,36 @@ export interface CommandContext<T = unknown> {
   params: Record<string, string>;
   /** ヘルプ表示関数 */
   showHelp: () => void;
-  /** バリデーション済みデータ（存在する場合） */
-  validatedData?: T;
 }
+
+/**
+ * バリデーション済みコマンドコンテキスト（params.tsあり）
+ */
+interface ValidatedCommandContext<T> extends BaseCommandContext {
+  /** バリデーション済みデータ（必須） */
+  validatedData: T;
+}
+
+/**
+ * コマンドの実行コンテキスト
+ * - params.tsがない場合: CommandContext (型引数なし)
+ * - params.tsがある場合: CommandContext<T> (型引数あり)
+ */
+export type CommandContext<T = never> = T extends never
+  ? BaseCommandContext
+  : ValidatedCommandContext<T>;
 
 /**
  * コマンドハンドラーの型
  */
-export type CommandHandler<T = unknown> = (
+export type CommandHandler<T = never> = (
   context: CommandContext<T>
 ) => Promise<void> | void;
 
 /**
  * ミドルウェア関数の型
  */
-export type MiddlewareFunction<T = unknown> = (
+export type MiddlewareFunction<T = never> = (
   context: CommandContext<T>,
   next: () => Promise<void> | void
 ) => Promise<void> | void;

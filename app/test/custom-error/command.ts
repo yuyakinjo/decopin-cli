@@ -3,7 +3,7 @@ import type { CustomErrorTestData } from './params.js';
 
 export default function customErrorCommand(context: CommandContext<CustomErrorTestData>): CommandDefinition<CustomErrorTestData> {
   // バリデーション済みのデータを使用
-  const { username, age, role } = context.validatedData!;
+  const { username, age, role } = context.validatedData;
 
   return {
     handler: async () => {
