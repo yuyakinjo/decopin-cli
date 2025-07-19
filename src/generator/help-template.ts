@@ -124,9 +124,14 @@ export function generateMainFunction(
   const args = process.argv.slice(2);
   const { options, positional } = parseArguments(args);
 
-  // 引数がない場合は全般的なヘルプを表示
-  if (positional.length === 0) {
-    showHelp();
+  // バージョンオプション（優先的に処理）
+  if (options.version || options.v) {
+    console.log('${version}');${
+      versionInfo?.metadata?.author
+        ? `
+    console.log('Author: ${versionInfo.metadata.author}');`
+        : ''
+    }
     return;
   }
 
@@ -144,14 +149,9 @@ export function generateMainFunction(
     }
   }
 
-  // バージョンオプション
-  if (options.version || options.v) {
-    console.log('${version}');${
-      versionInfo?.metadata?.author
-        ? `
-    console.log('Author: ${versionInfo.metadata.author}');`
-        : ''
-    }
+  // 引数がない場合は全般的なヘルプを表示
+  if (positional.length === 0) {
+    showHelp();
     return;
   }
 
