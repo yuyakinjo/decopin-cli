@@ -1,5 +1,6 @@
-import { writeFile } from 'node:fs/promises';
-import { join } from 'node:path';
+import { copyFile, writeFile } from 'node:fs/promises';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import type { ParsedASTResult } from '../parser/ast-parser.js';
 import { parseHelpFile } from '../parser/ast-parser.js';
 import { getVersionInfo } from '../parser/version-parser.js';
@@ -49,6 +50,23 @@ export async function generateCLI(
 
   // app/version.tsからバージョン情報を取得
   const versionInfo = await getVersionInfo(config.appDir, config.version);
+
+  // validation.jsをコピー
+  const __filename = fileURLToPath(import.meta.url);
+  const __dirname = dirname(__filename);
+  const validationSource = join(
+    dirname(dirname(__dirname)),
+    'dist',
+    'utils',
+    'validation.js'
+  );
+  const validationDest = join(config.outputDir, 'validation.js');
+  try {
+    await copyFile(validationSource, validationDest);
+    files.push(validationDest);
+  } catch (error) {
+    console.warn('Warning: Could not copy validation.js:', error);
+  }
 
   // メインCLIファイルを生成
   const mainCLICode = generateMainCLITemplate(config, commands, versionInfo);

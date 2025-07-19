@@ -1,3 +1,4 @@
+import { relative, resolve } from 'node:path';
 import type { VersionInfo } from '../parser/version-parser.js';
 import type { ParsedCommand } from '../types/command.js';
 import type { GeneratorConfig } from './cli-generator.js';
@@ -47,18 +48,17 @@ export function generateMainCLITemplate(
  * 相対パス生成
  */
 function generateRelativePath(appDir: string, filePath: string): string {
-  const { resolve, relative } = require('node:path');
-  const absoluteAppDir = resolve(appDir);
-  return relative(absoluteAppDir, filePath).replace('.ts', '.js');
+  return relative(resolve(appDir), filePath).replace('.ts', '.js');
 }
 
 /**
  * params.tsパス生成
  */
 function generateParamsPath(appDir: string, filePath: string): string {
-  const { resolve, relative } = require('node:path');
-  const absoluteAppDir = resolve(appDir);
-  const dirPath = relative(absoluteAppDir, filePath.replace('/command.ts', ''));
+  const dirPath = relative(
+    resolve(appDir),
+    filePath.replace('/command.ts', '')
+  );
   return `./${dirPath}/params.js`;
 }
 
@@ -110,8 +110,8 @@ main().catch(console.error);
  * バリデーション関数生成
  */
 function generateValidationFunction(): string {
-  return `function createValidationFunction(paramsDefinition) {
-  const { extractData } = require('./validation.js');
+  return `async function createValidationFunction(paramsDefinition) {
+  const { extractData } = await import('./validation.js');
 
   return async (args, options, params) => {
     try {
@@ -294,6 +294,7 @@ function generateMainFunction(
     const commandResult = await commandRoutes[command.path]();
     let commandDefinition;
     let validateFunction = null;
+    let validatedData = null;
 
     // 新しいファクトリ形式かチェック
     if (commandResult.isFactory) {
@@ -301,7 +302,7 @@ function generateMainFunction(
       const { factory, paramsDefinition } = commandResult;
 
       // バリデーション関数を作成
-      validateFunction = createValidationFunction(paramsDefinition);
+      validateFunction = await createValidationFunction(paramsDefinition);
 
       // コンテキストを事前作成してバリデーション実行
       const initialContext = {
@@ -325,8 +326,9 @@ function generateMainFunction(
         process.exit(1);
       }
 
-      // バリデーション成功時、バリデーション済みデータを含むコンテキストでファクトリを呼び出し
-      initialContext.validatedData = validationResult.data;
+      // バリデーション成功時、バリデーション済みデータを保存
+      validatedData = validationResult.data;
+      initialContext.validatedData = validatedData;
       commandDefinition = factory(initialContext);
     } else {
       // 従来の形式
@@ -342,7 +344,7 @@ function generateMainFunction(
       options,
       params,
       showHelp: () => showCommandHelp(command),
-      ...(commandResult.isFactory && { validatedData: context.validatedData })
+      ...(commandResult.isFactory && { validatedData })
     };
 
     // コマンドを実行

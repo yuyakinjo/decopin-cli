@@ -77,6 +77,9 @@ export function extractCommandDefinition(
         (m) => m.kind === ts.SyntaxKind.DefaultKeyword
       );
       if (hasExport && hasDefault) {
+        commandDefinition = {
+          handler: async () => {}, // 実際の関数は動的にインポートで取得
+        };
         hasHandler = true;
       }
     }
