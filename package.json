@@ -11,7 +11,7 @@
   "scripts": {
     "build": "tsc",
     "build:app": "tsc -p app/tsconfig.json",
-    "dev": "mise run dev",
+    "dev": "node scripts/dev.mjs",
     "dev:build-all": "npm run build && npm run build:app",
     "dev:regen": "node dist/cli.js build --app-dir app --output-dir examples --cli-name cli --verbose",
     "test": "vitest run",
@@ -43,12 +43,8 @@
     "valibot": "^1.1.0"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.1.1",
-    "@types/d3-hierarchy": "^3.1.7",
-    "@types/d3-scale": "^4.0.9",
-    "@types/node": "^24.0.0",
-    "d3-hierarchy": "^3.1.2",
-    "d3-scale": "^4.0.2",
+    "@biomejs/biome": "^2.1.2",
+    "@types/node": "^24.0.15",
     "simple-git": "^3.28.0",
     "typescript": "^5.8.3",
     "vitest": "^3.2.4"
