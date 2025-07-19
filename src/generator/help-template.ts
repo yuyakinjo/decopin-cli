@@ -38,7 +38,7 @@ ${
 }
 }
 
-function showCommandHelp(command) {
+async function showCommandHelp(command) {
   const metadata = command.definition.metadata;
 
   console.log(\`Usage: ${cliName} \${command.path}\`);
@@ -47,6 +47,9 @@ function showCommandHelp(command) {
     console.log();
     console.log(metadata.description);
   }
+
+  // params.tsから引数情報を取得
+  await showParamsInfo(command);
 
   if (metadata?.examples && metadata.examples.length > 0) {
     console.log();
@@ -64,6 +67,45 @@ function showCommandHelp(command) {
   if (metadata?.additionalHelp) {
     console.log();
     console.log(metadata.additionalHelp);
+  }
+}
+
+async function showParamsInfo(command) {
+  try {
+    // params.tsを動的にインポートして引数情報を表示
+    const paramsPath = \`./\${command.path}/params.js\`;
+    const paramsModule = await import(paramsPath);
+    const createParams = paramsModule.default;
+    const paramsDefinition = typeof createParams === 'function' ? createParams() : createParams;
+
+    if (paramsDefinition && paramsDefinition.mappings && paramsDefinition.mappings.length > 0) {
+      console.log();
+      console.log('Arguments:');
+
+      // 位置引数
+      const positionalArgs = paramsDefinition.mappings
+        .filter(m => typeof m.argIndex === 'number')
+        .sort((a, b) => a.argIndex - b.argIndex);
+
+      if (positionalArgs.length > 0) {
+        for (const mapping of positionalArgs) {
+          const optionText = mapping.option ? \` (or --\${mapping.option})\` : '';
+          console.log(\`  [\${mapping.argIndex + 1}] \${mapping.field}\${optionText}\`);
+        }
+      }
+
+      // オプション引数（位置引数でないもの）
+      const optionArgs = paramsDefinition.mappings.filter(m => typeof m.argIndex !== 'number');
+      if (optionArgs.length > 0) {
+        console.log();
+        console.log('Options:');
+        for (const mapping of optionArgs) {
+          console.log(\`  --\${mapping.option}  \${mapping.field}\`);
+        }
+      }
+    }
+  } catch (error) {
+    // params.tsがない場合やエラーが発生した場合は何もしない
   }
 }`;
 }
@@ -93,7 +135,7 @@ export function generateMainFunction(
     // コマンドが指定されている場合はそのコマンドのヘルプを表示
     const { command } = matchCommand(positional);
     if (command) {
-      showCommandHelp(command);
+      await showCommandHelp(command);
       return;
     } else {
       // 不明なコマンドの場合は全般的なヘルプを表示
@@ -142,7 +184,7 @@ export function generateMainFunction(
         args: positional.slice(command.segments.length),
         options,
         params,
-        showHelp: () => showCommandHelp(command)
+        showHelp: async () => await showCommandHelp(command)
       };
 
       // バリデーションを実行
@@ -186,7 +228,7 @@ export function generateMainFunction(
       args: positional.slice(command.segments.length),
       options,
       params,
-      showHelp: () => showCommandHelp(command),
+      showHelp: async () => await showCommandHelp(command),
       ...(commandResult.isFactory && { validatedData })
     };
 

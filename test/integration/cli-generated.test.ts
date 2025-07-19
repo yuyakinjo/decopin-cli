@@ -270,6 +270,49 @@ describe('Generated CLI Integration Tests', () => {
       expect(result.stdout).toContain('user/create');
       expect(result.stderr).toBe('');
     });
+
+    it('should show params.ts argument info for commands without help.ts', async () => {
+      const result = await runCLI(['test', 'validation', '--help']);
+
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout).toContain('Usage: cli test/validation');
+      expect(result.stdout).toContain('Arguments:');
+      expect(result.stdout).toContain('[1] message (or --message)');
+      expect(result.stdout).toContain('[2] count (or --count)');
+      // Should not contain detailed metadata since no help.ts exists
+      expect(result.stdout).not.toContain('Examples:');
+      expect(result.stdout).not.toContain('Aliases:');
+      expect(result.stderr).toBe('');
+    });
+
+    it('should show both help.ts and params.ts info for commands with both files', async () => {
+      const result = await runCLI(['hello', '--help']);
+
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout).toContain('Usage: cli hello');
+      // help.ts content
+      expect(result.stdout).toContain('Say hello to someone');
+      expect(result.stdout).toContain('Examples:');
+      expect(result.stdout).toContain('cli hello Alice');
+      expect(result.stdout).toContain('Aliases: hi, greet');
+      expect(result.stdout).toContain('This command greets a person with a friendly hello message.');
+      // params.ts content
+      expect(result.stdout).toContain('Arguments:');
+      expect(result.stdout).toContain('[1] name (or --name)');
+      expect(result.stderr).toBe('');
+    });
+
+    it('should show params.ts argument info with multiple fields', async () => {
+      const result = await runCLI(['test', 'custom-error', '--help']);
+
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout).toContain('Usage: cli test/custom-error');
+      expect(result.stdout).toContain('Arguments:');
+      expect(result.stdout).toContain('[1] username (or --username)');
+      expect(result.stdout).toContain('[2] age (or --age)');
+      expect(result.stdout).toContain('[3] role (or --role)');
+      expect(result.stderr).toBe('');
+    });
   });
 
   describe('Error Handling', () => {
