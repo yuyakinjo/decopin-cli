@@ -5,7 +5,7 @@ import type {
   CommandMetadata,
   CommandSchema,
 } from '../types/command.js';
-import { extractLiteralValue } from '../utils/ast-utils.js';
+import { parseObjectLiteral } from '../utils/ast-utils.js';
 
 /**
  * ファイルからCommandDefinitionを抽出
@@ -215,16 +215,8 @@ const MetadataSchema = v.object({
 export function parseMetadata(
   objectLiteral: ts.ObjectLiteralExpression
 ): CommandMetadata {
-  // AST から生のオブジェクトを抽出
-  const rawMetadata: Record<string, unknown> = {};
-
-  for (const property of objectLiteral.properties) {
-    if (ts.isPropertyAssignment(property) && ts.isIdentifier(property.name)) {
-      const key = property.name.text;
-      const value = extractLiteralValue(property.initializer);
-      rawMetadata[key] = value;
-    }
-  }
+  // parseObjectLiteralを使用して基本的な解析を行う
+  const rawMetadata = parseObjectLiteral(objectLiteral);
 
   // valibotでパース - 無効な値は自動的に除外される
   const parseResult = v.safeParse(MetadataSchema, rawMetadata);

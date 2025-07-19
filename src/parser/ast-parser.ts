@@ -68,18 +68,6 @@ export async function parseCommandFile(
 }
 
 /**
- * TypeScriptファイルが有効なコマンドファイルかどうかを検証
- */
-export async function validateCommandFile(filePath: string): Promise<boolean> {
-  try {
-    const result = await parseCommandFile(filePath);
-    return result.errors.length === 0;
-  } catch {
-    return false;
-  }
-}
-
-/**
  * 複数のコマンドファイルを一括解析
  */
 export async function parseMultipleCommandFiles(

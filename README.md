@@ -136,7 +136,7 @@ app/hello/
 └── command.ts   # ✅ Command Logic (receives validated data)
 
 # No longer needed:
-# ├── validate.ts  # ❌ Removed - validation integrated into params.ts
+        └── error.ts
 ```
 
 ## 📁 File Structure

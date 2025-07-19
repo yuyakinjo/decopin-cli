@@ -106,7 +106,7 @@ async function loadHelpMetadata(filePath: string | undefined) {
 
   // help.ts の解析結果からメタデータがあれば、整形して返す
   if (helpResult.help) {
-    const metadata: any = {
+    const metadata: Record<string, unknown> = {
       name: helpResult.help.name,
       description: helpResult.help.description,
       examples: helpResult.help.examples || [],

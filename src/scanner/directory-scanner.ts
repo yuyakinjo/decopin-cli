@@ -229,11 +229,3 @@ export async function scanAppDirectory(
 
   return structures;
 }
-
-/**
- * 利用可能なコマンド一覧を取得
- */
-export async function getAvailableCommands(appDir: string): Promise<string[]> {
-  const structures = await scanAppDirectory(appDir);
-  return structures.map((structure) => structure.path);
-}
