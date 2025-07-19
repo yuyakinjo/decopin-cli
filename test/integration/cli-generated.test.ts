@@ -112,10 +112,10 @@ describe('Generated CLI Integration Tests', () => {
     it('should handle missing email gracefully', async () => {
       const result = await runCLI(['user', 'create', '--name', 'Alice']);
 
-      expect(result.exitCode).toBe(0);
-      expect(result.stdout).toContain('🔄 Creating user: Alice (undefined)');
-      expect(result.stdout).toContain('✅ User created successfully!');
-      expect(result.stderr).toBe('');
+      expect(result.exitCode).toBe(1); // バリデーションエラーでexit code 1
+      expect(result.stderr).toContain('❌ User creation failed:');
+      expect(result.stderr).toContain('email: Invalid type: Expected string but received undefined');
+      expect(result.stderr).toContain('💡 Usage examples:');
     });
   });
 
@@ -229,10 +229,10 @@ describe('Generated CLI Integration Tests', () => {
     it('should handle nested unknown commands', async () => {
       const result = await runCLI(['user', 'create', 'extra', 'args']);
 
-      // This should still work as extra args are processed as positional
-      expect(result.exitCode).toBe(0);
-      expect(result.stdout).toContain('🔄 Creating user: extra (args)');
-      expect(result.stderr).toBe('');
+      // "args" is not a valid email, so validation should fail
+      expect(result.exitCode).toBe(1); // バリデーションエラーでexit code 1
+      expect(result.stderr).toContain('❌ User creation failed:');
+      expect(result.stderr).toContain('email: Invalid email format');
     });
   });
 
