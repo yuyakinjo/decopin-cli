@@ -10,7 +10,11 @@ import {
   generateCommandMatcher,
   generateValidationFunction,
 } from './runtime-template.js';
-import { generateParamsPath, generateRelativePath } from './utils-template.js';
+import {
+  generateErrorPath,
+  generateParamsPath,
+  generateRelativePath,
+} from './utils-template.js';
 
 /**
  * メインCLIテンプレートを生成
@@ -27,6 +31,7 @@ export function generateMainCLITemplate(
       const relativePath = generateRelativePath(config.appDir, cmd.filePath);
       const importPath = `./${relativePath}`;
       const paramsPath = generateParamsPath(config.appDir, cmd.filePath);
+      const errorPath = generateErrorPath(config.appDir, cmd.filePath);
 
       return `  '${routeKey}': async () => {
     const commandModule = await import('${importPath}');
@@ -38,10 +43,20 @@ export function generateMainCLITemplate(
       const createParams = paramsModule.default;
       const paramsDefinition = typeof createParams === 'function' ? createParams() : createParams;
 
+      // error.tsが存在する場合、エラーハンドラーもインポート
+      let errorHandler = null;
+      try {
+        const errorModule = await import('${errorPath}');
+        errorHandler = errorModule.default;
+      } catch {
+        // error.tsがない場合はnullのまま
+      }
+
       return {
         isFactory: true,
         factory: commandFactory,
-        paramsDefinition: paramsDefinition
+        paramsDefinition: paramsDefinition,
+        errorHandler: errorHandler
       };
     } catch {
       return typeof commandFactory === 'function' ? commandFactory() : commandFactory;

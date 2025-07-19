@@ -5,22 +5,8 @@ import type { ParsedCommand } from '../types/command.js';
  */
 export function generateValidationFunction(): string {
   return `async function createValidationFunction(paramsDefinition) {
-  const { extractData } = await import('./validation.js');
-
-  return async (args, options, params) => {
-    try {
-      const data = extractData(args, options, params, paramsDefinition);
-      return { success: true, data };
-    } catch (error) {
-      return {
-        success: false,
-        error: {
-          message: error.message,
-          issues: error.issues || []
-        }
-      };
-    }
-  };
+  const { createValidationFunction: actualValidationFunction } = await import('./validation.js');
+  return actualValidationFunction(paramsDefinition);
 }`;
 }
 

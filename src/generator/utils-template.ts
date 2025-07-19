@@ -17,3 +17,14 @@ export function generateParamsPath(appDir: string, filePath: string): string {
   );
   return `./${dirPath}/params.js`;
 }
+
+/**
+ * error.tsパス生成
+ */
+export function generateErrorPath(appDir: string, filePath: string): string {
+  const dirPath = relative(
+    resolve(appDir),
+    filePath.replace('/command.ts', '')
+  );
+  return `./${dirPath}/error.js`;
+}

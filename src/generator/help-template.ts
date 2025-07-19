@@ -96,7 +96,7 @@ export function generateMainFunction(
     // 新しいファクトリ形式かチェック
     if (commandResult.isFactory) {
       // バリデーション機能付きのファクトリ関数形式
-      const { factory, paramsDefinition } = commandResult;
+      const { factory, paramsDefinition, errorHandler } = commandResult;
 
       // バリデーション関数を作成
       validateFunction = await createValidationFunction(paramsDefinition);
@@ -113,6 +113,16 @@ export function generateMainFunction(
       const validationResult = await validateFunction(initialContext.args, initialContext.options, initialContext.params);
 
       if (!validationResult.success) {
+        // カスタムエラーハンドラーがある場合はそれを使用
+        if (errorHandler && typeof errorHandler === 'function') {
+          const customErrorHandler = errorHandler();
+          if (customErrorHandler && typeof customErrorHandler === 'function') {
+            await customErrorHandler(validationResult.error);
+            return;
+          }
+        }
+
+        // デフォルトのエラーハンドリング
         console.error('❌ Validation failed:', validationResult.error.message);
         if (validationResult.error.issues) {
           for (const issue of validationResult.error.issues) {
