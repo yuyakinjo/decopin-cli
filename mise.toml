@@ -1,21 +1,20 @@
 # decopin-cli 開発環境設定
 
-[tasks.dev-watch]
-description = "app配下のファイル変更を監視してCLIを自動再生成"
+[tasks.build-and-regen]
+description = "ビルドしてCLIを再生成"
+run = [
+  "echo '🔄 Building and regenerating CLI...'",
+  "npm run dev:build-all",
+  "npm run dev:regen",
+  "echo '✅ CLI regeneration complete!'",
+]
+sources = ["app/**/*.ts", "src/**/*.ts"]
+
+[tasks.dev]
+description = "app, src配下のファイル変更を監視してCLIを自動再生成"
 run = [
   "echo '🚀 Starting development mode...'",
-  "npm run build:app",
-  "npm run dev:regen",
-  "echo '✅ Initial CLI generation complete. Watching for changes in app/ directory...'",
+  "echo '👀 Watching for changes in app/ and src/ directories... (Press Ctrl+C to stop)'",
+  "mise watch build-and-regen",
 ]
-sources = ["app/**/*.ts"]
 
-[tasks.dev-rebuild]
-description = "ファイル変更時の再ビルド"
-run = [
-  "echo '🔄 File change detected, rebuilding...'",
-  "npm run build:app",
-  "npm run dev:regen",
-  "echo '✅ CLI regenerated successfully!'"
-]
-sources = ["app/**/*.ts"]
