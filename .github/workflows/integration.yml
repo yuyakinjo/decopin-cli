@@ -1,0 +1,117 @@
+name: Integration Tests
+
+on:
+  push:
+  pull_request:
+
+# 重複実行を防ぐconcurrency設定
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  integration:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Bun Environment
+      uses: ./.github/actions/setup
+
+    - name: Build core project
+      run: npm run build
+
+    - name: Build app examples
+      run: npm run build:app
+
+    - name: Generate CLI
+      run: npm run dev:regen
+
+    - name: Verify generated CLI exists
+      run: |
+        if [ ! -f "examples/cli.js" ]; then
+          echo "❌ Generated CLI not found at examples/cli.js"
+          exit 1
+        fi
+        echo "✅ Generated CLI found"
+
+    - name: Test CLI basic functionality
+      run: |
+        echo "Testing basic CLI commands..."
+        node examples/cli.js --help
+        node examples/cli.js --version
+
+    - name: Run integration test suite
+      run: npm run test:integration:only
+
+  cli-validation:
+    name: CLI Output Validation
+    runs-on: ubuntu-latest
+    needs: integration
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Bun Environment
+      uses: ./.github/actions/setup
+
+    - name: Build and generate CLI
+      run: |
+        npm run build
+        npm run build:app
+        npm run dev:regen
+
+    - name: Validate hello command
+      run: |
+        echo "Testing hello command..."
+        output=$(node examples/cli.js hello)
+        expected="Hello, World!!!"
+        if [ "$output" != "$expected" ]; then
+          echo "❌ Expected: $expected"
+          echo "❌ Got: $output"
+          exit 1
+        fi
+        echo "✅ Hello command works correctly"
+
+    - name: Validate user commands
+      run: |
+        echo "Testing user create command..."
+        output=$(node examples/cli.js user create "Test User" "test@example.com")
+        if ! echo "$output" | grep -q "Creating user: Test User"; then
+          echo "❌ User create command failed"
+          echo "Output: $output"
+          exit 1
+        fi
+
+        echo "Testing user list command..."
+        output=$(node examples/cli.js user list --limit 3)
+        if ! echo "$output" | grep -q "Showing 3 users"; then
+          echo "❌ User list command failed"
+          echo "Output: $output"
+          exit 1
+        fi
+        echo "✅ User commands work correctly"
+
+    - name: Validate error handling
+      run: |
+        echo "Testing error handling..."
+        set +e  # Allow command to fail
+        output=$(node examples/cli.js unknown-command 2>&1)
+        exit_code=$?
+        set -e
+
+        if [ $exit_code -eq 0 ]; then
+          echo "❌ Expected non-zero exit code for unknown command"
+          exit 1
+        fi
+
+        if ! echo "$output" | grep -q "Unknown command"; then
+          echo "❌ Expected error message for unknown command"
+          echo "Output: $output"
+          exit 1
+        fi
+        echo "✅ Error handling works correctly"

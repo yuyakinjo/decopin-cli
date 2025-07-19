@@ -23,5 +23,8 @@ jobs:
     - name: Build project
       run: bun run build
 
-    - name: Run comprehensive tests
+    - name: Run unit tests
       run: bun run test
+
+    - name: Run integration tests
+      run: bun run test:integration

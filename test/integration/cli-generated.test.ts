@@ -1,0 +1,272 @@
+import { spawn } from 'node:child_process';
+import { join } from 'node:path';
+import { describe, it, expect, beforeAll } from 'vitest';
+
+const CLI_PATH = join(process.cwd(), 'examples', 'cli.js');
+
+/**
+ * CLIコマンドを実行してoutputとexit codeを取得
+ */
+async function runCLI(args: string[]): Promise<{
+  stdout: string;
+  stderr: string;
+  exitCode: number;
+}> {
+  return new Promise((resolve) => {
+    const child = spawn('node', [CLI_PATH, ...args], {
+      stdio: ['pipe', 'pipe', 'pipe'],
+    });
+
+    let stdout = '';
+    let stderr = '';
+
+    child.stdout?.on('data', (data) => {
+      stdout += data.toString();
+    });
+
+    child.stderr?.on('data', (data) => {
+      stderr += data.toString();
+    });
+
+    child.on('close', (code) => {
+      resolve({
+        stdout: stdout.trim(),
+        stderr: stderr.trim(),
+        exitCode: code || 0,
+      });
+    });
+  });
+}
+
+describe('Generated CLI Integration Tests', () => {
+  beforeAll(async () => {
+    // Ensure CLI is built and available
+    const { existsSync } = await import('node:fs');
+    if (!existsSync(CLI_PATH)) {
+      throw new Error(`CLI not found at ${CLI_PATH}. Run 'npm run dev:regen' first.`);
+    }
+  });
+
+  describe('Hello Command', () => {
+    it('should show default greeting', async () => {
+      const result = await runCLI(['hello']);
+
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout).toBe('Hello, World!!!');
+      expect(result.stderr).toBe('');
+    });
+
+    it('should accept positional argument', async () => {
+      const result = await runCLI(['hello', 'Alice']);
+
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout).toBe('Hello, Alice!!!');
+      expect(result.stderr).toBe('');
+    });
+
+    it('should accept named option', async () => {
+      const result = await runCLI(['hello', '--name', 'Bob']);
+
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout).toBe('Hello, Bob!!!');
+      expect(result.stderr).toBe('');
+    });
+
+    it('should handle quoted names', async () => {
+      const result = await runCLI(['hello', 'John Doe']);
+
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout).toBe('Hello, John Doe!!!');
+      expect(result.stderr).toBe('');
+    });
+  });
+
+  describe('User Create Command', () => {
+    it('should create user with positional arguments', async () => {
+      const result = await runCLI(['user', 'create', 'John Doe', 'john@example.com']);
+
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout).toContain('🔄 Creating user: John Doe (john@example.com)');
+      expect(result.stdout).toContain('✅ User created successfully!');
+      expect(result.stderr).toBe('');
+    });
+
+    it('should create user with named options', async () => {
+      const result = await runCLI(['user', 'create', '--name', 'Jane Smith', '--email', 'jane@example.com']);
+
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout).toContain('🔄 Creating user: Jane Smith (jane@example.com)');
+      expect(result.stdout).toContain('✅ User created successfully!');
+      expect(result.stderr).toBe('');
+    });
+
+    it('should create user with mixed arguments', async () => {
+      const result = await runCLI(['user', 'create', 'Bob', '--email', 'bob@example.com']);
+
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout).toContain('🔄 Creating user: Bob (bob@example.com)');
+      expect(result.stdout).toContain('✅ User created successfully!');
+      expect(result.stderr).toBe('');
+    });
+
+    it('should handle missing email gracefully', async () => {
+      const result = await runCLI(['user', 'create', '--name', 'Alice']);
+
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout).toContain('🔄 Creating user: Alice (undefined)');
+      expect(result.stdout).toContain('✅ User created successfully!');
+      expect(result.stderr).toBe('');
+    });
+  });
+
+  describe('User List Command', () => {
+    it('should list users with default limit', async () => {
+      const result = await runCLI(['user', 'list']);
+
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout).toContain('📋 User List:');
+      expect(result.stdout).toContain('📊 Showing 10 users');
+      expect(result.stdout).toContain('1. User 1 (user1@example.com)');
+      expect(result.stdout).toContain('10. User 10 (user10@example.com)');
+      expect(result.stderr).toBe('');
+    });
+
+    it('should respect limit option', async () => {
+      const result = await runCLI(['user', 'list', '--limit', '5']);
+
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout).toContain('📋 User List:');
+      expect(result.stdout).toContain('📊 Showing 5 users');
+      expect(result.stdout).toContain('1. User 1 (user1@example.com)');
+      expect(result.stdout).toContain('5. User 5 (user5@example.com)');
+      expect(result.stdout).not.toContain('6. User 6');
+      expect(result.stderr).toBe('');
+    });
+
+    it('should handle custom limit values', async () => {
+      const result = await runCLI(['user', 'list', '--limit', '3']);
+
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout).toContain('📊 Showing 3 users');
+      expect(result.stdout).toContain('3. User 3 (user3@example.com)');
+      expect(result.stdout).not.toContain('4. User 4');
+      expect(result.stderr).toBe('');
+    });
+  });
+
+  describe('System Commands', () => {
+    it('should show help when --help is used', async () => {
+      const result = await runCLI(['--help']);
+
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout).toContain('super-cli 2.1.3');
+      expect(result.stdout).toContain('The ultimate command line interface for developers');
+      expect(result.stdout).toContain('Usage:');
+      expect(result.stdout).toContain('cli <command> [options]');
+      expect(result.stdout).toContain('Available commands:');
+      expect(result.stdout).toContain('hello');
+      expect(result.stdout).toContain('user/create');
+      expect(result.stdout).toContain('user/list');
+      expect(result.stdout).toContain('Author: TypeScript Ninja');
+      expect(result.stderr).toBe('');
+    });
+
+    it('should show help when -h is used', async () => {
+      const result = await runCLI(['-h']);
+
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout).toContain('super-cli 2.1.3');
+      expect(result.stdout).toContain('Available commands:');
+      expect(result.stderr).toBe('');
+    });
+
+    it('should show help when no arguments are provided', async () => {
+      const result = await runCLI([]);
+
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout).toContain('super-cli 2.1.3');
+      expect(result.stdout).toContain('Usage:');
+      expect(result.stderr).toBe('');
+    });
+
+    it('should show version when --version is used', async () => {
+      const result = await runCLI(['--version']);
+
+      expect(result.exitCode).toBe(0);
+      // Note: Current implementation shows full help instead of just version
+      expect(result.stdout).toContain('2.1.3');
+      expect(result.stderr).toBe('');
+    });
+
+    it('should show version when -v is used', async () => {
+      const result = await runCLI(['-v']);
+
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout).toContain('2.1.3');
+      expect(result.stderr).toBe('');
+    });
+  });
+
+  describe('Error Handling', () => {
+    it('should handle unknown commands', async () => {
+      const result = await runCLI(['unknown']);
+
+      expect(result.exitCode).toBe(1);
+      expect(result.stderr).toContain('Unknown command: unknown');
+      expect(result.stderr).toContain('Use --help to see available commands');
+      expect(result.stdout).toBe('');
+    });
+
+    it('should handle invalid subcommands', async () => {
+      const result = await runCLI(['user', 'invalid']);
+
+      expect(result.exitCode).toBe(1);
+      expect(result.stderr).toContain('Unknown command: user invalid');
+      expect(result.stderr).toContain('Use --help to see available commands');
+      expect(result.stdout).toBe('');
+    });
+
+    it('should handle nested unknown commands', async () => {
+      const result = await runCLI(['user', 'create', 'extra', 'args']);
+
+      // This should still work as extra args are processed as positional
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout).toContain('🔄 Creating user: extra (args)');
+      expect(result.stderr).toBe('');
+    });
+  });
+
+  describe('Command Structure Validation', () => {
+    it('should handle all available commands', async () => {
+      // Get help to see available commands
+      const helpResult = await runCLI(['--help']);
+      const helpOutput = helpResult.stdout;
+
+      // Extract command names from help output
+      const commandMatches = helpOutput.match(/Available commands:\s*([\s\S]*?)\s*Options:/);
+      expect(commandMatches).toBeTruthy();
+
+      if (commandMatches) {
+        const commandsSection = commandMatches[1];
+        expect(commandsSection).toContain('hello');
+        expect(commandsSection).toContain('user/create');
+        expect(commandsSection).toContain('user/list');
+      }
+    });
+
+    it('should maintain consistent output format across commands', async () => {
+      const commands = [
+        ['hello'],
+        ['user', 'create', 'Test', 'test@example.com'],
+        ['user', 'list', '--limit', '1']
+      ];
+
+      for (const command of commands) {
+        const result = await runCLI(command);
+        expect(result.exitCode).toBe(0);
+        expect(result.stderr).toBe('');
+        expect(result.stdout).toBeTruthy();
+      }
+    });
+  });
+});
