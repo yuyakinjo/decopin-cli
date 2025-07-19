@@ -106,12 +106,18 @@ async function loadHelpMetadata(filePath: string | undefined) {
 
   // help.ts の解析結果からメタデータがあれば、整形して返す
   if (helpResult.help) {
-    return {
+    const metadata: any = {
       name: helpResult.help.name,
       description: helpResult.help.description,
       examples: helpResult.help.examples || [],
       aliases: helpResult.help.aliases || [],
     };
+
+    if (helpResult.help.additionalHelp) {
+      metadata.additionalHelp = helpResult.help.additionalHelp;
+    }
+
+    return metadata;
   }
 
   // メタデータが見つからなければ null を返す

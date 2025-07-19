@@ -207,6 +207,71 @@ describe('Generated CLI Integration Tests', () => {
     });
   });
 
+  describe('Command-Specific Help', () => {
+    it('should show detailed help for commands with help.ts (hello command)', async () => {
+      const result = await runCLI(['hello', '--help']);
+
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout).toContain('Usage: cli hello');
+      expect(result.stdout).toContain('Say hello to someone');
+      expect(result.stdout).toContain('Examples:');
+      expect(result.stdout).toContain('cli hello Alice');
+      expect(result.stdout).toContain('cli hello --name Bob');
+      expect(result.stdout).toContain('cli hello "Alice Smith"');
+      expect(result.stdout).toContain('Aliases: hi, greet');
+      expect(result.stdout).toContain('This command greets a person with a friendly hello message.');
+      expect(result.stderr).toBe('');
+    });
+
+    it('should show detailed help for commands with help.ts using -h flag', async () => {
+      const result = await runCLI(['hello', '-h']);
+
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout).toContain('Usage: cli hello');
+      expect(result.stdout).toContain('Say hello to someone');
+      expect(result.stdout).toContain('Examples:');
+      expect(result.stdout).toContain('Aliases: hi, greet');
+      expect(result.stdout).toContain('This command greets a person with a friendly hello message.');
+      expect(result.stderr).toBe('');
+    });
+
+    it('should show basic help for commands without help.ts (test/basic command)', async () => {
+      const result = await runCLI(['test', 'basic', '--help']);
+
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout).toContain('Usage: cli test/basic');
+      // Should not contain detailed metadata since no help.ts exists
+      expect(result.stdout).not.toContain('Examples:');
+      expect(result.stdout).not.toContain('Aliases:');
+      expect(result.stdout).not.toContain('Description:');
+      expect(result.stderr).toBe('');
+    });
+
+    it('should show basic help for commands without help.ts using -h flag', async () => {
+      const result = await runCLI(['test', 'basic', '-h']);
+
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout).toContain('Usage: cli test/basic');
+      // Should not contain detailed metadata since no help.ts exists
+      expect(result.stdout).not.toContain('Examples:');
+      expect(result.stdout).not.toContain('Aliases:');
+      expect(result.stderr).toBe('');
+    });
+
+    it('should show general help for unknown commands with --help', async () => {
+      const result = await runCLI(['unknown', '--help']);
+
+      expect(result.exitCode).toBe(0);
+      // Should show general help since command doesn't exist
+      expect(result.stdout).toContain('super-cli 2.1.3');
+      expect(result.stdout).toContain('The ultimate command line interface for developers');
+      expect(result.stdout).toContain('Available commands:');
+      expect(result.stdout).toContain('hello');
+      expect(result.stdout).toContain('user/create');
+      expect(result.stderr).toBe('');
+    });
+  });
+
   describe('Error Handling', () => {
     it('should handle unknown commands', async () => {
       const result = await runCLI(['unknown']);

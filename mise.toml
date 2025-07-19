@@ -4,6 +4,7 @@
 description = "ビルドしてCLIを再生成"
 run = [
   "echo '🔄 Building and regenerating CLI...'",
+  "npm run clean",
   "npm run dev:build-all",
   "npm run dev:regen",
   "echo '✅ CLI regeneration complete!'",

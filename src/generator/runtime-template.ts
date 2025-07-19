@@ -51,7 +51,9 @@ ${commands
   .map((cmd) => {
     const path = cmd.path || '';
     const segments = path ? path.split('/') : [];
-    return `    { path: '${path}', segments: ${JSON.stringify(segments)}, definition: {} }`;
+    const metadata = cmd.definition.metadata || {};
+    const metadataJson = JSON.stringify(metadata);
+    return `    { path: '${path}', segments: ${JSON.stringify(segments)}, definition: { metadata: ${metadataJson} } }`;
   })
   .join(',\n')}
   ];

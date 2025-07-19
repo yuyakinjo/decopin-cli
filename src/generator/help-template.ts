@@ -39,9 +39,31 @@ ${
 }
 
 function showCommandHelp(command) {
+  const metadata = command.definition.metadata;
+
   console.log(\`Usage: ${cliName} \${command.path}\`);
-  if (command.definition.metadata?.description) {
-    console.log(command.definition.metadata.description);
+
+  if (metadata?.description) {
+    console.log();
+    console.log(metadata.description);
+  }
+
+  if (metadata?.examples && metadata.examples.length > 0) {
+    console.log();
+    console.log('Examples:');
+    for (const example of metadata.examples) {
+      console.log(\`  ${cliName} \${example}\`);
+    }
+  }
+
+  if (metadata?.aliases && metadata.aliases.length > 0) {
+    console.log();
+    console.log(\`Aliases: \${metadata.aliases.join(', ')}\`);
+  }
+
+  if (metadata?.additionalHelp) {
+    console.log();
+    console.log(metadata.additionalHelp);
   }
 }`;
 }
@@ -60,10 +82,24 @@ export function generateMainFunction(
   const args = process.argv.slice(2);
   const { options, positional } = parseArguments(args);
 
-  // ヘルプオプション
-  if (options.help || options.h || positional.length === 0) {
+  // 引数がない場合は全般的なヘルプを表示
+  if (positional.length === 0) {
     showHelp();
     return;
+  }
+
+  // ヘルプオプションがある場合
+  if (options.help || options.h) {
+    // コマンドが指定されている場合はそのコマンドのヘルプを表示
+    const { command } = matchCommand(positional);
+    if (command) {
+      showCommandHelp(command);
+      return;
+    } else {
+      // 不明なコマンドの場合は全般的なヘルプを表示
+      showHelp();
+      return;
+    }
   }
 
   // バージョンオプション
