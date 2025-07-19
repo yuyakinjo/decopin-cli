@@ -23,14 +23,14 @@ jobs:
     - name: Build project
       run: bun run build
 
-    - name: Run unit tests
-      run: bun run test
-
     - name: Build app examples
       run: bun run build:app
 
     - name: Generate CLI
       run: bun run dev:regen
+
+    - name: Run unit tests
+      run: bun run test
 
     - name: Run integration tests
       run: bun run test:integration:only
