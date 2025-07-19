@@ -20,8 +20,6 @@ vitest run test/parser    # Run specific test directory
 
 # Code quality
 npm run lint             # Check code with Biome
-npm run lint:fix        # Fix linting issues
-npm run format          # Format code with Biome
 
 # Build commands
 npm run build           # Build library (src/ → dist/)
@@ -58,7 +56,7 @@ export default function createParams(): ParamsDefinition {
   };
 }
 
-// command.ts - Pre-validated command implementation  
+// command.ts - Pre-validated command implementation
 export default function createCommand(context: CommandContext<T>): CommandDefinition<T> {
   const data = context.validatedData!;  // Already validated!
   return {
@@ -99,7 +97,7 @@ The project uses `mise` for file watching. When `npm run dev` is running:
 
 ### Code Style Requirements
 - TypeScript strict mode is enforced
-- Use `const` over `let` 
+- Use `const` over `let`
 - Functions should be under 150 lines
 - **No `any` types** - use proper typing with generics or specific interfaces
 - Import with destructuring when possible
@@ -121,7 +119,7 @@ The AST parser in `src/parser/ast-parser.ts` extracts metadata from TypeScript f
 2. Ensure proper TypeScript types are used
 3. Run tests in `test/parser/` to debug AST parsing
 
-### Modifying the Generated CLI Structure  
+### Modifying the Generated CLI Structure
 The CLI generation logic is in `src/generator/cli-generator.ts`. Key files:
 - `generateCLIContent()` - Main CLI template generation
 - `generateCommandImports()` - Dynamic import generation

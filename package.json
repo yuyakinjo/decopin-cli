@@ -19,9 +19,7 @@
     "test:integration": "npm run build && npm run build:app && npm run dev:regen && vitest run test/integration/",
     "test:integration:only": "vitest run test/integration/",
     "clean": "rm -rf dist examples",
-    "lint": "biome check .",
-    "lint:fix": "biome check --write .",
-    "format": "biome format --write ."
+    "lint": "biome check --write ."
   },
   "keywords": [
     "cli",

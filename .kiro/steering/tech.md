@@ -55,8 +55,6 @@ vitest run path/to/test  # Run specific test file
 ### Code Quality
 ```bash
 npm run lint             # Check code with Biome
-npm run lint:fix         # Auto-fix linting issues
-npm run format           # Format code with Biome
 ```
 
 ### CLI Usage
