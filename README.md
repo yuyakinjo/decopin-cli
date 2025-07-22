@@ -224,7 +224,7 @@ import type { CreateUserData } from './params.js';
 
 export default function createCommand(context: CommandContext<CreateUserData>): CommandDefinition<CreateUserData> {
   // Use pre-validated data
-  const { name, email } = context.validatedData!;
+  const { name, email } = context.validatedData;
 
   return {
     handler: async () => {
@@ -269,7 +269,7 @@ decopin-cli uses a factory pattern where commands are functions that receive pre
 ```typescript
 // decopin-cli approach (current)
 export default function createCommand(context: CommandContext<HelloData>): CommandDefinition<HelloData> {
-  const { name } = context.validatedData!; // Already validated and typed!
+  const { name } = context.validatedData; // Already validated and typed!
 
   return {
     handler: async () => {
@@ -433,7 +433,7 @@ export default function createCommand(): CommandDefinition {
 
 ```typescript
 export default function createCommand(context: CommandContext<UserData>): CommandDefinition<UserData> {
-  const { name, email } = context.validatedData!;
+  const { name, email } = context.validatedData;
 
   return {
     metadata: {
@@ -460,7 +460,7 @@ All commands support async operations:
 
 ```typescript
 export default function createCommand(context: CommandContext<ApiData>): CommandDefinition<ApiData> {
-  const { endpoint } = context.validatedData!;
+  const { endpoint } = context.validatedData;
 
   return {
     metadata: {

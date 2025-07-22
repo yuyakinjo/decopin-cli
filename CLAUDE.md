@@ -58,7 +58,7 @@ export default function createParams(): ParamsDefinition {
 
 // command.ts - Pre-validated command implementation
 export default function createCommand(context: CommandContext<T>): CommandDefinition<T> {
-  const data = context.validatedData!;  // Already validated!
+  const data = context.validatedData;  // Already validated!
   return {
     handler: async () => { /* implementation */ }
   };
