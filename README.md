@@ -48,7 +48,7 @@ import type { CommandDefinition, CommandContext } from '../../dist/types/command
 import type { HelloData } from './params.js';
 
 export default function createCommand(context: CommandContext<HelloData>): CommandDefinition<HelloData> {
-  // バリデーション済みのデータを使用
+  // Use pre-validated data
   const { name } = context.validatedData;
 
   return {
@@ -65,7 +65,7 @@ export default function createCommand(context: CommandContext<HelloData>): Comma
 import * as v from 'valibot';
 import type { ParamsDefinition } from 'decopin-cli';
 
-// Hello コマンドのデータスキーマ
+// Hello command data schema
 const HelloSchema = v.object({
   name: v.pipe(v.string(), v.minLength(1, 'Name cannot be empty')),
 });
@@ -109,42 +109,42 @@ node dist/cli.js hello --name Bob
 
 ```
 app/
-├── version.ts              # バージョン設定
-├── hello/                  # シンプルなhelloコマンド
+├── version.ts              # Version configuration
+├── hello/                  # Simple hello command
 │   ├── command.ts
 │   ├── params.ts
 │   └── help.ts
-├── user/                   # ネストされたuserコマンド群
-│   ├── create/             # user create - ユーザー作成
+├── user/                   # Nested user command group
+│   ├── create/             # user create - Create a user
 │   │   ├── command.ts
 │   │   ├── params.ts
 │   │   ├── help.ts
 │   │   └── error.ts
-│   └── list/               # user list - ユーザー一覧
+│   └── list/               # user list - List users
 │       ├── command.ts
 │       └── help.ts
-└── test/                   # テスト用コマンド群
-    ├── basic/              # 基本テストコマンド
+└── test/                   # Test command group
+    ├── basic/              # Basic test command
     │   └── command.ts
-    ├── validation/         # バリデーションテストコマンド
+    ├── validation/         # Validation test command
     │   ├── command.ts
     │   └── params.ts
-    └── custom-error/       # カスタムエラーテストコマンド
+    └── custom-error/       # Custom error test command
         ├── command.ts
         ├── params.ts
         └── error.ts
 ```
 
-## 🛠️ コマンド構造の詳細
+## 🛠️ Command Structure Details
 
-### パラメータ付きコマンド（Hello コマンド）
+### Command with Parameters (Hello Command)
 
 **app/hello/params.ts**:
 ```typescript
 import * as v from 'valibot';
 import type { ParamsDefinition } from '../../dist/types/command.js';
 
-// Hello コマンドのデータスキーマ
+// Hello command data schema
 const HelloSchema = v.object({
   name: v.pipe(v.string(), v.minLength(1, 'Name cannot be empty')),
 });
@@ -172,7 +172,7 @@ import type { CommandDefinition, CommandContext } from '../../dist/types/command
 import type { HelloData } from './params.js';
 
 export default function createCommand(context: CommandContext<HelloData>): CommandDefinition<HelloData> {
-  // バリデーション済みのデータを使用
+  // Use pre-validated data
   const { name } = context.validatedData;
 
   return {
@@ -183,14 +183,14 @@ export default function createCommand(context: CommandContext<HelloData>): Comma
 }
 ```
 
-### 複雑なパラメータのコマンド（User Create）
+### Command with Complex Parameters (User Create)
 
 **app/user/create/params.ts**:
 ```typescript
 import * as v from 'valibot';
 import type { ParamsDefinition } from '../../../dist/types/command.js';
 
-// ユーザー作成データのスキーマ
+// User creation data schema
 const CreateUserSchema = v.object({
   name: v.pipe(v.string(), v.minLength(1, 'Name is required')),
   email: v.pipe(v.string(), v.email('Invalid email format')),
@@ -223,15 +223,15 @@ import type { CommandDefinition, CommandContext } from '../../../dist/types/comm
 import type { CreateUserData } from './params.js';
 
 export default function createCommand(context: CommandContext<CreateUserData>): CommandDefinition<CreateUserData> {
-  // バリデーション済みのデータを使用
+  // Use pre-validated data
   const { name, email } = context.validatedData!;
 
   return {
     handler: async () => {
       console.log(`🔄 Creating user: ${name} (${email})`);
 
-      // 実際の処理をここに実装
-      // 例: await createUser({ name, email });
+      // Implement actual logic here
+      // Example: await createUser({ name, email });
 
       console.log('✅ User created successfully!');
     }
@@ -239,7 +239,7 @@ export default function createCommand(context: CommandContext<CreateUserData>): 
 }
 ```
 
-### パラメータなしのコマンド（User List）
+### Command without Parameters (User List)
 
 **app/user/list/command.ts**:
 ```typescript
@@ -260,16 +260,16 @@ export default function createCommand(context: CommandContext): CommandDefinitio
 }
 ```
 
-## 🏗️ アーキテクチャ
+## 🏗️ Architecture
 
-### 関数ベースコマンドパターン
+### Function-Based Command Pattern
 
-decopin-cliは事前検証されたコンテキストを受け取るコマンドがファンクションであるファクトリーパターンを使用します：
+decopin-cli uses a factory pattern where commands are functions that receive pre-validated contexts:
 
 ```typescript
-// decopin-cli アプローチ（現在）
+// decopin-cli approach (current)
 export default function createCommand(context: CommandContext<HelloData>): CommandDefinition<HelloData> {
-  const { name } = context.validatedData!; // すでに検証済みで型付き！
+  const { name } = context.validatedData!; // Already validated and typed!
 
   return {
     handler: async () => {
@@ -279,48 +279,48 @@ export default function createCommand(context: CommandContext<HelloData>): Comma
 }
 ```
 
-### 統合バリデーション
+### Integrated Validation
 
-バリデーションは`params.ts`に統合されており、valibotスキーマを使用して型安全なパラメータ処理を提供します：
+Validation is integrated into `params.ts`, providing type-safe parameter handling using valibot schemas:
 
 ```text
 app/hello/
-├── params.ts    # ✅ 型 + valibotスキーマ + マッピング
-└── command.ts   # ✅ コマンドロジック（検証済みデータを受け取る）
+├── params.ts    # ✅ Types + valibot schema + mappings
+└── command.ts   # ✅ Command logic (receives validated data)
 ```
 
-## 🎯 引数処理
+## 🎯 Argument Processing
 
-decopin-cliは`params.ts`設定に基づいて引数バリデーションと型変換を自動的に処理します：
+decopin-cli automatically handles argument validation and type conversion based on your `params.ts` configuration:
 
-### 使用例
+### Usage Examples
 
-#### 位置引数
+#### Positional Arguments
 
 ```bash
 my-cli user create "John Doe" "john@example.com"
 ```
 
-#### 名前付きオプション
+#### Named Options
 
 ```bash
 my-cli user create --name "John Doe" --email "john@example.com"
 ```
 
-#### 混合引数（位置が高い優先度）
+#### Mixed Arguments (positional takes precedence)
 
 ```bash
 my-cli user create "Jane" --email "jane@example.com"
-# nameは "Jane"（位置0から）、--nameオプションからではない
+# name will be "Jane" (from position 0), not from --name option
 ```
 
-## 🔧 バージョン設定
+## 🔧 Version Configuration
 
-CLIメタデータを設定するため `app/version.ts` を作成：
+Create `app/version.ts` to configure CLI metadata:
 
 ```typescript
 /**
- * CLI バージョン情報
+ * CLI version information
  */
 export const version = "2.1.3"
 
@@ -334,82 +334,82 @@ export const metadata = {
 export default version
 ```
 
-## 🔄 開発
+## 🔄 Development
 
-### Miseでの自動再生成
+### Auto-regeneration with Mise
 
-開発用には、CLI自動再生成のための組み込みmise設定を使用：
+For development, use the built-in mise configuration for automatic CLI regeneration:
 
 ```bash
-# mise をインストール（まだインストールしていない場合）
+# Install mise if you haven't already
 curl https://mise.run | sh
 
-# 自動再生成での開発モードを開始
+# Start development mode with auto-regeneration
 npm run dev
 ```
 
-これにより：
-1. プロジェクトをビルド
-2. `app/` ディレクトリの変更を監視
-3. ファイル変更時に自動的にCLIを再生成
-4. 手動リビルドなしでコマンドをホットリロード
+This will:
+1. Build the project
+2. Watch the `app/` directory for changes
+3. Automatically regenerate the CLI when files change
+4. Hot-reload commands without manual rebuilds
 
-### 手動ビルド
+### Manual Build
 
 ```bash
 npm run build
 npx decopin-cli build --app-dir app --output-dir examples
 ```
 
-## 📋 CLIオプション
+## 📋 CLI Options
 
-### ビルドコマンド
+### Build Command
 
 ```bash
 decopin-cli build [options]
 ```
 
-**オプション:**
+**Options:**
 
-- `--output-dir <dir>`: 出力ディレクトリ（デフォルト: `dist`）
-- `--output-file <file>`: 出力ファイル名（デフォルト: `cli.js`）
-- `--app-dir <dir>`: appディレクトリパス（デフォルト: `app`）
-- `--cli-name <n>`: 生成ファイル用CLI名
-- `--output-filename <file>`: カスタム出力ファイル名
+- `--output-dir <dir>`: Output directory (default: `dist`)
+- `--output-file <file>`: Output file name (default: `cli.js`)
+- `--app-dir <dir>`: App directory path (default: `app`)
+- `--cli-name <n>`: CLI name for generated files
+- `--output-filename <file>`: Custom output filename
 
-### ヘルプコマンド
+### Help Command
 
 ```bash
 decopin-cli --help
 ```
 
-利用可能なコマンドとオプションを表示します。
+Shows available commands and options.
 
-### バージョンコマンド
+### Version Command
 
 ```bash
 decopin-cli --version
 ```
 
-decopin-cliの現在バージョンを表示します。
+Shows the current version of decopin-cli.
 
-## 🔍 高度な機能
+## 🔍 Advanced Features
 
-### コマンドコンテキスト
+### Command Context
 
-パラメータ付きコマンドは事前検証されたデータを持つ`CommandContext<T>`を受け取ります：
+Commands with parameters receive a `CommandContext<T>` with pre-validated data:
 
 ```typescript
 interface CommandContext<T = any> {
-  validatedData?: T;        // params.tsからの事前検証済み型付きデータ
-  rawArgs: string[];        // 元の生引数
-  rawOptions: Record<string, any>; // 元の生オプション
+  validatedData?: T;        // Pre-validated typed data from params.ts
+  rawArgs: string[];        // Original raw arguments
+  rawOptions: Record<string, any>; // Original raw options
 }
 ```
 
-### パラメータのないコマンド
+### Commands without Parameters
 
-パラメータが不要なコマンドの場合、単純に`params.ts`ファイルを省略：
+For commands that don't need parameters, simply omit the `params.ts` file:
 
 ```typescript
 // app/status/command.ts
@@ -429,7 +429,7 @@ export default function createCommand(): CommandDefinition {
 }
 ```
 
-### エラーハンドリング
+### Error Handling
 
 ```typescript
 export default function createCommand(context: CommandContext<UserData>): CommandDefinition<UserData> {
@@ -442,7 +442,7 @@ export default function createCommand(context: CommandContext<UserData>): Comman
     },
     handler: async () => {
       try {
-        // コマンドロジックをここに
+        // Command logic here
         await createUser(name, email);
         console.log('✅ User created successfully!');
       } catch (error) {
@@ -454,9 +454,9 @@ export default function createCommand(context: CommandContext<UserData>): Comman
 }
 ```
 
-### 非同期コマンド
+### Async Commands
 
-すべてのコマンドは非同期操作をサポート：
+All commands support async operations:
 
 ```typescript
 export default function createCommand(context: CommandContext<ApiData>): CommandDefinition<ApiData> {
@@ -476,13 +476,13 @@ export default function createCommand(context: CommandContext<ApiData>): Command
 }
 ```
 
-## 📦 配布
+## 📦 Distribution
 
-### NPMパッケージ
+### NPM Package
 
-CLIをnpmパッケージとして配布するには：
+To distribute your CLI as an npm package:
 
-1. **package.jsonの設定**:
+1. **Configure package.json**:
 ```json
 {
   "name": "my-awesome-cli",
@@ -504,36 +504,36 @@ CLIをnpmパッケージとして配布するには：
 }
 ```
 
-2. **ビルドと公開**:
+2. **Build and publish**:
 ```bash
 npm run build && npm run build:app
 npm publish
 ```
 
-3. **グローバルインストール**:
+3. **Global install**:
 ```bash
 npm install -g my-awesome-cli
 my-cli hello
 ```
 
-## 🧪 テスト
+## 🧪 Testing
 
-decopin-cliには包括的なテスト機能が含まれています。テストの実行：
+decopin-cli includes comprehensive testing capabilities. Run tests with:
 
 ```bash
 npm test
 ```
 
-## 📝 ライセンス
+## 📝 License
 
-MIT License - 詳細は[LICENSE](LICENSE)を参照してください。
+MIT License - see [LICENSE](LICENSE) for details.
 
-## 🙏 謝辞
+## 🙏 Acknowledgments
 
-- Next.js App Routerのファイルベースルーティングにインスパイア
-- TypeScriptとモダンNode.js機能で構築
-- 型安全バリデーション用valibotを採用
+- Inspired by Next.js App Router's file-based routing
+- Built with TypeScript and modern Node.js features
+- Uses valibot for type-safe validation
 
 ---
 
-**decopin-cli** - Next.jsアプリを構築するようにCLIを構築しよう！ 🚀
+**decopin-cli** - Build CLIs like you build Next.js apps! 🚀
