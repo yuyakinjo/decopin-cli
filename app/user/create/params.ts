@@ -1,5 +1,5 @@
 import * as v from 'valibot';
-import type { ParamsDefinition } from '../../../dist/types/command.js';
+import type { ParamsDefinition } from '../../../dist/types/index.js';
 
 // ユーザー作成データのスキーマ
 const CreateUserSchema = v.object({
@@ -11,6 +11,7 @@ export type CreateUserData = v.InferInput<typeof CreateUserSchema>;
 
 export default function createParams(): ParamsDefinition {
   return {
+    schemaType: 'valibot',
     schema: CreateUserSchema,
     mappings: [
       {

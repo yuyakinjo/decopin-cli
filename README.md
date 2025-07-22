@@ -74,6 +74,7 @@ export type HelloData = v.InferInput<typeof HelloSchema>;
 
 export default function createParams(): ParamsDefinition {
   return {
+    schemaType: 'valibot',
     schema: HelloSchema,
     mappings: [
       {
@@ -153,6 +154,7 @@ export type HelloData = v.InferInput<typeof HelloSchema>;
 
 export default function createParams(): ParamsDefinition {
   return {
+    schemaType: 'valibot',
     schema: HelloSchema,
     mappings: [
       {
@@ -281,15 +283,12 @@ export default function createCommand(context: CommandContext<HelloData>): Comma
 
 ### 統合バリデーション
 
-バリデーションは自動的に統合されます - 個別の `validate.ts` ファイルは不要です：
+バリデーションは`params.ts`に統合されており、valibotスキーマを使用して型安全なパラメータ処理を提供します：
 
 ```text
 app/hello/
-├── params.ts    # ✅ 型 + バリデーションスキーマ + マッピング
+├── params.ts    # ✅ 型 + valibotスキーマ + マッピング
 └── command.ts   # ✅ コマンドロジック（検証済みデータを受け取る）
-
-# もう不要：
-# ├── validate.ts  # ❌ 削除 - バリデーションはparams.tsに統合
 ```
 
 ## 🎯 引数処理

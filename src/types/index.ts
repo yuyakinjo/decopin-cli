@@ -2,10 +2,12 @@
 
 // 実行コンテキスト関連
 export type {
+  BaseCommandContext,
   CommandContext,
   CommandHandler,
   MiddlewareFunction,
 } from './context.js';
+
 // コマンド定義関連
 export type {
   CommandDefinition,
@@ -21,7 +23,8 @@ export type {
   CommandMetadata,
   CommandSchema,
 } from './metadata.js';
-// バリデーション関連
+
+// バリデーション関連（valibotのみ）
 export type {
   ErrorHandler,
   ParamMapping,

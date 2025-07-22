@@ -1,8 +1,11 @@
 import * as v from 'valibot';
-import type { ParamsDefinition, ValidationFunction } from '../types/command.js';
+import type {
+  ParamsDefinition,
+  ValidationFunction,
+} from '../types/validation.js';
 
 /**
- * パラメータからデータを抽出
+ * パラメータからデータを抽出（valibot専用）
  */
 export function extractData(
   args: unknown[],
@@ -38,7 +41,7 @@ export function extractData(
 }
 
 /**
- * params.tsの定義を使ってバリデーションを実行
+ * Valibotバリデーション関数を作成
  */
 export function createValidationFunction(
   paramsDefinition: ParamsDefinition
@@ -48,7 +51,7 @@ export function createValidationFunction(
       // データを抽出
       const data = extractData(args, options, params, paramsDefinition);
 
-      // valibotでバリデーション
+      // valibotバリデーション
       const result = v.safeParse(paramsDefinition.schema, data);
 
       if (result.success) {

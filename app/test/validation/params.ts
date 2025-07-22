@@ -1,5 +1,5 @@
 import * as v from 'valibot';
-import type { ParamsDefinition } from '../../../dist/types/command.js';
+import type { ParamsDefinition } from '../../../dist/types/index.js';
 
 // バリデーションテスト用のスキーマ
 const ValidationTestSchema = v.object({
@@ -11,6 +11,7 @@ export type ValidationTestData = v.InferInput<typeof ValidationTestSchema>;
 
 export default function createParams(): ParamsDefinition {
   return {
+    schemaType: 'valibot',
     schema: ValidationTestSchema,
     mappings: [
       {

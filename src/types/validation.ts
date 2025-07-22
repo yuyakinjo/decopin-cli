@@ -49,13 +49,15 @@ export interface ParamMapping {
 }
 
 /**
- * パラメータ定義
+ * パラメータ定義（Valibotスキーマ専用）
  */
 export interface ParamsDefinition {
-  /** パラメータマッピングのリスト */
-  mappings: ParamMapping[];
+  /** スキーマタイプ：valibot */
+  schemaType: 'valibot';
   /** valibotスキーマ */
   schema: v.GenericSchema;
+  /** パラメータマッピング */
+  mappings: ParamMapping[];
 }
 
 /**

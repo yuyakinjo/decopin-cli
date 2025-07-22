@@ -1,9 +1,8 @@
-import type { CommandDefinition, CommandContext } from '../../../dist/types/command.js';
-import type { CreateUserData } from '../create/params.js';
+import type { CommandDefinition, BaseCommandContext } from '../../../dist/types/index.js';
 
-export default function createCommand(context: CommandContext): CommandDefinition {
+export default function createCommand(): CommandDefinition {
   return {
-    handler: async (context: CommandContext) => {
+    handler: async (context: BaseCommandContext) => {
       const limit = Number(context.options.limit) || 10;
 
       console.log('📋 User List:');

@@ -1,7 +1,7 @@
 /**
  * 基本的なコマンドコンテキスト（params.tsなし）
  */
-interface BaseCommandContext {
+export interface BaseCommandContext {
   /** 位置引数 */
   args: string[];
   /** オプション引数 */

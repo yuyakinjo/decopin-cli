@@ -1,8 +1,8 @@
-import type { CommandDefinition, CommandContext } from '../../../dist/types/command.js';
+import type { CommandDefinition, BaseCommandContext } from '../../../dist/types/index.js';
 
 export default function basicCommand(): CommandDefinition {
   return {
-    handler: async (context: CommandContext) => {
+    handler: async (context: BaseCommandContext) => {
       console.log('📋 Basic command executed!');
       console.log('📁 This command uses only command.ts');
       console.log('✅ No validation or custom error handling');
