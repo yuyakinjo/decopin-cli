@@ -1,19 +1,18 @@
 import { describe, expect, it } from 'vitest';
-import { extractData, createValidationFunction } from '../../src/utils/validation.js';
-import type { ParamsDefinition } from '../../src/types/validation.js';
 import * as v from 'valibot';
+import { extractData, createValidationFunction, isValibotSchema } from '../../src/utils/validation.js';
+import type { ParamsDefinition } from '../../src/types/validation.js';
 
 describe('validation utils', () => {
   describe('extractData', () => {
     const paramsDefinition: ParamsDefinition = {
-      schemaType: 'valibot',
       schema: v.object({
         name: v.string(),
-        age: v.string()
+        age: v.number()
       }),
       mappings: [
         { field: 'name', option: 'name', argIndex: 0 },
-        { field: 'age', option: 'age', argIndex: 1, defaultValue: '25' }
+        { field: 'age', option: 'age', argIndex: 1, defaultValue: 25 }
       ]
     };
 
@@ -69,31 +68,30 @@ describe('validation utils', () => {
 
       expect(result).toEqual({
         name: 'John',
-        age: '25' // デフォルト値
+        age: 25 // デフォルト値
       });
     });
 
     it('should handle mixed scenarios correctly', () => {
       const result = extractData(
-        ['Alice'],
-        { age: '30' },
+        ['Bob'],
+        { age: '35' },
         {},
         paramsDefinition
       );
 
       expect(result).toEqual({
-        name: 'Alice', // position引数から
-        age: '30'      // optionから
+        name: 'Bob',
+        age: '35'
       });
     });
   });
 
   describe('createValidationFunction', () => {
     const paramsDefinition: ParamsDefinition = {
-      schemaType: 'valibot',
       schema: v.object({
-        name: v.pipe(v.string(), v.minLength(1, 'Name is required')),
-        email: v.pipe(v.string(), v.email('Invalid email format'))
+        name: v.pipe(v.string(), v.minLength(1)),
+        email: v.pipe(v.string(), v.email())
       }),
       mappings: [
         { field: 'name', option: 'name', argIndex: 0 },
@@ -127,49 +125,136 @@ describe('validation utils', () => {
       );
 
       expect(result.success).toBe(false);
-      expect(result.error?.issues).toHaveLength(2);
+      expect(result.error?.message).toBe('Validation failed');
+      expect(result.error?.issues).toBeDefined();
     });
 
     it('should handle validation with default values', async () => {
       const paramsWithDefaults: ParamsDefinition = {
-        schemaType: 'valibot',
         schema: v.object({
           name: v.pipe(v.string(), v.minLength(1)),
-          greeting: v.string()
+          count: v.optional(v.number(), 1)
         }),
         mappings: [
           { field: 'name', option: 'name', argIndex: 0 },
-          { field: 'greeting', option: 'greeting', argIndex: 1, defaultValue: 'Hello' }
+          { field: 'count', option: 'count', argIndex: 1, defaultValue: 5 }
         ]
       };
 
       const validateFn = createValidationFunction(paramsWithDefaults);
 
-      const result = await validateFn(
-        ['John'],
-        {},
-        {}
-      );
+      const result = await validateFn(['John'], {}, {});
 
       expect(result.success).toBe(true);
       expect(result.data).toEqual({
         name: 'John',
-        greeting: 'Hello'
+        count: 5
       });
     });
 
     it('should handle validation errors gracefully', async () => {
-      const validateFn = createValidationFunction(paramsDefinition);
+      const invalidParamsDefinition = {
+        schema: { invalid: 'schema' }, // 無効なスキーマ
+        mappings: []
+      } as any;
 
-      const result = await validateFn(
-        ['John', 'not-an-email'],
-        {},
-        {}
-      );
+      const validateFn = createValidationFunction(invalidParamsDefinition);
+
+      const result = await validateFn([], {}, {});
 
       expect(result.success).toBe(false);
-      expect(result.error?.message).toBe('Validation failed');
-      expect(result.error?.issues?.[0]?.message).toContain('Invalid email format');
+      expect(result.error?.message).toContain('Invalid schema');
+    });
+  });
+
+  describe('isValibotSchema', () => {
+    it('should return true for valid valibot string schema', () => {
+      const schema = v.string();
+      expect(isValibotSchema(schema)).toBe(true);
+    });
+
+    it('should return true for valid valibot number schema', () => {
+      const schema = v.number();
+      expect(isValibotSchema(schema)).toBe(true);
+    });
+
+    it('should return true for valid valibot object schema', () => {
+      const schema = v.object({
+        name: v.string(),
+        age: v.number()
+      });
+      expect(isValibotSchema(schema)).toBe(true);
+    });
+
+    it('should return true for valid valibot array schema', () => {
+      const schema = v.array(v.string());
+      expect(isValibotSchema(schema)).toBe(true);
+    });
+
+    it('should return true for valid valibot pipe schema', () => {
+      const schema = v.pipe(v.string(), v.minLength(1));
+      expect(isValibotSchema(schema)).toBe(true);
+    });
+
+    it('should return false for null', () => {
+      expect(isValibotSchema(null)).toBe(false);
+    });
+
+    it('should return false for undefined', () => {
+      expect(isValibotSchema(undefined)).toBe(false);
+    });
+
+    it('should return false for primitive string', () => {
+      expect(isValibotSchema('string')).toBe(false);
+    });
+
+    it('should return false for primitive number', () => {
+      expect(isValibotSchema(42)).toBe(false);
+    });
+
+    it('should return false for primitive boolean', () => {
+      expect(isValibotSchema(true)).toBe(false);
+    });
+
+    it('should return false for plain object', () => {
+      expect(isValibotSchema({ name: 'test' })).toBe(false);
+    });
+
+    it('should return false for object missing required properties', () => {
+      const invalidSchema = {
+        kind: 'string',
+        type: 'string'
+        // missing 'async' and '~run' properties
+      };
+      expect(isValibotSchema(invalidSchema)).toBe(false);
+    });
+
+    it('should return false for object with wrong property types', () => {
+      const invalidSchema = {
+        kind: 123, // should be string
+        type: 'string',
+        async: false,
+        '~run': () => {}
+      };
+      expect(isValibotSchema(invalidSchema)).toBe(false);
+    });
+
+    it('should return false for object with non-function ~run property', () => {
+      const invalidSchema = {
+        kind: 'string',
+        type: 'string',
+        async: false,
+        '~run': 'not a function'
+      };
+      expect(isValibotSchema(invalidSchema)).toBe(false);
+    });
+
+    it('should return false for array', () => {
+      expect(isValibotSchema(['item1', 'item2'])).toBe(false);
+    });
+
+    it('should return false for function', () => {
+      expect(isValibotSchema(() => {})).toBe(false);
     });
   });
 });

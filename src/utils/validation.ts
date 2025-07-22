@@ -7,7 +7,7 @@ import type {
 /**
  * スキーマがvalibotスキーマかどうかを判別
  */
-function isValibotSchema(schema: unknown): schema is v.GenericSchema {
+export function isValibotSchema(schema: unknown): schema is v.GenericSchema {
   if (!schema || typeof schema !== 'object') {
     return false;
   }
