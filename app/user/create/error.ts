@@ -1,4 +1,4 @@
-import type { ErrorHandler, ValidationError } from '../../../dist/types/command.js';
+import type { ErrorHandler, ValidationError } from '../../../dist/types/index.js';
 
 export default function createErrorHandler(): ErrorHandler {
   return async (error: ValidationError) => {

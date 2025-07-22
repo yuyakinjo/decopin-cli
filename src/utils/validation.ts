@@ -5,6 +5,25 @@ import type {
 } from '../types/validation.js';
 
 /**
+ * スキーマがvalibotスキーマかどうかを判別
+ */
+function isValibotSchema(schema: unknown): schema is v.GenericSchema {
+  if (!schema || typeof schema !== 'object') {
+    return false;
+  }
+
+  const obj = schema as Record<string, unknown>;
+
+  // valibotスキーマの特徴的なプロパティをチェック
+  return (
+    typeof obj.kind === 'string' &&
+    typeof obj.type === 'string' &&
+    typeof obj.async === 'boolean' &&
+    typeof obj['~run'] === 'function'
+  );
+}
+
+/**
  * パラメータからデータを抽出（valibot専用）
  */
 export function extractData(
@@ -41,13 +60,18 @@ export function extractData(
 }
 
 /**
- * Valibotバリデーション関数を作成
+ * Valibotバリデーション関数を作成（自動判別対応）
  */
 export function createValidationFunction(
   paramsDefinition: ParamsDefinition
 ): ValidationFunction {
   return async (args, options, params) => {
     try {
+      // スキーマタイプの自動判別
+      if (!isValibotSchema(paramsDefinition.schema)) {
+        throw new Error('Invalid schema: Only valibot schemas are supported');
+      }
+
       // データを抽出
       const data = extractData(args, options, params, paramsDefinition);
 

@@ -1,4 +1,4 @@
-import type { CommandDefinition, CommandContext } from '../../../dist/types/command.js';
+import type { CommandDefinition, CommandContext } from '../../../dist/types/index.js';
 import type { CreateUserData } from './params.js';
 
 export default function createCommand(context: CommandContext<CreateUserData>): CommandDefinition<CreateUserData> {

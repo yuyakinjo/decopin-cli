@@ -1,34 +1,21 @@
 import * as v from 'valibot';
 import type { ParamsDefinition } from '../../../dist/types/index.js';
 
-// カスタムエラーテスト用のスキーマ
+// カスタムエラー用のスキーマ
 const CustomErrorTestSchema = v.object({
-  username: v.pipe(v.string(), v.minLength(3, 'Username must be at least 3 characters'), v.maxLength(20, 'Username must be at most 20 characters')),
-  age: v.pipe(v.string(), v.transform(Number), v.integer('Age must be an integer'), v.minValue(18, 'Age must be at least 18'), v.maxValue(120, 'Age must be at most 120')),
-  role: v.pipe(v.string(), v.picklist(['admin', 'user', 'guest'], 'Role must be one of: admin, user, guest')),
+  input: v.pipe(v.string(), v.minLength(1, 'Input cannot be empty')),
 });
 
 export type CustomErrorTestData = v.InferInput<typeof CustomErrorTestSchema>;
 
 export default function createParams(): ParamsDefinition {
   return {
-    schemaType: 'valibot',
     schema: CustomErrorTestSchema,
     mappings: [
       {
-        field: 'username',
-        option: 'username',
+        field: 'input',
+        option: 'input',
         argIndex: 0,
-      },
-      {
-        field: 'age',
-        option: 'age',
-        argIndex: 1,
-      },
-      {
-        field: 'role',
-        option: 'role',
-        argIndex: 2,
       },
     ],
   };

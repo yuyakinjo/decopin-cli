@@ -10,7 +10,6 @@ export type HelloData = v.InferInput<typeof HelloSchema>;
 
 export default function createParams(): ParamsDefinition {
   return {
-    schemaType: 'valibot',
     schema: HelloSchema,
     mappings: [
       {

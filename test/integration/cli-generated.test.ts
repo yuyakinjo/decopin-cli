@@ -308,9 +308,7 @@ describe('Generated CLI Integration Tests', () => {
       expect(result.exitCode).toBe(0);
       expect(result.stdout).toContain('Usage: cli test/custom-error');
       expect(result.stdout).toContain('Arguments:');
-      expect(result.stdout).toContain('[1] username (or --username)');
-      expect(result.stdout).toContain('[2] age (or --age)');
-      expect(result.stdout).toContain('[3] role (or --role)');
+      expect(result.stdout).toContain('[1] input (or --input)');
       expect(result.stderr).toBe('');
     });
   });

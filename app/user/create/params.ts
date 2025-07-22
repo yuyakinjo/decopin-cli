@@ -11,7 +11,6 @@ export type CreateUserData = v.InferInput<typeof CreateUserSchema>;
 
 export default function createParams(): ParamsDefinition {
   return {
-    schemaType: 'valibot',
     schema: CreateUserSchema,
     mappings: [
       {

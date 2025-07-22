@@ -1,4 +1,4 @@
-import type { CommandHelpMetadata } from '../../dist/types/command.js';
+import type { CommandHelpMetadata } from '../../dist/types/index.js';
 
 export const help: CommandHelpMetadata = {
   name: 'hello',
