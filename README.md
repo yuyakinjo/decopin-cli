@@ -48,7 +48,6 @@ import type { CommandDefinition, CommandContext } from '../../dist/types/command
 import type { HelloData } from './params.js';
 
 export default function createCommand(context: CommandContext<HelloData>): CommandDefinition<HelloData> {
-  // Use pre-validated data
   const { name } = context.validatedData;
 
   return {
@@ -65,7 +64,6 @@ export default function createCommand(context: CommandContext<HelloData>): Comma
 import * as v from 'valibot';
 import type { ParamsDefinition } from 'decopin-cli';
 
-// Hello command data schema
 const HelloSchema = v.object({
   name: v.pipe(v.string(), v.minLength(1, 'Name cannot be empty')),
 });
@@ -135,141 +133,12 @@ app/
         └── error.ts
 ```
 
-## 🛠️ Command Structure Details
-
-### Command with Parameters (Hello Command)
-
-**app/hello/params.ts**:
-```typescript
-import * as v from 'valibot';
-import type { ParamsDefinition } from '../../dist/types/command.js';
-
-// Hello command data schema
-const HelloSchema = v.object({
-  name: v.pipe(v.string(), v.minLength(1, 'Name cannot be empty')),
-});
-
-export type HelloData = v.InferInput<typeof HelloSchema>;
-
-export default function createParams(): ParamsDefinition {
-  return {
-    schema: HelloSchema,
-    mappings: [
-      {
-        field: 'name',
-        option: 'name',
-        argIndex: 0,
-        defaultValue: 'World',
-      },
-    ],
-  };
-}
-```
-
-**app/hello/command.ts**:
-```typescript
-import type { CommandDefinition, CommandContext } from '../../dist/types/command.js';
-import type { HelloData } from './params.js';
-
-export default function createCommand(context: CommandContext<HelloData>): CommandDefinition<HelloData> {
-  // Use pre-validated data
-  const { name } = context.validatedData;
-
-  return {
-    handler: async () => {
-      console.log(`Hello, ${name}!!!`);
-    },
-  };
-}
-```
-
-### Command with Complex Parameters (User Create)
-
-**app/user/create/params.ts**:
-```typescript
-import * as v from 'valibot';
-import type { ParamsDefinition } from '../../../dist/types/command.js';
-
-// User creation data schema
-const CreateUserSchema = v.object({
-  name: v.pipe(v.string(), v.minLength(1, 'Name is required')),
-  email: v.pipe(v.string(), v.email('Invalid email format')),
-});
-
-export type CreateUserData = v.InferInput<typeof CreateUserSchema>;
-
-export default function createParams(): ParamsDefinition {
-  return {
-    schema: CreateUserSchema,
-    mappings: [
-      {
-        field: 'name',
-        option: 'name',
-        argIndex: 0,
-      },
-      {
-        field: 'email',
-        option: 'email',
-        argIndex: 1,
-      },
-    ],
-  };
-}
-```
-
-**app/user/create/command.ts**:
-```typescript
-import type { CommandDefinition, CommandContext } from '../../../dist/types/command.js';
-import type { CreateUserData } from './params.js';
-
-export default function createCommand(context: CommandContext<CreateUserData>): CommandDefinition<CreateUserData> {
-  // Use pre-validated data
-  const { name, email } = context.validatedData;
-
-  return {
-    handler: async () => {
-      console.log(`🔄 Creating user: ${name} (${email})`);
-
-      // Implement actual logic here
-      // Example: await createUser({ name, email });
-
-      console.log('✅ User created successfully!');
-    }
-  };
-}
-```
-
-### Command without Parameters (User List)
-
-**app/user/list/command.ts**:
-```typescript
-import type { CommandDefinition, CommandContext } from '../../../dist/types/command.js';
-
-export default function createCommand(context: CommandContext): CommandDefinition {
-  return {
-    handler: async (context: CommandContext) => {
-      const limit = Number(context.options.limit) || 10;
-
-      console.log('📋 User List:');
-      for (let i = 1; i <= limit; i++) {
-        console.log(`  ${i}. User ${i} (user${i}@example.com)`);
-      }
-      console.log(`\n📊 Showing ${limit} users`);
-    }
-  };
-}
-```
-
-## 🏗️ Architecture
-
-### Function-Based Command Pattern
-
 decopin-cli uses a factory pattern where commands are functions that receive pre-validated contexts:
 
 ```typescript
-// decopin-cli approach (current)
+// decopin-cli approach
 export default function createCommand(context: CommandContext<HelloData>): CommandDefinition<HelloData> {
-  const { name } = context.validatedData; // Already validated and typed!
+  const { name } = context.validatedData!; // Already validated and typed!
 
   return {
     handler: async () => {
@@ -293,22 +162,17 @@ app/hello/
 
 decopin-cli automatically handles argument validation and type conversion based on your `params.ts` configuration:
 
-### Usage Examples
-
 #### Positional Arguments
-
 ```bash
 my-cli user create "John Doe" "john@example.com"
 ```
 
 #### Named Options
-
 ```bash
 my-cli user create --name "John Doe" --email "john@example.com"
 ```
 
 #### Mixed Arguments (positional takes precedence)
-
 ```bash
 my-cli user create "Jane" --email "jane@example.com"
 # name will be "Jane" (from position 0), not from --name option
@@ -319,16 +183,13 @@ my-cli user create "Jane" --email "jane@example.com"
 Create `app/version.ts` to configure CLI metadata:
 
 ```typescript
-/**
- * CLI version information
- */
-export const version = "2.1.3"
+export const version = "1.0.0"
 
 export const metadata = {
-  name: "super-cli",
-  version: "2.1.3",
-  description: "The ultimate command line interface for developers",
-  author: "TypeScript Ninja"
+  name: "my-cli",
+  version: "1.0.0",
+  description: "My awesome CLI tool",
+  author: "Your Name"
 }
 
 export default version
@@ -347,12 +208,6 @@ curl https://mise.run | sh
 # Start development mode with auto-regeneration
 npm run dev
 ```
-
-This will:
-1. Build the project
-2. Watch the `app/` directory for changes
-3. Automatically regenerate the CLI when files change
-4. Hot-reload commands without manual rebuilds
 
 ### Manual Build
 
@@ -374,8 +229,7 @@ decopin-cli build [options]
 - `--output-dir <dir>`: Output directory (default: `dist`)
 - `--output-file <file>`: Output file name (default: `cli.js`)
 - `--app-dir <dir>`: App directory path (default: `app`)
-- `--cli-name <n>`: CLI name for generated files
-- `--output-filename <file>`: Custom output filename
+- `--cli-name <name>`: CLI name for generated files
 
 ### Help Command
 
@@ -417,11 +271,6 @@ import type { CommandDefinition } from 'decopin-cli';
 
 export default function createCommand(): CommandDefinition {
   return {
-    metadata: {
-      name: 'status',
-      description: 'Show application status',
-      examples: ['status']
-    },
     handler: async () => {
       console.log('✅ Application is running');
     }
@@ -433,16 +282,11 @@ export default function createCommand(): CommandDefinition {
 
 ```typescript
 export default function createCommand(context: CommandContext<UserData>): CommandDefinition<UserData> {
-  const { name, email } = context.validatedData;
+  const { name, email } = context.validatedData!;
 
   return {
-    metadata: {
-      name: 'create',
-      description: 'Create a new user'
-    },
     handler: async () => {
       try {
-        // Command logic here
         await createUser(name, email);
         console.log('✅ User created successfully!');
       } catch (error) {
@@ -452,76 +296,6 @@ export default function createCommand(context: CommandContext<UserData>): Comman
     }
   };
 }
-```
-
-### Async Commands
-
-All commands support async operations:
-
-```typescript
-export default function createCommand(context: CommandContext<ApiData>): CommandDefinition<ApiData> {
-  const { endpoint } = context.validatedData;
-
-  return {
-    metadata: {
-      name: 'fetch',
-      description: 'Fetch data from API'
-    },
-    handler: async () => {
-      const response = await fetch(endpoint);
-      const data = await response.json();
-      console.log(data);
-    }
-  };
-}
-```
-
-## 📦 Distribution
-
-### NPM Package
-
-To distribute your CLI as an npm package:
-
-1. **Configure package.json**:
-```json
-{
-  "name": "my-awesome-cli",
-  "version": "1.0.0",
-  "type": "module",
-  "bin": {
-    "my-cli": "./examples/cli.js"
-  },
-  "files": [
-    "examples/",
-    "app/"
-  ],
-  "engines": {
-    "node": ">=18.0.0"
-  },
-  "dependencies": {
-    "valibot": "^1.1.0"
-  }
-}
-```
-
-2. **Build and publish**:
-```bash
-npm run build && npm run build:app
-npm publish
-```
-
-3. **Global install**:
-```bash
-npm install -g my-awesome-cli
-my-cli hello
-```
-
-## 🧪 Testing
-
-decopin-cli includes comprehensive testing capabilities. Run tests with:
-
-```bash
-npm test
 ```
 
 ## 📝 License
