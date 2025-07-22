@@ -1,6 +1,6 @@
 {
   "name": "decopin-cli",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "Next.js App Router風のファイルベースCLIビルダー",
   "type": "module",
   "main": "dist/index.js",
