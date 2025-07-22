@@ -10,6 +10,7 @@
   },
   "scripts": {
     "build": "tsc",
+    "build:prod": "tsc -p tsconfig.prod.json",
     "build:app": "tsc -p app/tsconfig.json",
     "dev": "mise run dev",
     "dev:build-all": "npm run build && npm run build:app",
@@ -18,7 +19,8 @@
     "test:integration": "npm run build && npm run build:app && npm run dev:regen && vitest run test/integration/",
     "test:integration:only": "vitest run test/integration/",
     "clean": "rm -rf dist examples",
-    "lint": "biome check --write ."
+    "lint": "biome check --write .",
+    "prepublishOnly": "npm run clean && npm run build:prod && vitest run --exclude '**/integration/**'"
   },
   "keywords": [
     "cli",
