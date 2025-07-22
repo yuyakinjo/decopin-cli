@@ -58,6 +58,7 @@ ${commands
   .join(',\n')}
   ];
 
+  // まず通常のコマンドマッチングを試行
   for (const command of availableCommands) {
     if (segments.length >= command.segments.length) {
       let match = true;
@@ -73,6 +74,43 @@ ${commands
         } else if (segment !== userSegment) {
           match = false;
           break;
+        }
+      }
+
+      if (match) {
+        return { command, params };
+      }
+    }
+  }
+
+  // 通常のマッチングで見つからない場合、エイリアスを確認
+  for (const command of availableCommands) {
+    const aliases = command.definition.metadata?.aliases || [];
+    if (aliases.length > 0 && segments.length >= command.segments.length) {
+      let match = false;
+      const params = {};
+
+      // 最後のセグメントがエイリアスかチェック
+      const lastSegmentIndex = command.segments.length - 1;
+      const lastSegment = command.segments[lastSegmentIndex];
+      const userLastSegment = segments[lastSegmentIndex];
+
+      // エイリアスの中に一致するものがあるか確認
+      if (aliases.includes(userLastSegment) && !lastSegment.startsWith('[')) {
+        match = true;
+        
+        // 他のセグメントもチェック
+        for (let i = 0; i < lastSegmentIndex; i++) {
+          const segment = command.segments[i];
+          const userSegment = segments[i];
+
+          if (segment.startsWith('[') && segment.endsWith(']')) {
+            const paramName = segment.slice(1, -1);
+            params[paramName] = userSegment;
+          } else if (segment !== userSegment) {
+            match = false;
+            break;
+          }
         }
       }
 

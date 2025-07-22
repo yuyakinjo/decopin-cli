@@ -375,4 +375,95 @@ describe('Generated CLI Integration Tests', () => {
       }
     });
   });
+
+  describe('Alias Functionality', () => {
+    it('should execute hello command using "hi" alias', async () => {
+      const result = await runCLI(['hi', 'World']);
+
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout).toBe('Hello, World!!!');
+      expect(result.stderr).toBe('');
+    });
+
+    it('should execute hello command using "greet" alias', async () => {
+      const result = await runCLI(['greet', 'Alice']);
+
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout).toBe('Hello, Alice!!!');
+      expect(result.stderr).toBe('');
+    });
+
+    it('should execute hello command using "hi" alias with --name option', async () => {
+      const result = await runCLI(['hi', '--name', 'Bob']);
+
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout).toBe('Hello, Bob!!!');
+      expect(result.stderr).toBe('');
+    });
+
+    it('should execute user create command using "add" alias', async () => {
+      const result = await runCLI(['user', 'add', 'John Doe', 'john@example.com']);
+
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout).toContain('🔄 Creating user: John Doe (john@example.com)');
+      expect(result.stdout).toContain('✅ User created successfully!');
+      expect(result.stderr).toBe('');
+    });
+
+    it('should execute user create command using "new" alias', async () => {
+      const result = await runCLI(['user', 'new', 'Jane Smith', 'jane@example.com']);
+
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout).toContain('🔄 Creating user: Jane Smith (jane@example.com)');
+      expect(result.stdout).toContain('✅ User created successfully!');
+      expect(result.stderr).toBe('');
+    });
+
+    it('should execute user create command using alias with options', async () => {
+      const result = await runCLI(['user', 'add', '--name', 'Alice', '--email', 'alice@example.com']);
+
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout).toContain('🔄 Creating user: Alice (alice@example.com)');
+      expect(result.stdout).toContain('✅ User created successfully!');
+      expect(result.stderr).toBe('');
+    });
+
+    it('should show help for command using alias', async () => {
+      const result = await runCLI(['hi', '--help']);
+
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout).toContain('Usage: cli hello');
+      expect(result.stdout).toContain('Say hello to someone');
+      expect(result.stdout).toContain('Aliases: hi, greet');
+      expect(result.stderr).toBe('');
+    });
+
+    it('should show help for user create using alias', async () => {
+      const result = await runCLI(['user', 'add', '--help']);
+
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout).toContain('Usage: cli user/create');
+      expect(result.stdout).toContain('Create a new user in the system');
+      expect(result.stdout).toContain('Aliases: add, new');
+      expect(result.stderr).toBe('');
+    });
+
+    it('should handle validation errors with aliases', async () => {
+      const result = await runCLI(['user', 'add', 'OnlyName']);
+
+      expect(result.exitCode).toBe(1);
+      expect(result.stderr).toContain('❌ User creation failed:');
+      expect(result.stderr).toContain('email: Invalid type: Expected string but received undefined');
+      expect(result.stderr).toContain('💡 Usage examples:');
+    });
+
+    it('should handle unknown aliases gracefully', async () => {
+      const result = await runCLI(['user', 'unknown-alias']);
+
+      expect(result.exitCode).toBe(1);
+      expect(result.stderr).toContain('Unknown command: user unknown-alias');
+      expect(result.stderr).toContain('Use --help to see available commands');
+      expect(result.stdout).toBe('');
+    });
+  });
 });
