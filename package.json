@@ -14,7 +14,7 @@
     "build:app": "tsc -p app/tsconfig.json",
     "dev": "mise run dev",
     "dev:build-all": "npm run build && npm run build:app",
-    "dev:regen": "node dist/cli.js build --app-dir app --output-dir examples --cli-name cli --verbose",
+    "dev:regen": "npx tsx src/cli.ts build --app-dir app --output-dir examples --cli-name cli --verbose",
     "test": "vitest run",
     "test:integration": "npm run build && npm run build:app && npm run dev:regen && vitest run test/integration/",
     "test:integration:only": "vitest run test/integration/",

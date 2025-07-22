@@ -8,6 +8,6 @@ export const help: CommandHelpMetadata = {
     'hello --name Bob',
     'hello "Alice Smith"'
   ],
-  aliases: ['hi', 'greet'],
+  aliases: ['hi', 'greet', "hey"],
   additionalHelp: 'This command greets a person with a friendly hello message.'
 };

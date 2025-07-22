@@ -13,8 +13,6 @@ export interface CommandDefinition<T = unknown> {
   middleware?: MiddlewareFunction<T>[];
   /** コマンドハンドラー */
   handler: CommandHandler<T>;
-  /** メタデータ */
-  metadata?: CommandMetadata;
   /** スキーマ */
   schema?: CommandSchema;
 }
@@ -42,7 +40,7 @@ export interface DynamicParam {
 }
 
 /**
- * 解析済みコマンド
+ * 解析済みコマンド（help.tsからのmetadataを含む）
  */
 export interface ParsedCommand<T = unknown> {
   /** コマンドパス（例: 'user/create'） */
@@ -53,6 +51,6 @@ export interface ParsedCommand<T = unknown> {
   dynamicParams: DynamicParam[];
   /** command.tsファイルのパス */
   filePath: string;
-  /** コマンド定義 */
-  definition: CommandDefinition<T>;
+  /** コマンド定義（help.tsからのmetadataを含む） */
+  definition: CommandDefinition<T> & { metadata?: CommandMetadata };
 }
