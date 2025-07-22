@@ -48,17 +48,36 @@ export function generateCommandMatcher(commands: ParsedCommand[]): string {
   return `function matchCommand(segments) {
   const availableCommands = [
 ${commands
-  .map((cmd) => {
+  .flatMap((cmd) => {
     const path = cmd.path || '';
     const segments = path ? path.split('/') : [];
     const metadata = cmd.definition.metadata || {};
     const metadataJson = JSON.stringify(metadata);
-    return `    { path: '${path}', segments: ${JSON.stringify(segments)}, definition: { metadata: ${metadataJson} } }`;
+    const aliases = metadata.aliases || [];
+
+    const commands = [];
+    // 元のコマンド
+    commands.push(
+      `    { path: '${path}', segments: ${JSON.stringify(segments)}, definition: { metadata: ${metadataJson} } }`
+    );
+
+    // エイリアスコマンド（最後のセグメントをエイリアスに置き換え）
+    if (aliases.length > 0 && segments.length > 0) {
+      for (const alias of aliases) {
+        const aliasSegments = [...segments];
+        aliasSegments[aliasSegments.length - 1] = alias;
+        commands.push(
+          `    { path: '${path}', segments: ${JSON.stringify(aliasSegments)}, definition: { metadata: ${metadataJson} } }`
+        );
+      }
+    }
+
+    return commands;
   })
   .join(',\n')}
   ];
 
-  // まず通常のコマンドマッチングを試行
+  // コマンドマッチング
   for (const command of availableCommands) {
     if (segments.length >= command.segments.length) {
       let match = true;
@@ -74,43 +93,6 @@ ${commands
         } else if (segment !== userSegment) {
           match = false;
           break;
-        }
-      }
-
-      if (match) {
-        return { command, params };
-      }
-    }
-  }
-
-  // 通常のマッチングで見つからない場合、エイリアスを確認
-  for (const command of availableCommands) {
-    const aliases = command.definition.metadata?.aliases || [];
-    if (aliases.length > 0 && segments.length >= command.segments.length) {
-      let match = false;
-      const params = {};
-
-      // 最後のセグメントがエイリアスかチェック
-      const lastSegmentIndex = command.segments.length - 1;
-      const lastSegment = command.segments[lastSegmentIndex];
-      const userLastSegment = segments[lastSegmentIndex];
-
-      // エイリアスの中に一致するものがあるか確認
-      if (aliases.includes(userLastSegment) && !lastSegment.startsWith('[')) {
-        match = true;
-        
-        // 他のセグメントもチェック
-        for (let i = 0; i < lastSegmentIndex; i++) {
-          const segment = command.segments[i];
-          const userSegment = segments[i];
-
-          if (segment.startsWith('[') && segment.endsWith(']')) {
-            const paramName = segment.slice(1, -1);
-            params[paramName] = userSegment;
-          } else if (segment !== userSegment) {
-            match = false;
-            break;
-          }
         }
       }
 

@@ -38,11 +38,17 @@ describe('Runtime Template', () => {
 
       const result = generateCommandMatcher(commands);
 
-      // Check that the generated code includes alias matching logic
-      expect(result).toContain('// まず通常のコマンドマッチングを試行');
-      expect(result).toContain('// 通常のマッチングで見つからない場合、エイリアスを確認');
-      expect(result).toContain('const aliases = command.definition.metadata?.aliases || []');
-      expect(result).toContain('if (aliases.includes(userLastSegment)');
+      // Check that the generated code includes all alias variations in availableCommands
+      expect(result).toContain('// コマンドマッチング');
+      expect(result).toContain('const availableCommands = [');
+
+      // Check that aliases are expanded into separate command entries
+      expect(result).toContain('segments: ["hello"]');  // original
+      expect(result).toContain('segments: ["hi"]');     // alias
+      expect(result).toContain('segments: ["greet"]');  // alias
+      expect(result).toContain('segments: ["user","create"]'); // original
+      expect(result).toContain('segments: ["user","add"]');    // alias
+      expect(result).toContain('segments: ["user","new"]');    // alias
     });
 
     it('should generate valid JavaScript function', () => {
@@ -76,7 +82,7 @@ describe('Runtime Template', () => {
         {
           path: 'user/[id]/edit',
           segments: ['user', '[id]', 'edit'],
-          dynamicParams: ['id'],
+          dynamicParams: [{ name: 'id', optional: false }],
           filePath: '/app/user/[id]/edit/command.ts',
           definition: {
             handler: async () => {},
