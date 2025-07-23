@@ -18,6 +18,7 @@ A TypeScript-first CLI builder inspired by Next.js App Router's file-based routi
 - **🔄 Real-time development**: Changes reflect instantly with mise watch tasks
 - **📦 Zero configuration**: Works out of the box with sensible defaults
 - **⚡ Dynamic imports**: Generated CLIs use dynamic imports for instant command loading
+- **🏷️ Command aliases**: Support for command aliases (e.g., `hi` → `hello`, `add` → `user create`)
 
 ## 🚀 Quick Start
 
@@ -99,6 +100,10 @@ node dist/cli.js hello Alice
 
 node dist/cli.js hello --name Bob
 # Output: Hello, Bob!
+
+# Using aliases
+node dist/cli.js hi Alice
+# Output: Hello, Alice!
 ```
 
 ## 🏗️ Architecture
@@ -116,10 +121,10 @@ app/
 │   ├── create/             # user create - Create a user
 │   │   ├── command.ts
 │   │   ├── params.ts
-│   │   ├── help.ts
-│   │   └── error.ts
+│   │   └── help.ts
 │   └── list/               # user list - List users
 │       ├── command.ts
+│       ├── params.ts
 │       └── help.ts
 └── test/                   # Test command group
     ├── basic/              # Basic test command
@@ -274,6 +279,29 @@ export default function createCommand(): CommandDefinition {
     handler: async () => {
       console.log('✅ Application is running');
     }
+  };
+}
+```
+
+### Help Documentation
+
+Create `help.ts` to provide detailed command documentation:
+
+```typescript
+// app/hello/help.ts
+import type { CommandHelpMetadata } from 'decopin-cli';
+
+export default function createHelp(): CommandHelpMetadata {
+  return {
+    name: 'hello',
+    description: 'Say hello to someone',
+    examples: [
+      'hello Alice',
+      'hello --name Bob',
+      'hello "Alice Smith"'
+    ],
+    aliases: ['hi', 'greet'],
+    additionalHelp: 'This command greets a person with a friendly hello message.'
   };
 }
 ```
