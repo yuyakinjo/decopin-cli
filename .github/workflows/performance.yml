@@ -61,21 +61,51 @@ jobs:
             git rm -rf . || true
           fi
 
-      - name: Add performance report to history
+      - name: Process and add performance report to history
         if: github.ref == 'refs/heads/main'
         run: |
           # Restore performance report
           cp /tmp/performance.md performance.md
-
+          
           mkdir -p performance-history
+          
+          # Get current commit info
+          COMMIT_SHA=$(git rev-parse --short HEAD)
+          COMMIT_DATE=$(date -u +%Y-%m-%d)
+          
+          # Extract current metrics
+          CURRENT_AVG=$(grep -o 'Average startup time.*[0-9][0-9]*\.[0-9][0-9]*ms' performance.md | grep -o '[0-9][0-9]*\.[0-9][0-9]*' | head -1)
+          CURRENT_HELP=$(grep -o 'Help/Error commands.*[0-9][0-9]*\.[0-9][0-9]*ms' performance.md | grep -o '[0-9][0-9]*\.[0-9][0-9]*' | head -1)
+          CURRENT_EXEC=$(grep -o 'Execution commands.*[0-9][0-9]*\.[0-9][0-9]*ms' performance.md | grep -o '[0-9][0-9]*\.[0-9][0-9]*' | head -1)
+          
+          # Create or update version history
+          if [ ! -f "performance-history/versions.csv" ]; then
+            echo "sha,date,avg,help,exec" > performance-history/versions.csv
+          fi
+          
+          # Add current version AFTER updating the report with previous versions
+          # This ensures the current run is shown as "Current" and not in the history
+          
+          # Update version history in the report with existing versions
+          bun run scripts/update-version-history.ts performance-history/versions.csv performance.md
+          
+          # Now add the current version to CSV for future runs
+          echo "${COMMIT_SHA},${COMMIT_DATE},${CURRENT_AVG},${CURRENT_HELP},${CURRENT_EXEC}" >> performance-history/versions.csv
+          
+          # Keep only last 10 versions
+          head -1 performance-history/versions.csv > performance-history/versions.tmp
+          tail -n +2 performance-history/versions.csv | tail -10 >> performance-history/versions.tmp
+          mv performance-history/versions.tmp performance-history/versions.csv
+          
+          # Save files
           cp performance.md "performance-history/$(date -u +%Y-%m-%d-%H%M%S).md"
           cp performance.md performance-history/latest.md
           cp performance.md latest.md
-
+          
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add performance-history/ latest.md
-          git commit -m "Add performance benchmark for $(git rev-parse --short HEAD)" || true
+          git commit -m "Add performance benchmark for ${COMMIT_SHA}" || true
 
       - name: Push performance history
         if: github.ref == 'refs/heads/main'
@@ -127,6 +157,71 @@ jobs:
             const fs = require('fs');
             const reportContent = fs.readFileSync('performance.md', 'utf8');
 
+            // Try to get version history
+            let versionHistory = '';
+            let performanceTrend = '';
+            try {
+              const { execSync } = require('child_process');
+              const csvContent = execSync('git show origin/performance-history:performance-history/versions.csv 2>/dev/null || echo ""', { encoding: 'utf8' });
+              if (csvContent && csvContent.trim()) {
+                const lines = csvContent.trim().split('\n').slice(1); // Skip header
+                const lastVersions = lines.slice(-3).reverse();
+                
+                if (lastVersions.length > 0) {
+                  // Performance trend analysis
+                  const avgValues = lastVersions.map(line => {
+                    const [,,avg] = line.split(',');
+                    return parseFloat(avg) || 0;
+                  }).filter(v => v > 0);
+                  
+                  if (avgValues.length >= 2) {
+                    const trend = avgValues[0] > avgValues[avgValues.length - 1] ? '📈 improving' : 
+                                 avgValues[0] < avgValues[avgValues.length - 1] ? '📉 degrading' : 
+                                 '📊 stable';
+                    performanceTrend = `\n\n**Performance Trend**: ${trend} over last ${avgValues.length} versions`;
+                  }
+                  
+                  // Version comparison table
+                  versionHistory = '\n\n### 📊 Recent Version Comparison\n\n';
+                  versionHistory += '| Version | Date | Average | Help/Error | Execution | vs Previous |\n';
+                  versionHistory += '|---------|------|---------|------------|-----------|-------------|\n';
+                  versionHistory += `| **Current PR** | - | **${current}ms** | - | - | - |\n`;
+                  
+                  let previousAvg = parseFloat(current);
+                  lastVersions.forEach((line, idx) => {
+                    const [sha, date, avg, help, exec] = line.split(',');
+                    if (sha && avg) {
+                      const avgNum = parseFloat(avg);
+                      const diff = ((parseFloat(current) - avgNum) / avgNum * 100).toFixed(1);
+                      const vsPrev = idx === 0 ? ((previousAvg - avgNum) / avgNum * 100).toFixed(1) : '-';
+                      
+                      const trend = diff > 0 ? `+${diff}%` : `${diff}%`;
+                      const trendEmoji = parseFloat(diff) < -5 ? '🚀' : parseFloat(diff) > 5 ? '⚠️' : '✅';
+                      
+                      versionHistory += `| ${sha} | ${date} | ${avg}ms | ${help}ms | ${exec}ms | ${trendEmoji} ${trend} |\n`;
+                      previousAvg = avgNum;
+                    }
+                  });
+                  
+                  // Add performance insights
+                  if (avgValues.length >= 3) {
+                    const improvement = ((avgValues[avgValues.length - 1] - parseFloat(current)) / avgValues[avgValues.length - 1] * 100).toFixed(1);
+                    const avgImprovement = avgValues.reduce((acc, val, idx) => {
+                      if (idx === 0) return 0;
+                      return acc + ((avgValues[idx - 1] - val) / avgValues[idx - 1] * 100);
+                    }, 0) / (avgValues.length - 1);
+                    
+                    versionHistory += '\n\n#### 📈 Performance Insights\n\n';
+                    versionHistory += `- Overall improvement from 3 versions ago: **${improvement}%**\n`;
+                    versionHistory += `- Average improvement per version: **${avgImprovement.toFixed(1)}%**\n`;
+                    versionHistory += `- Best performance: **${Math.min(...avgValues, parseFloat(current)).toFixed(2)}ms** ${Math.min(...avgValues, parseFloat(current)) === parseFloat(current) ? '(this PR) 🎉' : ''}\n`;
+                  }
+                }
+              }
+            } catch (e) {
+              console.log('Could not fetch version history:', e.message);
+            }
+            
             const comment = [
               `## ${emoji} Performance Benchmark Results`,
               '',
@@ -135,6 +230,8 @@ jobs:
               `- Previous (main): ${previous}ms`,
               `- Current (PR): ${current}ms`,
               `- Change: ${change > 0 ? '+' : ''}${change.toFixed(2)}%`,
+              performanceTrend,
+              versionHistory,
               '',
               '<details>',
               '<summary>View full benchmark report</summary>',

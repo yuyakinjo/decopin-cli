@@ -101,6 +101,13 @@ ${results.map(r => `| ${r.description} | ${r.average.toFixed(2)} | ${r.min.toFix
 
 > Note: This section will be populated by GitHub Actions when comparing with previous benchmarks.
 
+### Version History
+
+| Version | Date | Average Startup | Help Commands | Exec Commands |
+|---------|------|-----------------|---------------|---------------|
+| Current | ${new Date().toISOString().split('T')[0]} | ${avgStartup.toFixed(2)}ms | ${avgHelp.toFixed(2)}ms | ${avgExec.toFixed(2)}ms |
+| _Previous versions will be added by CI_ | | | | |
+
 ## Environment Details
 
 \`\`\`json
