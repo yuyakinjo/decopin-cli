@@ -4,7 +4,6 @@
 export type {
   CommandContext,
   CommandHandler,
-  MiddlewareFunction,
 } from './context.js';
 export type {
   CommandDefinition,

@@ -35,11 +35,3 @@ export type CommandContext<T = never> = T extends never
 export type CommandHandler<T = never> = (
   context: CommandContext<T>
 ) => Promise<void> | void;
-
-/**
- * ミドルウェア関数の型
- */
-export type MiddlewareFunction<T = never> = (
-  context: CommandContext<T>,
-  next: () => Promise<void> | void
-) => Promise<void> | void;

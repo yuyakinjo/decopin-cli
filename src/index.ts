@@ -223,7 +223,6 @@ export type {
   CommandMetadata,
   DynamicParam,
   ErrorHandler,
-  MiddlewareFunction,
   ParamMapping,
   ParamsDefinition,
   ParamsDefinitionFunction,

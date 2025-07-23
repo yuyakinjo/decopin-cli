@@ -122,11 +122,6 @@ export function parseObjectLiteralAsCommandDefinition(
         case 'handler':
           definition.handler = async () => {}; // 実際の関数は動的にインポートで取得
           break;
-
-        case 'middleware':
-          // middlewareは配列として解析
-          definition.middleware = [];
-          break;
       }
     }
   }

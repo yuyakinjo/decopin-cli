@@ -5,7 +5,6 @@ export type {
   BaseCommandContext,
   CommandContext,
   CommandHandler,
-  MiddlewareFunction,
 } from './context.js';
 
 // コマンド定義関連
