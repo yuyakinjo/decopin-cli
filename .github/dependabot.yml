@@ -1,0 +1,73 @@
+# Dependabot configuration file
+# Documentation: https://docs.github.com/github/administering-a-repository/configuration-options-for-dependency-updates
+
+version: 2
+updates:
+  # Enable version updates for npm
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Asia/Tokyo"
+    # Update dependencies
+    groups:
+      # Group all development dependencies together
+      dev-dependencies:
+        patterns:
+          - "*"
+        dependency-type: "development"
+      # Group all production dependencies together
+      production-dependencies:
+        patterns:
+          - "*"
+        dependency-type: "production"
+    # Limit the number of open pull requests
+    open-pull-requests-limit: 10
+    # Add reviewers
+    reviewers:
+      - "t00234"
+    # Add labels to PRs
+    labels:
+      - "dependencies"
+      - "automated"
+    # Allow Dependabot to access private registries if needed
+    # registries: "*"
+    # Commit message settings
+    commit-message:
+      prefix: "chore"
+      prefix-development: "chore"
+      include: "scope"
+    # Ignore specific dependencies if needed
+    ignore:
+      # Example: Ignore major version updates for TypeScript
+      # - dependency-name: "typescript"
+      #   update-types: ["version-update:semver-major"]
+    # Versioning strategy
+    versioning-strategy: "increase"
+    # Allow certain updates
+    allow:
+      - dependency-type: "all"
+
+  # Enable version updates for GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Asia/Tokyo"
+    # Limit the number of open pull requests
+    open-pull-requests-limit: 5
+    # Add reviewers
+    reviewers:
+      - "t00234"
+    # Add labels to PRs
+    labels:
+      - "github-actions"
+      - "automated"
+    # Commit message settings
+    commit-message:
+      prefix: "ci"
+      include: "scope"
