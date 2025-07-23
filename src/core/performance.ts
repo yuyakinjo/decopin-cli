@@ -7,7 +7,6 @@ export interface PerformanceMetrics {
     initial: number;
     peak: number;
   };
-  commandExecutionTime: number;
 }
 
 export class PerformanceMonitor {
@@ -17,8 +16,7 @@ export class PerformanceMonitor {
     memoryUsage: {
       initial: process.memoryUsage().heapUsed / 1024 / 1024,
       peak: 0
-    },
-    commandExecutionTime: 0
+    }
   };
 
   private startTime = performance.now();
@@ -36,19 +34,11 @@ export class PerformanceMonitor {
     this.metrics.startupTime = performance.now() - this.startTime;
   }
 
-  recordCommandExecution(duration: number) {
-    this.metrics.commandExecutionTime = duration;
-  }
-
   private updatePeakMemory() {
     const current = process.memoryUsage().heapUsed / 1024 / 1024;
     if (current > this.metrics.memoryUsage.peak) {
       this.metrics.memoryUsage.peak = current;
     }
-  }
-
-  getMetrics(): PerformanceMetrics {
-    return { ...this.metrics };
   }
 
   printSummary() {
@@ -62,10 +52,6 @@ export class PerformanceMonitor {
       for (const [module, time] of Object.entries(this.metrics.moduleLoadTime)) {
         console.log(`  ${module}: ${time.toFixed(2)}ms`);
       }
-    }
-    
-    if (this.metrics.commandExecutionTime > 0) {
-      console.log(`\nCommand execution: ${this.metrics.commandExecutionTime.toFixed(2)}ms`);
     }
   }
 }

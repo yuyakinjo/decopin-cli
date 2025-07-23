@@ -318,7 +318,7 @@ async function copyValidationUtils(outputDir: string): Promise<void> {
     await mkdir(join(outputDir, 'internal'), { recursive: true });
     await mkdir(guardsDestDir, { recursive: true });
 
-    const guardFiles = ['index.js', 'ast.js', 'string.js', 'validation.js'];
+    const guardFiles = ['index.js', 'ast.js', 'validation.js'];
     for (const file of guardFiles) {
       const source = join(guardsSourceDir, file);
       const dest = join(guardsDestDir, file);
