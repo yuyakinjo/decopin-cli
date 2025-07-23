@@ -1,73 +1,46 @@
-# Project Structure & Organization
+---
+inclusion: always
+---
 
-## Directory Layout
+# Project Structure & Architecture Rules
 
-```
-decopin-cli/
-├── src/                    # Core TypeScript source (NO .js files)
-│   ├── cli.ts             # Main CLI entry point
-│   ├── index.ts           # Public API exports
-│   ├── generator/         # CLI generation logic
-│   │   ├── cli-generator.ts
-│   │   └── cli-generator.test.ts
-│   ├── parser/            # AST parsing utilities
-│   │   ├── ast-parser.ts
-│   │   ├── ast-parser.test.ts
-│   │   ├── version-parser.ts
-│   │   └── version-parser.test.ts
-│   ├── scanner/           # Directory scanning
-│   │   ├── directory-scanner.ts
-│   │   └── directory-scanner.test.ts
-│   ├── types/             # Type definitions
-│   │   └── command.ts
-│   └── utils/             # Shared utilities
-│       ├── validation.ts
-│       ├── validation.test.ts
-│       └── params.test.ts
-├── app/                   # Example CLI structure (NO .js files)
-│   ├── version.ts         # CLI metadata
-│   ├── hello/             # Simple command example
-│   │   ├── command.ts     # Command implementation
-│   │   ├── params.ts      # Valibot validation schema
-│   │   └── validate.ts    # Validation logic
-│   └── user/              # Nested command example
-│       ├── create/
-│       │   ├── command.ts
-│       │   ├── params.ts
-│       │   ├── validate.ts
-│       │   └── error.ts
-│       └── list/
-│           └── command.ts
-├── dist/                  # Compiled output from src/
-├── examples/              # Compiled output from app/
-└── node_modules/
+## Critical File System Constraints
+
+- **NEVER create .js files** in `src/` or `app/` directories - TypeScript only
+- `src/` compiles to `dist/`, `app/` compiles to `examples/`
+- All imports from compiled output MUST use `.js` extensions
+- Tests are co-located with source files (`*.test.ts`)
+
+## Command Structure (File-Based Routing)
+
+Commands use folder-based routing in `app/` directory:
+
+```text
+app/
+├── version.ts              # CLI metadata (required)
+├── [command]/              # Simple command
+│   ├── command.ts          # REQUIRED: Command implementation
+│   ├── params.ts           # OPTIONAL: Valibot schema
+│   ├── help.ts             # OPTIONAL: Custom help
+│   └── error.ts            # OPTIONAL: Error handling
+└── [parent]/[child]/       # Nested commands
+    └── command.ts          # Same structure applies
 ```
 
-## File Naming Conventions
+## Mandatory Code Patterns
 
-### Command Structure Files
-- `command.ts` - Command implementation (required)
-- `params.ts` - Valibot schema and field mappings (optional)
-- `validate.ts` - Validation logic (optional)
-- `error.ts` - Custom error handlers (optional)
+### Command Implementation Template
 
-### Source Files
-- `*.ts` - TypeScript source files
-- `*.test.ts` - Test files (co-located with source)
-- `*.d.ts` - Type definition files (generated)
+Every `command.ts` MUST follow this exact pattern:
 
-## Architecture Patterns
-
-### Command Definition Pattern
 ```typescript
-// app/[command]/command.ts
 import type { CommandDefinition, CommandContext } from '../../dist/types/command.js';
 
 const command: CommandDefinition<DataType> = {
   metadata: {
     name: 'command-name',
-    description: 'Command description',
-    examples: ['example usage']
+    description: 'Brief description',
+    examples: ['usage example']
   },
   handler: async (context: CommandContext<DataType>) => {
     // Implementation
@@ -77,9 +50,11 @@ const command: CommandDefinition<DataType> = {
 export default command;
 ```
 
-### Validation Pattern
+### Validation Schema Template
+
+When `params.ts` exists, use this exact pattern:
+
 ```typescript
-// app/[command]/params.ts
 import * as v from 'valibot';
 import type { ParamsDefinition } from '../../dist/types/command.js';
 
@@ -99,31 +74,41 @@ const paramsDefinition: ParamsDefinition = {
 export default paramsDefinition;
 ```
 
-## Import Conventions
+## Import Rules (Non-Negotiable)
 
-### Internal Imports
-- Use relative imports within same directory
-- Use absolute imports from project root for cross-directory
-- Always use `.js` extension for compiled output references
+### Required Import Patterns
 
-### External Dependencies
-- `valibot` - Always import as `* as v from 'valibot'`
-- Node.js built-ins - Use `node:` prefix (e.g., `node:fs/promises`)
+- **Valibot**: `import * as v from 'valibot'` (never destructure)
+- **Node built-ins**: `import { } from 'node:fs/promises'` (use node: prefix)
+- **Compiled types**: `from '../../dist/types/command.js'` (always .js extension)
+- **Relative imports**: Preferred within same directory
 
-## Build Output Structure
+### Type Safety Requirements
 
-### dist/ (from src/)
-- Compiled JavaScript with source maps
-- Type declaration files (.d.ts)
-- Preserves directory structure
+- ALL command handlers MUST use `CommandDefinition<T>` type
+- ALL validation schemas MUST use `v.InferInput<typeof Schema>`
+- ALL parameter mappings MUST map CLI args/options to schema fields
 
-### examples/ (from app/)
-- Compiled command examples
-- Used by generated CLIs for dynamic imports
-- Mirrors app/ directory structure
+## Development Workflow
 
-## Testing Organization
-- Tests co-located with source files (`*.test.ts`)
-- Integration tests in `src/integration/`
-- Test utilities in `src/utils/` (shared)
-- Coverage reports exclude CLI entry points and test files
+### Creating New Commands
+
+1. Create folder in `app/` directory: `app/[command-name]/`
+2. Add required `command.ts` with exact template above
+3. Add optional `params.ts` only if command needs arguments/options
+4. Test with `npm run dev:regen` to regenerate CLI
+5. Verify compilation with `npm run build:app`
+
+### Common Mistakes to Avoid
+
+- Creating .js files in source directories
+- Forgetting .js extensions in compiled imports
+- Destructuring valibot imports
+- Missing default exports in command files
+- Incorrect type annotations on command handlers
+
+### Testing Commands
+
+- Run `npm run dev:regen` after changes
+- Use `node examples/cli.js [command]` to test
+- All tests co-located with source files (`*.test.ts`)

@@ -2,59 +2,101 @@
 inclusion: always
 ---
 
-# Product Overview & Development Guidelines
+# decopin-cli Development Guidelines
 
-**decopin-cli** is a TypeScript-first CLI builder that uses Next.js App Router-inspired file-based routing to create command-line interfaces with zero configuration.
+**decopin-cli** is a TypeScript-first CLI builder using file-based routing (Next.js App Router style) for zero-configuration command-line interfaces.
 
-## Core Architecture Principles
+## Command Architecture Rules
 
-Commands are defined in the `app/` directory using file-based conventions:
+### File-Based Command Structure
 
-- Each command lives in its own folder (e.g., `app/hello/`, `app/user/create/`)
-- Required files: `command.ts` (command implementation)
-- Optional files: `params.ts` (validation schema), `help.ts`, `error.ts`
-- Nested commands supported through folder nesting
+- Commands live in `app/` directory with folder-based routing
+- Each command requires its own folder: `app/[command-name]/`
+- Nested commands supported: `app/user/create/`, `app/user/list/`
 
-## Development Rules
+### Required Files Per Command
 
-### File Structure Requirements
+- `command.ts` - REQUIRED: Default export with `CommandDefinition<T>`
+- `params.ts` - OPTIONAL: Valibot schema + type definitions
+- `help.ts` - OPTIONAL: Custom help text
+- `error.ts` - OPTIONAL: Custom error handling
 
-- **Source code**: Only `.ts` files in `src/` and `app/` directories
-- **Build outputs**: `src/` compiles to `dist/`, `app/` compiles to `examples/`
-- **Command files**: Must export default with proper TypeScript types
-- **Import conventions**: Use `.js` extensions when importing from compiled output
+## Mandatory Code Patterns
 
-### Type Safety Requirements
-
-- All command handlers must use `CommandDefinition<T>` type
-- Validation schemas must use valibot with proper type inference
-- Parameter mappings required for argument/option binding
-- Context objects must be properly typed with `CommandContext<T>`
-
-### Code Patterns to Follow
+### Command Implementation
 
 ```typescript
-// Command structure
+import type { CommandDefinition, CommandContext } from '../../dist/types/command.js';
+
 const command: CommandDefinition<DataType> = {
-  metadata: { name, description, examples },
-  handler: async (context: CommandContext<DataType>) => { /* implementation */ }
+  metadata: {
+    name: 'command-name',
+    description: 'Brief description',
+    examples: ['usage example']
+  },
+  handler: async (context: CommandContext<DataType>) => {
+    // Implementation here
+  }
 };
 
-// Validation pattern
-const Schema = v.object({ /* valibot schema */ });
-export type DataType = v.InferInput<typeof Schema>;
+export default command;
 ```
 
-## Key Constraints
+### Validation Schema (when params.ts exists)
 
-- **Parse, Don't Validate**: Always use valibot to parse inputs into type-safe structures
-- **Dynamic imports**: Generated CLIs must use dynamic imports for command loading
-- **ESM modules**: Pure ES modules with `"type": "module"`
-- **Zero configuration**: Commands work without additional setup files
+```typescript
+import * as v from 'valibot';
+import type { ParamsDefinition } from '../../dist/types/command.js';
 
-## Development Workflow
+const Schema = v.object({
+  field: v.pipe(v.string(), v.minLength(1))
+});
 
-- Changes to `app/` directory automatically reflect in generated CLI
-- Use `npm run dev:regen` to regenerate CLI after structural changes
-- Test commands using the generated CLI in `examples/` directory
-- Maintain type safety throughout the entire command pipeline
+export type DataType = v.InferInput<typeof Schema>;
+
+const paramsDefinition: ParamsDefinition = {
+  schema: Schema,
+  mappings: [
+    { field: 'field', option: 'field', argIndex: 0 }
+  ]
+};
+
+export default paramsDefinition;
+```
+
+## Critical Development Constraints
+
+### Type Safety (Non-Negotiable)
+
+- ALL command handlers MUST use `CommandDefinition<T>` type
+- ALL validation schemas MUST use valibot with `v.InferInput<typeof Schema>`
+- ALL parameter mappings MUST map CLI args/options to schema fields
+- ALL imports from compiled output MUST use `.js` extensions
+
+### File System Rules
+
+- ONLY `.ts` files allowed in `src/` and `app/` directories
+- NO `.js` files in source directories
+- `src/` compiles to `dist/`, `app/` compiles to `examples/`
+- Generated CLIs use dynamic imports from `examples/`
+
+### Import Conventions
+
+- Valibot: `import * as v from 'valibot'`
+- Node built-ins: `import { } from 'node:fs/promises'`
+- Compiled output: `from '../../dist/types/command.js'` (always .js)
+- Relative imports within same directory preferred
+
+## Parse, Don't Validate Philosophy
+
+- Use valibot to parse AND transform inputs into type-safe structures
+- Never manually validate - let valibot handle all input validation
+- Type inference flows from schema to handler automatically
+
+## AI Assistant Guidelines
+
+- When creating commands, always start with the required `command.ts`
+- Add `params.ts` only if the command needs arguments or options
+- Follow exact TypeScript patterns shown above
+- Test command structure by running `npm run dev:regen`
+- Maintain ESM module compatibility throughout
