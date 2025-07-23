@@ -12,11 +12,11 @@ Runs on every push and pull request to ensure code quality.
 - Pull requests to `main` or `develop` branches
 
 **Jobs:**
-- Runs tests on Node.js 18.x, 20.x, and 22.x
+- Runs tests on Node.js 20.x, 22.x, and 24.x
 - Lints code with Biome
 - Builds the project and example app
 - Runs all tests
-- Uploads coverage reports to Codecov (Node.js 20.x only)
+- Displays test results in GitHub Actions summary
 
 ### 2. Auto-merge Dependabot (`auto-merge-dependabot.yml`)
 Automatically merges Dependabot pull requests when all tests pass.
@@ -46,9 +46,6 @@ Automatically merges Dependabot pull requests when all tests pass.
 
 ### Secrets
 No additional secrets are required. The workflows use the default `GITHUB_TOKEN`.
-
-Optional:
-- `CODECOV_TOKEN`: For uploading coverage reports to Codecov
 
 ## Dependabot Configuration
 
