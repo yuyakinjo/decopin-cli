@@ -73,7 +73,7 @@ async function showCommandHelp(command) {
 async function showParamsInfo(command) {
   try {
     // params.tsを動的にインポートして引数情報を表示
-    const paramsPath = \`./\${command.path}/params.js\`;
+    const paramsPath = \`./app/\${command.path}/params.js\`;
     const paramsModule = await import(paramsPath);
     const createParams = paramsModule.default;
     const paramsDefinition = typeof createParams === 'function' ? createParams() : createParams;
@@ -214,7 +214,7 @@ export function generateMainFunction(
       // バリデーション成功時、バリデーション済みデータを保存
       validatedData = validationResult.data;
       initialContext.validatedData = validatedData;
-      
+
       // ファクトリ関数（実際のコマンドハンドラー）を実行
       await factory(initialContext);
     } else {
@@ -225,7 +225,7 @@ export function generateMainFunction(
         params,
         showHelp: async () => await showCommandHelp(command)
       };
-      
+
       if (typeof commandResult === 'function') {
         // 新しい形式：直接関数として実行
         await commandResult(context);
