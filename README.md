@@ -60,24 +60,28 @@ export default async function createCommand(context: CommandContext<HelloData>) 
 4. **Create `app/hello/params.ts` for type-safe argument validation**:
 
 ```typescript
-import * as v from 'valibot';
 import type { ParamsDefinition } from 'decopin-cli';
 
-const HelloSchema = v.object({
-  name: v.pipe(v.string(), v.minLength(1, 'Name cannot be empty')),
-});
-
-export type HelloData = v.InferInput<typeof HelloSchema>;
+export type HelloData = {
+  name: string;
+};
 
 export default function createParams(): ParamsDefinition {
   return {
-    schema: HelloSchema,
+    schema: {
+      name: {
+        type: 'string',
+        required: false,
+        default: 'World',
+        minLength: 1,
+        errorMessage: 'Name cannot be empty',
+      },
+    },
     mappings: [
       {
         field: 'name',
         option: 'name',
         argIndex: 0,
-        defaultValue: 'World',
       },
     ],
   };
@@ -167,21 +171,42 @@ export default async function createCommand(context: CommandContext<UserData>) {
 
 Defines command argument types, validation schemas, and mapping configurations.
 
+#### Basic Pattern (Manual Schema)
+
+Simple and lightweight validation without external dependencies:
+
 ```typescript
-import * as v from 'valibot';
 import type { ParamsDefinition } from 'decopin-cli';
 
-const UserSchema = v.object({
-  name: v.pipe(v.string(), v.minLength(1, 'Name is required')),
-  email: v.pipe(v.string(), v.email('Invalid email format')),
-  age: v.optional(v.number(), 25),
-});
-
-export type UserData = v.InferInput<typeof UserSchema>;
+export type UserData = {
+  name: string;
+  email: string;
+  age?: number;
+};
 
 export default function createParams(): ParamsDefinition {
   return {
-    schema: UserSchema,
+    schema: {
+      name: {
+        type: 'string',
+        required: true,
+        minLength: 1,
+        errorMessage: 'Name is required',
+      },
+      email: {
+        type: 'string',
+        required: true,
+        pattern: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+        errorMessage: 'Invalid email format',
+      },
+      age: {
+        type: 'number',
+        required: false,
+        default: 25,
+        min: 0,
+        max: 150,
+      },
+    },
     mappings: [
       {
         field: 'name',
@@ -202,11 +227,55 @@ export default function createParams(): ParamsDefinition {
 }
 ```
 
+#### Advanced Pattern (Valibot Schema)
+
+For complex validation scenarios with full type inference:
+
+```typescript
+import * as v from 'valibot';
+import type { ParamsDefinition } from 'decopin-cli';
+
+const UserSchema = v.object({
+  name: v.pipe(v.string(), v.minLength(1, 'Name is required')),
+  email: v.pipe(v.string(), v.email('Invalid email format')),
+  age: v.optional(v.pipe(v.number(), v.minValue(0), v.maxValue(150)), 25),
+});
+
+export type UserData = v.InferInput<typeof UserSchema>;
+
+export default function createParams(): ParamsDefinition {
+  return {
+    schema: UserSchema,
+    mappings: [
+      {
+        field: 'name',
+        option: 'name',
+        argIndex: 0,
+      },
+      {
+        field: 'email',
+        option: 'email',
+        argIndex: 1,
+      },
+      {
+        field: 'age',
+        option: 'age',
+      },
+    ],
+  };
+}
+```
+
 **Features:**
-- **Schema Definition**: Type-safe validation with valibot
+- **Schema Options**: Manual schema (simple) or Valibot schema (advanced)
 - **Argument Mapping**: Flexible mapping between positional and option arguments
 - **Default Values**: Default value configuration within schema
 - **Priority**: Positional arguments → Option arguments → Default values
+- **Type Safety**: Full TypeScript support with both patterns
+
+**When to use each pattern:**
+- **Manual Schema**: Best for simple CLIs, minimal dependencies, straightforward validation
+- **Valibot Schema**: Best for complex validation, advanced type transformations, nested objects
 
 ### `error.ts` - Custom Error Handling
 
