@@ -75,12 +75,12 @@ jobs:
           gh pr comment "$PR_URL" --body "⚠️ **Major version update detected** for ${{ steps.metadata.outputs.dependency-name }}
 
           This PR updates ${{ steps.metadata.outputs.dependency-name }} from ${{ steps.metadata.outputs.previous-version }} to ${{ steps.metadata.outputs.new-version }}.
-          
+
           Please review the changelog and breaking changes before merging:
           - [Release notes](${{ steps.metadata.outputs.release-notes-url }})
           - [Changelog](${{ steps.metadata.outputs.changelog-url }})
           - [Commits](${{ steps.metadata.outputs.commits-url }})
-          
+
           Once reviewed, you can manually merge this PR."
         env:
           PR_URL: ${{ github.event.pull_request.html_url }}
