@@ -145,6 +145,177 @@ export default async function createCommand(context: CommandContext<HelloData>) 
 }
 ```
 
+## 📁 File Types and Conventions
+
+decopin-cli uses specific files with defined roles in each command directory to define CLI behavior.
+
+### `command.ts` - Command Handler
+
+Defines the main command logic. Exports an async function by default and receives a type-safe context.
+
+```typescript
+import type { CommandContext } from '../../dist/types/index.js';
+import type { UserData } from './params.js';
+
+export default async function createCommand(context: CommandContext<UserData>) {
+  const { name, email } = context.validatedData; // Pre-validated data
+
+  // Main command logic
+  console.log(`Creating user: ${name} (${email})`);
+}
+```
+
+**Requirements:**
+- Provide async function as default export
+- Accept `CommandContext<T>` or `BaseCommandContext`
+- When `params.ts` exists, validated data is available via `context.validatedData`
+
+### `params.ts` - Argument Definition and Validation
+
+Defines command argument types, validation schemas, and mapping configurations.
+
+```typescript
+import * as v from 'valibot';
+import type { ParamsDefinition } from 'decopin-cli';
+
+const UserSchema = v.object({
+  name: v.pipe(v.string(), v.minLength(1, 'Name is required')),
+  email: v.pipe(v.string(), v.email('Invalid email format')),
+  age: v.optional(v.number(), 25),
+});
+
+export type UserData = v.InferInput<typeof UserSchema>;
+
+export default function createParams(): ParamsDefinition {
+  return {
+    schema: UserSchema,
+    mappings: [
+      {
+        field: 'name',
+        option: 'name',      // --name option
+        argIndex: 0,         // 1st positional argument
+      },
+      {
+        field: 'email',
+        option: 'email',     // --email option
+        argIndex: 1,         // 2nd positional argument
+      },
+      {
+        field: 'age',
+        option: 'age',       // --age option only (no positional)
+      },
+    ],
+  };
+}
+```
+
+**Features:**
+- **Schema Definition**: Type-safe validation with valibot
+- **Argument Mapping**: Flexible mapping between positional and option arguments
+- **Default Values**: Default value configuration within schema
+- **Priority**: Positional arguments → Option arguments → Default values
+
+### `error.ts` - Custom Error Handling
+
+Defines custom error handlers for validation errors and command execution errors.
+
+```typescript
+import type { ValiError } from 'valibot';
+
+export default function createErrorHandler() {
+  return async function handleError(error: ValiError<any>) {
+    console.error('🚫 Input error occurred:');
+
+    for (const issue of error.issues) {
+      const field = issue.path?.join('.') || 'unknown';
+      console.error(`  • ${field}: ${issue.message}`);
+    }
+
+    console.error('\n💡 Correct format: my-cli user create <name> <email>');
+    process.exit(1);
+  };
+}
+```
+
+**Use Cases:**
+- Customize validation error display
+- User-friendly error messages
+- Provide additional help information
+
+### `help.ts` - Help Information
+
+Defines detailed command help information, usage examples, aliases, etc.
+
+```typescript
+import type { CommandHelpMetadata } from 'decopin-cli';
+
+export default function createHelp(): CommandHelpMetadata {
+  return {
+    name: 'user create',
+    description: 'Create a new user',
+    examples: [
+      'user create "John Doe" "john@example.com"',
+      'user create --name "Alice" --email "alice@example.com"',
+      'user create "Bob" --email "bob@test.com" --age 30'
+    ],
+    aliases: ['add-user', 'new-user'],
+    additionalHelp: `
+This command creates a new user.
+Name and email address are required. Age is optional with a default value of 25.
+    `.trim()
+  };
+}
+```
+
+**Provided Information:**
+- Command description
+- List of usage examples
+- Command aliases
+- Additional help text
+
+### `version.ts` - Version Information
+
+Defines CLI version information and metadata (place in root `app/version.ts`).
+
+```typescript
+export const version = "1.2.0";
+
+export const metadata = {
+  name: "my-awesome-cli",
+  version: "1.2.0",
+  description: "My awesome CLI tool",
+  author: "Developer Name <dev@example.com>",
+  homepage: "https://github.com/username/my-cli",
+  license: "MIT"
+};
+
+export default version;
+```
+
+**Configuration Items:**
+- **version**: Version string
+- **metadata**: CLI-wide metadata
+- **name**: CLI name
+- **description**: CLI description
+- **author**: Author information
+
+### File Combination Patterns
+
+**Minimal Configuration:**
+```
+app/simple/
+└── command.ts          # Basic command
+```
+
+**Complete Configuration:**
+```
+app/complex/
+├── command.ts          # Main logic
+├── params.ts           # Argument definition
+├── error.ts            # Error handling
+└── help.ts             # Help information
+```
+
 ### Integrated Validation
 
 Validation is integrated into `params.ts`, providing type-safe parameter handling using valibot schemas:
