@@ -22,7 +22,7 @@ export function extractCommandDefinition(
         );
         hasHandler = true;
       }
-      // export default function() { ... } の形式（関数形式のcommandDefinition）
+      // export default function() { ... } の形式（関数形式のcommandHandler）
       else if (
         ts.isFunctionExpression(node.expression) ||
         ts.isArrowFunction(node.expression)
@@ -32,7 +32,7 @@ export function extractCommandDefinition(
         };
         hasHandler = true;
       }
-      // export default function name() { ... } の形式（関数形式のcommandDefinition）
+      // export default function name() { ... } の形式（関数形式のcommandHandler）
       else if (ts.isFunctionDeclaration(node.expression)) {
         commandDefinition = {
           handler: async () => {}, // 実際の関数は動的にインポートで取得
@@ -48,7 +48,7 @@ export function extractCommandDefinition(
           hasHandler = true;
         }
       }
-      // export default 関数呼び出し（関数形式のcommandDefinition）
+      // export default 関数呼び出し（関数形式のcommandHandler）
       else if (ts.isCallExpression(node.expression)) {
         commandDefinition = {
           handler: async () => {}, // 実際の関数は動的にインポートで取得

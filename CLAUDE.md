@@ -45,7 +45,7 @@ The library implements a pipeline that transforms file-based commands into a wor
 4. **Types** (`src/types/`) - Comprehensive TypeScript definitions for the entire system
 
 ### Command Architecture Pattern
-Commands follow a factory pattern where validation and business logic are separated:
+Commands follow a simple async function pattern where validation and business logic are separated:
 
 ```typescript
 // params.ts - Validation and type definitions
@@ -57,11 +57,9 @@ export default function createParams(): ParamsDefinition {
 }
 
 // command.ts - Pre-validated command implementation
-export default function createCommand(context: CommandContext<T>): CommandDefinition<T> {
+export default async function createCommand(context: CommandContext<T>) {
   const data = context.validatedData;  // Already validated!
-  return {
-    handler: async () => { /* implementation */ }
-  };
+  // Implementation directly in function body
 }
 ```
 
@@ -74,6 +72,8 @@ export default function createCommand(context: CommandContext<T>): CommandDefini
 3. **Zero Configuration**: Commands work without any configuration files. The file structure itself defines the CLI structure.
 
 4. **Dynamic Import Strategy**: Generated CLIs use dynamic imports for lazy loading, enabling fast startup times regardless of command count.
+
+5. **Simple Function Pattern**: Commands are async functions that directly execute logic, not factories that return handlers.
 
 ## Development Guidelines
 
@@ -101,7 +101,7 @@ The project uses `mise` for file watching. When `npm run dev` is running:
 - Functions should be under 150 lines
 - **No `any` types** - use proper typing with generics or specific interfaces
 - Import with destructuring when possible
-- All command handlers must use `CommandDefinition<T>` type
+- All command handlers must be async functions that accept `CommandContext<T>`
 - Use `Object.assign()` instead of type assertions when extending objects
 
 ## Common Tasks

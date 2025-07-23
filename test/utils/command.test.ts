@@ -15,27 +15,16 @@ describe('command.ts files', () => {
   });
 
   describe('hello/command.ts', () => {
-    it('should export default function that returns CommandDefinition', async () => {
+    it('should export default function that is a command handler', async () => {
       const commandModule = await import('../../app/hello/command.js');
 
       expect(commandModule.default).toBeDefined();
       expect(typeof commandModule.default).toBe('function');
 
-      // モックコンテキストを作成
-      const mockContext: CommandContext<{ name: string }> = {
-        validatedData: { name: 'TestUser' },
-        args: ['TestUser'],
-        options: {},
-        params: {},
-        showHelp: vi.fn()
-      };
-
-      const commandDefinition = commandModule.default(mockContext);
-
-      expect(commandDefinition).toBeDefined();
-      expect(typeof commandDefinition).toBe('object');
-      expect(commandDefinition.handler).toBeDefined();
-      expect(typeof commandDefinition.handler).toBe('function');
+      // コマンドハンドラーは直接関数として呼び出し可能
+      const commandHandler = commandModule.default;
+      expect(commandHandler).toBeDefined();
+      expect(typeof commandHandler).toBe('function');
     });
 
     it('should handle validated data correctly', async () => {
@@ -49,10 +38,8 @@ describe('command.ts files', () => {
         showHelp: vi.fn()
       };
 
-      const commandDefinition = commandModule.default(mockContext);
-
-      // ハンドラーを実行
-      await commandDefinition.handler(mockContext);
+      // コマンドハンドラーを直接実行
+      await commandModule.default(mockContext);
 
       expect(consoleSpy).toHaveBeenCalledWith('Hello, World!!!');
     });
@@ -68,15 +55,14 @@ describe('command.ts files', () => {
         showHelp: vi.fn()
       };
 
-      const commandDefinition = commandModule.default(mockContext);
-      await commandDefinition.handler(mockContext);
+      await commandModule.default(mockContext);
 
       expect(consoleSpy).toHaveBeenCalledWith('Hello, TypeScript!!!');
     });
   });
 
   describe('user/create/command.ts', () => {
-    it('should export default function that returns CommandDefinition', async () => {
+    it('should export default function that is a command handler', async () => {
       const commandModule = await import('../../app/user/create/command.js');
 
       expect(commandModule.default).toBeDefined();
@@ -90,12 +76,10 @@ describe('command.ts files', () => {
         showHelp: vi.fn()
       };
 
-      const commandDefinition = commandModule.default(mockContext);
-
-      expect(commandDefinition).toBeDefined();
-      expect(typeof commandDefinition).toBe('object');
-      expect(commandDefinition.handler).toBeDefined();
-      expect(typeof commandDefinition.handler).toBe('function');
+      // コマンドハンドラーは直接関数として呼び出し可能
+      const commandHandler = commandModule.default;
+      expect(commandHandler).toBeDefined();
+      expect(typeof commandHandler).toBe('function');
     });
 
     it('should create user with validated data', async () => {
@@ -109,8 +93,7 @@ describe('command.ts files', () => {
         showHelp: vi.fn()
       };
 
-      const commandDefinition = commandModule.default(mockContext);
-      await commandDefinition.handler(mockContext);
+      await commandModule.default(mockContext);
 
       expect(consoleSpy).toHaveBeenCalledWith('🔄 Creating user: John Doe (john@example.com)');
       expect(consoleSpy).toHaveBeenCalledWith('✅ User created successfully!');
@@ -127,8 +110,7 @@ describe('command.ts files', () => {
         showHelp: vi.fn()
       };
 
-      const commandDefinition = commandModule.default(mockContext);
-      await commandDefinition.handler(mockContext);
+      await commandModule.default(mockContext);
 
       expect(consoleSpy).toHaveBeenCalledWith('🔄 Creating user: Jane Smith (jane.smith@company.com)');
       expect(consoleSpy).toHaveBeenCalledWith('✅ User created successfully!');
@@ -136,7 +118,7 @@ describe('command.ts files', () => {
   });
 
   describe('user/list/command.ts', () => {
-    it('should export default function that returns CommandDefinition', async () => {
+    it('should export default function that is a command handler', async () => {
       const commandModule = await import('../../app/user/list/command.js');
 
       expect(commandModule.default).toBeDefined();
@@ -150,27 +132,24 @@ describe('command.ts files', () => {
         showHelp: vi.fn()
       };
 
-      const commandDefinition = commandModule.default(mockContext);
-
-      expect(commandDefinition).toBeDefined();
-      expect(typeof commandDefinition).toBe('object');
-      expect(commandDefinition.handler).toBeDefined();
-      expect(typeof commandDefinition.handler).toBe('function');
+      // コマンドハンドラーは直接関数として呼び出し可能
+      const commandHandler = commandModule.default;
+      expect(commandHandler).toBeDefined();
+      expect(typeof commandHandler).toBe('function');
     });
 
     it('should list users with default limit', async () => {
       const commandModule = await import('../../app/user/list/command.js');
 
-      const mockContext: CommandContext = {
-        validatedData: null,
+      const mockContext: CommandContext<{ limit: number }> = {
+        validatedData: { limit: 10 },
         args: [],
         options: {},
         params: {},
         showHelp: vi.fn()
       };
 
-      const commandDefinition = commandModule.default(mockContext);
-      await commandDefinition.handler(mockContext);
+      await commandModule.default(mockContext);
 
             // デフォルトのlimit = 10でリストが表示される
       expect(consoleSpy).toHaveBeenCalledWith('📋 User List:');
@@ -187,16 +166,15 @@ describe('command.ts files', () => {
     it('should list users with custom limit option', async () => {
       const commandModule = await import('../../app/user/list/command.js');
 
-      const mockContext: CommandContext = {
-        validatedData: null,
+      const mockContext: CommandContext<{ limit: number }> = {
+        validatedData: { limit: 5 },
         args: [],
         options: { limit: '5' },
         params: {},
         showHelp: vi.fn()
       };
 
-      const commandDefinition = commandModule.default(mockContext);
-      await commandDefinition.handler(mockContext);
+      await commandModule.default(mockContext);
 
             expect(consoleSpy).toHaveBeenCalledWith('📋 User List:');
 
@@ -215,16 +193,15 @@ describe('command.ts files', () => {
     it('should handle non-numeric limit gracefully', async () => {
       const commandModule = await import('../../app/user/list/command.js');
 
-      const mockContext: CommandContext = {
-        validatedData: null,
+      const mockContext: CommandContext<{ limit: number }> = {
+        validatedData: { limit: 10 },
         args: [],
         options: { limit: 'invalid' },
         params: {},
         showHelp: vi.fn()
       };
 
-      const commandDefinition = commandModule.default(mockContext);
-      await commandDefinition.handler(mockContext);
+      await commandModule.default(mockContext);
 
       // 無効なlimitの場合はデフォルトの10になる
       expect(consoleSpy).toHaveBeenCalledWith('📋 User List:');
@@ -235,16 +212,15 @@ describe('command.ts files', () => {
     it('should handle zero limit option', async () => {
       const commandModule = await import('../../app/user/list/command.js');
 
-      const mockContext: CommandContext = {
-        validatedData: null,
+      const mockContext: CommandContext<{ limit: number }> = {
+        validatedData: { limit: 10 },
         args: [],
         options: { limit: '0' },
         params: {},
         showHelp: vi.fn()
       };
 
-      const commandDefinition = commandModule.default(mockContext);
-      await commandDefinition.handler(mockContext);
+      await commandModule.default(mockContext);
 
       // limitが0の場合はデフォルトの10になる
       expect(consoleSpy).toHaveBeenCalledWith('📋 User List:');

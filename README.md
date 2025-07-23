@@ -45,17 +45,13 @@ mkdir -p app/hello
 3. **Create `app/hello/command.ts`**:
 
 ```typescript
-import type { CommandDefinition, CommandContext } from '../../dist/types/command.js';
+import type { CommandContext } from '../../dist/types/index.js';
 import type { HelloData } from './params.js';
 
-export default function createCommand(context: CommandContext<HelloData>): CommandDefinition<HelloData> {
+export default async function createCommand(context: CommandContext<HelloData>) {
   const { name } = context.validatedData;
-
-  return {
-    handler: async () => {
-      console.log(`Hello, ${name}!!!`);
-    },
-  };
+  
+  console.log(`Hello, ${name}!!!`);
 }
 ```
 
@@ -138,18 +134,14 @@ app/
         └── error.ts
 ```
 
-decopin-cli uses a factory pattern where commands are functions that receive pre-validated contexts:
+decopin-cli uses a simple function pattern where commands are async functions that receive pre-validated contexts:
 
 ```typescript
 // decopin-cli approach
-export default function createCommand(context: CommandContext<HelloData>): CommandDefinition<HelloData> {
-  const { name } = context.validatedData!; // Already validated and typed!
-
-  return {
-    handler: async () => {
-      console.log(`Hello, ${name}!!!`);
-    },
-  };
+export default async function createCommand(context: CommandContext<HelloData>) {
+  const { name } = context.validatedData; // Already validated and typed!
+  
+  console.log(`Hello, ${name}!!!`);
 }
 ```
 
@@ -259,10 +251,12 @@ Shows the current version of decopin-cli.
 Commands with parameters receive a `CommandContext<T>` with pre-validated data:
 
 ```typescript
-interface CommandContext<T = any> {
-  validatedData?: T;        // Pre-validated typed data from params.ts
-  rawArgs: string[];        // Original raw arguments
-  rawOptions: Record<string, any>; // Original raw options
+interface CommandContext<T> {
+  validatedData: T;         // Pre-validated typed data from params.ts
+  args: string[];           // Positional arguments
+  options: Record<string, string | boolean>; // Named options
+  params: Record<string, string>; // Dynamic route parameters
+  showHelp: () => void;     // Function to show command help
 }
 ```
 
@@ -272,14 +266,10 @@ For commands that don't need parameters, simply omit the `params.ts` file:
 
 ```typescript
 // app/status/command.ts
-import type { CommandDefinition } from 'decopin-cli';
+import type { BaseCommandContext } from 'decopin-cli';
 
-export default function createCommand(): CommandDefinition {
-  return {
-    handler: async () => {
-      console.log('✅ Application is running');
-    }
-  };
+export default async function createCommand(context: BaseCommandContext) {
+  console.log('✅ Application is running');
 }
 ```
 
@@ -309,20 +299,16 @@ export default function createHelp(): CommandHelpMetadata {
 ### Error Handling
 
 ```typescript
-export default function createCommand(context: CommandContext<UserData>): CommandDefinition<UserData> {
-  const { name, email } = context.validatedData!;
+export default async function createCommand(context: CommandContext<UserData>) {
+  const { name, email } = context.validatedData;
 
-  return {
-    handler: async () => {
-      try {
-        await createUser(name, email);
-        console.log('✅ User created successfully!');
-      } catch (error) {
-        console.error('❌ Error:', error.message);
-        process.exit(1);
-      }
-    }
-  };
+  try {
+    await createUser(name, email);
+    console.log('✅ User created successfully!');
+  } catch (error) {
+    console.error('❌ Error:', error.message);
+    process.exit(1);
+  }
 }
 ```
 

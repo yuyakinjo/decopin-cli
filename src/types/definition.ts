@@ -1,4 +1,4 @@
-import type { CommandContext, CommandHandler } from './context.js';
+import type { CommandHandler } from './context.js';
 import type { CommandMetadata } from './metadata.js';
 
 /**
@@ -12,9 +12,7 @@ export interface CommandDefinition<T = unknown> {
 /**
  * コマンド定義ファクトリーの型
  */
-export type CommandDefinitionFactory<T = unknown> = (
-  context: CommandContext<T>
-) => CommandDefinition<T>;
+export type CommandDefinitionFactory<T = unknown> = CommandHandler<T>;
 
 /**
  * コマンド定義関数の型

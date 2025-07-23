@@ -52,19 +52,21 @@ export async function parseHelpFile(
         const modifiers = ts.canHaveModifiers(node)
           ? ts.getModifiers(node)
           : undefined;
-        const isExportDefault = modifiers?.some(
-          (m) => m.kind === ts.SyntaxKind.ExportKeyword
-        ) && modifiers?.some(
-          (m) => m.kind === ts.SyntaxKind.DefaultKeyword
-        );
+        const isExportDefault =
+          modifiers?.some((m) => m.kind === ts.SyntaxKind.ExportKeyword) &&
+          modifiers?.some((m) => m.kind === ts.SyntaxKind.DefaultKeyword);
 
         if (isExportDefault && node.name?.text === 'createHelp' && node.body) {
           // 関数本体内のreturn文を探す
-          function findReturnStatement(block: ts.Block): ts.ObjectLiteralExpression | undefined {
+          function findReturnStatement(
+            block: ts.Block
+          ): ts.ObjectLiteralExpression | undefined {
             for (const statement of block.statements) {
-              if (ts.isReturnStatement(statement) && 
-                  statement.expression && 
-                  ts.isObjectLiteralExpression(statement.expression)) {
+              if (
+                ts.isReturnStatement(statement) &&
+                statement.expression &&
+                ts.isObjectLiteralExpression(statement.expression)
+              ) {
                 return statement.expression;
               }
             }

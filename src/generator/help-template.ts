@@ -214,26 +214,28 @@ export function generateMainFunction(
       // バリデーション成功時、バリデーション済みデータを保存
       validatedData = validationResult.data;
       initialContext.validatedData = validatedData;
-      commandDefinition = factory(initialContext);
+      
+      // ファクトリ関数（実際のコマンドハンドラー）を実行
+      await factory(initialContext);
     } else {
-      // 従来の形式
-      commandDefinition = commandResult;
-      if (typeof commandDefinition === 'function') {
-        commandDefinition = commandDefinition();
+      // 従来の形式（params.tsなし）
+      const context = {
+        args: positional.slice(command.segments.length),
+        options,
+        params,
+        showHelp: async () => await showCommandHelp(command)
+      };
+      
+      if (typeof commandResult === 'function') {
+        // 新しい形式：直接関数として実行
+        await commandResult(context);
+      } else if (commandResult && typeof commandResult.handler === 'function') {
+        // 古い形式：オブジェクトのhandlerを実行（後方互換性）
+        await commandResult.handler(context);
+      } else {
+        throw new Error('Invalid command format');
       }
     }
-
-    // コンテキストを作成
-    const context = {
-      args: positional.slice(command.segments.length),
-      options,
-      params,
-      showHelp: async () => await showCommandHelp(command),
-      ...(commandResult.isFactory && { validatedData })
-    };
-
-    // コマンドを実行
-    await commandDefinition.handler(context);
   } catch (error) {
     console.error(\`❌ Command failed: \${error.message}\`);
     process.exit(1);

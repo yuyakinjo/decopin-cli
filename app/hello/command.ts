@@ -1,13 +1,9 @@
-import type { CommandDefinition, CommandContext } from '../../dist/types/index.js';
+import type { CommandContext } from '../../dist/types/index.js';
 import type { HelloData } from './params.js';
 
-export default function createCommand(context: CommandContext<HelloData>): CommandDefinition<HelloData> {
+export default async function createCommand(context: CommandContext<HelloData>) {
   // バリデーション済みのデータを使用
   const { name } = context.validatedData;
 
-  return {
-    handler: async () => {
-      console.log(`Hello, ${name}!!!`);
-    }
-  };
+  console.log(`Hello, ${name}!!!`);
 }

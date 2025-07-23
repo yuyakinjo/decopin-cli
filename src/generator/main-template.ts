@@ -59,7 +59,7 @@ export function generateMainCLITemplate(
         errorHandler: errorHandler
       };
     } catch {
-      return typeof commandFactory === 'function' ? commandFactory() : commandFactory;
+      return commandFactory;
     }
   }`;
     })
