@@ -36,6 +36,9 @@ jobs:
     - name: Build example app
       run: bun run build:app
 
+    - name: Generate CLI
+      run: bun run dev:regen
+
     - name: Run tests
       id: test
       run: |
