@@ -197,11 +197,8 @@ export function generateMainFunction(
       if (!validationResult.success) {
         // カスタムエラーハンドラーがある場合はそれを使用
         if (errorHandler && typeof errorHandler === 'function') {
-          const customErrorHandler = errorHandler();
-          if (customErrorHandler && typeof customErrorHandler === 'function') {
-            await customErrorHandler(validationResult.error);
-            return;
-          }
+          await errorHandler(validationResult.error);
+          return;
         }
 
         // デフォルトのエラーハンドリング

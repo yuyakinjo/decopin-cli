@@ -1,7 +1,6 @@
 import type { ErrorHandler, ValidationError } from '../../../dist/types/index.js';
 
-export default function createErrorHandler(): ErrorHandler {
-  return async (error: ValidationError) => {
+export default async function createErrorHandler(error: ValidationError): Promise<ErrorHandler> {
     console.error('❌ User creation failed:');
 
     if (error.issues && error.issues.length > 0) {
@@ -20,5 +19,4 @@ export default function createErrorHandler(): ErrorHandler {
     console.error('  user create "John Doe" "john@example.com"');
 
     process.exit(1);
-  };
-}
+};

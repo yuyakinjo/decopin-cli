@@ -1,7 +1,6 @@
 import type { ErrorHandler, ValidationError } from '../../../dist/types/index.js';
 
-export default function customErrorHandler(): ErrorHandler {
-  return async (error: ValidationError) => {
+export default async function createErrorHandler(error: ValidationError): Promise<ErrorHandler> {
     console.log('❌ 🎯 Custom Error Handler Activated!');
     console.log('');
     console.log('🔴 Profile creation failed due to validation errors:');
@@ -41,5 +40,4 @@ export default function customErrorHandler(): ErrorHandler {
     console.log('🎂 Age: 18-120 years');
 
     process.exit(1);
-  };
-}
+};
