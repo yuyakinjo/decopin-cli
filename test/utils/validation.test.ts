@@ -53,8 +53,8 @@ describe('validation utils', () => {
       );
 
       expect(result).toEqual({
-        name: 'John', // optionを優先
-        age: '25'     // position引数から
+        name: 'Alice', // position引数を優先
+        age: '25'      // position引数から
       });
     });
 

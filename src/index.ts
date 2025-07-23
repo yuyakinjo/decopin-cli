@@ -231,3 +231,6 @@ export type {
   ValidationFunction,
   ValidationResult,
 } from './types/index.js';
+
+// Version types
+export type { VersionInfo } from './parser/version-parser.js';

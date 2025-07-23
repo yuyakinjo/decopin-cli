@@ -56,7 +56,7 @@ function extractVersionInfo(sourceFile: ts.SourceFile): VersionInfo | null {
   let metadata: VersionInfo['metadata'] | null = null;
 
   function visit(node: ts.Node) {
-    // export const version = "1.0.0" の形式
+    // export const version = "1.0.0" の形式（後方互換性）
     if (isExportedVariableStatement(node)) {
       const versionDeclaration = findVariableDeclaration(node, 'version');
       if (
@@ -77,13 +77,50 @@ function extractVersionInfo(sourceFile: ts.SourceFile): VersionInfo | null {
       }
     }
 
-    // export default "1.0.0" の形式
+    // export default "1.0.0" の形式（後方互換性）
     if (
       isExportDefaultAssignment(node) &&
       ts.isStringLiteral(node.expression) &&
       !version
     ) {
       version = node.expression.text;
+    }
+
+    // export default function createVersion() { return { ... } } の形式
+    if (ts.isFunctionDeclaration(node)) {
+      const modifiers = ts.canHaveModifiers(node)
+        ? ts.getModifiers(node)
+        : undefined;
+      const isExportDefault =
+        modifiers?.some((m) => m.kind === ts.SyntaxKind.ExportKeyword) &&
+        modifiers?.some((m) => m.kind === ts.SyntaxKind.DefaultKeyword);
+
+      if (isExportDefault && node.name?.text === 'createVersion' && node.body) {
+        // 関数本体内のreturn文を探す
+        function findReturnStatement(
+          block: ts.Block
+        ): ts.ObjectLiteralExpression | undefined {
+          for (const statement of block.statements) {
+            if (
+              ts.isReturnStatement(statement) &&
+              statement.expression &&
+              ts.isObjectLiteralExpression(statement.expression)
+            ) {
+              return statement.expression;
+            }
+          }
+          return undefined;
+        }
+
+        const returnObject = findReturnStatement(node.body);
+        if (returnObject) {
+          const versionData = parseObjectLiteral(returnObject);
+          if (versionData.version && typeof versionData.version === 'string') {
+            version = versionData.version;
+            metadata = versionData.metadata as VersionInfo['metadata'];
+          }
+        }
+      }
     }
 
     ts.forEachChild(node, visit);

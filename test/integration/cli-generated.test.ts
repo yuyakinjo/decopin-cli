@@ -114,7 +114,7 @@ describe('Generated CLI Integration Tests', () => {
 
       expect(result.exitCode).toBe(1); // バリデーションエラーでexit code 1
       expect(result.stderr).toContain('❌ User creation failed:');
-      expect(result.stderr).toContain('email: Invalid type: Expected string but received undefined');
+      expect(result.stderr).toContain('email: Invalid key: Expected "email" but received undefined');
       expect(result.stderr).toContain('💡 Usage examples:');
     });
   });
@@ -453,7 +453,7 @@ describe('Generated CLI Integration Tests', () => {
 
       expect(result.exitCode).toBe(1);
       expect(result.stderr).toContain('❌ User creation failed:');
-      expect(result.stderr).toContain('email: Invalid type: Expected string but received undefined');
+      expect(result.stderr).toContain('email: Invalid key: Expected "email" but received undefined');
       expect(result.stderr).toContain('💡 Usage examples:');
     });
 
