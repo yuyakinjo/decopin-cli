@@ -13,6 +13,12 @@ jobs:
     name: Test
     runs-on: ubuntu-latest
 
+    env:
+      API_KEY: test-api-key-for-github-actions
+      NODE_ENV: test
+      PORT: 3000
+      DEBUG: false
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v4

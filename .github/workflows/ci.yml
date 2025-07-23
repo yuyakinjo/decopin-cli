@@ -10,6 +10,12 @@ jobs:
   test:
     runs-on: ubuntu-latest
 
+    env:
+      API_KEY: test-api-key-for-github-actions
+      NODE_ENV: test
+      PORT: 3000
+      DEBUG: false
+
     strategy:
       matrix:
         bun-version: [latest]
