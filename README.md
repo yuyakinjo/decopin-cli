@@ -56,6 +56,7 @@ export default async function createCommand(context: CommandContext<HelloData>) 
 }
 ```
 
+
 4. **Create `app/hello/params.ts` for type-safe argument validation**:
 
 ```typescript
@@ -114,25 +115,17 @@ app/
 │   ├── command.ts
 │   ├── params.ts
 │   └── help.ts
-├── user/                   # Nested user command group
-│   ├── create/             # user create - Create a user
-│   │   ├── command.ts
-│   │   ├── params.ts
-│   │   └── help.ts
-│   └── list/               # user list - List users
-│       ├── command.ts
-│       ├── params.ts
-│       └── help.ts
-└── test/                   # Test command group
-    ├── basic/              # Basic test command
-    │   └── command.ts
-    ├── validation/         # Validation test command
+└── user/                   # Nested user command group
+    ├── create/             # user create - Create a user
     │   ├── command.ts
-    │   └── params.ts
-    └── custom-error/       # Custom error test command
+    │   ├── params.ts
+    │   ├── error.ts
+    │   └── help.ts
+    └── list/               # user list - List users
         ├── command.ts
         ├── params.ts
-        └── error.ts
+        ├── error.ts
+        └── help.ts
 ```
 
 decopin-cli uses a simple function pattern where commands are async functions that receive pre-validated contexts:
@@ -148,7 +141,6 @@ export default async function createCommand(context: CommandContext<HelloData>) 
 
 ## 📁 File Types and Conventions
 
-decopin-cli uses specific files with defined roles in each command directory to define CLI behavior.
 
 ### `command.ts` - Command Handler
 
