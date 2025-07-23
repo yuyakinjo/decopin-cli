@@ -22,13 +22,13 @@ jobs:
       uses: ./.github/actions/setup
 
     - name: Build core project
-      run: npm run build
+      run: bun run build
 
     - name: Build app examples
-      run: npm run build:app
+      run: bun run build:app
 
     - name: Generate CLI
-      run: npm run dev:regen
+      run: bun run dev:regen
 
     - name: Verify generated CLI exists
       run: |
@@ -45,7 +45,7 @@ jobs:
         node examples/cli.js --version
 
     - name: Run integration test suite
-      run: npm run test:integration:only
+      run: bun run test:integration:only
 
   cli-validation:
     name: CLI Output Validation
@@ -61,9 +61,9 @@ jobs:
 
     - name: Build and generate CLI
       run: |
-        npm run build
-        npm run build:app
-        npm run dev:regen
+        bun run build
+        bun run build:app
+        bun run dev:regen
 
     - name: Validate hello command
       run: |

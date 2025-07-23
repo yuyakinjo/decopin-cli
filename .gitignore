@@ -6,6 +6,11 @@ yarn-error.log*
 lerna-debug.log*
 .pnpm-debug.log*
 
+# Lock files (keep bun.lockb, ignore others)
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
 # Runtime data
 pids
 *.pid

@@ -9,18 +9,18 @@
     "decopin": "dist/cli.js"
   },
   "scripts": {
-    "build": "tsc && npm run build:app && npm run build:prod",
+    "build": "tsc && bun run build:app && bun run build:prod",
     "build:prod": "tsc -p tsconfig.prod.json",
     "build:app": "tsc -p app/tsconfig.json",
     "dev": "mise run dev",
-    "dev:build-all": "npm run build && npm run build:app",
-    "dev:regen": "npx tsx src/cli.ts build --app-dir app --output-dir examples --cli-name cli --verbose",
+    "dev:build-all": "bun run build && bun run build:app",
+    "dev:regen": "bunx tsx src/cli.ts build --app-dir app --output-dir examples --cli-name cli --verbose",
     "test": "vitest run",
-    "test:integration": "npm run build && npm run build:app && npm run dev:regen && vitest run test/integration/",
+    "test:integration": "bun run build && bun run build:app && bun run dev:regen && vitest run test/integration/",
     "test:integration:only": "vitest run test/integration/",
     "clean": "rm -rf dist examples",
     "lint": "biome check --write .",
-    "prepublishOnly": "npm run clean && npm run build:prod && vitest run --exclude '**/integration/**'"
+    "prepublishOnly": "bun run clean && bun run build:prod && vitest run --exclude '**/integration/**'"
   },
   "keywords": [
     "cli",
@@ -33,7 +33,7 @@
   "license": "MIT",
   "files": [
     "dist",
-    "package-lock.json",
+    "bun.lockb",
     "README.md",
     "LICENSE"
   ],
