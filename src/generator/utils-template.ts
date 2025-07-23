@@ -4,7 +4,11 @@ import { relative, resolve } from 'node:path';
  * 相対パス生成
  */
 export function generateRelativePath(appDir: string, filePath: string): string {
-  return relative(resolve(appDir), filePath).replace('.ts', '.js');
+  const relativePath = relative(resolve(appDir), filePath).replace(
+    '.ts',
+    '.js'
+  );
+  return `app/${relativePath}`;
 }
 
 /**
@@ -15,7 +19,7 @@ export function generateParamsPath(appDir: string, filePath: string): string {
     resolve(appDir),
     filePath.replace('/command.ts', '')
   );
-  return `./${dirPath}/params.js`;
+  return `./app/${dirPath}/params.js`;
 }
 
 /**
@@ -26,5 +30,5 @@ export function generateErrorPath(appDir: string, filePath: string): string {
     resolve(appDir),
     filePath.replace('/command.ts', '')
   );
-  return `./${dirPath}/error.js`;
+  return `./app/${dirPath}/error.js`;
 }

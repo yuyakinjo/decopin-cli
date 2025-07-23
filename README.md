@@ -34,7 +34,7 @@ npm i -D decopin-cli
 ```bash
 mkdir my-cli && cd my-cli
 npm init -y
-npm install decopin-cli valibot
+npm install decopin-cli
 ```
 
 2. **Create app directory and your first command**:
@@ -50,7 +50,7 @@ import type { HelloData } from './params.js';
 
 export default async function createCommand(context: CommandContext<HelloData>) {
   const { name } = context.validatedData;
-  
+
   console.log(`Hello, ${name}!!!`);
 }
 ```
@@ -140,7 +140,7 @@ decopin-cli uses a simple function pattern where commands are async functions th
 // decopin-cli approach
 export default async function createCommand(context: CommandContext<HelloData>) {
   const { name } = context.validatedData; // Already validated and typed!
-  
+
   console.log(`Hello, ${name}!!!`);
 }
 ```

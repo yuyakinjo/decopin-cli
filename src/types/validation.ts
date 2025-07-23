@@ -49,11 +49,44 @@ export interface ParamMapping {
 }
 
 /**
- * パラメータ定義（Valibotスキーマ専用・自動判別）
+ * オブジェクトベースのフィールドスキーマ定義
+ */
+export interface ManualFieldSchema {
+  /** フィールドの型 */
+  type: 'string' | 'number' | 'boolean';
+  /** 必須フィールドかどうか */
+  required?: boolean;
+  /** デフォルト値 */
+  defaultValue?: unknown;
+  /** 数値の最小値 */
+  minValue?: number;
+  /** 数値の最大値 */
+  maxValue?: number;
+  /** 文字列の最小長 */
+  minLength?: number;
+  /** 文字列の最大長 */
+  maxLength?: number;
+  /** 許可される値の列挙 */
+  enum?: readonly (string | number)[];
+  /** カスタム変換関数 */
+  transform?: (value: unknown) => unknown;
+  /** カスタムバリデーション関数 */
+  validate?: (value: unknown) => string | null; // エラーメッセージまたはnull
+}
+
+/**
+ * オブジェクトベースのスキーマ定義
+ */
+export interface ManualSchema {
+  [fieldName: string]: ManualFieldSchema;
+}
+
+/**
+ * パラメータ定義（valibotスキーマとオブジェクトベースの両方をサポート）
  */
 export interface ParamsDefinition {
-  /** valibotスキーマ */
-  schema: v.GenericSchema;
+  /** valibotスキーマまたはオブジェクトベースのスキーマ */
+  schema: v.GenericSchema | ManualSchema;
   /** パラメータマッピング */
   mappings: ParamMapping[];
 }
