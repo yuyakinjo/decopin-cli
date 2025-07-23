@@ -245,7 +245,17 @@ export type {
 } from './types/index.js';
 
 // Version types
-export type { VersionInfo } from './parser/version-parser.js';
+export interface VersionInfo {
+  /** メインバージョン */
+  version: string;
+  /** 追加メタデータ */
+  metadata?: {
+    name?: string;
+    description?: string;
+    author?: string;
+    [key: string]: unknown;
+  };
+}
 
 /**
  * Extract aliases from help.ts file
