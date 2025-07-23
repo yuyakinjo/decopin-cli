@@ -46,6 +46,38 @@ export async function parseHelpFile(
           }
         }
       }
+
+      // export default function createHelp() { return { ... } } の形式を探す
+      if (ts.isFunctionDeclaration(node)) {
+        const modifiers = ts.canHaveModifiers(node)
+          ? ts.getModifiers(node)
+          : undefined;
+        const isExportDefault = modifiers?.some(
+          (m) => m.kind === ts.SyntaxKind.ExportKeyword
+        ) && modifiers?.some(
+          (m) => m.kind === ts.SyntaxKind.DefaultKeyword
+        );
+
+        if (isExportDefault && node.name?.text === 'createHelp' && node.body) {
+          // 関数本体内のreturn文を探す
+          function findReturnStatement(block: ts.Block): ts.ObjectLiteralExpression | undefined {
+            for (const statement of block.statements) {
+              if (ts.isReturnStatement(statement) && 
+                  statement.expression && 
+                  ts.isObjectLiteralExpression(statement.expression)) {
+                return statement.expression;
+              }
+            }
+            return undefined;
+          }
+
+          const returnObject = findReturnStatement(node.body);
+          if (returnObject) {
+            helpMetadata = parseHelpMetadata(returnObject);
+          }
+        }
+      }
+
       ts.forEachChild(node, visit);
     }
 
