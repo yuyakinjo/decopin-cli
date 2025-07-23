@@ -15,6 +15,13 @@ async function runCLI(args: string[]): Promise<{
   return new Promise((resolve) => {
     const child = spawn('node', [CLI_PATH, ...args], {
       stdio: ['pipe', 'pipe', 'pipe'],
+      env: {
+        ...process.env,
+        API_KEY: 'test-api-key-123456',
+        NODE_ENV: 'test',
+        PORT: '3000',
+        DEBUG: 'false'
+      }
     });
 
     let stdout = '';

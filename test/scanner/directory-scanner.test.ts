@@ -18,7 +18,7 @@ describe('Directory Scanner', () => {
 
   it('should scan empty directory', async () => {
     const result = await scanAppDirectory(testDir);
-    expect(result).toEqual([]);
+    expect(result).toEqual({ commands: [] });
   });
 
   it('should find single command file', async () => {
@@ -34,8 +34,8 @@ export default function handler() { console.log('Hello!') }
     );
 
     const result = await scanAppDirectory(testDir);
-    expect(result).toHaveLength(1);
-    expect(result[0]).toMatchObject({
+    expect(result.commands).toHaveLength(1);
+    expect(result.commands[0]).toMatchObject({
       path: 'hello',
       commandFilePath: join(commandDir, 'command.ts'),
       segments: ['hello'],
@@ -66,9 +66,9 @@ export default function handler() { console.log('List users') }
     );
 
     const result = await scanAppDirectory(testDir);
-    expect(result).toHaveLength(2);
+    expect(result.commands).toHaveLength(2);
 
-    const paths = result.map((r) => r.path).sort();
+    const paths = result.commands.map((r) => r.path).sort();
     expect(paths).toEqual(['user/create', 'user/list']);
   });
 
@@ -85,8 +85,8 @@ export default function handler() { console.log('Delete user') }
     );
 
     const result = await scanAppDirectory(testDir);
-    expect(result).toHaveLength(1);
-    expect(result[0]).toMatchObject({
+    expect(result.commands).toHaveLength(1);
+    expect(result.commands[0]).toMatchObject({
       path: 'user/[id]/delete',
       segments: ['user', '[id]', 'delete'],
       dynamicParams: [{ name: 'id', optional: false }],
@@ -113,8 +113,8 @@ export default function handler() { console.log('Edit user') }
     );
 
     const result = await scanAppDirectory(testDir);
-    expect(result).toHaveLength(1);
-    expect(result[0]).toMatchObject({
+    expect(result.commands).toHaveLength(1);
+    expect(result.commands[0]).toMatchObject({
       path: 'org/[orgId]/user/[userId]/edit',
       segments: ['org', '[orgId]', 'user', '[userId]', 'edit'],
       dynamicParams: [
@@ -137,7 +137,7 @@ export default function handler() { console.log('Edit user') }
     );
 
     const result = await scanAppDirectory(testDir);
-    expect(result).toEqual([]);
+    expect(result).toEqual({ commands: [] });
   });
 
   it('should ignore directories without command.ts', async () => {
@@ -147,6 +147,6 @@ export default function handler() { console.log('Edit user') }
     await writeFile(join(emptyDir, 'other.ts'), 'export const other = true');
 
     const result = await scanAppDirectory(testDir);
-    expect(result).toEqual([]);
+    expect(result).toEqual({ commands: [] });
   });
 });

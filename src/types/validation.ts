@@ -100,3 +100,65 @@ export type ErrorHandler = (error: ValidationError) => Promise<void> | void;
  * パラメータ定義関数の型
  */
 export type ParamsDefinitionFunction = () => ParamsDefinition;
+
+/**
+ * 環境変数スキーマのタイプ定数
+ */
+export const SCHEMA_TYPE = {
+  STRING: 'string',
+  NUMBER: 'number',
+  BOOLEAN: 'boolean',
+} as const;
+
+/**
+ * 環境変数フィールドスキーマ定義
+ */
+export interface EnvFieldSchema {
+  /** フィールドの型 */
+  type: 'string' | 'number' | 'boolean';
+  /** 必須フィールドかどうか */
+  required?: boolean;
+  /** デフォルト値 */
+  default?: unknown;
+  /** 数値の最小値 */
+  min?: number;
+  /** 数値の最大値 */
+  max?: number;
+  /** 文字列の最小長 */
+  minLength?: number;
+  /** 文字列の最大長 */
+  maxLength?: number;
+  /** 許可される値の列挙 */
+  enum?: readonly (string | number)[];
+  /** エラーメッセージ */
+  errorMessage?: string;
+}
+
+/**
+ * 環境変数スキーマ定義
+ */
+export interface EnvSchema {
+  [envName: string]: EnvFieldSchema;
+}
+
+/**
+ * 環境変数ハンドラー
+ */
+export type EnvHandler = EnvSchema;
+
+/**
+ * 環境変数バリデーション結果
+ */
+export interface EnvValidationResult<T = Record<string, unknown>> {
+  /** バリデーションが成功したかどうか */
+  success: boolean;
+  /** バリデーション成功時のデータ */
+  data?: T;
+  /** バリデーション失敗時のエラー */
+  error?: ValidationError;
+}
+
+/**
+ * 環境変数定義関数の型
+ */
+export type EnvDefinitionFunction = () => EnvHandler;

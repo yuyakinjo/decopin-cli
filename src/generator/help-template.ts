@@ -164,7 +164,10 @@ export function generateMainFunction(
     process.exit(1);
   }
 
-  try {
+    try {
+    // 環境変数を初期化（まずは要求なしでトライ）
+    const env = await initializeEnv(false);
+
     // コマンドを動的にインポートして取得
     const commandResult = await commandRoutes[command.path]();
     let commandDefinition;
@@ -184,6 +187,7 @@ export function generateMainFunction(
         args: positional.slice(command.segments.length),
         options,
         params,
+        env,
         showHelp: async () => await showCommandHelp(command)
       };
 
@@ -223,6 +227,7 @@ export function generateMainFunction(
         args: positional.slice(command.segments.length),
         options,
         params,
+        env,
         showHelp: async () => await showCommandHelp(command)
       };
 

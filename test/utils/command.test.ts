@@ -1,5 +1,6 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 import type { CommandContext, CommandDefinition } from '../../dist/types/command.js';
+import type { AppEnv } from '../../app/env.js';
 
 describe('command.ts files', () => {
   let consoleSpy: ReturnType<typeof vi.spyOn>;
@@ -90,6 +91,12 @@ describe('command.ts files', () => {
         args: ['John Doe', 'john@example.com'],
         options: {},
         params: {},
+        env: {
+          API_KEY: 'test-api-key-123456',
+          NODE_ENV: 'test',
+          PORT: 3000,
+          DEBUG: false
+        },
         showHelp: vi.fn()
       };
 
@@ -102,11 +109,17 @@ describe('command.ts files', () => {
     it('should handle different user data correctly', async () => {
       const commandModule = await import('../../app/user/create/command.js');
 
-      const mockContext: CommandContext<{ name: string; email: string }> = {
+      const mockContext: CommandContext<{ name: string; email: string }, AppEnv> = {
         validatedData: { name: 'Jane Smith', email: 'jane.smith@company.com' },
         args: ['Jane Smith', 'jane.smith@company.com'],
         options: {},
         params: {},
+        env: {
+          API_KEY: 'test-api-key-123456',
+          NODE_ENV: 'test',
+          PORT: 3000,
+          DEBUG: false
+        },
         showHelp: vi.fn()
       };
 

@@ -1,6 +1,6 @@
 import { mkdir } from 'node:fs/promises';
 import {
-  combineCommandData,
+  combineAppData,
   type GeneratorConfig,
   generateCLI,
 } from './generator/cli-generator.js';
@@ -63,13 +63,18 @@ export async function buildCLI(config: BuildConfig): Promise<BuildResult> {
     }
 
     // 1. ディレクトリをスキャン
-    const structures = await scanAppDirectory(config.appDir);
+    const appStructure = await scanAppDirectory(config.appDir);
 
     if (config.verbose) {
-      console.log(`📁 Found ${structures.length} command files`);
+      console.log(`📁 Found ${appStructure.commands.length} command files`);
+      if (appStructure.envFilePath) {
+        console.log(
+          `🌍 Found environment variables file: ${appStructure.envFilePath}`
+        );
+      }
     }
 
-    if (structures.length === 0) {
+    if (appStructure.commands.length === 0) {
       warnings.push('No command files found in app directory');
       return {
         success: true,
@@ -88,7 +93,7 @@ export async function buildCLI(config: BuildConfig): Promise<BuildResult> {
       console.log('🔧 Parsing command files...');
     }
 
-    const filePaths = structures.map((s) => s.commandFilePath);
+    const filePaths = appStructure.commands.map((s) => s.commandFilePath);
     const astResults = await parseMultipleCommandFiles(filePaths);
 
     // エラーと警告を収集
@@ -101,8 +106,11 @@ export async function buildCLI(config: BuildConfig): Promise<BuildResult> {
       }
     }
 
-    // 3. コマンドデータを結合
-    const commands = await combineCommandData(structures, astResults);
+    // 3. アプリケーションデータを結合（コマンド + 環境変数）
+    const { commands, envResult } = await combineAppData(
+      appStructure,
+      astResults
+    );
 
     if (config.verbose) {
       console.log(`✅ Successfully parsed ${commands.length} commands`);
@@ -125,7 +133,7 @@ export async function buildCLI(config: BuildConfig): Promise<BuildResult> {
       ...(config.description && { description: config.description }),
     };
 
-    const generated = await generateCLI(generatorConfig, commands);
+    const generated = await generateCLI(generatorConfig, commands, envResult);
     files = generated.files;
 
     if (config.verbose) {
@@ -185,8 +193,8 @@ export async function listCommands(
   appDir: string = './app'
 ): Promise<string[]> {
   try {
-    const structures = await scanAppDirectory(appDir);
-    return structures.map((s) => s.path.replace(/\//g, ' '));
+    const appStructure = await scanAppDirectory(appDir);
+    return appStructure.commands.map((s) => s.path.replace(/\//g, ' '));
   } catch (error) {
     console.error(`Failed to list commands: ${error}`);
     return [];
@@ -211,6 +219,7 @@ export type { ParsedASTResult } from './parser/ast-parser.js';
 // Version types
 export type { VersionInfo } from './parser/version-parser.js';
 export type {
+  AppStructure,
   CommandStructure,
   DirectoryEntry,
 } from './scanner/directory-scanner.js';

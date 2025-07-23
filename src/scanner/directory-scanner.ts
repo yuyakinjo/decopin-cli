@@ -24,6 +24,8 @@ export interface DirectoryEntry {
   isError: boolean;
   /** params.tsファイルかどうか */
   isParams: boolean;
+  /** env.tsファイルかどうか */
+  isEnv: boolean;
   /** 動的パラメータかどうか（[id]形式） */
   isDynamic: boolean;
   /** 動的パラメータ情報 */
@@ -52,6 +54,16 @@ export interface CommandStructure {
   paramsFilePath?: string;
   /** 深度 */
   depth: number;
+}
+
+/**
+ * アプリケーション構造の情報
+ */
+export interface AppStructure {
+  /** コマンド構造一覧 */
+  commands: CommandStructure[];
+  /** env.tsファイルのパス */
+  envFilePath?: string;
 }
 
 /**
@@ -96,6 +108,7 @@ async function parseDirectoryEntry(
     isValidate: name === 'validate.ts',
     isError: name === 'error.ts',
     isParams: name === 'params.ts',
+    isEnv: name === 'env.ts',
     isDynamic: isDynamicSegment(name),
   };
 
@@ -212,11 +225,9 @@ function buildCommandStructures(
 }
 
 /**
- * appディレクトリをスキャンしてコマンド構造を取得
+ * appディレクトリをスキャンしてアプリケーション構造を取得
  */
-export async function scanAppDirectory(
-  appDir: string
-): Promise<CommandStructure[]> {
+export async function scanAppDirectory(appDir: string): Promise<AppStructure> {
   try {
     // appディレクトリの存在確認
     await stat(appDir);
@@ -225,7 +236,20 @@ export async function scanAppDirectory(
   }
 
   const entries = await scanDirectoryRecursive(appDir, appDir);
-  const structures = buildCommandStructures(entries, appDir);
+  const commands = buildCommandStructures(entries, appDir);
 
-  return structures;
+  // env.tsファイルの検索（appディレクトリ直下のenv.tsのみ）
+  const envFile = entries.find(
+    (entry) => entry.isEnv && entry.relativePath === 'env.ts'
+  );
+
+  const appStructure: AppStructure = {
+    commands,
+  };
+
+  if (envFile) {
+    appStructure.envFilePath = envFile.path;
+  }
+
+  return appStructure;
 }

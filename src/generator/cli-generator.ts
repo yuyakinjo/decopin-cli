@@ -1,10 +1,13 @@
 import { copyFile, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import type { ParsedASTResult } from '../parser/ast-parser.js';
-import { parseHelpFile } from '../parser/ast-parser.js';
+import type { ParsedASTResult, ParsedEnvResult } from '../parser/ast-parser.js';
+import { parseEnvFile, parseHelpFile } from '../parser/ast-parser.js';
 import { getVersionInfo } from '../parser/version-parser.js';
-import type { CommandStructure } from '../scanner/directory-scanner.js';
+import type {
+  AppStructure,
+  CommandStructure,
+} from '../scanner/directory-scanner.js';
 import type { ParsedCommand } from '../types/command.js';
 import { generateMainCLITemplate } from './main-template.js';
 import { generateTypeDefinitions } from './type-generator.js';
@@ -44,7 +47,8 @@ export interface GeneratedFiles {
  */
 export async function generateCLI(
   config: GeneratorConfig,
-  commands: ParsedCommand[]
+  commands: ParsedCommand[],
+  envResult?: ParsedEnvResult
 ): Promise<GeneratedFiles> {
   const files: string[] = [];
 
@@ -69,7 +73,12 @@ export async function generateCLI(
   }
 
   // メインCLIファイルを生成
-  const mainCLICode = generateMainCLITemplate(config, commands, versionInfo);
+  const mainCLICode = generateMainCLITemplate(
+    config,
+    commands,
+    versionInfo,
+    envResult
+  );
   const fileName = config.outputFileName || 'cli.js';
   const mainFile = join(config.outputDir, fileName);
   await writeFile(mainFile, mainCLICode, 'utf-8');
@@ -122,6 +131,32 @@ async function loadHelpMetadata(filePath: string | undefined) {
 
   // メタデータが見つからなければ null を返す
   return null;
+}
+
+/**
+ * アプリケーション構造とAST解析結果を結合
+ */
+export async function combineAppData(
+  appStructure: AppStructure,
+  astResults: Map<string, ParsedASTResult>
+): Promise<{ commands: ParsedCommand[]; envResult?: ParsedEnvResult }> {
+  const commands = await combineCommandData(appStructure.commands, astResults);
+
+  let envResult: ParsedEnvResult | undefined;
+  if (appStructure.envFilePath) {
+    envResult = await parseEnvFile(appStructure.envFilePath);
+    if (envResult.errors.length > 0) {
+      console.warn(`Errors in ${appStructure.envFilePath}:`, envResult.errors);
+    }
+    if (envResult.warnings.length > 0) {
+      console.warn(
+        `Warnings in ${appStructure.envFilePath}:`,
+        envResult.warnings
+      );
+    }
+  }
+
+  return envResult ? { commands, envResult } : { commands };
 }
 
 /**

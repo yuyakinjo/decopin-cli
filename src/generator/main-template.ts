@@ -1,3 +1,4 @@
+import type { ParsedEnvResult } from '../parser/ast-parser.js';
 import type { VersionInfo } from '../parser/version-parser.js';
 import type { ParsedCommand } from '../types/command.js';
 import type { GeneratorConfig } from './cli-generator.js';
@@ -22,7 +23,8 @@ import {
 export function generateMainCLITemplate(
   config: GeneratorConfig,
   commands: ParsedCommand[],
-  versionInfo?: VersionInfo
+  versionInfo?: VersionInfo,
+  envResult?: ParsedEnvResult
 ): string {
   // コマンドルートの生成
   const commandRoutes = commands
@@ -65,7 +67,13 @@ export function generateMainCLITemplate(
     })
     .join(',\n');
 
-  return generateCLIScript(config, commands, commandRoutes, versionInfo);
+  return generateCLIScript(
+    config,
+    commands,
+    commandRoutes,
+    versionInfo,
+    envResult
+  );
 }
 
 /**
@@ -75,7 +83,8 @@ function generateCLIScript(
   config: GeneratorConfig,
   commands: ParsedCommand[],
   commandRoutes: string,
-  versionInfo?: VersionInfo
+  versionInfo?: VersionInfo,
+  envResult?: ParsedEnvResult
 ): string {
   const cliName = config.cliName;
   const version = versionInfo?.version || config.version || '1.0.0';
@@ -85,11 +94,85 @@ function generateCLIScript(
     'File-based CLI built with decopin-cli';
   const cliDisplayName = versionInfo?.metadata?.name || cliName;
 
+  // 環境変数の処理
+  const envImport = envResult
+    ? `
+// 環境変数のインポートと初期化
+let globalEnv = {};
+let envInitialized = false;
+
+async function initializeEnv(requiresEnv = false) {
+  if (envInitialized) {
+    return globalEnv;
+  }
+
+  try {
+    const envModule = await import('./app/env.js');
+    const createEnv = envModule.default;
+    const { createTypeSafeEnv } = await import('./validation.js');
+
+    const envResult = await createTypeSafeEnv(createEnv);
+    if (envResult.success) {
+      globalEnv = envResult.data;
+    } else {
+      // 環境変数の検証が失敗した場合、プロキシオブジェクトでラップ
+      globalEnv = createEnvProxy(envResult.error);
+    }
+  } catch (error) {
+    // env.tsがない場合は空のオブジェクトを使用
+    globalEnv = {};
+  }
+
+  envInitialized = true;
+  return globalEnv;
+}
+
+// 環境変数アクセス時にエラーを投げるプロキシ
+function createEnvProxy(validationError) {
+  return new Proxy({}, {
+    get(target, prop) {
+      // 内部プロパティ（Symbol等）やJSONシリアライゼーション時のアクセスは無視
+      if (typeof prop === 'symbol' || prop === 'toJSON' || prop === 'valueOf' || prop === 'toString' || prop === 'then') {
+        return undefined;
+      }
+
+      if (typeof prop === 'string') {
+        console.error('❌ Environment variable validation failed:', validationError.message);
+        if (validationError.issues) {
+          for (const issue of validationError.issues) {
+            const field = issue.path.length > 0 ? issue.path.join('.') : 'unknown';
+            console.error(\`  • \${field}: \${issue.message}\`);
+          }
+        }
+        console.error(\`Attempted to access environment variable: \${prop}\`);
+        process.exit(1);
+      }
+      return undefined;
+    },
+
+    has(target, prop) {
+      // プロパティの存在チェック時は false を返す（エラーを投げない）
+      return false;
+    },
+
+    ownKeys(target) {
+      // Object.keys() などの呼び出し時は空配列を返す
+      return [];
+    }
+  });
+}
+`
+    : `
+// 環境変数処理なし
+const globalEnv = {};
+async function initializeEnv() { return globalEnv; }
+`;
+
   return `#!/usr/bin/env node
 
 // Generated CLI for ${cliDisplayName}
 // Built with decopin-cli
-
+${envImport}
 const commandRoutes = {
 ${commandRoutes}
 };

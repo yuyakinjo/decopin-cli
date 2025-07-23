@@ -1,7 +1,7 @@
 /**
- * 基本的なコマンドコンテキスト（params.tsなし）
+ * 基本的なコマンドコンテキストの共通プロパティ
  */
-export interface BaseCommandContext {
+interface BaseContextProperties {
   /** 位置引数 */
   args: string[];
   /** オプション引数 */
@@ -13,25 +13,50 @@ export interface BaseCommandContext {
 }
 
 /**
- * バリデーション済みコマンドコンテキスト（params.tsあり）
+ * 基本的なコマンドコンテキスト（params.ts・env.tsなし）
  */
-interface ValidatedCommandContext<T> extends BaseCommandContext {
-  /** バリデーション済みデータ（必須） */
-  validatedData: T;
+export interface BaseCommandContext extends BaseContextProperties {
+  /** 型安全な環境変数 */
+  env: Record<string, unknown>;
 }
 
 /**
- * コマンドの実行コンテキスト
- * - params.tsがない場合: CommandContext (型引数なし)
- * - params.tsがある場合: CommandContext<T> (型引数あり)
+ * バリデーション済みコマンドコンテキスト（params.tsあり）
  */
-export type CommandContext<T = never> = T extends never
-  ? BaseCommandContext
-  : ValidatedCommandContext<T>;
+interface ValidatedCommandContext<T> extends BaseContextProperties {
+  /** バリデーション済みデータ（必須） */
+  validatedData: T;
+  /** 型安全な環境変数 */
+  env: Record<string, unknown>;
+}
+
+/**
+ * 環境変数付きコマンドコンテキスト
+ */
+interface EnvCommandContext<E> extends BaseContextProperties {
+  /** 型安全な環境変数 */
+  env: E;
+}
+
+/**
+ * コマンドの実行コンテキスト（関数オーバーロード型定義）
+ */
+export interface CommandContext<T = unknown, E = unknown>
+  extends BaseContextProperties {
+  /** バリデーション済みデータ（params.tsがある場合のみ） */
+  validatedData: T;
+  /** 型安全な環境変数 */
+  env: E extends unknown ? E : Record<string, unknown>;
+}
+
+// 特化された型エイリアス
+export type BaseContext = BaseCommandContext;
+export type ValidatedContext<T> = ValidatedCommandContext<T>;
+export type EnvContext<E> = EnvCommandContext<E>;
 
 /**
  * コマンドハンドラーの型
  */
-export type CommandHandler<T = never> = (
-  context: CommandContext<T>
+export type CommandHandler<T = never, E = never> = (
+  context: CommandContext<T, E>
 ) => Promise<void> | void;
