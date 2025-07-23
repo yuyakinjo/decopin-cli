@@ -49,10 +49,10 @@ jobs:
         run: |
           # Save current performance report
           cp performance.md /tmp/performance.md
-          
+
           # Try to fetch existing performance branch
           git fetch origin performance-history:refs/remotes/origin/performance-history || true
-          
+
           # Create or checkout performance branch
           if git show-ref --verify --quiet refs/remotes/origin/performance-history; then
             git checkout -b performance-history origin/performance-history
@@ -66,12 +66,12 @@ jobs:
         run: |
           # Restore performance report
           cp /tmp/performance.md performance.md
-          
+
           mkdir -p performance-history
           cp performance.md "performance-history/$(date -u +%Y-%m-%d-%H%M%S).md"
           cp performance.md performance-history/latest.md
           cp performance.md latest.md
-          
+
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add performance-history/ latest.md
@@ -89,21 +89,21 @@ jobs:
         run: |
           # Try to get main branch performance data
           git fetch origin performance-history:refs/remotes/origin/performance-history || true
-          
+
           PREVIOUS_AVG="0"
           if git show-ref --verify --quiet refs/remotes/origin/performance-history; then
             # Try to get latest.md from performance-history branch
             git show origin/performance-history:latest.md > /tmp/previous-performance.md 2>/dev/null || true
-            
+
             if [ -f "/tmp/previous-performance.md" ]; then
               echo "Found previous benchmark data"
               PREVIOUS_AVG=$(grep -o 'Average startup time.*[0-9][0-9]*\.[0-9][0-9]*ms' /tmp/previous-performance.md | grep -o '[0-9][0-9]*\.[0-9][0-9]*' | head -1 || echo "0")
             fi
           fi
-          
+
           # Extract metrics from current run
           CURRENT_AVG=$(grep -o 'Average startup time.*[0-9][0-9]*\.[0-9][0-9]*ms' performance.md | grep -o '[0-9][0-9]*\.[0-9][0-9]*' | head -1 || echo "0")
-          
+
           # Calculate percentage change
           if [ "$PREVIOUS_AVG" != "0" ] && [ "$CURRENT_AVG" != "0" ]; then
             CHANGE=$(echo "scale=2; (($CURRENT_AVG - $PREVIOUS_AVG) / $PREVIOUS_AVG) * 100" | bc)
@@ -126,23 +126,25 @@ jobs:
 
             const fs = require('fs');
             const reportContent = fs.readFileSync('performance.md', 'utf8');
-            
-            const comment = `## ${emoji} Performance Benchmark Results
 
-**Average startup time**: ${current}ms (${Math.abs(change).toFixed(2)}% ${trend} than main)
-
-- Previous (main): ${previous}ms
-- Current (PR): ${current}ms
-- Change: ${change > 0 ? '+' : ''}${change.toFixed(2)}%
-
-<details>
-<summary>View full benchmark report</summary>
-
-\`\`\`markdown
-${reportContent}
-\`\`\`
-
-</details>`;
+            const comment = [
+              `## ${emoji} Performance Benchmark Results`,
+              '',
+              `**Average startup time**: ${current}ms (${Math.abs(change).toFixed(2)}% ${trend} than main)`,
+              '',
+              `- Previous (main): ${previous}ms`,
+              `- Current (PR): ${current}ms`,
+              `- Change: ${change > 0 ? '+' : ''}${change.toFixed(2)}%`,
+              '',
+              '<details>',
+              '<summary>View full benchmark report</summary>',
+              '',
+              '```markdown',
+              reportContent,
+              '```',
+              '',
+              '</details>'
+            ].join('\n');
 
             github.rest.issues.createComment({
               issue_number: context.issue.number,
