@@ -17,16 +17,16 @@ export type {
 
 // メタデータ関連
 export type {
-  HelpHandler,
   CommandMetadata,
+  HelpHandler,
 } from './metadata.js';
 
 // バリデーション関連（valibotのみ）
 export type {
   ErrorHandler,
   ParamMapping,
-  ParamsHandler,
   ParamsDefinitionFunction,
+  ParamsHandler,
   ValidationError,
   ValidationFunction,
   ValidationResult,
