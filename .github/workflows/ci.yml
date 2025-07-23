@@ -49,19 +49,19 @@ jobs:
       run: |
         echo "## Test Results 🧪" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
-        
+
         if [ "${{ steps.test.outputs.test_exit_code }}" == "0" ]; then
           echo "✅ All tests passed!" >> $GITHUB_STEP_SUMMARY
         else
           echo "❌ Some tests failed" >> $GITHUB_STEP_SUMMARY
         fi
-        
+
         echo "" >> $GITHUB_STEP_SUMMARY
         echo "### Test Output" >> $GITHUB_STEP_SUMMARY
         echo '```' >> $GITHUB_STEP_SUMMARY
         tail -n 50 test-output.log >> $GITHUB_STEP_SUMMARY
         echo '```' >> $GITHUB_STEP_SUMMARY
-        
+
         # Fail the job if tests failed
         if [ "${{ steps.test.outputs.test_exit_code }}" != "0" ]; then
           exit 1

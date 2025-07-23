@@ -208,6 +208,8 @@ export type {
   GeneratorConfig,
 } from './generator/cli-generator.js';
 export type { ParsedASTResult } from './parser/ast-parser.js';
+// Version types
+export type { VersionInfo } from './parser/version-parser.js';
 export type {
   CommandStructure,
   DirectoryEntry,
@@ -231,6 +233,3 @@ export type {
   ValidationFunction,
   ValidationResult,
 } from './types/index.js';
-
-// Version types
-export type { VersionInfo } from './parser/version-parser.js';

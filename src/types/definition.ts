@@ -14,7 +14,6 @@ export interface CommandDefinition<T = unknown> {
  */
 export type CommandDefinitionFactory<T = unknown> = CommandHandler<T>;
 
-
 /**
  * 動的パラメータ
  */
