@@ -11,6 +11,9 @@ updates:
       day: "monday"
       time: "09:00"
       timezone: "Asia/Tokyo"
+    # Enable auto-merge for Dependabot PRs
+    # Note: This requires enabling auto-merge in repository settings
+    # and the auto-merge workflow to handle the actual merging
     # Update dependencies
     groups:
       # Group all development dependencies together
