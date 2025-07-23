@@ -9,7 +9,7 @@
     "decopin": "dist/cli.js"
   },
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && npm run build:app && npm run build:prod",
     "build:prod": "tsc -p tsconfig.prod.json",
     "build:app": "tsc -p app/tsconfig.json",
     "dev": "mise run dev",
