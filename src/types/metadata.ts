@@ -29,13 +29,3 @@ export interface CommandHelpMetadata {
   /** 追加のヘルプ情報 */
   additionalHelp?: string;
 }
-
-/**
- * コマンドの引数とオプションの定義
- */
-export interface CommandSchema {
-  /** 位置引数のスキーマ */
-  args?: unknown;
-  /** オプション引数のスキーマ */
-  options?: unknown;
-}

@@ -1,5 +1,5 @@
 import * as ts from 'typescript';
-import type { CommandDefinition, CommandSchema } from '../types/command.js';
+import type { CommandDefinition } from '../types/command.js';
 
 /**
  * ファイルからCommandDefinitionを抽出
@@ -9,7 +9,6 @@ export function extractCommandDefinition(
 ): CommandDefinition | null {
   let commandDefinition: CommandDefinition | null = null;
   let hasHandler = false;
-  let schema: CommandSchema | undefined;
 
   // 変数宣言を追跡するためのマップ
   const variableDefinitions = new Map<string, CommandDefinition>();
@@ -98,38 +97,11 @@ export function extractCommandDefinition(
     }
 
     // export const schema = { ... } の形式を探す
-    if (ts.isVariableStatement(node)) {
-      const modifiers = ts.canHaveModifiers(node)
-        ? ts.getModifiers(node)
-        : undefined;
-      const isExported = modifiers?.some(
-        (m) => m.kind === ts.SyntaxKind.ExportKeyword
-      );
-
-      if (isExported) {
-        for (const declaration of node.declarationList.declarations) {
-          if (
-            ts.isVariableDeclaration(declaration) &&
-            ts.isIdentifier(declaration.name) &&
-            declaration.name.text === 'schema' &&
-            declaration.initializer &&
-            ts.isObjectLiteralExpression(declaration.initializer)
-          ) {
-            schema = parseSchema(declaration.initializer);
-          }
-        }
-      }
-    }
 
     ts.forEachChild(node, visit);
   }
 
   visit(sourceFile);
-
-  // スキーマが個別にエクスポートされている場合は統合
-  if (commandDefinition && schema) {
-    Object.assign(commandDefinition, { schema });
-  }
 
   return hasHandler ? commandDefinition : null;
 }
@@ -151,13 +123,6 @@ export function parseObjectLiteralAsCommandDefinition(
           definition.handler = async () => {}; // 実際の関数は動的にインポートで取得
           break;
 
-        case 'schema':
-          if (ts.isObjectLiteralExpression(property.initializer)) {
-            Object.assign(definition, {
-              schema: parseSchema(property.initializer),
-            });
-          }
-          break;
         case 'middleware':
           // middlewareは配列として解析
           definition.middleware = [];
@@ -167,30 +132,4 @@ export function parseObjectLiteralAsCommandDefinition(
   }
 
   return definition.handler ? (definition as CommandDefinition) : null;
-}
-
-/**
- * スキーマオブジェクトを解析
- */
-export function parseSchema(
-  objectLiteral: ts.ObjectLiteralExpression
-): CommandSchema {
-  const schema: Partial<CommandSchema> = {};
-
-  for (const property of objectLiteral.properties) {
-    if (ts.isPropertyAssignment(property) && ts.isIdentifier(property.name)) {
-      const key = property.name.text;
-
-      switch (key) {
-        case 'args':
-          schema.args = {}; // 実際のスキーマは動的に処理
-          break;
-        case 'options':
-          schema.options = {}; // 実際のスキーマは動的に処理
-          break;
-      }
-    }
-  }
-
-  return schema as CommandSchema;
 }

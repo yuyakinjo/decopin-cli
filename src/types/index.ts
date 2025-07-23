@@ -21,7 +21,6 @@ export type {
 export type {
   CommandHelpMetadata,
   CommandMetadata,
-  CommandSchema,
 } from './metadata.js';
 
 // バリデーション関連（valibotのみ）

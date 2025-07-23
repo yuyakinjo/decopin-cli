@@ -3,7 +3,7 @@ import type {
   CommandHandler,
   MiddlewareFunction,
 } from './context.js';
-import type { CommandMetadata, CommandSchema } from './metadata.js';
+import type { CommandMetadata } from './metadata.js';
 
 /**
  * コマンド定義
@@ -13,8 +13,6 @@ export interface CommandDefinition<T = unknown> {
   middleware?: MiddlewareFunction<T>[];
   /** コマンドハンドラー */
   handler: CommandHandler<T>;
-  /** スキーマ */
-  schema?: CommandSchema;
 }
 
 /**

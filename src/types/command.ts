@@ -17,7 +17,6 @@ export type {
 export type {
   CommandHelpMetadata,
   CommandMetadata,
-  CommandSchema,
 } from './metadata.js';
 export type {
   ErrorHandler,

@@ -221,7 +221,6 @@ export type {
   CommandHandler,
   CommandHelpMetadata,
   CommandMetadata,
-  CommandSchema,
   DynamicParam,
   ErrorHandler,
   MiddlewareFunction,
