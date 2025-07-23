@@ -2,7 +2,29 @@ name: Integration Tests
 
 on:
   push:
+    paths:
+      - 'src/**/*.ts'
+      - 'src/**/*.js'
+      - 'app/**/*.ts'
+      - 'app/**/*.js'
+      - 'test/integration/**'
+      - 'package.json'
+      - 'bun.lockb'
+      - 'tsconfig*.json'
+      - '.github/workflows/integration.yml'
+      - '.github/actions/**'
   pull_request:
+    paths:
+      - 'src/**/*.ts'
+      - 'src/**/*.js'
+      - 'app/**/*.ts'
+      - 'app/**/*.js'
+      - 'test/integration/**'
+      - 'package.json'
+      - 'bun.lockb'
+      - 'tsconfig*.json'
+      - '.github/workflows/integration.yml'
+      - '.github/actions/**'
 
 # 重複実行を防ぐconcurrency設定
 concurrency:

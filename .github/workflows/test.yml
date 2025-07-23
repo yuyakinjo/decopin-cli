@@ -2,6 +2,19 @@ name: Test
 
 on:
   push:
+    paths:
+      - 'src/**/*.ts'
+      - 'src/**/*.js'
+      - 'app/**/*.ts'
+      - 'app/**/*.js'
+      - 'test/**/*.ts'
+      - 'test/**/*.js'
+      - 'package.json'
+      - 'bun.lockb'
+      - 'tsconfig*.json'
+      - 'vitest.config.*'
+      - '.github/workflows/test.yml'
+      - '.github/actions/**'
 
 # 重複実行を防ぐconcurrency設定
 concurrency:

@@ -3,8 +3,36 @@ name: CI
 on:
   push:
     branches: [ main, develop ]
+    paths:
+      - 'src/**/*.ts'
+      - 'src/**/*.js'
+      - 'app/**/*.ts'
+      - 'app/**/*.js'
+      - 'test/**/*.ts'
+      - 'test/**/*.js'
+      - 'package.json'
+      - 'bun.lockb'
+      - 'tsconfig*.json'
+      - 'biome.json'
+      - 'vitest.config.*'
+      - '.github/workflows/ci.yml'
+      - '.github/actions/**'
   pull_request:
     branches: [ main, develop ]
+    paths:
+      - 'src/**/*.ts'
+      - 'src/**/*.js'
+      - 'app/**/*.ts'
+      - 'app/**/*.js'
+      - 'test/**/*.ts'
+      - 'test/**/*.js'
+      - 'package.json'
+      - 'bun.lockb'
+      - 'tsconfig*.json'
+      - 'biome.json'
+      - 'vitest.config.*'
+      - '.github/workflows/ci.yml'
+      - '.github/actions/**'
 
 jobs:
   test:
