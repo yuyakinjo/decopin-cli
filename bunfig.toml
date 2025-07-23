@@ -1,0 +1,9 @@
+[test]
+# Test file patterns
+root = "./test"
+# Coverage settings
+coverage = true
+coverageSkipTestFiles = true
+
+# Environment
+smol = false

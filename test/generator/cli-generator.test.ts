@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'bun:test';
 import type { ParsedCommand } from '../../src/types/command.js';
 import { generateCLI } from '../../src/generator/cli-generator.js';
 

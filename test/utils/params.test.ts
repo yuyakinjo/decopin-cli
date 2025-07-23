@@ -1,5 +1,5 @@
 import * as v from 'valibot';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'bun:test';
 
 describe('params.ts files', () => {
   describe('user/create/params.ts', () => {

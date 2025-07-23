@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'bun:test';
 import { generateCommandMatcher } from '../../src/generator/runtime-template.js';
 import type { ParsedCommand } from '../../src/types/command.js';
 

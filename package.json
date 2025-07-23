@@ -15,12 +15,12 @@
     "dev": "mise run dev",
     "dev:build-all": "bun run build && bun run build:app",
     "dev:regen": "bunx tsx src/cli.ts build --app-dir app --output-dir examples --cli-name cli --verbose",
-    "test": "vitest run",
-    "test:integration": "bun run build && bun run build:app && bun run dev:regen && vitest run test/integration/",
-    "test:integration:only": "vitest run test/integration/",
+    "test": "bun test",
+    "test:integration": "bun run build && bun run build:app && bun run dev:regen && bun test test/integration/",
+    "test:integration:only": "bun test test/integration/",
     "clean": "rm -rf dist examples",
     "lint": "biome check --write .",
-    "prepublishOnly": "bun run clean && bun run build:prod && vitest run --exclude '**/integration/**'"
+    "prepublishOnly": "bun run clean && bun run build:prod && bun test --bail"
   },
   "keywords": [
     "cli",
@@ -47,8 +47,7 @@
     "@biomejs/biome": "^2.1.2",
     "@types/node": "^24.1.0",
     "simple-git": "^3.28.0",
-    "typescript": "^5.8.3",
-    "vitest": "^3.2.4"
+    "typescript": "^5.8.3"
   },
   "repository": {
     "type": "git",

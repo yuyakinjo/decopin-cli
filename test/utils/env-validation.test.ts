@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'bun:test';
 import { parseEnvironmentVariables, createTypeSafeEnv } from '../../src/utils/validation.js';
 import type { EnvSchema } from '../../src/types/validation.js';
 import { SCHEMA_TYPE } from '../../src/types/validation.js';

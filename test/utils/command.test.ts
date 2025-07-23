@@ -1,13 +1,13 @@
-import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
+import { describe, expect, it, mock, beforeEach, afterEach, spyOn } from 'bun:test';
 import type { CommandContext, CommandDefinition } from '../../dist/types/command.js';
 import type { AppEnv } from '../../app/env.js';
 
 describe('command.ts files', () => {
-  let consoleSpy: ReturnType<typeof vi.spyOn>;
+  let consoleSpy: ReturnType<typeof spyOn>;
 
   beforeEach(() => {
     // console.logをモック
-    consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+    consoleSpy = spyOn(console, 'log').mockImplementation(() => {});
   });
 
   afterEach(() => {
@@ -36,7 +36,7 @@ describe('command.ts files', () => {
         args: ['World'],
         options: {},
         params: {},
-        showHelp: vi.fn()
+        showHelp: mock()
       };
 
       // コマンドハンドラーを直接実行
@@ -53,7 +53,7 @@ describe('command.ts files', () => {
         args: ['TypeScript'],
         options: {},
         params: {},
-        showHelp: vi.fn()
+        showHelp: mock()
       };
 
       await commandModule.default(mockContext);
@@ -74,7 +74,7 @@ describe('command.ts files', () => {
         args: ['TestUser', 'test@example.com'],
         options: {},
         params: {},
-        showHelp: vi.fn()
+        showHelp: mock()
       };
 
       // コマンドハンドラーは直接関数として呼び出し可能
@@ -97,7 +97,7 @@ describe('command.ts files', () => {
           PORT: 3000,
           DEBUG: false
         },
-        showHelp: vi.fn()
+        showHelp: mock()
       };
 
       await commandModule.default(mockContext);
@@ -120,7 +120,7 @@ describe('command.ts files', () => {
           PORT: 3000,
           DEBUG: false
         },
-        showHelp: vi.fn()
+        showHelp: mock()
       };
 
       await commandModule.default(mockContext);
@@ -142,7 +142,7 @@ describe('command.ts files', () => {
         args: [],
         options: {},
         params: {},
-        showHelp: vi.fn()
+        showHelp: mock()
       };
 
       // コマンドハンドラーは直接関数として呼び出し可能
@@ -159,7 +159,7 @@ describe('command.ts files', () => {
         args: [],
         options: {},
         params: {},
-        showHelp: vi.fn()
+        showHelp: mock()
       };
 
       await commandModule.default(mockContext);
@@ -184,7 +184,7 @@ describe('command.ts files', () => {
         args: [],
         options: { limit: '5' },
         params: {},
-        showHelp: vi.fn()
+        showHelp: mock()
       };
 
       await commandModule.default(mockContext);
@@ -211,7 +211,7 @@ describe('command.ts files', () => {
         args: [],
         options: { limit: 'invalid' },
         params: {},
-        showHelp: vi.fn()
+        showHelp: mock()
       };
 
       await commandModule.default(mockContext);
@@ -230,7 +230,7 @@ describe('command.ts files', () => {
         args: [],
         options: { limit: '0' },
         params: {},
-        showHelp: vi.fn()
+        showHelp: mock()
       };
 
       await commandModule.default(mockContext);
