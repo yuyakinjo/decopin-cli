@@ -1,0 +1,146 @@
+name: Performance Benchmark
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+  schedule:
+    # Run every Monday at 00:00 UTC
+    - cron: '0 0 * * 1'
+
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build library
+        run: npm run build
+
+      - name: Build example CLI
+        run: npm run build:app
+
+      - name: Run performance benchmark
+        run: node scripts/benchmark-markdown.js performance.md
+
+      - name: Upload performance report
+        uses: actions/upload-artifact@v4
+        with:
+          name: performance-report
+          path: performance.md
+
+      # Store performance history in a separate branch
+      - name: Checkout performance branch
+        if: github.ref == 'refs/heads/main'
+        run: |
+          git fetch origin performance-history:performance-history || true
+          git checkout performance-history || git checkout -b performance-history
+
+      - name: Add performance report to history
+        if: github.ref == 'refs/heads/main'
+        run: |
+          mkdir -p performance-history
+          cp performance.md "performance-history/$(date -u +%Y-%m-%d-%H%M%S).md"
+          cp performance.md performance-history/latest.md
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add performance-history/
+          git commit -m "Add performance benchmark for $(git rev-parse --short HEAD)" || true
+
+      - name: Push performance history
+        if: github.ref == 'refs/heads/main'
+        run: |
+          git push origin performance-history --force-with-lease || true
+
+      # Comment on PR with performance comparison
+      - name: Compare performance with main
+        if: github.event_name == 'pull_request'
+        id: compare
+        run: |
+          # Checkout main branch performance data
+          git fetch origin performance-history:performance-history || true
+
+          if [ -f "performance-history/latest.md" ]; then
+            echo "Found previous benchmark data"
+            # Extract metrics from current and previous runs
+            CURRENT_AVG=$(grep -oP 'Average startup time.*?(\d+\.\d+)ms' performance.md | grep -oP '\d+\.\d+' || echo "0")
+            PREVIOUS_AVG=$(grep -oP 'Average startup time.*?(\d+\.\d+)ms' performance-history/latest.md | grep -oP '\d+\.\d+' || echo "0")
+
+            # Calculate percentage change
+            if [ "$PREVIOUS_AVG" != "0" ]; then
+              CHANGE=$(echo "scale=2; (($CURRENT_AVG - $PREVIOUS_AVG) / $PREVIOUS_AVG) * 100" | bc)
+              echo "performance_change=$CHANGE" >> $GITHUB_OUTPUT
+              echo "current_avg=$CURRENT_AVG" >> $GITHUB_OUTPUT
+              echo "previous_avg=$PREVIOUS_AVG" >> $GITHUB_OUTPUT
+            fi
+          fi
+
+      - name: Comment PR with performance results
+        if: github.event_name == 'pull_request' && steps.compare.outputs.performance_change
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const change = parseFloat('${{ steps.compare.outputs.performance_change }}');
+            const current = '${{ steps.compare.outputs.current_avg }}';
+            const previous = '${{ steps.compare.outputs.previous_avg }}';
+
+            const emoji = change > 5 ? '⚠️' : change < -5 ? '🚀' : '✅';
+            const trend = change > 0 ? 'slower' : 'faster';
+
+            const comment = `## ${emoji} Performance Benchmark Results
+
+            **Average startup time**: ${current}ms (${Math.abs(change).toFixed(2)}% ${trend} than main)
+
+            - Previous (main): ${previous}ms
+            - Current (PR): ${current}ms
+            - Change: ${change > 0 ? '+' : ''}${change.toFixed(2)}%
+
+            <details>
+            <summary>View full benchmark report</summary>
+
+            \`\`\`markdown
+            $(cat performance.md)
+            \`\`\`
+
+            </details>`;
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
+
+      # Create performance badge and commit to performance branch
+      - name: Create and commit performance badge
+        if: github.ref == 'refs/heads/main'
+        run: |
+          AVG=$(grep -oP 'Average startup time.*?(\d+\.\d+)ms' performance.md | grep -oP '\d+\.\d+' || echo "0")
+          COLOR="green"
+          if (( $(echo "$AVG > 150" | bc -l) )); then
+            COLOR="red"
+          elif (( $(echo "$AVG > 100" | bc -l) )); then
+            COLOR="yellow"
+          fi
+
+          echo "{\"schemaVersion\": 1, \"label\": \"startup time\", \"message\": \"${AVG}ms\", \"color\": \"$COLOR\"}" > latest-badge.json
+
+          # Add badge to performance branch
+          git add latest-badge.json
+          git commit -m "Update performance badge" || true
+          git push origin performance-history --force-with-lease || true
