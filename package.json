@@ -20,7 +20,7 @@
     "test:integration:only": "bun test test/integration/",
     "clean": "rm -rf dist examples",
     "lint": "biome check --write .",
-    "prepublishOnly": "bun run clean && bun run build:prod && bun test --bail"
+    "prepublishOnly": "bun run clean && bun run build:prod && bun run build:app && bun run dev:regen && bun test --bail"
   },
   "keywords": [
     "cli",
