@@ -11,7 +11,6 @@ export type {
 export type {
   CommandDefinition,
   CommandDefinitionFactory,
-  CommandDefinitionFunction,
   DynamicParam,
   ParsedCommand,
 } from './definition.js';

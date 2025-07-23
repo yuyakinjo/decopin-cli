@@ -109,7 +109,7 @@ export function extractCommandDefinition(
 /**
  * オブジェクトリテラルをCommandDefinitionとして解析
  */
-export function parseObjectLiteralAsCommandDefinition(
+function parseObjectLiteralAsCommandDefinition(
   objectLiteral: ts.ObjectLiteralExpression
 ): CommandDefinition | null {
   const definition: Partial<CommandDefinition> = {};

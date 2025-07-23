@@ -14,10 +14,6 @@ export interface CommandDefinition<T = unknown> {
  */
 export type CommandDefinitionFactory<T = unknown> = CommandHandler<T>;
 
-/**
- * コマンド定義関数の型
- */
-export type CommandDefinitionFunction<T = unknown> = () => CommandDefinition<T>;
 
 /**
  * 動的パラメータ

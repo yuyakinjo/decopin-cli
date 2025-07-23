@@ -214,10 +214,10 @@ export type {
 } from './scanner/directory-scanner.js';
 // 統合型エクスポート
 export type {
+  BaseCommandContext,
   CommandContext,
   CommandDefinition,
   CommandDefinitionFactory,
-  CommandDefinitionFunction,
   CommandHandler,
   CommandHelpMetadata,
   CommandMetadata,
