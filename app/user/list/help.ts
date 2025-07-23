@@ -1,6 +1,6 @@
-import type { CommandHelpMetadata } from '../../../dist/types/index.js';
+import type { HelpHandler } from '../../../dist/types/index.js';
 
-export default function createHelp(): CommandHelpMetadata {
+export default function createHelp(): HelpHandler {
   return {
     name: 'list',
     description: 'List all users in the system with pagination support',

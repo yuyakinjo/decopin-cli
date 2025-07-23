@@ -9,15 +9,15 @@ import {
   isReturnStatementNode,
 } from '../internal/guards/ast.js';
 import { isString } from '../internal/guards/index.js';
-import type { CommandHelpMetadata } from '../types/command.js';
+import type { HelpHandler } from '../types/command.js';
 import { parseObjectLiteral } from '../utils/ast-utils.js';
 
 /**
- * help.tsファイルからCommandHelpMetadataを抽出
+ * help.tsファイルからHelpHandlerを抽出
  */
 export async function parseHelpFile(
   filePath: string
-): Promise<{ help: CommandHelpMetadata | null; errors: string[] }> {
+): Promise<{ help: HelpHandler | null; errors: string[] }> {
   try {
     const content = await readFile(filePath, 'utf8');
     const sourceFile = ts.createSourceFile(
@@ -27,7 +27,7 @@ export async function parseHelpFile(
       true
     );
 
-    let helpMetadata: CommandHelpMetadata | null = null;
+    let helpMetadata: HelpHandler | null = null;
     const errors: string[] = [];
 
     function visit(node: ts.Node) {
@@ -119,7 +119,7 @@ const HelpMetadataSchema = v.object({
  */
 export function parseHelpMetadata(
   objectLiteral: ts.ObjectLiteralExpression
-): CommandHelpMetadata | null {
+): HelpHandler | null {
   // parseObjectLiteralを使用して基本的な解析を行う
   const rawMetadata = parseObjectLiteral(objectLiteral);
 
@@ -127,7 +127,7 @@ export function parseHelpMetadata(
   const parseResult = v.safeParse(HelpMetadataSchema, rawMetadata);
 
   if (parseResult.success) {
-    return parseResult.output as CommandHelpMetadata;
+    return parseResult.output as HelpHandler;
   }
 
   // パースに失敗した場合はnullを返す（必須フィールド不足など）

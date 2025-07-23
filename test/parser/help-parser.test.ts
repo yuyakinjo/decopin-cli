@@ -2,7 +2,7 @@ import { mkdir, rm, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { parseHelpFile } from '../../src/parser/ast-parser.js';
-import type { CommandHelpMetadata } from '../../src/types/command.js';
+import type { HelpHandler } from '../../src/types/command.js';
 
 describe('Help Parser', () => {
   const testDir = join(process.cwd(), 'test-help-files');
@@ -20,9 +20,9 @@ describe('Help Parser', () => {
       const helpFile = join(testDir, 'complete-help.ts');
       await writeFile(
         helpFile,
-        `import type { CommandHelpMetadata } from '../../../dist/types/command.js';
+        `import type { HelpHandler } from '../../../dist/types/command.js';
 
-export const help: CommandHelpMetadata = {
+export const help: HelpHandler = {
   name: 'user-create',
   description: 'Create a new user in the system',
   examples: [
@@ -245,10 +245,10 @@ export const help: CommandHelpMetadata = {
  * Help metadata for the user command
  */
 
-import type { CommandHelpMetadata } from '../../../dist/types/command.js';
+import type { HelpHandler } from '../../../dist/types/command.js';
 
 // This is the help configuration
-export const help: CommandHelpMetadata = {
+export const help: HelpHandler = {
   // Command name
   name: 'user',
 

@@ -4,7 +4,7 @@ import {
   isManualSchema,
   isValibotSchema
 } from '../../src/utils/validation.js';
-import type { ParamsDefinition, ManualSchema } from '../../src/types/validation.js';
+import type { ParamsHandler, ManualSchema } from '../../src/types/validation.js';
 import * as v from 'valibot';
 
 describe('Manual Schema Validation', () => {
@@ -56,7 +56,7 @@ describe('Manual Schema Validation', () => {
   });
 
   describe('Manual Schema Validation', () => {
-    const createManualParamsDefinition = (): ParamsDefinition => ({
+    const createManualParamsDefinition = (): ParamsHandler => ({
       schema: {
         name: {
           type: 'string',
@@ -219,7 +219,7 @@ describe('Manual Schema Validation', () => {
         ),
       });
 
-      const paramsDefinition: ParamsDefinition = {
+      const paramsDefinition: ParamsHandler = {
         schema: valibotSchema,
         mappings: [
           { field: 'name', argIndex: 0, option: 'name' },

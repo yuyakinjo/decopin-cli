@@ -13,13 +13,13 @@ export type {
 } from './definition.js';
 
 export type {
-  CommandHelpMetadata,
+  HelpHandler,
   CommandMetadata,
 } from './metadata.js';
 export type {
   ErrorHandler,
   ParamMapping,
-  ParamsDefinition,
+  ParamsHandler,
   ParamsDefinitionFunction,
   ValidationError,
   ValidationFunction,

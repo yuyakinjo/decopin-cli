@@ -17,7 +17,7 @@ export type {
 
 // メタデータ関連
 export type {
-  CommandHelpMetadata,
+  HelpHandler,
   CommandMetadata,
 } from './metadata.js';
 
@@ -25,7 +25,7 @@ export type {
 export type {
   ErrorHandler,
   ParamMapping,
-  ParamsDefinition,
+  ParamsHandler,
   ParamsDefinitionFunction,
   ValidationError,
   ValidationFunction,

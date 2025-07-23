@@ -60,13 +60,13 @@ export default async function createCommand(context: CommandContext<HelloData>) 
 4. **Create `app/hello/params.ts` for type-safe argument validation**:
 
 ```typescript
-import type { ParamsDefinition } from 'decopin-cli';
+import type { ParamsHandler } from 'decopin-cli';
 
 export type HelloData = {
   name: string;
 };
 
-export default function createParams(): ParamsDefinition {
+export default function createParams(): ParamsHandler {
   return {
     schema: {
       name: {
@@ -176,7 +176,7 @@ Defines command argument types, validation schemas, and mapping configurations.
 Simple and lightweight validation without external dependencies:
 
 ```typescript
-import type { ParamsDefinition } from 'decopin-cli';
+import type { ParamsHandler } from 'decopin-cli';
 
 export type UserData = {
   name: string;
@@ -184,7 +184,7 @@ export type UserData = {
   age?: number;
 };
 
-export default function createParams(): ParamsDefinition {
+export default function createParams(): ParamsHandler {
   return {
     schema: {
       name: {
@@ -233,7 +233,7 @@ For complex validation scenarios with full type inference:
 
 ```typescript
 import * as v from 'valibot';
-import type { ParamsDefinition } from 'decopin-cli';
+import type { ParamsHandler } from 'decopin-cli';
 
 const UserSchema = v.object({
   name: v.pipe(v.string(), v.minLength(1, 'Name is required')),
@@ -243,7 +243,7 @@ const UserSchema = v.object({
 
 export type UserData = v.InferInput<typeof UserSchema>;
 
-export default function createParams(): ParamsDefinition {
+export default function createParams(): ParamsHandler {
   return {
     schema: UserSchema,
     mappings: [
@@ -309,9 +309,9 @@ export default function createErrorHandler() {
 Defines detailed command help information, usage examples, aliases, etc.
 
 ```typescript
-import type { CommandHelpMetadata } from 'decopin-cli';
+import type { HelpHandler } from 'decopin-cli';
 
-export default function createHelp(): CommandHelpMetadata {
+export default function createHelp(): HelpHandler {
   return {
     name: 'user create',
     description: 'Create a new user',
@@ -512,9 +512,9 @@ Create `help.ts` to provide detailed command documentation:
 
 ```typescript
 // app/hello/help.ts
-import type { CommandHelpMetadata } from 'decopin-cli';
+import type { HelpHandler } from 'decopin-cli';
 
-export default function createHelp(): CommandHelpMetadata {
+export default function createHelp(): HelpHandler {
   return {
     name: 'hello',
     description: 'Say hello to someone',
@@ -556,7 +556,7 @@ export default async function createCommand(context: CommandContext<UserData>) {
 
 ```typescript
 // Planned API
-export default function createParams(): ParamsDefinition {
+export default function createParams(): ParamsHandler {
   return {
     schema: {
       apiKey: {

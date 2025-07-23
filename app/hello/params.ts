@@ -1,5 +1,5 @@
 import * as v from 'valibot';
-import type { ParamsDefinition } from '../../dist/types/index.js';
+import type { ParamsHandler } from '../../dist/types/index.js';
 
 // Hello コマンドのデータスキーマ
 const HelloSchema = v.object({
@@ -8,7 +8,7 @@ const HelloSchema = v.object({
 
 export type HelloData = v.InferInput<typeof HelloSchema>;
 
-export default function createParams(): ParamsDefinition {
+export default function createParams(): ParamsHandler {
   return {
     schema: HelloSchema,
     mappings: [

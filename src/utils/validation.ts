@@ -6,7 +6,7 @@ import type {
   EnvValidationResult,
   ManualFieldSchema,
   ManualSchema,
-  ParamsDefinition,
+  ParamsHandler,
   ValidationFunction,
   ValidationResult,
 } from '../types/validation.js';
@@ -234,7 +234,7 @@ export function extractData(
   args: unknown[],
   options: Record<string, unknown>,
   _params: Record<string, string>,
-  paramsDefinition: ParamsDefinition
+  paramsDefinition: ParamsHandler
 ): Record<string, unknown> {
   const data: Record<string, unknown> = {};
 
@@ -269,7 +269,7 @@ export function extractData(
  * バリデーション関数を作成（スキーマタイプ自動判別対応）
  */
 export function createValidationFunction(
-  paramsDefinition: ParamsDefinition
+  paramsDefinition: ParamsHandler
 ): ValidationFunction {
   return async (args, options, params) => {
     try {

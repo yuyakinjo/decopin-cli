@@ -1,5 +1,5 @@
 import * as v from 'valibot';
-import type { ParamsDefinition } from '../../../dist/types/index.js';
+import type { ParamsHandler } from '../../../dist/types/index.js';
 
 // カスタムエラー用のスキーマ
 const CustomErrorTestSchema = v.object({
@@ -8,7 +8,7 @@ const CustomErrorTestSchema = v.object({
 
 export type CustomErrorTestData = v.InferInput<typeof CustomErrorTestSchema>;
 
-export default function createParams(): ParamsDefinition {
+export default function createParams(): ParamsHandler {
   return {
     schema: CustomErrorTestSchema,
     mappings: [

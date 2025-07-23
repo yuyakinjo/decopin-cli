@@ -1,6 +1,6 @@
-import type { CommandHelpMetadata } from '../../../dist/types/index.js';
+import type { HelpHandler } from '../../../dist/types/index.js';
 
-export default function createHelp(): CommandHelpMetadata {
+export default function createHelp(): HelpHandler {
   return {
     name: 'create',
     description: 'Create a new user in the system',

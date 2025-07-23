@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import * as v from 'valibot';
 import { extractData, createValidationFunction, isValibotSchema } from '../../src/utils/validation.js';
-import type { ParamsDefinition } from '../../src/types/validation.js';
+import type { ParamsHandler } from '../../src/types/validation.js';
 
 describe('validation utils', () => {
   describe('extractData', () => {
-    const paramsDefinition: ParamsDefinition = {
+    const paramsDefinition: ParamsHandler = {
       schema: v.object({
         name: v.string(),
         age: v.number()
@@ -88,7 +88,7 @@ describe('validation utils', () => {
   });
 
   describe('createValidationFunction', () => {
-    const paramsDefinition: ParamsDefinition = {
+    const paramsDefinition: ParamsHandler = {
       schema: v.object({
         name: v.pipe(v.string(), v.minLength(1)),
         email: v.pipe(v.string(), v.email())
@@ -130,7 +130,7 @@ describe('validation utils', () => {
     });
 
     it('should handle validation with default values', async () => {
-      const paramsWithDefaults: ParamsDefinition = {
+      const paramsWithDefaults: ParamsHandler = {
         schema: v.object({
           name: v.pipe(v.string(), v.minLength(1)),
           count: v.optional(v.number(), 1)

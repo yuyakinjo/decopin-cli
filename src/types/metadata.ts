@@ -17,7 +17,7 @@ export interface CommandMetadata {
 /**
  * ヘルプメタデータ
  */
-export interface CommandHelpMetadata {
+export interface HelpHandler {
   /** コマンド名 */
   name: string;
   /** コマンドの説明 */

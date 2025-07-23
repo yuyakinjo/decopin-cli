@@ -84,7 +84,7 @@ export interface ManualSchema {
 /**
  * パラメータ定義（valibotスキーマとオブジェクトベースの両方をサポート）
  */
-export interface ParamsDefinition {
+export interface ParamsHandler {
   /** valibotスキーマまたはオブジェクトベースのスキーマ */
   schema: v.GenericSchema | ManualSchema;
   /** パラメータマッピング */
@@ -99,7 +99,7 @@ export type ErrorHandler = (error: ValidationError) => Promise<void> | void;
 /**
  * パラメータ定義関数の型
  */
-export type ParamsDefinitionFunction = () => ParamsDefinition;
+export type ParamsDefinitionFunction = () => ParamsHandler;
 
 /**
  * 環境変数スキーマのタイプ定数

@@ -1,5 +1,5 @@
 import * as v from 'valibot';
-import type { ParamsDefinition } from '../../../dist/types/index.js';
+import type { ParamsHandler } from '../../../dist/types/index.js';
 
 // ユーザー作成データのスキーマ
 const CreateUserSchema = v.object({
@@ -9,7 +9,7 @@ const CreateUserSchema = v.object({
 
 export type CreateUserData = v.InferInput<typeof CreateUserSchema>;
 
-export default function createParams(): ParamsDefinition {
+export default function createParams(): ParamsHandler {
   return {
     schema: CreateUserSchema,
     mappings: [

@@ -49,7 +49,7 @@ Commands follow a simple async function pattern where validation and business lo
 
 ```typescript
 // params.ts - Validation and type definitions
-export default function createParams(): ParamsDefinition {
+export default function createParams(): ParamsHandler {
   return {
     schema: ValibotSchema,        // Runtime validation
     mappings: [...]              // CLI argument mapping

@@ -1,6 +1,6 @@
-import type { ParamsDefinition } from '../../../src/types/validation.js';
+import type { ParamsHandler } from '../../../src/types/validation.js';
 
-export default function createParams(): ParamsDefinition {
+export default function createParams(): ParamsHandler {
   return {
     schema: {
       name: {
