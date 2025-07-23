@@ -14,12 +14,12 @@ const CLI_PATH = join(dirname(__dirname), 'examples/cli.js');
 // Helper to measure execution time
 function measureCommand(command, description) {
   const measurements = [];
-  
+
   // Run multiple times to get average
   for (let i = 0; i < 5; i++) {
     const start = performance.now();
     try {
-      execSync(`node ${CLI_PATH} ${command}`, { 
+      execSync(`bun run ${CLI_PATH} ${command}`, {
         stdio: 'pipe',
         env: { ...process.env, NODE_ENV: 'production' }
       });
@@ -29,12 +29,12 @@ function measureCommand(command, description) {
     const end = performance.now();
     measurements.push(end - start);
   }
-  
+
   // Remove outliers (first run might be slower)
   measurements.sort((a, b) => a - b);
   const trimmed = measurements.slice(1, -1);
   const avg = trimmed.reduce((a, b) => a + b, 0) / trimmed.length;
-  
+
   return {
     description,
     command,
@@ -55,7 +55,7 @@ const scenarios = [
 ];
 
 // Run benchmarks
-const results = scenarios.map(scenario => 
+const results = scenarios.map(scenario =>
   measureCommand(scenario.command, scenario.description)
 );
 
@@ -71,7 +71,7 @@ const markdown = `# Performance Benchmark Report
 
 Generated on: ${new Date().toISOString()}
 Platform: ${process.platform} ${process.arch}
-Node.js: ${process.version}
+Runtime: Bun ${process.versions.bun || 'unknown'}
 
 ## Summary
 
@@ -105,7 +105,7 @@ ${results.map(r => `| ${r.description} | ${r.average.toFixed(2)} | ${r.min.toFix
 
 \`\`\`json
 {
-  "node": "${process.version}",
+  "runtime": "Bun ${process.versions.bun || 'unknown'}",
   "platform": "${process.platform}",
   "arch": "${process.arch}",
   "cpus": ${os.cpus().length},
