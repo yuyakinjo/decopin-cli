@@ -2,6 +2,14 @@ import { readFile, stat } from 'node:fs/promises';
 import { join } from 'node:path';
 import * as ts from 'typescript';
 import {
+  isDefaultExport,
+  isExportedNode,
+  isObjectLiteralNode,
+  isReturnStatementNode,
+  isStringLiteralNode,
+} from '../internal/guards/ast.js';
+import { isString } from '../internal/guards/index.js';
+import {
   findVariableDeclaration,
   isExportDefaultAssignment,
   isExportedVariableStatement,
@@ -61,7 +69,7 @@ function extractVersionInfo(sourceFile: ts.SourceFile): VersionInfo | null {
       const versionDeclaration = findVariableDeclaration(node, 'version');
       if (
         versionDeclaration?.initializer &&
-        ts.isStringLiteral(versionDeclaration.initializer)
+        isStringLiteralNode(versionDeclaration.initializer)
       ) {
         version = versionDeclaration.initializer.text;
       }
@@ -69,7 +77,7 @@ function extractVersionInfo(sourceFile: ts.SourceFile): VersionInfo | null {
       const metadataDeclaration = findVariableDeclaration(node, 'metadata');
       if (
         metadataDeclaration?.initializer &&
-        ts.isObjectLiteralExpression(metadataDeclaration.initializer)
+        isObjectLiteralNode(metadataDeclaration.initializer)
       ) {
         metadata = parseObjectLiteral(
           metadataDeclaration.initializer
@@ -80,7 +88,7 @@ function extractVersionInfo(sourceFile: ts.SourceFile): VersionInfo | null {
     // export default "1.0.0" の形式（後方互換性）
     if (
       isExportDefaultAssignment(node) &&
-      ts.isStringLiteral(node.expression) &&
+      isStringLiteralNode(node.expression) &&
       !version
     ) {
       version = node.expression.text;
@@ -88,12 +96,7 @@ function extractVersionInfo(sourceFile: ts.SourceFile): VersionInfo | null {
 
     // export default function createVersion() { return { ... } } の形式
     if (ts.isFunctionDeclaration(node)) {
-      const modifiers = ts.canHaveModifiers(node)
-        ? ts.getModifiers(node)
-        : undefined;
-      const isExportDefault =
-        modifiers?.some((m) => m.kind === ts.SyntaxKind.ExportKeyword) &&
-        modifiers?.some((m) => m.kind === ts.SyntaxKind.DefaultKeyword);
+      const isExportDefault = isExportedNode(node) && isDefaultExport(node);
 
       if (isExportDefault && node.name?.text === 'createVersion' && node.body) {
         // 関数本体内のreturn文を探す
@@ -102,9 +105,9 @@ function extractVersionInfo(sourceFile: ts.SourceFile): VersionInfo | null {
         ): ts.ObjectLiteralExpression | undefined {
           for (const statement of block.statements) {
             if (
-              ts.isReturnStatement(statement) &&
+              isReturnStatementNode(statement) &&
               statement.expression &&
-              ts.isObjectLiteralExpression(statement.expression)
+              isObjectLiteralNode(statement.expression)
             ) {
               return statement.expression;
             }
@@ -115,7 +118,7 @@ function extractVersionInfo(sourceFile: ts.SourceFile): VersionInfo | null {
         const returnObject = findReturnStatement(node.body);
         if (returnObject) {
           const versionData = parseObjectLiteral(returnObject);
-          if (versionData.version && typeof versionData.version === 'string') {
+          if (versionData.version && isString(versionData.version)) {
             version = versionData.version;
             metadata = versionData.metadata as VersionInfo['metadata'];
           }

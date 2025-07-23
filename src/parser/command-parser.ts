@@ -1,4 +1,14 @@
 import * as ts from 'typescript';
+import {
+  isArrowFunctionNode,
+  isCallExpressionNode,
+  isDefaultExport,
+  isExportedNode,
+  isFunctionNode,
+  isIdentifierNode,
+  isObjectLiteralNode,
+  isPropertyAssignmentNode,
+} from '../internal/guards/ast.js';
 import type { CommandDefinition } from '../types/command.js';
 
 /**
@@ -16,7 +26,7 @@ export function extractCommandDefinition(
   function visit(node: ts.Node) {
     // export default { ... } の形式を探す
     if (ts.isExportAssignment(node) && !node.isExportEquals) {
-      if (ts.isObjectLiteralExpression(node.expression)) {
+      if (isObjectLiteralNode(node.expression)) {
         commandDefinition = parseObjectLiteralAsCommandDefinition(
           node.expression
         );
@@ -24,8 +34,8 @@ export function extractCommandDefinition(
       }
       // export default function() { ... } の形式（関数形式のcommandHandler）
       else if (
-        ts.isFunctionExpression(node.expression) ||
-        ts.isArrowFunction(node.expression)
+        isFunctionNode(node.expression) ||
+        isArrowFunctionNode(node.expression)
       ) {
         commandDefinition = {
           handler: async () => {}, // 実際の関数は動的にインポートで取得
@@ -40,7 +50,7 @@ export function extractCommandDefinition(
         hasHandler = true;
       }
       // export default identifier の形式（変数を参照）
-      else if (ts.isIdentifier(node.expression)) {
+      else if (isIdentifierNode(node.expression)) {
         const variableName = node.expression.text;
         const variableDefinition = variableDefinitions.get(variableName);
         if (variableDefinition) {
@@ -49,7 +59,7 @@ export function extractCommandDefinition(
         }
       }
       // export default 関数呼び出し（関数形式のcommandHandler）
-      else if (ts.isCallExpression(node.expression)) {
+      else if (isCallExpressionNode(node.expression)) {
         commandDefinition = {
           handler: async () => {}, // 実際の関数は動的にインポートで取得
         };
@@ -59,16 +69,7 @@ export function extractCommandDefinition(
 
     // export default function name() { ... } の形式（関数宣言）
     if (ts.isFunctionDeclaration(node)) {
-      const modifiers = ts.canHaveModifiers(node)
-        ? ts.getModifiers(node)
-        : undefined;
-      const hasExport = modifiers?.some(
-        (m) => m.kind === ts.SyntaxKind.ExportKeyword
-      );
-      const hasDefault = modifiers?.some(
-        (m) => m.kind === ts.SyntaxKind.DefaultKeyword
-      );
-      if (hasExport && hasDefault) {
+      if (isExportedNode(node) && isDefaultExport(node)) {
         commandDefinition = {
           handler: async () => {}, // 実際の関数は動的にインポートで取得
         };
@@ -81,9 +82,9 @@ export function extractCommandDefinition(
       for (const declaration of node.declarationList.declarations) {
         if (
           ts.isVariableDeclaration(declaration) &&
-          ts.isIdentifier(declaration.name) &&
+          isIdentifierNode(declaration.name) &&
           declaration.initializer &&
-          ts.isObjectLiteralExpression(declaration.initializer)
+          isObjectLiteralNode(declaration.initializer)
         ) {
           const variableName = declaration.name.text;
           const definition = parseObjectLiteralAsCommandDefinition(
@@ -115,7 +116,7 @@ function parseObjectLiteralAsCommandDefinition(
   const definition: Partial<CommandDefinition> = {};
 
   for (const property of objectLiteral.properties) {
-    if (ts.isPropertyAssignment(property) && ts.isIdentifier(property.name)) {
+    if (isPropertyAssignmentNode(property) && isIdentifierNode(property.name)) {
       const key = property.name.text;
 
       switch (key) {

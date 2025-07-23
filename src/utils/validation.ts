@@ -1,4 +1,5 @@
 import * as v from 'valibot';
+import { isBoolean, isFunction, isString } from '../internal/guards/index.js';
 import type {
   EnvFieldSchema,
   EnvSchema,
@@ -22,10 +23,10 @@ export function isValibotSchema(schema: unknown): schema is v.GenericSchema {
 
   // valibotスキーマの特徴的なプロパティをチェック
   return (
-    typeof obj.kind === 'string' &&
-    typeof obj.type === 'string' &&
-    typeof obj.async === 'boolean' &&
-    typeof obj['~run'] === 'function'
+    isString(obj.kind) &&
+    isString(obj.type) &&
+    isBoolean(obj.async) &&
+    isFunction(obj['~run'])
   );
 }
 
@@ -49,7 +50,7 @@ export function isManualSchema(schema: unknown): schema is ManualSchema {
     (field) =>
       field &&
       typeof field === 'object' &&
-      typeof (field as ManualFieldSchema).type === 'string' &&
+      isString((field as ManualFieldSchema).type) &&
       ['string', 'number', 'boolean'].includes(
         (field as ManualFieldSchema).type
       )
@@ -77,8 +78,8 @@ function transformValue(
       return Number.isNaN(num) ? value : num;
     }
     case 'boolean':
-      if (typeof value === 'boolean') return value;
-      if (typeof value === 'string') {
+      if (isBoolean(value)) return value;
+      if (isString(value)) {
         return value.toLowerCase() === 'true' || value === '1';
       }
       return Boolean(value);

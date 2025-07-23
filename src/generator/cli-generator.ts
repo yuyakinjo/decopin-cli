@@ -1,4 +1,4 @@
-import { copyFile, writeFile } from 'node:fs/promises';
+import { copyFile, mkdir, readFile, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type { ParsedASTResult, ParsedEnvResult } from '../parser/ast-parser.js';
@@ -58,18 +58,41 @@ export async function generateCLI(
   // validation.jsをコピー
   const __filename = fileURLToPath(import.meta.url);
   const __dirname = dirname(__filename);
-  const validationSource = join(
-    dirname(dirname(__dirname)),
-    'dist',
-    'utils',
-    'validation.js'
-  );
+  const distDir = dirname(dirname(__dirname));
+
+  const validationSource = join(distDir, 'dist', 'utils', 'validation.js');
   const validationDest = join(config.outputDir, 'validation.js');
   try {
-    await copyFile(validationSource, validationDest);
+    // ファイルを読み込み、importパスを修正
+    let content = await readFile(validationSource, 'utf-8');
+    content = content.replace(
+      "import { isBoolean, isFunction, isString } from '../internal/guards/index.js';",
+      "import { isBoolean, isFunction, isString } from './internal/guards/index.js';"
+    );
+    await writeFile(validationDest, content, 'utf-8');
     files.push(validationDest);
   } catch (error) {
     console.warn('Warning: Could not copy validation.js:', error);
+  }
+
+  // internal/guardsディレクトリをコピー
+  const guardsSourceDir = join(distDir, 'dist', 'internal', 'guards');
+  const guardsDestDir = join(config.outputDir, 'internal', 'guards');
+  try {
+    // ディレクトリを作成
+    await mkdir(join(config.outputDir, 'internal'), { recursive: true });
+    await mkdir(guardsDestDir, { recursive: true });
+
+    // guards内のファイルをコピー
+    const guardFiles = ['index.js', 'ast.js', 'string.js', 'validation.js'];
+    for (const file of guardFiles) {
+      const source = join(guardsSourceDir, file);
+      const dest = join(guardsDestDir, file);
+      await copyFile(source, dest);
+      files.push(dest);
+    }
+  } catch (error) {
+    console.warn('Warning: Could not copy internal/guards directory:', error);
   }
 
   // メインCLIファイルを生成

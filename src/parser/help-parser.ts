@@ -1,6 +1,14 @@
 import { readFile } from 'node:fs/promises';
 import * as ts from 'typescript';
 import * as v from 'valibot';
+import {
+  isDefaultExport,
+  isExportedNode,
+  isIdentifierNode,
+  isObjectLiteralNode,
+  isReturnStatementNode,
+} from '../internal/guards/ast.js';
+import { isString } from '../internal/guards/index.js';
 import type { CommandHelpMetadata } from '../types/command.js';
 import { parseObjectLiteral } from '../utils/ast-utils.js';
 
@@ -25,21 +33,14 @@ export async function parseHelpFile(
     function visit(node: ts.Node) {
       // export const help = { ... } の形式を探す
       if (ts.isVariableStatement(node)) {
-        const modifiers = ts.canHaveModifiers(node)
-          ? ts.getModifiers(node)
-          : undefined;
-        const isExported = modifiers?.some(
-          (m) => m.kind === ts.SyntaxKind.ExportKeyword
-        );
-
-        if (isExported) {
+        if (isExportedNode(node)) {
           for (const declaration of node.declarationList.declarations) {
             if (
               ts.isVariableDeclaration(declaration) &&
-              ts.isIdentifier(declaration.name) &&
+              isIdentifierNode(declaration.name) &&
               declaration.name.text === 'help' &&
               declaration.initializer &&
-              ts.isObjectLiteralExpression(declaration.initializer)
+              isObjectLiteralNode(declaration.initializer)
             ) {
               helpMetadata = parseHelpMetadata(declaration.initializer);
             }
@@ -49,12 +50,7 @@ export async function parseHelpFile(
 
       // export default function createHelp() { return { ... } } の形式を探す
       if (ts.isFunctionDeclaration(node)) {
-        const modifiers = ts.canHaveModifiers(node)
-          ? ts.getModifiers(node)
-          : undefined;
-        const isExportDefault =
-          modifiers?.some((m) => m.kind === ts.SyntaxKind.ExportKeyword) &&
-          modifiers?.some((m) => m.kind === ts.SyntaxKind.DefaultKeyword);
+        const isExportDefault = isExportedNode(node) && isDefaultExport(node);
 
         if (isExportDefault && node.name?.text === 'createHelp' && node.body) {
           // 関数本体内のreturn文を探す
@@ -63,9 +59,9 @@ export async function parseHelpFile(
           ): ts.ObjectLiteralExpression | undefined {
             for (const statement of block.statements) {
               if (
-                ts.isReturnStatement(statement) &&
+                isReturnStatementNode(statement) &&
                 statement.expression &&
-                ts.isObjectLiteralExpression(statement.expression)
+                isObjectLiteralNode(statement.expression)
               ) {
                 return statement.expression;
               }
@@ -105,17 +101,13 @@ const HelpMetadataSchema = v.object({
   examples: v.optional(
     v.pipe(
       v.array(v.unknown()),
-      v.transform((arr) =>
-        arr.filter((item): item is string => typeof item === 'string')
-      )
+      v.transform((arr) => arr.filter((item): item is string => isString(item)))
     )
   ),
   aliases: v.optional(
     v.pipe(
       v.array(v.unknown()),
-      v.transform((arr) =>
-        arr.filter((item): item is string => typeof item === 'string')
-      )
+      v.transform((arr) => arr.filter((item): item is string => isString(item)))
     )
   ),
   additionalHelp: v.optional(v.string()),
