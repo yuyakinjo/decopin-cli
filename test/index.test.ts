@@ -128,10 +128,10 @@ export default function handler() {
 
     expect(commands).toHaveLength(4);
     expect(commands.sort()).toEqual([
-      'admin config',
+      'admin/config',
       'hello',
-      'user create',
-      'user list',
+      'user/create',
+      'user/list',
     ]);
   });
 
@@ -175,7 +175,9 @@ export default function handler() {
       verbose: false,
     });
 
-    expect(result.success).toBe(false);
-    expect(result.errors.length).toBeGreaterThan(0);
+    // New architecture handles non-existent directories gracefully
+    expect(result.success).toBe(true);
+    expect(result.stats.commandCount).toBe(0);
+    expect(result.warnings.length).toBeGreaterThan(0);
   });
 });

@@ -1,80 +1,78 @@
-import { mkdir } from 'node:fs/promises';
-import {
-  combineAppData,
-  type GeneratorConfig,
-  generateCLI,
-} from './generator/cli-generator.js';
-import { parseMultipleCommandFiles } from './parser/ast-parser.js';
-import { scanAppDirectory } from './scanner/directory-scanner.js';
+/**
+ * decopin-cli - TypeScript-first CLI builder with lazy loading architecture
+ * 
+ * This new architecture uses lazy loading to minimize startup time
+ * and memory usage by only loading modules when they are actually needed.
+ */
+
+import { mkdir, writeFile, chmod } from 'node:fs/promises';
+import { join } from 'node:path';
+import { Scanner } from './core/scanner.js';
+import { PerformanceMonitor } from './core/performance.js';
+// Core types imported but renamed to avoid conflicts
+
+// Lazy-loaded modules
+// TODO: Replace with `import defer` when TypeScript 5.9 fully supports it
+// import defer * as commandModule from './command/index.js';
+let commandModule: typeof import('./command/index.js') | null = null;
+
+async function getCommandModule() {
+  if (!commandModule) {
+    commandModule = await import('./command/index.js');
+  }
+  return commandModule;
+}
 
 /**
- * ビルド設定
+ * Build configuration with defaults
  */
 export interface BuildConfig {
-  /** appディレクトリのパス */
   appDir: string;
-  /** 出力ディレクトリ */
   outputDir: string;
-  /** CLI名 */
-  cliName: string;
-  /** 出力ファイル名（デフォルト: 'cli.js'） */
+  cliName?: string;
   outputFileName?: string;
-  /** バージョン */
   version?: string;
-  /** 説明 */
   description?: string;
-  /** 詳細ログを出力するか */
   verbose?: boolean;
 }
 
 /**
- * ビルド結果
+ * Build result
  */
 export interface BuildResult {
-  /** 成功かどうか */
   success: boolean;
-  /** 生成されたファイル一覧 */
   files: string[];
-  /** エラーメッセージ */
   errors: string[];
-  /** 警告メッセージ */
   warnings: string[];
-  /** 統計情報 */
   stats: {
-    /** 発見されたコマンド数 */
     commandCount: number;
-    /** 処理時間（ミリ秒） */
     buildTime: number;
   };
 }
 
 /**
- * CLIをビルド
+ * Build a CLI from the app directory
+ * Only loads the modules that are actually needed based on the files found
  */
 export async function buildCLI(config: BuildConfig): Promise<BuildResult> {
   const startTime = Date.now();
   const errors: string[] = [];
   const warnings: string[] = [];
-  let files: string[] = [];
+  const files: string[] = [];
+  
+  // Performance monitoring
+  const monitor = new PerformanceMonitor();
 
   try {
     if (config.verbose) {
       console.log(`🔍 Scanning app directory: ${config.appDir}`);
     }
 
-    // 1. ディレクトリをスキャン
-    const appStructure = await scanAppDirectory(config.appDir);
-
-    if (config.verbose) {
-      console.log(`📁 Found ${appStructure.commands.length} command files`);
-      if (appStructure.envFilePath) {
-        console.log(
-          `🌍 Found environment variables file: ${appStructure.envFilePath}`
-        );
-      }
-    }
-
-    if (appStructure.commands.length === 0) {
+    // Scan directory structure
+    const scanner = new Scanner(config.appDir);
+    const structure = await scanner.scan();
+    
+    if (structure.commands.length === 0) {
       warnings.push('No command files found in app directory');
       return {
         success: true,
@@ -88,62 +86,82 @@ export async function buildCLI(config: BuildConfig): Promise<BuildResult> {
       };
     }
 
-    // 2. AST解析
     if (config.verbose) {
-      console.log('🔧 Parsing command files...');
+      console.log(`📁 Found ${structure.commands.length} command files`);
     }
 
-    const filePaths = appStructure.commands.map((s) => s.commandFilePath);
-    const astResults = await parseMultipleCommandFiles(filePaths);
-
-    // エラーと警告を収集
-    for (const [filePath, result] of astResults) {
-      if (result.errors.length > 0) {
-        errors.push(`Errors in ${filePath}: ${result.errors.join(', ')}`);
-      }
-      if (result.warnings.length > 0) {
-        warnings.push(`Warnings in ${filePath}: ${result.warnings.join(', ')}`);
-      }
-    }
-
-    // 3. アプリケーションデータを結合（コマンド + 環境変数）
-    const { commands, envResult } = await combineAppData(
-      appStructure,
-      astResults
-    );
-
-    if (config.verbose) {
-      console.log(`✅ Successfully parsed ${commands.length} commands`);
-    }
-
-    // 4. 出力ディレクトリを作成
+    // Create output directory
     await mkdir(config.outputDir, { recursive: true });
 
-    // 5. CLI生成
-    if (config.verbose) {
-      console.log('🚀 Generating CLI...');
-    }
-
-    const generatorConfig: GeneratorConfig = {
-      outputDir: config.outputDir,
-      cliName: config.cliName,
-      appDir: config.appDir,
-      ...(config.outputFileName && { outputFileName: config.outputFileName }),
-      ...(config.version && { version: config.version }),
-      ...(config.description && { description: config.description }),
-    };
-
-    const generated = await generateCLI(generatorConfig, commands, envResult);
-    files = generated.files;
-
-    if (config.verbose) {
-      console.log(`📦 Generated files:`);
-      for (const file of files) {
-        console.log(`  - ${file}`);
+    // Parse and process commands (lazy-loaded)
+    let cliContent = '';
+    
+    if (structure.commands.length > 0) {
+      const cmdModule = await monitor.measureModuleLoad('command', getCommandModule);
+      
+      // Update command definitions with params/help/error info
+      const commands = await cmdModule.parseCommands(structure.commands);
+      
+      // Extract aliases from help files at build time
+      const { readFileSync } = await import('node:fs');
+      const ts = await import('typescript');
+      
+      for (const cmd of commands) {
+        const commandPath = cmd.name === 'root' ? '' : cmd.name;
+        cmd.hasParams = structure.params.some(p => p.commandPath === commandPath);
+        cmd.hasHelp = structure.help.some(h => h.commandPath === commandPath);
+        cmd.hasError = structure.errors.some(e => e.commandPath === commandPath);
+        
+        // Try to get aliases from help file by parsing TypeScript
+        const helpFile = structure.help.find(h => h.commandPath === commandPath);
+        if (helpFile) {
+          try {
+            const content = readFileSync(helpFile.path, 'utf-8');
+            const sourceFile = ts.createSourceFile(
+              helpFile.path,
+              content,
+              ts.ScriptTarget.Latest,
+              true
+            );
+            
+            // Find aliases in the help handler object
+            const aliases = extractAliasesFromHelpFile(sourceFile, ts);
+            if (config.verbose) {
+              console.log(`  Checking aliases for ${cmd.name}: ${aliases ? aliases.join(', ') : 'none'}`);
+            }
+            if (aliases && aliases.length > 0) {
+              if (!cmd.metadata) cmd.metadata = {};
+              cmd.metadata.aliases = aliases;
+            }
+          } catch (error) {
+            // Failed to parse help file, continue without aliases
+            if (config.verbose) {
+              console.log(`  Failed to parse help file for ${cmd.name}:`, error);
+            }
+          }
+        }
       }
+
+      const generated = await cmdModule.generateCommands(commands, structure);
+      cliContent = typeof generated === 'string' ? generated : (generated as any).content;
     }
 
-    const buildTime = Date.now() - startTime;
+    // Copy validation utilities if needed
+    await copyValidationUtils(config.outputDir);
+
+    // Write CLI file
+    const outputFileName = config.outputFileName || 'cli.js';
+    const outputPath = join(config.outputDir, outputFileName);
+    await writeFile(outputPath, cliContent, 'utf-8');
+    await chmod(outputPath, 0o755); // Make executable
+    files.push(outputPath);
+
+    if (config.verbose) {
+      console.log(`✅ Generated ${outputPath}`);
+      monitor.printSummary();
+    }
+
+    monitor.recordStartupComplete();
 
     return {
       success: true,
@@ -151,8 +169,8 @@ export async function buildCLI(config: BuildConfig): Promise<BuildResult> {
       errors,
       warnings,
       stats: {
-        commandCount: commands.length,
-        buildTime,
+        commandCount: structure.commands.length,
+        buildTime: Date.now() - startTime,
       },
     };
   } catch (error) {
@@ -171,7 +189,7 @@ export async function buildCLI(config: BuildConfig): Promise<BuildResult> {
 }
 
 /**
- * デフォルト設定でビルド
+ * Build with default settings
  */
 export async function buildWithDefaults(
   appDir: string = './app',
@@ -187,14 +205,13 @@ export async function buildWithDefaults(
 }
 
 /**
- * 利用可能なコマンド一覧を取得
+ * List available commands
  */
-export async function listCommands(
-  appDir: string = './app'
-): Promise<string[]> {
+export async function listCommands(appDir: string = './app'): Promise<string[]> {
   try {
-    const appStructure = await scanAppDirectory(appDir);
-    return appStructure.commands.map((s) => s.path.replace(/\//g, ' '));
+    const scanner = new Scanner(appDir);
+    const structure = await scanner.scan();
+    return structure.commands.map(cmd => cmd.name === 'root' ? '(default)' : cmd.name);
   } catch (error) {
     console.error(`Failed to list commands: ${error}`);
     return [];
@@ -202,43 +219,102 @@ export async function listCommands(
 }
 
 /**
- * CLIビルダーの情報
+ * Builder info
  */
 export const builderInfo = {
   name: 'decopin-cli',
-  version: '0.1.0',
-  description:
-    'Next.js App Router風のファイルベースCLIビルダー（関数形式export対応）',
+  version: '0.2.0', // Updated for lazy-loading architecture
+  description: 'TypeScript-first CLI builder with lazy loading and file-based routing',
 };
 
+// Re-export types
+export type { 
+  CLIStructure,
+  CommandMetadata as CommandDefinition,
+  ParamMapping as ParamsDefinition 
+} from './core/types.js';
+
+// Export from existing types for compatibility
 export type {
-  GeneratedFiles,
-  GeneratorConfig,
-} from './generator/cli-generator.js';
-export type { ParsedASTResult } from './parser/ast-parser.js';
-// Version types
-export type { VersionInfo } from './parser/version-parser.js';
-export type {
-  AppStructure,
-  CommandStructure,
-  DirectoryEntry,
-} from './scanner/directory-scanner.js';
-// 統合型エクスポート
-export type {
-  BaseCommandContext,
   CommandContext,
-  CommandDefinition,
-  CommandDefinitionFactory,
   CommandHandler,
   CommandMetadata,
-  DynamicParam,
-  ErrorHandler,
-  HelpHandler,
-  ParamMapping,
-  ParamsDefinitionFunction,
-  ParamsHandler,
   ParsedCommand,
   ValidationError,
-  ValidationFunction,
   ValidationResult,
 } from './types/index.js';
+
+// Version types
+export type { VersionInfo } from './parser/version-parser.js';
+
+/**
+ * Extract aliases from help.ts file
+ */
+function extractAliasesFromHelpFile(sourceFile: any, ts: any): string[] | undefined {
+  const aliases: string[] = [];
+  
+  function visit(node: any) {
+    // Look for aliases property in the returned object
+    if (ts.isPropertyAssignment(node) && 
+        ts.isIdentifier(node.name) && 
+        node.name.text === 'aliases' &&
+        ts.isArrayLiteralExpression(node.initializer)) {
+      
+      node.initializer.elements.forEach((element: any) => {
+        if (ts.isStringLiteral(element)) {
+          aliases.push(element.text);
+        }
+      });
+    }
+    
+    ts.forEachChild(node, visit);
+  }
+  
+  visit(sourceFile);
+  return aliases.length > 0 ? aliases : undefined;
+}
+
+/**
+ * Copy validation utilities to output directory
+ */
+async function copyValidationUtils(outputDir: string): Promise<void> {
+  try {
+    const { copyFile, readFile } = await import('node:fs/promises');
+    const { dirname, join } = await import('node:path');
+    const { fileURLToPath } = await import('node:url');
+    
+    const __filename = fileURLToPath(import.meta.url);
+    const __dirname = dirname(__filename);
+    
+    // Check if we're in src or dist directory
+    const baseDir = __dirname.endsWith('/src') 
+      ? join(__dirname, '..', 'dist')
+      : __dirname;
+
+    // Copy validation.js
+    const validationSource = join(baseDir, 'utils', 'validation.js');
+    const validationDest = join(outputDir, 'validation.js');
+    
+    let content = await readFile(validationSource, 'utf-8');
+    content = content.replace(
+      "import { isBoolean, isFunction, isString } from '../internal/guards/index.js';",
+      "import { isBoolean, isFunction, isString } from './internal/guards/index.js';"
+    );
+    await writeFile(validationDest, content, 'utf-8');
+
+    // Copy internal/guards
+    const guardsSourceDir = join(baseDir, 'internal', 'guards');
+    const guardsDestDir = join(outputDir, 'internal', 'guards');
+    await mkdir(join(outputDir, 'internal'), { recursive: true });
+    await mkdir(guardsDestDir, { recursive: true });
+
+    const guardFiles = ['index.js', 'ast.js', 'string.js', 'validation.js'];
+    for (const file of guardFiles) {
+      const source = join(guardsSourceDir, file);
+      const dest = join(guardsDestDir, file);
+      await copyFile(source, dest);
+    }
+  } catch (error) {
+    console.warn('Warning: Could not copy validation utilities:', error);
+  }
+}

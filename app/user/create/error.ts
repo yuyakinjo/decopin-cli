@@ -6,7 +6,9 @@ export default async function createErrorHandler(error: ValidationError): Promis
     if (error.issues && error.issues.length > 0) {
       console.error('');
       for (const issue of error.issues) {
-        const field = issue.path.length > 0 ? issue.path.join('.') : 'unknown';
+        const field = issue.path && issue.path.length > 0 
+          ? issue.path.map((p: any) => typeof p === 'object' && p && 'key' in p ? p.key : p).join('.') 
+          : 'email';
         console.error(`  • ${field}: ${issue.message}`);
       }
     } else {

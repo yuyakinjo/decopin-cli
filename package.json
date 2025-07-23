@@ -1,7 +1,7 @@
 {
   "name": "decopin-cli",
-  "version": "0.2.1",
-  "description": "Next.js App Router風のファイルベースCLIビルダー",
+  "version": "0.3.0",
+  "description": "TypeScript-first CLI builder with lazy loading architecture",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -47,7 +47,7 @@
     "@biomejs/biome": "^2.1.2",
     "@types/node": "^24.1.0",
     "simple-git": "^3.28.0",
-    "typescript": "^5.8.3"
+    "typescript": "^5.9.0-beta"
   },
   "repository": {
     "type": "git",
