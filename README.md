@@ -545,6 +545,90 @@ export default async function createCommand(context: CommandContext<UserData>) {
 }
 ```
 
+## 🚧 Roadmap & TODO
+
+### Planned Features
+
+#### 🌍 Environment Variable Integration
+- **Auto environment mapping**: Automatically map options to environment variables
+- **Fallback chain**: CLI options → Environment variables → Default values
+- **Custom env prefixes**: Support for `MY_CLI_` prefixed environment variables
+
+```typescript
+// Planned API
+export default function createParams(): ParamsDefinition {
+  return {
+    schema: {
+      apiKey: {
+        type: 'string',
+        required: true,
+        env: 'API_KEY',  // Maps to process.env.API_KEY
+        envPrefix: 'MY_CLI_',  // Maps to MY_CLI_API_KEY
+      },
+    },
+    mappings: [...],
+  };
+}
+```
+
+#### 🔄 Lifecycle Hooks
+- **Pre/Post action hooks**: Execute logic before and after command execution
+- **Global and command-specific hooks**: Support both CLI-wide and per-command hooks
+- **Error handling hooks**: Custom error processing hooks
+
+```typescript
+// Planned API
+// app/hooks.ts - Global hooks
+export const hooks = {
+  preAction: async (context) => {
+    console.log(`About to execute: ${context.command.name}`);
+  },
+  postAction: async (context, result) => {
+    console.log(`Completed: ${context.command.name}`);
+  },
+};
+
+// app/user/create/hooks.ts - Command-specific hooks
+export default {
+  preAction: async (context) => {
+    // Validate user permissions before creating
+  },
+};
+```
+
+#### 🏁 Shell Autocompletion
+- **Multi-shell support**: Generate completion scripts for bash, zsh, fish, PowerShell
+- **Dynamic completion**: Context-aware completion based on current command state
+- **Custom completion functions**: User-defined completion logic
+
+```bash
+# Planned CLI options
+decopin-cli build --completion=bash > my-cli-completion.bash
+decopin-cli build --completion=zsh > _my-cli
+decopin-cli build --completion=fish > my-cli.fish
+
+# Auto-install completions
+decopin-cli build --install-completion=bash
+```
+
+#### 🔧 Advanced Option Features
+- **Option choices**: Restrict option values to predefined sets
+- **Option conflicts/implies**: Define option dependencies and conflicts
+- **Variadic options**: Support for multiple values per option
+- **Option groups**: Group related options in help output
+
+### Implementation Priority
+1. **Environment Variable Integration** - High priority, commonly requested
+2. **Shell Autocompletion** - High priority, essential for production CLIs
+3. **Lifecycle Hooks** - Medium priority, useful for complex workflows
+4. **Advanced Option Features** - Lower priority, nice-to-have features
+
+### Contributing
+We welcome contributions! If you'd like to work on any of these features, please:
+1. Open an issue to discuss the implementation approach
+2. Check existing issues to avoid duplicate work
+3. Follow our coding standards and testing practices
+
 ## 📝 License
 
 MIT License - see [LICENSE](LICENSE) for details.
