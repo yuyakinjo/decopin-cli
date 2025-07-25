@@ -341,9 +341,9 @@ Name and email address are required. Age is optional with a default value of 25.
 Defines CLI version information and metadata (place in root `app/version.ts`).
 
 ```typescript
-import type { VersionInfo } from '../dist/index.js';
+import type { VersionHandler } from '../dist/index.js';
 
-export default function createVersion(): VersionInfo {
+export default function createVersion(): VersionHandler {
   return {
     version: "1.2.0",
     metadata: {
