@@ -341,26 +341,32 @@ Name and email address are required. Age is optional with a default value of 25.
 Defines CLI version information and metadata (place in root `app/version.ts`).
 
 ```typescript
-export const version = "1.2.0";
+import type { VersionInfo } from '../dist/index.js';
 
-export const metadata = {
-  name: "my-awesome-cli",
-  version: "1.2.0",
-  description: "My awesome CLI tool",
-  author: "Developer Name <dev@example.com>",
-  homepage: "https://github.com/username/my-cli",
-  license: "MIT"
-};
-
-export default version;
+export default function createVersion(): VersionInfo {
+  return {
+    version: "1.2.0",
+    metadata: {
+      name: "my-awesome-cli",
+      version: "1.2.0",
+      description: "My awesome CLI tool",
+      author: "Developer Name <dev@example.com>",
+      homepage: "https://github.com/username/my-cli",
+      license: "MIT"
+    }
+  };
+}
 ```
 
 **Configuration Items:**
 - **version**: Version string
 - **metadata**: CLI-wide metadata
-- **name**: CLI name
-- **description**: CLI description
-- **author**: Author information
+  - **name**: CLI name
+  - **version**: CLI version
+  - **description**: CLI description
+  - **author**: Author information
+  - **homepage**: Project homepage (optional)
+  - **license**: License information (optional)
 
 ### File Combination Patterns
 
@@ -407,23 +413,6 @@ my-cli user create --name "John Doe" --email "john@example.com"
 ```bash
 my-cli user create "Jane" --email "jane@example.com"
 # name will be "Jane" (from position 0), not from --name option
-```
-
-## 🔧 Version Configuration
-
-Create `app/version.ts` to configure CLI metadata:
-
-```typescript
-export const version = "1.0.0"
-
-export const metadata = {
-  name: "my-cli",
-  version: "1.0.0",
-  description: "My awesome CLI tool",
-  author: "Your Name"
-}
-
-export default version
 ```
 
 ## 🔄 Development
