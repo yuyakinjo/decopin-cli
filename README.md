@@ -539,28 +539,6 @@ export default async function createCommand(context: CommandContext<UserData>) {
 
 ### Planned Features
 
-#### 🌍 Environment Variable Integration
-- **Auto environment mapping**: Automatically map options to environment variables
-- **Fallback chain**: CLI options → Environment variables → Default values
-- **Custom env prefixes**: Support for `MY_CLI_` prefixed environment variables
-
-```typescript
-// Planned API
-export default function createParams(): ParamsHandler {
-  return {
-    schema: {
-      apiKey: {
-        type: 'string',
-        required: true,
-        env: 'API_KEY',  // Maps to process.env.API_KEY
-        envPrefix: 'MY_CLI_',  // Maps to MY_CLI_API_KEY
-      },
-    },
-    mappings: [...],
-  };
-}
-```
-
 #### 🔄 Lifecycle Hooks
 - **Pre/Post action hooks**: Execute logic before and after command execution
 - **Global and command-specific hooks**: Support both CLI-wide and per-command hooks
@@ -608,10 +586,9 @@ decopin-cli build --install-completion=bash
 - **Option groups**: Group related options in help output
 
 ### Implementation Priority
-1. **Environment Variable Integration** - High priority, commonly requested
-2. **Shell Autocompletion** - High priority, essential for production CLIs
-3. **Lifecycle Hooks** - Medium priority, useful for complex workflows
-4. **Advanced Option Features** - Lower priority, nice-to-have features
+1. **Shell Autocompletion** - High priority, essential for production CLIs
+2. **Lifecycle Hooks** - Medium priority, useful for complex workflows
+3. **Advanced Option Features** - Lower priority, nice-to-have features
 
 ### Contributing
 We welcome contributions! If you'd like to work on any of these features, please:
