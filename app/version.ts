@@ -1,9 +1,9 @@
-import type { VersionInfo } from '../dist/index.js';
+import type { VersionHandler } from '../dist/index.js';
 
 /**
  * CLI バージョン情報
  */
-export default function createVersion(): VersionInfo {
+export default function createVersion(): VersionHandler {
   return {
     version: "2.1.3",
     metadata: {

@@ -245,7 +245,7 @@ export type {
 } from './types/index.js';
 
 // Version types
-export interface VersionInfo {
+export interface VersionHandler {
   /** メインバージョン */
   version: string;
   /** 追加メタデータ */
