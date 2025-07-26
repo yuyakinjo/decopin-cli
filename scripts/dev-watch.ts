@@ -1,7 +1,8 @@
 #!/usr/bin/env bun
+
 import { $ } from 'bun';
 import { watch } from 'node:fs';
-import { join, resolve } from 'node:path';
+import { resolve } from 'node:path';
 import { scripts } from '../package.json';
 
 const rootDir = resolve(process.cwd());
@@ -11,94 +12,138 @@ const watchDirs =  {
   scripts: resolve(rootDir, 'scripts'),
 }
 
-let isBuilding = false;
-let pendingBuild = false;
-let buildCount = 0;
+const status = {
+  isBuilding: false,
+  pendingBuild: false,
+  buildCount: 0,
+}
+
+const colors = {
+  reset: '\x1b[0m',
+  bright: '\x1b[1m',
+  dim: '\x1b[2m',
+  red: '\x1b[31m',
+  green: '\x1b[32m',
+  yellow: '\x1b[33m',
+  blue: '\x1b[34m',
+  magenta: '\x1b[35m',
+  cyan: '\x1b[36m',
+  gray: '\x1b[90m',
+};
+
+function formatTime() {
+  return new Date().toLocaleTimeString('ja-JP', { hour12: false });
+}
+
+function clearLine() {
+  process.stdout.write('\r\x1b[K');
+}
 
 async function buildAndRegen() {
-  if (isBuilding) {
-    pendingBuild = true;
+  if (status.isBuilding) {
+    status.pendingBuild = true;
     return;
   }
 
-  isBuilding = true;
-  buildCount++;
-  const currentBuild = buildCount;
+  status.isBuilding = true;
+  status.buildCount++;
+  const currentBuild = status.buildCount;
+  const startTime = Date.now();
 
-  console.log(`\n🔄 [Build #${currentBuild}] Building and regenerating CLI...`);
+  console.log(`\n${colors.cyan}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${colors.reset}`);
+  console.log(`${colors.bright}🔄 Build #${currentBuild}${colors.reset} ${colors.gray}[${formatTime()}]${colors.reset}`);
+  console.log(`${colors.cyan}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${colors.reset}\n`);
+
+  const steps: string[] = [];
+  let currentStep = '';
 
   try {
-    // Use scripts from package.json
-    if (scripts.clean) {
-      console.log(`🧹 [Build #${currentBuild}] Cleaning...`);
-      await $`bun run clean`.quiet();
-    }
-
-    // Build TypeScript
     if (scripts.build) {
-      console.log(`📦 [Build #${currentBuild}] Building (using 'build' script)...`);
-      await $`bun run build`;
+      currentStep = 'Building library';
+      process.stdout.write(`${colors.yellow}⏳${colors.reset} ${currentStep}...`);
+      await $`bun run build`.quiet();
+      clearLine();
+      steps.push(`${colors.green}✓${colors.reset} ${currentStep}`);
+      console.log(steps[steps.length - 1]);
     }
 
-    // Build app if separate
     if (scripts['build:app']) {
-      console.log(`📱 [Build #${currentBuild}] Building app...`);
-      await $`bun run build:app`;
+      currentStep = 'Building app';
+      process.stdout.write(`${colors.yellow}⏳${colors.reset} ${currentStep}...`);
+      await $`bun run build:app`.quiet();
+      clearLine();
+      steps.push(`${colors.green}✓${colors.reset} ${currentStep}`);
+      console.log(steps[steps.length - 1]);
     }
 
-    // Regenerate CLI
     if (scripts['dev:regen']) {
-      console.log(`🔧 [Build #${currentBuild}] Regenerating CLI...`);
-      await $`bun run dev:regen`;
+      currentStep = 'Regenerating CLI';
+      process.stdout.write(`${colors.yellow}⏳${colors.reset} ${currentStep}...`);
+      await $`bun run dev:regen`.quiet();
+      clearLine();
+      steps.push(`${colors.green}✓${colors.reset} ${currentStep}`);
+      console.log(steps[steps.length - 1]);
     }
 
-    console.log(`✅ [Build #${currentBuild}] CLI regeneration complete!\n\n`);
+    const duration = Date.now() - startTime;
+    console.log(`\n${colors.green}${colors.bright}✅ Build complete${colors.reset} ${colors.gray}(${duration}ms)${colors.reset}\n`);
   } catch (error) {
-    console.error(`❌ [Build #${currentBuild}] Build failed:`, error);
+    clearLine();
+    console.log(`${colors.red}✗${colors.reset} ${currentStep} ${colors.red}failed${colors.reset}`);
+    console.error(`\n${colors.red}${colors.bright}Build failed:${colors.reset}`);
+    console.error(error);
+    console.log();
   } finally {
-    isBuilding = false;
+    status.isBuilding = false;
 
-    // If there was a change while building, trigger another build
-    if (pendingBuild) {
-      pendingBuild = false;
+    if (status.pendingBuild) {
+      status.pendingBuild = false;
       setTimeout(() => buildAndRegen(), 100);
     }
   }
 }
 
 function watchDirectory(dir: string, label: string) {
-  console.log(`👀 Watching ${label}: ${dir}`);
-
   watch(dir, { recursive: true }, (event, filename) => {
     if (filename && filename.endsWith('.ts')) {
-      console.log(`📝 Change detected in ${label}: ${filename}`);
+      console.log(`${colors.blue}📝${colors.reset} ${colors.gray}[${formatTime()}]${colors.reset} ${label}/${filename}`);
       buildAndRegen();
     }
   });
 }
 
-console.log('🚀 Starting development mode...');
-console.log('⚡ Using Bun for fast TypeScript execution');
-console.log('📦 Available scripts from package.json:');
-console.log(`  - clean: ${scripts.clean ? '✓' : '✗'}`);
-console.log(`  - build: ${scripts.build ? '✓' : '✗'}`);
-console.log(`  - build:app: ${scripts['build:app'] ? '✓' : '✗'}`);
-console.log(`  - dev:regen: ${scripts['dev:regen'] ? '✓' : '✗'}`);
-console.log('\nPress Ctrl+C to stop\n');
+console.clear();
+console.log(`${colors.bright}${colors.cyan}╔════════════════════════════════════════╗${colors.reset}`);
+console.log(`${colors.bright}${colors.cyan}║${colors.reset}       ${colors.bright}decopin-cli dev mode${colors.reset}            ${colors.bright}${colors.cyan}║${colors.reset}`);
+console.log(`${colors.bright}${colors.cyan}╚════════════════════════════════════════╝${colors.reset}\n`);
 
-// Initial build
+console.log(`${colors.gray}Runtime:${colors.reset} Bun ${process.versions.bun || 'unknown'}`);
+console.log(`${colors.gray}Directory:${colors.reset} ${rootDir}\n`);
+
+console.log(`${colors.bright}Watching:${colors.reset}`);
+Object.entries(watchDirs).forEach(([label, dir]) => {
+  console.log(`  ${colors.blue}•${colors.reset} ${label.padEnd(8)} ${colors.gray}${dir.replace(rootDir, '.')}${colors.reset}`);
+});
+
+console.log(`\n${colors.gray}Press Ctrl+C to stop${colors.reset}\n`);
+
+// Run clean only once at startup
+if (scripts.clean) {
+  process.stdout.write(`${colors.yellow}⏳${colors.reset} Initial cleaning...`);
+  await $`bun run clean`.quiet();
+  clearLine();
+  console.log(`${colors.green}✓${colors.reset} Initial cleaning`);
+}
+
 await buildAndRegen();
 
-// Start watching
 Object.entries(watchDirs).forEach(([label, dir]) => {
   watchDirectory(dir, label);
 });
 
-// Handle graceful shutdown
 process.on('SIGINT', () => {
-  console.log('\n\n👋 Stopping development mode...');
+  console.log(`\n${colors.yellow}👋 Stopping...${colors.reset}`);
   process.exit(0);
 });
 
-// Keep the process running
 await new Promise(() => {});
