@@ -3,6 +3,7 @@
 import { $ } from 'bun';
 import { watch } from 'node:fs';
 import { join, resolve } from 'node:path';
+import { scripts } from '../package.json';
 
 const rootDir = resolve(process.cwd());
 const srcDir = join(rootDir, 'src');
@@ -25,18 +26,29 @@ async function buildAndRegen() {
   console.log(`\n🔄 [Build #${currentBuild}] Building and regenerating CLI...`);
 
   try {
-    // Clean
-    await $`rm -rf dist examples`.quiet();
+    // Use scripts from package.json
+    if (scripts.clean) {
+      console.log(`🧹 [Build #${currentBuild}] Cleaning...`);
+      await $`bun run clean`.quiet();
+    }
 
     // Build TypeScript
-    console.log(`📦 [Build #${currentBuild}] Compiling TypeScript...`);
-    await $`tsc`;
-    await $`tsc -p app/tsconfig.json`;
-    await $`tsc -p tsconfig.prod.json`;
+    if (scripts.build) {
+      console.log(`📦 [Build #${currentBuild}] Building (using 'build' script)...`);
+      await $`bun run build`;
+    }
+
+    // Build app if separate
+    if (scripts['build:app']) {
+      console.log(`📱 [Build #${currentBuild}] Building app...`);
+      await $`bun run build:app`;
+    }
 
     // Regenerate CLI
-    console.log(`🔧 [Build #${currentBuild}] Regenerating CLI...`);
-    await $`bunx tsx src/cli.ts build --app-dir app --output-dir examples --cli-name cli --verbose`;
+    if (scripts['dev:regen']) {
+      console.log(`🔧 [Build #${currentBuild}] Regenerating CLI...`);
+      await $`bun run dev:regen`;
+    }
 
     console.log(`✅ [Build #${currentBuild}] CLI regeneration complete!\n`);
   } catch (error) {
@@ -65,7 +77,12 @@ function watchDirectory(dir: string, label: string) {
 
 console.log('🚀 Starting development mode...');
 console.log('⚡ Using Bun for fast TypeScript execution');
-console.log('Press Ctrl+C to stop\n');
+console.log('📦 Available scripts from package.json:');
+console.log(`  - clean: ${scripts.clean ? '✓' : '✗'}`);
+console.log(`  - build: ${scripts.build ? '✓' : '✗'}`);
+console.log(`  - build:app: ${scripts['build:app'] ? '✓' : '✗'}`);
+console.log(`  - dev:regen: ${scripts['dev:regen'] ? '✓' : '✗'}`);
+console.log('\nPress Ctrl+C to stop\n');
 
 // Initial build
 await buildAndRegen();
