@@ -1,13 +1,15 @@
 #!/usr/bin/env bun
-import { $ , env } from 'bun';
+import { $ } from 'bun';
 import { watch } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { scripts } from '../package.json';
 
 const rootDir = resolve(process.cwd());
-const srcDir = join(rootDir, 'src');
-const appDir = join(rootDir, 'app');
-const scriptsDir = join(rootDir, 'scripts');
+const watchDirs =  {
+  src: resolve(rootDir, 'src'),
+  app: resolve(rootDir, 'app'),
+  scripts: resolve(rootDir, 'scripts'),
+}
 
 let isBuilding = false;
 let pendingBuild = false;
@@ -88,9 +90,9 @@ console.log('\nPress Ctrl+C to stop\n');
 await buildAndRegen();
 
 // Start watching
-watchDirectory(srcDir, 'src/');
-watchDirectory(appDir, 'app/');
-watchDirectory(scriptsDir, 'scripts/');
+watchDirectory(watchDirs.src, 'src/');
+watchDirectory(watchDirs.app, 'app/');
+watchDirectory(watchDirs.scripts, 'scripts/');
 
 // Handle graceful shutdown
 process.on('SIGINT', () => {
