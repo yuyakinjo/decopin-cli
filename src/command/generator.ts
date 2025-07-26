@@ -3,7 +3,7 @@ import type { CLIStructure } from '../core/types.js';
 import { generateLazyCLI, type LazyCliOptions, type CommandInfo } from '../generator/lazy-cli-template.js';
 
 export class CommandGeneratorImpl implements CommandGenerator {
-  async generate(commands: CommandDefinition[], _structure?: CLIStructure): Promise<GeneratedCode> {
+  async generate(commands: CommandDefinition[], structure?: CLIStructure): Promise<GeneratedCode> {
     // Convert command definitions to the format expected by lazy CLI template
     const commandInfos: CommandInfo[] = commands.map(cmd => ({
       name: cmd.name,
@@ -18,6 +18,13 @@ export class CommandGeneratorImpl implements CommandGenerator {
       hasHelp: commands.some(cmd => cmd.hasHelp),
       hasError: commands.some(cmd => cmd.hasError)
     };
+    
+    if (structure?.middleware) {
+      Object.assign(options, {
+        hasMiddleware: true,
+        middlewarePath: './app/middleware.js'
+      });
+    }
 
     const content = generateLazyCLI(options);
 

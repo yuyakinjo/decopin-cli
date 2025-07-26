@@ -17,6 +17,14 @@ export class Scanner {
       return structure;
     }
 
+    // Check for middleware.ts in root
+    const middlewarePath = join(this.appDir, 'middleware.ts');
+    if (existsSync(middlewarePath)) {
+      structure.middleware = {
+        path: middlewarePath
+      };
+    }
+
     this.scanDirectory(this.appDir, structure);
     return structure;
   }
@@ -75,6 +83,14 @@ export class Scanner {
 
     if (!existsSync(this.appDir)) {
       return structure;
+    }
+
+    // Check for middleware.ts in root
+    const middlewarePath = join(this.appDir, 'middleware.ts');
+    if (existsSync(middlewarePath)) {
+      structure.middleware = {
+        path: middlewarePath
+      };
     }
 
     this.scanDirectory(this.appDir, structure);

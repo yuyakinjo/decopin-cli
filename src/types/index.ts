@@ -31,3 +31,12 @@ export type {
   ValidationFunction,
   ValidationResult,
 } from './validation.js';
+
+// ミドルウェア関連
+export type {
+  MiddlewareContext,
+  NextFunction,
+  MiddlewareHandler,
+  MiddlewareFactory,
+  MiddlewareExport,
+} from './middleware.js';

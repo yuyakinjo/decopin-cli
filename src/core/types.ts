@@ -20,6 +20,7 @@ export interface CLIStructure {
   params: ParamsFile[];
   help: HelpFile[];
   errors: ErrorFile[];
+  middleware?: MiddlewareFile;
 }
 
 export interface CommandFile {
@@ -43,6 +44,11 @@ export interface HelpFile {
 export interface ErrorFile {
   path: string;
   commandPath: string;
+  content?: string;
+}
+
+export interface MiddlewareFile {
+  path: string;
   content?: string;
 }
 

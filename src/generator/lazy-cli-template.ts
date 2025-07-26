@@ -3,11 +3,15 @@
  * Generates CLI code that uses dynamic imports for optimal performance
  */
 
+import { generateMiddlewareWrapper, generateMiddlewareExecution, generateParseOptionsFunction } from './middleware-template.js';
+
 export interface LazyCliOptions {
   commands: CommandInfo[];
   hasParams: boolean;
   hasHelp: boolean;
   hasError: boolean;
+  hasMiddleware?: boolean;
+  middlewarePath?: string;
 }
 
 export interface CommandInfo {
@@ -36,7 +40,7 @@ async function execute() {
   try {
     // Parse command and subcommands
     const { commandPath, commandArgs } = parseCommand(args);
-    
+    ${generateMiddlewareWrapper(options.hasMiddleware || false, options.middlewarePath)}
     switch (commandPath) {
 ${generateCommandCases(options.commands)}
       case '--help':
@@ -51,7 +55,7 @@ ${generateCommandCases(options.commands)}
         console.error(\`Unknown command: \${commandPath}\`);
         console.error('Use --help to see available commands');
         process.exit(1);
-    }
+    }${generateMiddlewareExecution(options.hasMiddleware || false, options.middlewarePath)}
   } catch (error) {
     handleDefaultError(error);
   }
@@ -469,6 +473,8 @@ async function showVersion() {
     console.log('0.2.0');
   }
 }
+
+${generateParseOptionsFunction(options.hasMiddleware || false)}
 
 // Default error handler
 function handleDefaultError(error) {
