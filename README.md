@@ -21,6 +21,7 @@ A TypeScript-first CLI builder inspired by Next.js App Router's file-based routi
 - **📦 Zero configuration**: Works out of the box with sensible defaults
 - **⚡ Dynamic imports**: Generated CLIs use dynamic imports for instant command loading
 - **🏷️ Command aliases**: Support for command aliases (e.g., `hi` → `hello`, `add` → `user create`)
+- **🔌 Middleware support**: Global middleware for authentication, logging, and cross-cutting concerns
 
 ## 🚀 Quick Start
 
@@ -385,6 +386,16 @@ app/complex/
 └── help.ts             # Help information
 ```
 
+**With Middleware:**
+```
+app/
+├── middleware.ts       # Global middleware (optional)
+└── user/
+    └── create/
+        ├── command.ts  # Main logic
+        └── params.ts   # Argument definition
+```
+
 ### Integrated Validation
 
 Validation is integrated into `params.ts`, providing type-safe parameter handling using valibot schemas:
@@ -532,6 +543,74 @@ export default async function createCommand(context: CommandContext<UserData>) {
     console.error('❌ Error:', error.message);
     process.exit(1);
   }
+}
+```
+
+### Middleware Support
+
+decopin-cli supports global middleware for cross-cutting concerns like authentication, logging, and error handling. Create `app/middleware.ts` to define middleware that runs before every command:
+
+```typescript
+// app/middleware.ts
+import type { MiddlewareFactory, MiddlewareContext, NextFunction } from '../dist/types/middleware.js';
+
+const createMiddleware: MiddlewareFactory = () => {
+  return async (context: MiddlewareContext<typeof process.env>, next: NextFunction) => {
+    // Pre-execution logic
+    console.log(`Executing command: ${context.command}`);
+    const startTime = Date.now();
+
+    try {
+      // Call the next middleware or command
+      await next();
+
+      // Post-execution logic
+      const duration = Date.now() - startTime;
+      console.log(`Command completed in ${duration}ms`);
+    } catch (error) {
+      // Global error handling
+      console.error('Command failed:', error);
+      throw error;
+    }
+  };
+};
+
+export default createMiddleware;
+```
+
+**Middleware Context:**
+```typescript
+interface MiddlewareContext<Env> {
+  command: string;           // Command path (e.g., 'user/create')
+  args: string[];           // Positional arguments
+  options: Record<string, string | boolean>; // CLI options
+  env: Env;                 // Environment variables
+}
+```
+
+**Common Middleware Use Cases:**
+- **Authentication**: Check auth tokens before command execution
+- **Logging**: Log command execution for debugging
+- **Performance Monitoring**: Measure command execution time
+- **Error Handling**: Centralized error handling and reporting
+- **Environment Setup**: Initialize services or configurations
+
+**Example: Authentication Middleware**
+```typescript
+export default function createMiddleware(): MiddlewareFactory {
+  return async (context, next) => {
+    // Check for auth flag
+    if (context.options.auth) {
+      const token = context.env.AUTH_TOKEN;
+      if (!token) {
+        console.error('❌ Authentication required. Set AUTH_TOKEN environment variable.');
+        process.exit(1);
+      }
+      console.log('✅ Authenticated');
+    }
+
+    await next();
+  };
 }
 ```
 

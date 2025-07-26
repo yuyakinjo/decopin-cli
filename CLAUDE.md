@@ -39,10 +39,11 @@ node examples/cli.js user create --name "John" --email "john@example.com"
 ### Core Library Structure (`src/`)
 The library implements a pipeline that transforms file-based commands into a working CLI:
 
-1. **Scanner** (`src/scanner/`) - Discovers command files in the `app/` directory
+1. **Scanner** (`src/scanner/`) - Discovers command files in the `app/` directory and detects middleware
 2. **Parser** (`src/parser/`) - Uses TypeScript AST to extract metadata from command files
-3. **Generator** (`src/generator/`) - Creates the final CLI with dynamic imports and validation
+3. **Generator** (`src/generator/`) - Creates the final CLI with dynamic imports, validation, and middleware support
 4. **Types** (`src/types/`) - Comprehensive TypeScript definitions for the entire system
+5. **Middleware** (`src/types/middleware.ts`, `src/generator/middleware-template.ts`) - Global middleware support for cross-cutting concerns
 
 ### Command Architecture Pattern
 Commands follow a simple async function pattern where validation and business logic are separated:
@@ -104,6 +105,44 @@ The project uses `mise` for file watching. When `npm run dev` is running:
 - All command handlers must be async functions that accept `CommandContext<T>`
 - Use `Object.assign()` instead of type assertions when extending objects
 
+### Middleware Architecture
+
+The middleware system allows for global cross-cutting concerns to be handled before and after command execution:
+
+```typescript
+// app/middleware.ts - Global middleware
+import type { MiddlewareFactory, MiddlewareContext, NextFunction } from '../dist/types/middleware.js';
+
+export default function createMiddleware(): MiddlewareFactory {
+  return async (context: MiddlewareContext<typeof process.env>, next: NextFunction) => {
+    // Pre-execution logic
+    console.log(`[${new Date().toISOString()}] Executing: ${context.command}`);
+    
+    try {
+      await next(); // Execute the command
+    } catch (error) {
+      // Global error handling
+      console.error(`Command failed: ${error.message}`);
+      throw error;
+    }
+  };
+}
+```
+
+**Key Middleware Concepts:**
+- **Factory Pattern**: Middleware files export a factory function that returns the actual handler
+- **Context Object**: Contains command path, args, options, and environment variables
+- **Next Function**: Call `next()` to proceed to the command execution
+- **Error Handling**: Wrap `next()` in try-catch for global error handling
+- **Pre/Post Processing**: Add logic before and after `next()` for cross-cutting concerns
+
+**Common Middleware Patterns:**
+1. **Authentication**: Check auth tokens from environment or options
+2. **Logging/Debugging**: Log command execution with timestamps
+3. **Performance Monitoring**: Measure execution time
+4. **Environment Setup**: Initialize services or validate environment
+5. **Request/Response Transformation**: Modify context or results
+
 ## Common Tasks
 
 ### Adding a New Command
@@ -113,6 +152,12 @@ The project uses `mise` for file watching. When `npm run dev` is running:
 4. Run `npm run dev` to see changes reflected
 5. Test with `node examples/cli.js your-command`
 
+### Adding Middleware
+1. Create `app/middleware.ts` in the root of your app directory
+2. Export a factory function that returns a middleware handler
+3. The middleware will automatically be detected and integrated
+4. Test that middleware runs before your commands
+
 ### Debugging Parser Issues
 The AST parser in `src/parser/ast-parser.ts` extracts metadata from TypeScript files. If metadata isn't being extracted correctly:
 1. Check that exports use `export default function` pattern
@@ -120,7 +165,10 @@ The AST parser in `src/parser/ast-parser.ts` extracts metadata from TypeScript f
 3. Run tests in `test/parser/` to debug AST parsing
 
 ### Modifying the Generated CLI Structure
-The CLI generation logic is in `src/generator/cli-generator.ts`. Key files:
-- `generateCLIContent()` - Main CLI template generation
+The CLI generation logic is spread across several generator files:
+- `src/generator/cli-generator.ts` - Main CLI template generation (deprecated)
+- `src/generator/lazy-cli-template.ts` - Modern lazy-loading CLI generator with middleware support
+- `src/generator/middleware-template.ts` - Middleware integration templates
 - `generateCommandImports()` - Dynamic import generation
 - `generateCommandTree()` - Command structure building
+- `generateMiddlewareWrapper()` - Middleware execution wrapper generation
