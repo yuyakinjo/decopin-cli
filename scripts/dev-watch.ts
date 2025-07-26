@@ -90,9 +90,9 @@ console.log('\nPress Ctrl+C to stop\n');
 await buildAndRegen();
 
 // Start watching
-watchDirectory(watchDirs.src, 'src/');
-watchDirectory(watchDirs.app, 'app/');
-watchDirectory(watchDirs.scripts, 'scripts/');
+Object.entries(watchDirs).forEach(([label, dir]) => {
+  watchDirectory(dir, label);
+});
 
 // Handle graceful shutdown
 process.on('SIGINT', () => {
