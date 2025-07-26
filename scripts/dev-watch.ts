@@ -1,6 +1,5 @@
 #!/usr/bin/env bun
-// @ts-expect-error - Bun built-in module
-import { $ } from 'bun';
+import { $ , env } from 'bun';
 import { watch } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { scripts } from '../package.json';
