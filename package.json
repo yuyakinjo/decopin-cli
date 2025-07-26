@@ -12,7 +12,7 @@
     "build": "tsc && bun run build:app && bun run build:prod",
     "build:prod": "tsc -p tsconfig.prod.json",
     "build:app": "tsc -p app/tsconfig.json",
-    "dev": "bun scripts/dev-watch.ts",
+    "dev": "bun --env-file app/.env scripts/dev-watch.ts",
     "dev:build-all": "bun run build && bun run build:app",
     "dev:regen": "bunx tsx src/cli.ts build --app-dir app --output-dir examples --cli-name cli --verbose",
     "test": "bun test",
