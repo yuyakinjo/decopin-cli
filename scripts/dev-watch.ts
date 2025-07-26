@@ -8,6 +8,7 @@ import { scripts } from '../package.json';
 const rootDir = resolve(process.cwd());
 const srcDir = join(rootDir, 'src');
 const appDir = join(rootDir, 'app');
+const scriptsDir = join(rootDir, 'scripts');
 
 let isBuilding = false;
 let pendingBuild = false;
@@ -50,7 +51,7 @@ async function buildAndRegen() {
       await $`bun run dev:regen`;
     }
 
-    console.log(`✅ [Build #${currentBuild}] CLI regeneration complete!\n`);
+    console.log(`✅ [Build #${currentBuild}] CLI regeneration complete!\n\n`);
   } catch (error) {
     console.error(`❌ [Build #${currentBuild}] Build failed:`, error);
   } finally {
@@ -90,6 +91,7 @@ await buildAndRegen();
 // Start watching
 watchDirectory(srcDir, 'src/');
 watchDirectory(appDir, 'app/');
+watchDirectory(scriptsDir, 'scripts/');
 
 // Handle graceful shutdown
 process.on('SIGINT', () => {

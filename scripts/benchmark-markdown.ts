@@ -11,9 +11,36 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const CLI_PATH = join(dirname(__dirname), 'examples/cli.js');
 
+interface Measurement {
+  description: string;
+  command: string;
+  average: number;
+  min: number;
+  max: number;
+  measurements: number[];
+}
+
+interface Scenario {
+  command: string;
+  description: string;
+}
+
+interface JsonOutput {
+  timestamp: string;
+  averageStartup: number;
+  averageHelp: number;
+  averageExec: number;
+  results: Array<{
+    description: string;
+    average: number;
+    min: number;
+    max: number;
+  }>;
+}
+
 // Helper to measure execution time
-function measureCommand(command, description) {
-  const measurements = [];
+function measureCommand(command: string, description: string): Measurement {
+  const measurements: number[] = [];
 
   // Run multiple times to get average
   for (let i = 0; i < 5; i++) {
@@ -46,7 +73,7 @@ function measureCommand(command, description) {
 }
 
 // Test scenarios
-const scenarios = [
+const scenarios: Scenario[] = [
   { command: '--help', description: 'Help display' },
   { command: 'hello "World"', description: 'Simple command' },
   { command: 'user --help', description: 'Subcommand help' },
@@ -55,7 +82,7 @@ const scenarios = [
 ];
 
 // Run benchmarks
-const results = scenarios.map(scenario =>
+const results: Measurement[] = scenarios.map(scenario =>
   measureCommand(scenario.command, scenario.description)
 );
 
@@ -122,13 +149,13 @@ ${results.map(r => `| ${r.description} | ${r.average.toFixed(2)} | ${r.min.toFix
 `;
 
 // Write to file
-const outputPath = process.argv[2] || 'performance.md';
+const outputPath: string = process.argv[2] || 'performance.md';
 writeFileSync(outputPath, markdown);
 
 console.log(`Performance report written to: ${outputPath}`);
 
 // Also output JSON for GitHub Actions
-const jsonOutput = {
+const jsonOutput: JsonOutput = {
   timestamp: new Date().toISOString(),
   averageStartup: avgStartup,
   averageHelp: avgHelp,
