@@ -6,30 +6,16 @@
   "editor.formatOnSave": true,
 
   // TypeScript/JavaScript用の設定
-  "[typescript]": {
+  "[typescript][javascript][json][jsonc]": {
     "editor.defaultFormatter": "biomejs.biome",
     "editor.codeActionsOnSave": {
       "quickfix.biome": "explicit",
       "source.organizeImports.biome": "explicit"
     }
-  },
-  "[javascript]": {
-    "editor.defaultFormatter": "biomejs.biome",
-    "editor.codeActionsOnSave": {
-      "quickfix.biome": "explicit",
-      "source.organizeImports.biome": "explicit"
-    }
-  },
-  "[json]": {
-    "editor.defaultFormatter": "biomejs.biome"
-  },
-  "[jsonc]": {
-    "editor.defaultFormatter": "biomejs.biome"
   },
 
   // Biome設定
-  "biome.lspBin": "bun",
-  "biome.rename": true,
+  "biome.lsp.bin": "bun",
 
   // その他のコード品質設定
   "editor.codeActionsOnSave": {
