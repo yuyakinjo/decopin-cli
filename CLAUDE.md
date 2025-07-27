@@ -158,6 +158,17 @@ export default function createMiddleware(): MiddlewareFactory {
 3. The middleware will automatically be detected and integrated
 4. Test that middleware runs before your commands
 
+### Adding Global Error Handler
+1. Create `app/global-error.ts` in the root of your app directory
+2. Export a factory function that returns an error handler
+3. The handler will catch errors from commands without custom error.ts
+4. Use type-safe error handling with provided types and type guards:
+   ```typescript
+   import type { GlobalErrorHandler, CLIError } from 'decopin-cli';
+   import { isValidationError, isModuleError, hasStackTrace } from 'decopin-cli';
+   ```
+5. Useful for centralized error formatting, logging, and monitoring
+
 ### Debugging Parser Issues
 The AST parser in `src/parser/ast-parser.ts` extracts metadata from TypeScript files. If metadata isn't being extracted correctly:
 1. Check that exports use `export default function` pattern

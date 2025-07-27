@@ -306,6 +306,59 @@ export default function createErrorHandler() {
 - User-friendly error messages
 - Provide additional help information
 
+### `global-error.ts` - Global Error Handling
+
+Defines a global error handler that catches errors from commands without custom error handlers. Place this file in the root `app/` directory.
+
+```typescript
+import type { GlobalErrorHandler, CLIError } from 'decopin-cli';
+import { isValidationError, isModuleError, hasStackTrace } from 'decopin-cli';
+
+export default function createGlobalErrorHandler(): GlobalErrorHandler {
+  return async (error: CLIError) => {
+    console.error('\n❌ An error occurred\n');
+    
+    // Type-safe error handling
+    if (isValidationError(error)) {
+      // Valibot validation error
+      console.error('📋 Validation Error:');
+      error.issues.forEach((issue) => {
+        const path = issue.path?.map(p => p.key).join('.') || 'value';
+        console.error(`  • ${path}: ${issue.message}`);
+      });
+    } else if (isModuleError(error)) {
+      // Module loading error
+      console.error('📦 Module Error:');
+      console.error(`  ${error.message}`);
+    } else {
+      // Runtime error
+      console.error('💥 Error Details:');
+      console.error(`  ${error.message}`);
+    }
+    
+    // Show stack trace in debug mode
+    if (process.env.DEBUG && hasStackTrace(error)) {
+      console.error('\n📍 Stack Trace:');
+      console.error(error.stack);
+    }
+    
+    process.exit(1);
+  };
+}
+```
+
+**Features:**
+- Catches unhandled errors from any command
+- Fallback when no command-specific error.ts exists
+- Supports debug mode with stack traces
+- Type-safe error handling with proper TypeScript types
+
+**Error Types:**
+- `ValidationError` - Valibot validation errors with `issues` array
+- `ModuleError` - Node.js module loading errors with error `code`
+- `Error` - Standard JavaScript/runtime errors
+- Type guards available: `isValidationError()`, `isModuleError()`, `hasStackTrace()`
+
 ### `help.ts` - Help Information
 
 Defines detailed command help information, usage examples, aliases, etc.
@@ -396,6 +449,16 @@ app/
         └── params.ts   # Argument definition
 ```
 
+**With Global Error Handler:**
+```
+app/
+├── global-error.ts     # Global error handler (optional)
+├── middleware.ts       # Global middleware (optional)
+└── commands/
+    ├── command.ts      # Commands without error.ts use global handler
+    └── params.ts
+```
+
 ### Integrated Validation
 
 Validation is integrated into `params.ts`, providing type-safe parameter handling using valibot schemas:
@@ -477,6 +540,42 @@ decopin-cli --version
 ```
 
 Shows the current version of decopin-cli.
+
+## 🔍 Advanced Features
+
+### Global Error Handler Example
+
+Create a `global-error.ts` in your app root for centralized error handling:
+
+```typescript
+// app/global-error.ts
+import type { GlobalErrorHandler, CLIError } from 'decopin-cli';
+import { isValidationError, isModuleError } from 'decopin-cli';
+
+export default function createGlobalErrorHandler(): GlobalErrorHandler {
+  return async (error: CLIError) => {
+    // Log errors to file for debugging
+    const errorLog = `[${new Date().toISOString()}] ${error.message}\n`;
+    await fs.appendFile('cli-errors.log', errorLog).catch(() => {});
+    
+    // User-friendly error display
+    if (isValidationError(error)) {
+      console.error('❌ Invalid input provided:');
+      error.issues.forEach(issue => {
+        console.error(`   - ${issue.message}`);
+      });
+      console.error('\nRun with --help for usage information.');
+    } else {
+      console.error('❌ An unexpected error occurred.');
+      if (process.env.DEBUG) {
+        console.error(error);
+      }
+    }
+    
+    process.exit(1);
+  };
+}
+```
 
 ## 🔍 Advanced Features
 
