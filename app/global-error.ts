@@ -1,24 +1,21 @@
-import type { GlobalErrorHandler, CLIError } from '../dist/types/index.js';
-import { isValidationError, isModuleError, hasStackTrace } from '../dist/types/index.js';
-
 /**
  * Global error handler for uncaught errors
  * This handler runs when no command-specific error.ts is available
  */
-export default function createGlobalErrorHandler(): GlobalErrorHandler {
-  return async (error: CLIError) => {
+export default function createGlobalErrorHandler() {
+  return async (error: any) => {
     // Enhanced error display
     console.error('\n❌ An error occurred\n');
 
     // Handle different error types
-    if (isValidationError(error)) {
+    if (error.issues && Array.isArray(error.issues)) {
       // Valibot validation error
       console.error('📋 Validation Error:');
-      error.issues.forEach((issue) => {
-        const path = issue.path?.map(p => p.key).join('.') || 'value';
+      error.issues.forEach((issue: any) => {
+        const path = issue.path?.map((p: any) => p.key).join('.') || 'value';
         console.error(`  • ${path}: ${issue.message}`);
       });
-    } else if (isModuleError(error) && error.code === 'ERR_MODULE_NOT_FOUND') {
+    } else if (error.code === 'ERR_MODULE_NOT_FOUND') {
       // Module loading error
       console.error('📦 Module Error:');
       console.error('  The required module could not be found.');
@@ -34,17 +31,17 @@ export default function createGlobalErrorHandler(): GlobalErrorHandler {
     }
 
     // Debug mode - show stack trace
-    if ((process.env.DEBUG || process.env.CLI_DEBUG) && hasStackTrace(error)) {
+    if ((process.env.DEBUG || process.env.CLI_DEBUG) && error.stack) {
       console.error('\n📍 Stack Trace:');
       console.error(error.stack);
     }
 
     // Helpful suggestions based on error type
     console.error('\n💡 Tips:');
-    if (isValidationError(error)) {
+    if (error.issues && Array.isArray(error.issues)) {
       console.error('  • Check your input values against the required format');
       console.error('  • Use --help to see parameter details');
-    } else if (isModuleError(error)) {
+    } else if (error.code === 'ERR_MODULE_NOT_FOUND') {
       console.error('  • Ensure all required files are present');
       console.error('  • Check your project structure');
     } else {
