@@ -21,6 +21,7 @@ export interface CLIStructure {
   help: HelpFile[];
   errors: ErrorFile[];
   middleware?: MiddlewareFile;
+  globalError?: GlobalErrorFile;
 }
 
 export interface CommandFile {
@@ -48,6 +49,11 @@ export interface ErrorFile {
 }
 
 export interface MiddlewareFile {
+  path: string;
+  content?: string;
+}
+
+export interface GlobalErrorFile {
   path: string;
   content?: string;
 }

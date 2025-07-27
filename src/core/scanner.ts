@@ -25,6 +25,14 @@ export class Scanner {
       };
     }
 
+    // Check for global-error.ts in root
+    const globalErrorPath = join(this.appDir, 'global-error.ts');
+    if (existsSync(globalErrorPath)) {
+      structure.globalError = {
+        path: globalErrorPath
+      };
+    }
+
     this.scanDirectory(this.appDir, structure);
     return structure;
   }
@@ -90,6 +98,14 @@ export class Scanner {
     if (existsSync(middlewarePath)) {
       structure.middleware = {
         path: middlewarePath
+      };
+    }
+
+    // Check for global-error.ts in root
+    const globalErrorPath = join(this.appDir, 'global-error.ts');
+    if (existsSync(globalErrorPath)) {
+      structure.globalError = {
+        path: globalErrorPath
       };
     }
 

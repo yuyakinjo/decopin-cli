@@ -32,6 +32,25 @@ export type {
   ValidationResult,
 } from './validation.js';
 
+// エラー型定義
+export type {
+  CLIError,
+  ValidationError as CLIValidationError,
+  ModuleError,
+  ValidationIssue,
+} from './errors.js';
+
+export {
+  isValidationError,
+  isModuleError,
+  hasStackTrace,
+  formatError,
+} from './errors.js';
+
+// グローバルエラーハンドラー
+import type { CLIError } from './errors.js';
+export type GlobalErrorHandler = (error: CLIError) => Promise<void> | void;
+
 // ミドルウェア関連
 export type {
   MiddlewareContext,

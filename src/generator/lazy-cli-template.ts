@@ -5,6 +5,42 @@
 
 import { generateMiddlewareWrapper, generateMiddlewareExecution, generateParseOptionsFunction } from './middleware-template.js';
 
+function generateGlobalErrorHandler(options: LazyCliOptions): string {
+  if (!options.hasGlobalError || !options.globalErrorPath) {
+    return `// Default error handler
+async function handleDefaultError(error) {
+  console.error('Error:', error);
+  process.exit(1);
+}`;
+  }
+
+  const globalErrorImportPath = options.globalErrorPath.replace(/\.ts$/, '.js');
+  
+  return `// Error handler with global error fallback
+async function handleDefaultError(error) {
+  // Try global error handler first
+  try {
+    const globalErrorModule = await import('${globalErrorImportPath}');
+    if (globalErrorModule.default && typeof globalErrorModule.default === 'function') {
+      const errorHandler = globalErrorModule.default();
+      if (typeof errorHandler === 'function') {
+        await errorHandler(error);
+        return; // Global error handler should handle process.exit
+      }
+    }
+  } catch (e) {
+    // Global error handler failed, fall back to default
+    if (process.env.DEBUG) {
+      console.error('Global error handler failed:', e);
+    }
+  }
+  
+  // Default error handling
+  console.error('Error:', error);
+  process.exit(1);
+}`;
+}
+
 export interface LazyCliOptions {
   commands: CommandInfo[];
   hasParams: boolean;
@@ -12,6 +48,8 @@ export interface LazyCliOptions {
   hasError: boolean;
   hasMiddleware?: boolean;
   middlewarePath?: string;
+  hasGlobalError?: boolean;
+  globalErrorPath?: string;
 }
 
 export interface CommandInfo {
@@ -69,8 +107,7 @@ execute().then(() => {
     console.log(\`\\nExecution time: \${(performance.now() - startTime).toFixed(2)}ms\`);
   }
 }).catch(err => {
-  console.error('Fatal error:', err);
-  process.exit(1);
+  handleDefaultError(err);
 });
 `;
 }
@@ -233,16 +270,10 @@ async function executeCommand(modulePath, args) {
             return; // Error handler should handle process.exit
           }
         } catch {
-          // No custom error handler
+          // No custom error handler, use global error handler
+          await handleDefaultError(e);
+          return;
         }
-        
-        // Default validation error handling
-        console.error('Validation error:');
-        e.issues.forEach(issue => {
-          const path = issue.path && issue.path.length > 0 ? issue.path.join('.') : 'value';
-        console.error(\`  \${path}: \${issue.message}\`);
-        });
-        process.exit(1);
       } else {
         // Other error
         throw e;
@@ -476,10 +507,6 @@ async function showVersion() {
 
 ${generateParseOptionsFunction(options.hasMiddleware || false)}
 
-// Default error handler
-function handleDefaultError(error) {
-  console.error('Error:', error);
-  process.exit(1);
-}
+${generateGlobalErrorHandler(options)}
 `;
 }

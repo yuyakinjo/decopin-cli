@@ -25,6 +25,13 @@ export class CommandGeneratorImpl implements CommandGenerator {
         middlewarePath: './app/middleware.js'
       });
     }
+    
+    if (structure?.globalError) {
+      Object.assign(options, {
+        hasGlobalError: true,
+        globalErrorPath: './app/global-error.js'
+      });
+    }
 
     const content = generateLazyCLI(options);
 
