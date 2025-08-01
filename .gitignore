@@ -166,3 +166,6 @@ test-app-version/
 # Temporary files
 *.tmp
 *.temp
+
+# serena generated files
+document_symbols_cache*
