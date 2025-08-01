@@ -1,4 +1,5 @@
 import type * as v from 'valibot';
+import type { BaseContext, ErrorContext } from './context.js';
 
 /**
  * バリデーション結果
@@ -94,12 +95,16 @@ export interface ParamsHandler {
 /**
  * エラーハンドラーの型
  */
-export type ErrorHandler = (error: ValidationError) => Promise<void> | void;
+export type ErrorHandler<T = unknown, E = typeof process.env> = (
+  context: ErrorContext<T, E>
+) => Promise<void> | void;
 
 /**
  * パラメータ定義関数の型
  */
-export type ParamsDefinitionFunction = () => ParamsHandler;
+export type ParamsDefinitionFunction<E = typeof process.env> = (
+  context: BaseContext<E>
+) => ParamsHandler;
 
 /**
  * 環境変数スキーマのタイプ定数

@@ -1,6 +1,6 @@
-import type { ParamsHandler } from '../../../src/types/validation.js';
+import type { ParamsHandler, BaseContext } from '../../../dist/types/index.js';
 
-export default function createParams(): ParamsHandler {
+export default function createParams(context: BaseContext<typeof process.env>): ParamsHandler {
   return {
     schema: {
       name: {

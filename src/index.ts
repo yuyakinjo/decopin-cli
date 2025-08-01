@@ -1,14 +1,15 @@
 /**
  * decopin-cli - TypeScript-first CLI builder with lazy loading architecture
- * 
+ *
  * This new architecture uses lazy loading to minimize startup time
  * and memory usage by only loading modules when they are actually needed.
  */
 
-import { mkdir, writeFile, chmod } from 'node:fs/promises';
+import { chmod, mkdir, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import { Scanner } from './core/scanner.js';
 import { PerformanceMonitor } from './core/performance.js';
+import { Scanner } from './core/scanner.js';
+
 // Core types imported but renamed to avoid conflicts
 
 // Lazy-loaded modules
@@ -59,7 +60,7 @@ export async function buildCLI(config: BuildConfig): Promise<BuildResult> {
   const errors: string[] = [];
   const warnings: string[] = [];
   const files: string[] = [];
-  
+
   // Performance monitoring
   const monitor = new PerformanceMonitor();
 
@@ -71,7 +72,7 @@ export async function buildCLI(config: BuildConfig): Promise<BuildResult> {
     // Scan directory structure
     const scanner = new Scanner(config.appDir);
     const structure = await scanner.scan();
-    
+
     if (structure.commands.length === 0) {
       warnings.push('No command files found in app directory');
       return {
@@ -95,25 +96,34 @@ export async function buildCLI(config: BuildConfig): Promise<BuildResult> {
 
     // Parse and process commands (lazy-loaded)
     let cliContent = '';
-    
+
     if (structure.commands.length > 0) {
-      const cmdModule = await monitor.measureModuleLoad('command', getCommandModule);
-      
+      const cmdModule = await monitor.measureModuleLoad(
+        'command',
+        getCommandModule
+      );
+
       // Update command definitions with params/help/error info
       const commands = await cmdModule.parseCommands(structure.commands);
-      
+
       // Extract aliases from help files at build time
       const { readFileSync } = await import('node:fs');
       const ts = await import('typescript');
-      
+
       for (const cmd of commands) {
         const commandPath = cmd.name === 'root' ? '' : cmd.name;
-        cmd.hasParams = structure.params.some(p => p.commandPath === commandPath);
-        cmd.hasHelp = structure.help.some(h => h.commandPath === commandPath);
-        cmd.hasError = structure.errors.some(e => e.commandPath === commandPath);
-        
+        cmd.hasParams = structure.params.some(
+          (p) => p.commandPath === commandPath
+        );
+        cmd.hasHelp = structure.help.some((h) => h.commandPath === commandPath);
+        cmd.hasError = structure.errors.some(
+          (e) => e.commandPath === commandPath
+        );
+
         // Try to get aliases from help file by parsing TypeScript
-        const helpFile = structure.help.find(h => h.commandPath === commandPath);
+        const helpFile = structure.help.find(
+          (h) => h.commandPath === commandPath
+        );
         if (helpFile) {
           try {
             const content = readFileSync(helpFile.path, 'utf-8');
@@ -123,11 +133,13 @@ export async function buildCLI(config: BuildConfig): Promise<BuildResult> {
               ts.ScriptTarget.Latest,
               true
             );
-            
+
             // Find aliases in the help handler object
             const aliases = extractAliasesFromHelpFile(sourceFile, ts);
             if (config.verbose) {
-              console.log(`  Checking aliases for ${cmd.name}: ${aliases ? aliases.join(', ') : 'none'}`);
+              console.log(
+                `  Checking aliases for ${cmd.name}: ${aliases ? aliases.join(', ') : 'none'}`
+              );
             }
             if (aliases && aliases.length > 0) {
               if (!cmd.metadata) cmd.metadata = {};
@@ -136,14 +148,18 @@ export async function buildCLI(config: BuildConfig): Promise<BuildResult> {
           } catch (error) {
             // Failed to parse help file, continue without aliases
             if (config.verbose) {
-              console.log(`  Failed to parse help file for ${cmd.name}:`, error);
+              console.log(
+                `  Failed to parse help file for ${cmd.name}:`,
+                error
+              );
             }
           }
         }
       }
 
       const generated = await cmdModule.generateCommands(commands, structure);
-      cliContent = typeof generated === 'string' ? generated : (generated as any).content;
+      cliContent =
+        typeof generated === 'string' ? generated : (generated as any).content;
     }
 
     // Copy validation utilities if needed
@@ -207,11 +223,15 @@ export async function buildWithDefaults(
 /**
  * List available commands
  */
-export async function listCommands(appDir: string = './app'): Promise<string[]> {
+export async function listCommands(
+  appDir: string = './app'
+): Promise<string[]> {
   try {
     const scanner = new Scanner(appDir);
     const structure = await scanner.scan();
-    return structure.commands.map(cmd => cmd.name === 'root' ? '(default)' : cmd.name);
+    return structure.commands.map((cmd) =>
+      cmd.name === 'root' ? '(default)' : cmd.name
+    );
   } catch (error) {
     console.error(`Failed to list commands: ${error}`);
     return [];
@@ -224,14 +244,15 @@ export async function listCommands(appDir: string = './app'): Promise<string[]> 
 export const builderInfo = {
   name: 'decopin-cli',
   version: '0.2.0', // Updated for lazy-loading architecture
-  description: 'TypeScript-first CLI builder with lazy loading and file-based routing',
+  description:
+    'TypeScript-first CLI builder with lazy loading and file-based routing',
 };
 
 // Re-export types
-export type { 
+export type {
   CLIStructure,
   CommandMetadata as CommandDefinition,
-  ParamMapping as ParamsDefinition 
+  ParamMapping as ParamsDefinition,
 } from './core/types.js';
 
 // Export from existing types for compatibility
@@ -260,26 +281,30 @@ export interface VersionHandler {
 /**
  * Extract aliases from help.ts file
  */
-function extractAliasesFromHelpFile(sourceFile: any, ts: any): string[] | undefined {
+function extractAliasesFromHelpFile(
+  sourceFile: any,
+  ts: any
+): string[] | undefined {
   const aliases: string[] = [];
-  
+
   function visit(node: any) {
     // Look for aliases property in the returned object
-    if (ts.isPropertyAssignment(node) && 
-        ts.isIdentifier(node.name) && 
-        node.name.text === 'aliases' &&
-        ts.isArrayLiteralExpression(node.initializer)) {
-      
+    if (
+      ts.isPropertyAssignment(node) &&
+      ts.isIdentifier(node.name) &&
+      node.name.text === 'aliases' &&
+      ts.isArrayLiteralExpression(node.initializer)
+    ) {
       node.initializer.elements.forEach((element: any) => {
         if (ts.isStringLiteral(element)) {
           aliases.push(element.text);
         }
       });
     }
-    
+
     ts.forEachChild(node, visit);
   }
-  
+
   visit(sourceFile);
   return aliases.length > 0 ? aliases : undefined;
 }
@@ -292,19 +317,19 @@ async function copyValidationUtils(outputDir: string): Promise<void> {
     const { copyFile, readFile } = await import('node:fs/promises');
     const { dirname, join } = await import('node:path');
     const { fileURLToPath } = await import('node:url');
-    
+
     const __filename = fileURLToPath(import.meta.url);
     const __dirname = dirname(__filename);
-    
+
     // Check if we're in src or dist directory
-    const baseDir = __dirname.endsWith('/src') 
+    const baseDir = __dirname.endsWith('/src')
       ? join(__dirname, '..', 'dist')
       : __dirname;
 
     // Copy validation.js
     const validationSource = join(baseDir, 'utils', 'validation.js');
     const validationDest = join(outputDir, 'validation.js');
-    
+
     let content = await readFile(validationSource, 'utf-8');
     content = content.replace(
       "import { isBoolean, isFunction, isString } from '../internal/guards/index.js';",

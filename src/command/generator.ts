@@ -1,35 +1,46 @@
-import type { CommandDefinition, CommandGenerator, GeneratedCode } from './types.js';
 import type { CLIStructure } from '../core/types.js';
-import { generateLazyCLI, type LazyCliOptions, type CommandInfo } from '../generator/lazy-cli-template.js';
+import {
+  type CommandInfo,
+  generateLazyCLI,
+  type LazyCliOptions,
+} from '../generator/lazy-cli-template.js';
+import type {
+  CommandDefinition,
+  CommandGenerator,
+  GeneratedCode,
+} from './types.js';
 
 export class CommandGeneratorImpl implements CommandGenerator {
-  async generate(commands: CommandDefinition[], structure?: CLIStructure): Promise<GeneratedCode> {
+  async generate(
+    commands: CommandDefinition[],
+    structure?: CLIStructure
+  ): Promise<GeneratedCode> {
     // Convert command definitions to the format expected by lazy CLI template
-    const commandInfos: CommandInfo[] = commands.map(cmd => ({
+    const commandInfos: CommandInfo[] = commands.map((cmd) => ({
       name: cmd.name,
       path: this.getCommandModulePath(cmd),
       hasParams: cmd.hasParams,
-      aliases: cmd.metadata?.aliases || []
+      aliases: cmd.metadata?.aliases || [],
     }));
 
     const options: LazyCliOptions = {
       commands: commandInfos,
-      hasParams: commands.some(cmd => cmd.hasParams),
-      hasHelp: commands.some(cmd => cmd.hasHelp),
-      hasError: commands.some(cmd => cmd.hasError)
+      hasParams: commands.some((cmd) => cmd.hasParams),
+      hasHelp: commands.some((cmd) => cmd.hasHelp),
+      hasError: commands.some((cmd) => cmd.hasError),
     };
-    
+
     if (structure?.middleware) {
       Object.assign(options, {
         hasMiddleware: true,
-        middlewarePath: './app/middleware.js'
+        middlewarePath: './app/middleware.js',
       });
     }
-    
+
     if (structure?.globalError) {
       Object.assign(options, {
         hasGlobalError: true,
-        globalErrorPath: './app/global-error.js'
+        globalErrorPath: './app/global-error.js',
       });
     }
 
@@ -37,7 +48,7 @@ export class CommandGeneratorImpl implements CommandGenerator {
 
     return {
       content,
-      imports: [] // Imports are handled within the template
+      imports: [], // Imports are handled within the template
     };
   }
 
@@ -53,7 +64,10 @@ export class CommandGeneratorImpl implements CommandGenerator {
   }
 }
 
-export async function generate(commands: CommandDefinition[], structure?: CLIStructure): Promise<GeneratedCode> {
+export async function generate(
+  commands: CommandDefinition[],
+  structure?: CLIStructure
+): Promise<GeneratedCode> {
   const generator = new CommandGeneratorImpl();
   return generator.generate(commands, structure);
 }

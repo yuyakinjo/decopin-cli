@@ -62,7 +62,9 @@ export function isModuleError(error: unknown): error is ModuleError {
 /**
  * Type guard for errors with stack traces
  */
-export function hasStackTrace(error: unknown): error is Error & { stack: string } {
+export function hasStackTrace(
+  error: unknown
+): error is Error & { stack: string } {
   return error instanceof Error && typeof error.stack === 'string';
 }
 
@@ -78,10 +80,10 @@ export function formatError(error: CLIError): {
     return {
       type: 'validation',
       message: 'Validation error',
-      details: error.issues.map(issue => {
-        const path = issue.path?.map(p => p.key).join('.') || 'value';
+      details: error.issues.map((issue) => {
+        const path = issue.path?.map((p) => p.key).join('.') || 'value';
         return `${path}: ${issue.message}`;
-      })
+      }),
     };
   }
 
@@ -89,13 +91,13 @@ export function formatError(error: CLIError): {
     return {
       type: 'module',
       message: 'Module loading error',
-      details: [error.message]
+      details: [error.message],
     };
   }
 
   return {
     type: 'runtime',
     message: error.message || 'Unknown error',
-    details: []
+    details: [],
   };
 }

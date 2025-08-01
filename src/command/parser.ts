@@ -1,7 +1,6 @@
 import { readFileSync } from 'fs';
 import { dirname } from 'path';
 import * as ts from 'typescript';
-import type { CommandDefinition, CommandParser, ValidationResult } from './types.js';
 import type { CommandFile } from '../core/types.js';
 import {
   isArrowFunctionNode,
@@ -12,6 +11,11 @@ import {
   isIdentifierNode,
   isObjectLiteralNode,
 } from '../internal/guards/ast.js';
+import type {
+  CommandDefinition,
+  CommandParser,
+  ValidationResult,
+} from './types.js';
 
 export class CommandParserImpl implements CommandParser {
   async parse(content: string, filePath: string): Promise<CommandDefinition> {
@@ -35,14 +39,14 @@ export class CommandParserImpl implements CommandParser {
       name: commandName,
       path: filePath,
       hasParams: false, // Will be updated by scanner
-      hasHelp: false,   // Will be updated by scanner
-      hasError: false   // Will be updated by scanner
+      hasHelp: false, // Will be updated by scanner
+      hasError: false, // Will be updated by scanner
     };
-    
+
     if (description) {
       definition.metadata = { description };
     }
-    
+
     return definition;
   }
 
@@ -59,7 +63,7 @@ export class CommandParserImpl implements CommandParser {
 
     return {
       valid: errors.length === 0,
-      errors
+      errors,
     };
   }
 
@@ -115,7 +119,7 @@ export class CommandParserImpl implements CommandParser {
     if (appIndex === -1) {
       return 'root';
     }
-    
+
     const relativePath = dir.substring(appIndex + 4); // Skip 'app/'
     return relativePath || 'root';
   }
@@ -123,7 +127,11 @@ export class CommandParserImpl implements CommandParser {
   private extractDescription(sourceFile: ts.SourceFile): string | undefined {
     // Extract from JSDoc comments
     const firstNode = sourceFile.statements[0];
-    if (firstNode && (firstNode as any).jsDoc && (firstNode as any).jsDoc.length > 0) {
+    if (
+      firstNode &&
+      (firstNode as any).jsDoc &&
+      (firstNode as any).jsDoc.length > 0
+    ) {
       const comment = (firstNode as any).jsDoc[0].comment;
       return typeof comment === 'string' ? comment : undefined;
     }
@@ -131,7 +139,9 @@ export class CommandParserImpl implements CommandParser {
   }
 }
 
-export async function parseFiles(files: CommandFile[]): Promise<CommandDefinition[]> {
+export async function parseFiles(
+  files: CommandFile[]
+): Promise<CommandDefinition[]> {
   const parser = new CommandParserImpl();
   const definitions: CommandDefinition[] = [];
 

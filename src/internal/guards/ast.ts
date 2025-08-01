@@ -151,4 +151,3 @@ export function isCallExpressionNode(node: ts.Node): node is ts.CallExpression {
 export function isIdentifierNode(node: ts.Node): node is ts.Identifier {
   return ts.isIdentifier(node);
 }
-

@@ -1,4 +1,6 @@
 // Type guards for error parsing
+import type { BaseContext } from '../src/types/context.js';
+
 function hasIssues(error: unknown): error is { issues: unknown[] } {
   return typeof error === 'object' && error !== null && 'issues' in error && Array.isArray((error as any).issues);
 }
@@ -15,7 +17,7 @@ function hasStack(error: unknown): error is { stack: string } {
  * Global error handler for uncaught errors
  * This handler runs when no command-specific error.ts is available
  */
-export default function createGlobalErrorHandler() {
+export default function createGlobalErrorHandler(context: BaseContext<typeof process.env>) {
   return async (error: unknown) => {
     // Enhanced error display
     console.error('\n❌ An error occurred\n');
@@ -48,7 +50,7 @@ export default function createGlobalErrorHandler() {
     }
 
     // Debug mode - show stack trace
-    if ((process.env.DEBUG || process.env.CLI_DEBUG) && hasStack(error)) {
+    if ((context.env.DEBUG || context.env.CLI_DEBUG) && hasStack(error)) {
       console.error('\n📍 Stack Trace:');
       console.error(error.stack);
     }

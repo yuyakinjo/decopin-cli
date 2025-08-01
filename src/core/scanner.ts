@@ -1,5 +1,5 @@
 import { existsSync, readdirSync, statSync } from 'fs';
-import { join, relative, dirname } from 'path';
+import { dirname, join, relative } from 'path';
 import type { CLIStructure } from './types.js';
 
 export class Scanner {
@@ -10,7 +10,7 @@ export class Scanner {
       commands: [],
       params: [],
       help: [],
-      errors: []
+      errors: [],
     };
 
     if (!existsSync(this.appDir)) {
@@ -21,7 +21,7 @@ export class Scanner {
     const middlewarePath = join(this.appDir, 'middleware.ts');
     if (existsSync(middlewarePath)) {
       structure.middleware = {
-        path: middlewarePath
+        path: middlewarePath,
       };
     }
 
@@ -29,7 +29,7 @@ export class Scanner {
     const globalErrorPath = join(this.appDir, 'global-error.ts');
     if (existsSync(globalErrorPath)) {
       structure.globalError = {
-        path: globalErrorPath
+        path: globalErrorPath,
       };
     }
 
@@ -49,27 +49,28 @@ export class Scanner {
         this.scanDirectory(fullPath, structure, newParentPath);
       } else if (stat.isFile() && entry.endsWith('.ts')) {
         const relativePath = relative(this.appDir, fullPath);
-        const commandPath = dirname(relativePath) === '.' ? '' : dirname(relativePath);
+        const commandPath =
+          dirname(relativePath) === '.' ? '' : dirname(relativePath);
 
         if (entry === 'command.ts') {
           structure.commands.push({
             path: fullPath,
-            name: parentPath || 'root'
+            name: parentPath || 'root',
           });
         } else if (entry === 'params.ts') {
           structure.params.push({
             path: fullPath,
-            commandPath
+            commandPath,
           });
         } else if (entry === 'help.ts') {
           structure.help.push({
             path: fullPath,
-            commandPath
+            commandPath,
           });
         } else if (entry === 'error.ts') {
           structure.errors.push({
             path: fullPath,
-            commandPath
+            commandPath,
           });
         }
       }
@@ -86,7 +87,7 @@ export class Scanner {
       commands: [],
       params: [],
       help: [],
-      errors: []
+      errors: [],
     };
 
     if (!existsSync(this.appDir)) {
@@ -97,7 +98,7 @@ export class Scanner {
     const middlewarePath = join(this.appDir, 'middleware.ts');
     if (existsSync(middlewarePath)) {
       structure.middleware = {
-        path: middlewarePath
+        path: middlewarePath,
       };
     }
 
@@ -105,7 +106,7 @@ export class Scanner {
     const globalErrorPath = join(this.appDir, 'global-error.ts');
     if (existsSync(globalErrorPath)) {
       structure.globalError = {
-        path: globalErrorPath
+        path: globalErrorPath,
       };
     }
 

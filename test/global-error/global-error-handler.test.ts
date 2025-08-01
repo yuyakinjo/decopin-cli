@@ -39,7 +39,8 @@ describe('Global Error Handler', () => {
 
       // Import and execute the global error handler
       const createHandler = (await import('../../app/global-error.js')).default;
-      const handler = createHandler();
+      const mockContext = { env: process.env, args: [], command: [], options: {} };
+      const handler = createHandler(mockContext);
 
       await expect(handler(validationError)).rejects.toThrow('process.exit called');
 
@@ -63,7 +64,8 @@ describe('Global Error Handler', () => {
       );
 
       const createHandler = (await import('../../app/global-error.js')).default;
-      const handler = createHandler();
+      const mockContext = { env: process.env, args: [], command: [], options: {} };
+      const handler = createHandler(mockContext);
 
       await expect(handler(validationError)).rejects.toThrow('process.exit called');
       expect(consoleErrorSpy).toHaveBeenCalledWith('  • value: General validation error');
@@ -80,7 +82,8 @@ describe('Global Error Handler', () => {
       );
 
       const createHandler = (await import('../../app/global-error.js')).default;
-      const handler = createHandler();
+      const mockContext = { env: process.env, args: [], command: [], options: {} };
+      const handler = createHandler(mockContext);
 
       await expect(handler(moduleError)).rejects.toThrow('process.exit called');
 
@@ -95,7 +98,8 @@ describe('Global Error Handler', () => {
       const runtimeError = new Error('Something went wrong');
 
       const createHandler = (await import('../../app/global-error.js')).default;
-      const handler = createHandler();
+      const mockContext = { env: process.env, args: [], command: [], options: {} };
+      const handler = createHandler(mockContext);
 
       await expect(handler(runtimeError)).rejects.toThrow('process.exit called');
 
@@ -107,7 +111,8 @@ describe('Global Error Handler', () => {
       const unknownError = 'String error' as any;
 
       const createHandler = (await import('../../app/global-error.js')).default;
-      const handler = createHandler();
+      const mockContext = { env: process.env, args: [], command: [], options: {} };
+      const handler = createHandler(mockContext);
 
       await expect(handler(unknownError)).rejects.toThrow('process.exit called');
 
@@ -122,7 +127,8 @@ describe('Global Error Handler', () => {
       const error = new Error('Test error with stack');
 
       const createHandler = (await import('../../app/global-error.js')).default;
-      const handler = createHandler();
+      const mockContext = { env: process.env, args: [], command: [], options: {} };
+      const handler = createHandler(mockContext);
 
       await expect(handler(error)).rejects.toThrow('process.exit called');
 
@@ -135,7 +141,8 @@ describe('Global Error Handler', () => {
       const error = new Error('Test error with stack');
 
       const createHandler = (await import('../../app/global-error.js')).default;
-      const handler = createHandler();
+      const mockContext = { env: process.env, args: [], command: [], options: {} };
+      const handler = createHandler(mockContext);
 
       await expect(handler(error)).rejects.toThrow('process.exit called');
 
@@ -147,7 +154,8 @@ describe('Global Error Handler', () => {
       const error = new Error('Test error without debug');
 
       const createHandler = (await import('../../app/global-error.js')).default;
-      const handler = createHandler();
+      const mockContext = { env: process.env, args: [], command: [], options: {} };
+      const handler = createHandler(mockContext);
 
       await expect(handler(error)).rejects.toThrow('process.exit called');
 
@@ -165,7 +173,8 @@ describe('Global Error Handler', () => {
       );
 
       const createHandler = (await import('../../app/global-error.js')).default;
-      const handler = createHandler();
+      const mockContext = { env: process.env, args: [], command: [], options: {} };
+      const handler = createHandler(mockContext);
 
       await expect(handler(validationError)).rejects.toThrow('process.exit called');
 
@@ -182,7 +191,8 @@ describe('Global Error Handler', () => {
       );
 
       const createHandler = (await import('../../app/global-error.js')).default;
-      const handler = createHandler();
+      const mockContext = { env: process.env, args: [], command: [], options: {} };
+      const handler = createHandler(mockContext);
 
       await expect(handler(moduleError)).rejects.toThrow('process.exit called');
 
@@ -194,7 +204,8 @@ describe('Global Error Handler', () => {
       const error = new Error('General error');
 
       const createHandler = (await import('../../app/global-error.js')).default;
-      const handler = createHandler();
+      const mockContext = { env: process.env, args: [], command: [], options: {} };
+      const handler = createHandler(mockContext);
 
       await expect(handler(error)).rejects.toThrow('process.exit called');
 

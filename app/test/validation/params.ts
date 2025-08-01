@@ -1,5 +1,5 @@
 import * as v from 'valibot';
-import type { ParamsHandler } from '../../../dist/types/index.js';
+import type { ParamsHandler, BaseContext } from '../../../dist/types/index.js';
 
 // バリデーションテスト用のスキーマ
 const ValidationTestSchema = v.object({
@@ -9,7 +9,7 @@ const ValidationTestSchema = v.object({
 
 export type ValidationTestData = v.InferInput<typeof ValidationTestSchema>;
 
-export default function createParams(): ParamsHandler {
+export default function createParams(context: BaseContext<typeof process.env>): ParamsHandler {
   return {
     schema: ValidationTestSchema,
     mappings: [

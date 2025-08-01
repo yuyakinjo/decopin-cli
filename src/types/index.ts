@@ -3,8 +3,10 @@
 // 実行コンテキスト関連
 export type {
   BaseCommandContext,
+  BaseContext,
   CommandContext,
   CommandHandler,
+  ErrorContext,
 } from './context.js';
 
 // コマンド定義関連
@@ -14,13 +16,24 @@ export type {
   DynamicParam,
   ParsedCommand,
 } from './definition.js';
-
+// エラー型定義
+export type {
+  CLIError,
+  ModuleError,
+  ValidationError as CLIValidationError,
+  ValidationIssue,
+} from './errors.js';
+export {
+  formatError,
+  hasStackTrace,
+  isModuleError,
+  isValidationError,
+} from './errors.js';
 // メタデータ関連
 export type {
   CommandMetadata,
   HelpHandler,
 } from './metadata.js';
-
 // バリデーション関連（valibotのみ）
 export type {
   ErrorHandler,
@@ -32,30 +45,19 @@ export type {
   ValidationResult,
 } from './validation.js';
 
-// エラー型定義
-export type {
-  CLIError,
-  ValidationError as CLIValidationError,
-  ModuleError,
-  ValidationIssue,
-} from './errors.js';
-
-export {
-  isValidationError,
-  isModuleError,
-  hasStackTrace,
-  formatError,
-} from './errors.js';
-
+import type { BaseContext } from './context.js';
 // グローバルエラーハンドラー
 import type { CLIError } from './errors.js';
 export type GlobalErrorHandler = (error: CLIError) => Promise<void> | void;
+export type GlobalErrorHandlerFactory<E = typeof process.env> = (
+  context: BaseContext<E>
+) => GlobalErrorHandler;
 
 // ミドルウェア関連
 export type {
   MiddlewareContext,
-  NextFunction,
-  MiddlewareHandler,
-  MiddlewareFactory,
   MiddlewareExport,
+  MiddlewareFactory,
+  MiddlewareHandler,
+  NextFunction,
 } from './middleware.js';

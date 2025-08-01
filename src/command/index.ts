@@ -3,8 +3,8 @@
  * This module is lazy-loaded when commands need to be processed
  */
 
-import type { CommandDefinition } from './types.js';
 import type { CommandFile } from '../core/types.js';
+import type { CommandDefinition } from './types.js';
 
 // Lazy-loaded parser module
 let parserModule: typeof import('./parser.js') | null = null;
@@ -24,13 +24,18 @@ async function getGenerator() {
   return generatorModule;
 }
 
-export async function parseCommands(files: CommandFile[]): Promise<CommandDefinition[]> {
+export async function parseCommands(
+  files: CommandFile[]
+): Promise<CommandDefinition[]> {
   // Parser module is initialized here
   const parser = await getParser();
   return parser.parseFiles(files);
 }
 
-export async function generateCommands(commands: CommandDefinition[], structure?: any): Promise<string> {
+export async function generateCommands(
+  commands: CommandDefinition[],
+  structure?: any
+): Promise<string> {
   // Generator module is initialized here
   const generator = await getGenerator();
   const result = await generator.generate(commands, structure);
@@ -38,4 +43,8 @@ export async function generateCommands(commands: CommandDefinition[], structure?
 }
 
 // Re-export types (no runtime cost)
-export type { CommandDefinition, CommandMetadata, CommandHandler } from './types.js';
+export type {
+  CommandDefinition,
+  CommandHandler,
+  CommandMetadata,
+} from './types.js';

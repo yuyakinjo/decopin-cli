@@ -1,4 +1,5 @@
 import type { MiddlewareHandler, MiddlewareContext, NextFunction } from '../src/types/middleware.js';
+import type { BaseContext } from '../src/types/context.js';
 
 /**
  * Example middleware file - rename to middleware.ts to enable
@@ -10,7 +11,7 @@ import type { MiddlewareHandler, MiddlewareContext, NextFunction } from '../src/
  * - Measure performance
  * - Modify context before command execution
  */
-export default function createMiddleware(): MiddlewareHandler {
+export default function createMiddleware(context: BaseContext<typeof process.env>): MiddlewareHandler {
   return async (context: MiddlewareContext, next: NextFunction) => {
     // Example 1: Logging
     if (context.env.CLI_DEBUG) {

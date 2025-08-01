@@ -3,7 +3,11 @@
  * Generates CLI code that uses dynamic imports for optimal performance
  */
 
-import { generateMiddlewareWrapper, generateMiddlewareExecution, generateParseOptionsFunction } from './middleware-template.js';
+import {
+  generateMiddlewareExecution,
+  generateMiddlewareWrapper,
+  generateParseOptionsFunction,
+} from './middleware-template.js';
 
 function generateGlobalErrorHandler(options: LazyCliOptions): string {
   if (!options.hasGlobalError || !options.globalErrorPath) {
@@ -15,14 +19,15 @@ async function handleDefaultError(error) {
   }
 
   const globalErrorImportPath = options.globalErrorPath.replace(/\.ts$/, '.js');
-  
+
   return `// Error handler with global error fallback
 async function handleDefaultError(error) {
   // Try global error handler first
   try {
     const globalErrorModule = await import('${globalErrorImportPath}');
     if (globalErrorModule.default && typeof globalErrorModule.default === 'function') {
-      const errorHandler = globalErrorModule.default();
+      const baseContext = { args: process.argv.slice(2), env: process.env, command: process.argv.slice(2), options: {} };
+      const errorHandler = globalErrorModule.default(baseContext);
       if (typeof errorHandler === 'function') {
         await errorHandler(error);
         return; // Global error handler should handle process.exit
@@ -114,17 +119,17 @@ execute().then(() => {
 
 function generateCommandCases(commands: CommandInfo[]): string {
   const cases: string[] = [];
-  
+
   // Generate cases for actual commands
-  commands.forEach(cmd => {
+  commands.forEach((cmd) => {
     const caseName = cmd.name === 'root' ? 'default' : cmd.name;
     cases.push(`      case '${caseName}':
         await executeCommand('${cmd.path}', commandArgs);
         break;`);
-    
+
     // Generate cases for aliases
     if (cmd.aliases && cmd.aliases.length > 0) {
-      cmd.aliases.forEach(alias => {
+      cmd.aliases.forEach((alias) => {
         // For nested commands, we need to replace the last part with the alias
         let aliasCase: string;
         if (cmd.name.includes('/')) {
@@ -134,14 +139,14 @@ function generateCommandCases(commands: CommandInfo[]): string {
         } else {
           aliasCase = alias;
         }
-        
+
         cases.push(`      case '${aliasCase}':
         await executeCommand('${cmd.path}', commandArgs);
         break;`);
       });
     }
   });
-  
+
   return cases.join('\n');
 }
 
@@ -159,21 +164,23 @@ function parseCommand(args) {
   
   // Check if this could be a nested command
   const commandList = [];
-  ${options.commands.map(cmd => {
-    const names = [cmd.name];
-    if (cmd.aliases) {
-      cmd.aliases.forEach(alias => {
-        if (cmd.name.includes('/')) {
-          const parts = cmd.name.split('/');
-          parts[parts.length - 1] = alias;
-          names.push(parts.join('/'));
-        } else {
-          names.push(alias);
-        }
-      });
-    }
-    return names.map(n => `commandList.push('${n}');`).join('\n  ');
-  }).join('\n  ')}
+  ${options.commands
+    .map((cmd) => {
+      const names = [cmd.name];
+      if (cmd.aliases) {
+        cmd.aliases.forEach((alias) => {
+          if (cmd.name.includes('/')) {
+            const parts = cmd.name.split('/');
+            parts[parts.length - 1] = alias;
+            names.push(parts.join('/'));
+          } else {
+            names.push(alias);
+          }
+        });
+      }
+      return names.map((n) => `commandList.push('${n}');`).join('\n  ');
+    })
+    .join('\n  ')}
   
   let bestMatch = '';
   let bestMatchLength = 0;
@@ -241,15 +248,18 @@ async function executeCommand(modulePath, args) {
     throw new Error(\`Invalid command module: \${modulePath}\`);
   }
 
-  ${options.hasParams ? `
+  ${
+    options.hasParams
+      ? `
   // Load params if needed
   const paramsPath = modulePath.replace('/command.js', '/params.js');
   try {
     const paramsModule = await import(paramsPath);
     const createParams = paramsModule.default;
-    const paramsHandler = typeof createParams === 'function' ? createParams() : createParams;
+    const baseContext = { args, env: process.env, command: args, options: {} };
+    const paramsHandler = typeof createParams === 'function' ? createParams(baseContext) : createParams;
     const params = await validateParams(args, paramsHandler);
-    await handler({ validatedData: params, args, env: {} });
+    await handler({ validatedData: params, args, env: process.env, command: args, options: {} });
   } catch (e) {
     // Check if this is a validation error or missing params file
     if (e.code === 'ERR_MODULE_NOT_FOUND') {
@@ -257,7 +267,7 @@ async function executeCommand(modulePath, args) {
       if (process.env.DEBUG) {
         console.error('No params file found, running without validation');
       }
-      await handler({ validatedData: {}, args, env: {} });
+      await handler({ validatedData: {}, args, env: process.env, command: args, options: {} });
     } else {
       // Validation error or other error
       if (e.issues) {
@@ -266,7 +276,9 @@ async function executeCommand(modulePath, args) {
         try {
           const errorModule = await import(errorPath);
           if (errorModule.default && typeof errorModule.default === 'function') {
-            await errorModule.default(e);
+            const errorHandler = errorModule.default;
+            const errorContext = { validatedData: {}, args, env: process.env, command: args, options: {}, error: e };
+            await errorHandler(errorContext);
             return; // Error handler should handle process.exit
           }
         } catch {
@@ -279,12 +291,16 @@ async function executeCommand(modulePath, args) {
         throw e;
       }
     }
-  }` : `
+  }`
+      : `
   // Execute without params validation
-  await handler({ args, env: {} });`}
+  await handler({ validatedData: {}, args, env: process.env, command: args, options: {} });`
+  }
 }
 
-${options.hasParams ? `
+${
+  options.hasParams
+    ? `
 // Validate parameters lazily
 async function validateParams(args, paramsHandler) {
   if (!paramsHandler || !paramsHandler.schema) {
@@ -368,7 +384,9 @@ async function getValidator(schema) {
   } else {
     return { parseAsync: async (data) => data };
   }
-}` : ''}
+}`
+    : ''
+}
 
 // Default help message
 async function showDefaultHelp() {
@@ -393,9 +411,11 @@ async function showDefaultHelp() {
   
   console.log('Usage: cli <command> [options]');
   console.log('\\nAvailable commands:');
-  ${options.commands.map(cmd => 
-    `console.log('  ${cmd.name === 'root' ? 'default' : cmd.name}');`
-  ).join('\n  ')}
+  ${options.commands
+    .map(
+      (cmd) => `console.log('  ${cmd.name === 'root' ? 'default' : cmd.name}');`
+    )
+    .join('\n  ')}
   console.log('\\nOptions:');
   console.log('  --help, -h     Show help');
   console.log('  --version, -v  Show version');

@@ -2,7 +2,10 @@
  * Middleware integration template for CLI generation
  */
 
-export function generateMiddlewareWrapper(hasMiddleware: boolean, middlewarePath?: string): string {
+export function generateMiddlewareWrapper(
+  hasMiddleware: boolean,
+  middlewarePath?: string
+): string {
   if (!hasMiddleware || !middlewarePath) {
     return '';
   }
@@ -12,7 +15,10 @@ export function generateMiddlewareWrapper(hasMiddleware: boolean, middlewarePath
     let middlewareNext = async () => {`;
 }
 
-export function generateMiddlewareExecution(hasMiddleware: boolean, middlewarePath?: string): string {
+export function generateMiddlewareExecution(
+  hasMiddleware: boolean,
+  middlewarePath?: string
+): string {
   if (!hasMiddleware || !middlewarePath) {
     return '';
   }
@@ -24,7 +30,8 @@ export function generateMiddlewareExecution(hasMiddleware: boolean, middlewarePa
     const middlewareModule = await import('${middlewarePath}');
     const createMiddleware = middlewareModule.default;
     if (typeof createMiddleware === 'function') {
-      const middleware = createMiddleware();
+      const baseContext = { args: commandArgs, env: process.env, command: commandPath.split('/'), options: parseOptions(commandArgs) };
+      const middleware = createMiddleware(baseContext);
       const context = {
         command: commandPath.split('/'),
         args: commandArgs,

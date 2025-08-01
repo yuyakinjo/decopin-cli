@@ -49,8 +49,17 @@ export interface CommandContext<T = unknown, E = unknown>
   env: E extends unknown ? E : Record<string, unknown>;
 }
 
+// エラーハンドラー用のコンテキスト
+export interface ErrorContext<T = unknown, E = unknown>
+  extends CommandContext<T, E> {
+  /** 発生したエラー */
+  error: unknown;
+}
+
 // 特化された型エイリアス
-export type BaseContext = BaseCommandContext;
+export type BaseContext<E = typeof process.env> = BaseCommandContext & {
+  env: E;
+};
 export type ValidatedContext<T> = ValidatedCommandContext<T>;
 export type EnvContext<E> = EnvCommandContext<E>;
 
