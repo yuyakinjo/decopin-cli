@@ -7,21 +7,13 @@
 [![Lint](https://github.com/yuyakinjo/decopin-cli/actions/workflows/lint.yml/badge.svg)](https://github.com/yuyakinjo/decopin-cli/actions/workflows/lint.yml)
 [![Performance](https://img.shields.io/badge/dynamic/json?url=https://raw.githubusercontent.com/yuyakinjo/decopin-cli/performance-history/latest-badge.json&query=$.message&label=startup%20time&color=green)](https://github.com/yuyakinjo/decopin-cli/blob/performance-history/latest.md)
 
-A TypeScript-first CLI builder inspired by Next.js App Router's file-based routing system. Create powerful command-line interfaces with zero configuration using familiar file-based conventions and pre-validated, type-safe command contexts.
+A TypeScript-first CLI builder inspired by Next.js App Router's file-based routing system. 
 
 ## ✨ Features
 
 - **📁 File-based routing**: Commands defined in `app/` directory with intuitive folder structure
 - **🔧 TypeScript-first**: Full TypeScript support with proper type definitions
 - **⚡ Pre-validated data**: Commands receive type-safe, pre-validated data from `params.ts`
-- **🔍 AST parsing**: TypeScript AST parsing for automatic command metadata extraction
-- **🛡️ Integrated validation**: Built-in validation with valibot, no separate `validate.ts` needed
-- **🎯 Function-based commands**: Clean function-based command definitions with dependency injection
-- **🔄 Real-time development**: Changes reflect instantly with mise watch tasks
-- **📦 Zero configuration**: Works out of the box with sensible defaults
-- **⚡ Dynamic imports**: Generated CLIs use dynamic imports for instant command loading
-- **🏷️ Command aliases**: Support for command aliases (e.g., `hi` → `hello`, `add` → `user create`)
-- **🔌 Middleware support**: Global middleware for authentication, logging, and cross-cutting concerns
 
 ## 🚀 Quick Start
 
