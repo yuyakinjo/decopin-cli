@@ -251,8 +251,7 @@ export const builderInfo = {
 // Re-export types
 export type {
   CLIStructure,
-  CommandMetadata as CommandDefinition,
-  ParamMapping as ParamsDefinition,
+  CommandFile,
 } from './core/types.js';
 
 // Export from existing types for compatibility
