@@ -44,7 +44,7 @@ export function isValidationError(error: unknown): error is ValidationError {
   return (
     error instanceof Error &&
     'issues' in error &&
-    Array.isArray((error as any).issues)
+    Array.isArray((error as ValidationError).issues)
   );
 }
 
@@ -55,7 +55,7 @@ export function isModuleError(error: unknown): error is ModuleError {
   return (
     error instanceof Error &&
     'code' in error &&
-    typeof (error as any).code === 'string'
+    typeof (error as ModuleError).code === 'string'
   );
 }
 

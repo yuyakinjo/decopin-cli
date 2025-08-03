@@ -3,7 +3,7 @@
  * This module is lazy-loaded when commands need to be processed
  */
 
-import type { CommandFile } from '../core/types.js';
+import type { CLIStructure, CommandFile } from '../core/types.js';
 import type { CommandDefinition } from './types.js';
 
 // Lazy-loaded parser module
@@ -34,7 +34,7 @@ export async function parseCommands(
 
 export async function generateCommands(
   commands: CommandDefinition[],
-  structure?: any
+  structure?: CLIStructure
 ): Promise<string> {
   // Generator module is initialized here
   const generator = await getGenerator();

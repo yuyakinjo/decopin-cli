@@ -158,8 +158,7 @@ export async function buildCLI(config: BuildConfig): Promise<BuildResult> {
       }
 
       const generated = await cmdModule.generateCommands(commands, structure);
-      cliContent =
-        typeof generated === 'string' ? generated : (generated as any).content;
+      cliContent = generated;
     }
 
     // Copy validation utilities if needed
@@ -281,12 +280,12 @@ export interface VersionHandler {
  * Extract aliases from help.ts file
  */
 function extractAliasesFromHelpFile(
-  sourceFile: any,
-  ts: any
+  sourceFile: import('typescript').SourceFile,
+  ts: typeof import('typescript')
 ): string[] | undefined {
   const aliases: string[] = [];
 
-  function visit(node: any) {
+  function visit(node: import('typescript').Node) {
     // Look for aliases property in the returned object
     if (
       ts.isPropertyAssignment(node) &&
@@ -294,7 +293,7 @@ function extractAliasesFromHelpFile(
       node.name.text === 'aliases' &&
       ts.isArrayLiteralExpression(node.initializer)
     ) {
-      node.initializer.elements.forEach((element: any) => {
+      node.initializer.elements.forEach((element) => {
         if (ts.isStringLiteral(element)) {
           aliases.push(element.text);
         }

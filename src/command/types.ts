@@ -39,6 +39,6 @@ export interface ValidationResult {
   errors: string[];
 }
 
-export type CommandHandler<T = any> = (
+export type CommandHandler<T = unknown> = (
   context: CommandContext<T>
 ) => Promise<void> | void;

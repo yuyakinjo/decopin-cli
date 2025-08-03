@@ -61,9 +61,52 @@ export type Context<E = typeof process.env> = BaseCommandContext & {
   env: E;
 };
 
-// Backward compatibility alias (will be removed in future versions)
+/**
+ * @deprecated Use `Context` instead. Will be removed in v1.0.0.
+ *
+ * Migration guide:
+ * ```typescript
+ * // Before
+ * import type { BaseContext } from 'decopin-cli';
+ * function myFunc(context: BaseContext<MyEnv>) { ... }
+ *
+ * // After
+ * import type { Context } from 'decopin-cli';
+ * function myFunc(context: Context<MyEnv>) { ... }
+ * ```
+ */
 export type BaseContext<E = typeof process.env> = Context<E>;
+
+/**
+ * @deprecated Use `CommandContext` with generic parameters instead. Will be removed in v1.0.0.
+ *
+ * Migration guide:
+ * ```typescript
+ * // Before
+ * import type { ValidatedContext } from 'decopin-cli';
+ * function myFunc(context: ValidatedContext<MyData>) { ... }
+ *
+ * // After
+ * import type { CommandContext } from 'decopin-cli';
+ * function myFunc(context: CommandContext<MyData>) { ... }
+ * ```
+ */
 export type ValidatedContext<T> = ValidatedCommandContext<T>;
+
+/**
+ * @deprecated Use `Context` instead. Will be removed in v1.0.0.
+ *
+ * Migration guide:
+ * ```typescript
+ * // Before
+ * import type { EnvContext } from 'decopin-cli';
+ * function myFunc(context: EnvContext<MyEnv>) { ... }
+ *
+ * // After
+ * import type { Context } from 'decopin-cli';
+ * function myFunc(context: Context<MyEnv>) { ... }
+ * ```
+ */
 export type EnvContext<E> = EnvCommandContext<E>;
 
 /**

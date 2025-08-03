@@ -38,7 +38,16 @@ export class Scanner {
   }
 
   private scanDirectory(dir: string, structure: CLIStructure, parentPath = '') {
-    const entries = readdirSync(dir);
+    let entries: string[];
+    try {
+      entries = readdirSync(dir);
+    } catch (error) {
+      console.warn(
+        `Warning: Failed to read directory ${dir}:`,
+        error instanceof Error ? error.message : 'Unknown error'
+      );
+      return;
+    }
 
     for (const entry of entries) {
       const fullPath = join(dir, entry);

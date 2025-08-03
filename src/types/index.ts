@@ -4,9 +4,9 @@
 export type {
   BaseCommandContext,
   BaseContext,
-  Context,
   CommandContext,
   CommandHandler,
+  Context,
   ErrorContext,
 } from './context.js';
 

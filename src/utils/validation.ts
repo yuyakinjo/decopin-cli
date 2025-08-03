@@ -6,6 +6,7 @@ import type {
   EnvValidationResult,
   ManualFieldSchema,
   ManualSchema,
+  ParamMapping,
   ParamsHandler,
   ValidationFunction,
   ValidationResult,
@@ -241,36 +242,129 @@ export function extractData(
   // Handle based on which property exists
   if (paramsDefinition.mappings) {
     for (const mapping of paramsDefinition.mappings) {
-    let value: unknown;
+      let value: unknown;
 
-    // 位置引数から値を取得（位置引数を優先）
-    if (
-      mapping.argIndex !== undefined &&
-      args[mapping.argIndex] !== undefined
-    ) {
-      value = args[mapping.argIndex];
-    }
-    // オプションから値を取得
-    else if (mapping.option && options[mapping.option] !== undefined) {
-      value = options[mapping.option];
-    }
-    // デフォルト値を使用
-    else if (mapping.defaultValue !== undefined) {
-      value = mapping.defaultValue;
-    }
+      // 位置引数から値を取得（位置引数を優先）
+      if (
+        mapping.argIndex !== undefined &&
+        args[mapping.argIndex] !== undefined
+      ) {
+        value = args[mapping.argIndex];
+      }
+      // オプションから値を取得
+      else if (mapping.option && options[mapping.option] !== undefined) {
+        value = options[mapping.option];
+      }
+      // デフォルト値を使用
+      else if (mapping.defaultValue !== undefined) {
+        value = mapping.defaultValue;
+      }
 
-    if (value !== undefined) {
-      data[mapping.field] = value;
+      if (value !== undefined) {
+        data[mapping.field] = value;
+      }
     }
-  }
-
   }
   return data;
 }
 
 /**
- * バリデーション関数を作成（スキーマタイプ自動判別対応）
+ * マッピングからValibotスキーマを作成
  */
+function createSchemaFromMappings(mappings: ParamMapping[]): v.GenericSchema {
+  const shape: Record<string, v.GenericSchema> = {};
+
+  for (const mapping of mappings) {
+    let fieldSchema: v.GenericSchema;
+    switch (mapping.type) {
+      case 'number':
+        fieldSchema = v.pipe(
+          v.union([v.string(), v.number()]),
+          v.transform((input) => {
+            if (typeof input === 'number') return input;
+            const num = Number(input);
+            if (Number.isNaN(num)) {
+              throw new Error(`Invalid number: ${input}`);
+            }
+            return num;
+          })
+        );
+        break;
+      case 'boolean':
+        fieldSchema = v.pipe(
+          v.union([v.string(), v.boolean()]),
+          v.transform((input) => {
+            if (typeof input === 'boolean') return input;
+            if (input === 'true' || input === '1' || input === 'yes')
+              return true;
+            if (input === 'false' || input === '0' || input === 'no')
+              return false;
+            throw new Error(`Invalid boolean: ${input}`);
+          })
+        );
+        break;
+      case 'array':
+        fieldSchema = v.pipe(
+          v.string(),
+          v.transform((input) => input.split(',').map((s) => s.trim()))
+        );
+        break;
+      case 'object':
+        fieldSchema = v.pipe(
+          v.string(),
+          v.transform((input) => {
+            try {
+              return JSON.parse(input);
+            } catch {
+              throw new Error(`Invalid JSON: ${input}`);
+            }
+          })
+        );
+        break;
+      case 'string':
+      default:
+        fieldSchema = v.string();
+        break;
+    }
+
+    if (mapping.required) {
+      shape[mapping.field] = fieldSchema;
+    } else {
+      shape[mapping.field] = v.optional(fieldSchema);
+    }
+  }
+
+  return v.object(shape);
+}
+
+/**
+ * Valibotスキーマでバリデーションを実行
+ */
+function validateWithValibotSchema(
+  schema: v.GenericSchema,
+  data: Record<string, unknown>
+): ValidationResult {
+  const result = v.safeParse(schema, data);
+
+  if (result.success) {
+    return {
+      success: true,
+      data: result.output,
+    };
+  } else {
+    return {
+      success: false,
+      error: {
+        message: 'Validation failed',
+        issues: result.issues.map((issue) => ({
+          path: issue.path?.map((p) => String(p.key)) || [],
+          message: issue.message,
+        })),
+      },
+    };
+  }
+}
+
 export function createValidationFunction(
   paramsDefinition: ParamsHandler
 ): ValidationFunction {
@@ -280,115 +374,20 @@ export function createValidationFunction(
       if (paramsDefinition.mappings && paramsDefinition.schema) {
         // Both mappings and schema: use mappings to extract data, then validate with schema
         const data = extractData(args, options, params, paramsDefinition);
-        
+
         if (isManualSchema(paramsDefinition.schema)) {
           return validateWithManualSchema(data, paramsDefinition.schema);
         } else if (isValibotSchema(paramsDefinition.schema)) {
-          const result = v.safeParse(paramsDefinition.schema, data);
-          if (result.success) {
-            return {
-              success: true,
-              data: result.output,
-            };
-          } else {
-            return {
-              success: false,
-              error: {
-                message: 'Validation failed',
-                issues: result.issues.map((issue: any) => ({
-                  path: issue.path?.map((p: any) => String(p.key)) || [],
-                  message: issue.message,
-                })),
-              },
-            };
-          }
+          return validateWithValibotSchema(paramsDefinition.schema, data);
         } else {
           throw new Error('Invalid schema type');
         }
       } else if (paramsDefinition.mappings) {
         // Mappings-only: create schema from mappings
         const data = extractData(args, options, params, paramsDefinition);
-        
-        // Create schema from mappings
-        const shape: Record<string, any> = {};
-        for (const mapping of paramsDefinition.mappings) {
-          let fieldSchema;
-          switch (mapping.type) {
-            case 'number':
-              fieldSchema = v.pipe(
-                v.union([v.string(), v.number()]),
-                v.transform((input) => {
-                  if (typeof input === 'number') return input;
-                  const num = Number(input);
-                  if (isNaN(num)) {
-                    throw new Error(`Invalid number: ${input}`);
-                  }
-                  return num;
-                })
-              );
-              break;
-            case 'boolean':
-              fieldSchema = v.pipe(
-                v.union([v.string(), v.boolean()]),
-                v.transform((input) => {
-                  if (typeof input === 'boolean') return input;
-                  if (input === 'true' || input === '1' || input === 'yes') return true;
-                  if (input === 'false' || input === '0' || input === 'no') return false;
-                  throw new Error(`Invalid boolean: ${input}`);
-                })
-              );
-              break;
-            case 'array':
-              fieldSchema = v.pipe(
-                v.string(),
-                v.transform((input) => input.split(',').map(s => s.trim()))
-              );
-              break;
-            case 'object':
-              fieldSchema = v.pipe(
-                v.string(),
-                v.transform((input) => {
-                  try {
-                    return JSON.parse(input);
-                  } catch {
-                    throw new Error(`Invalid JSON: ${input}`);
-                  }
-                })
-              );
-              break;
-            case 'string':
-            default:
-              fieldSchema = v.string();
-              break;
-          }
-          
-          if (mapping.required) {
-            shape[mapping.field] = fieldSchema;
-          } else {
-            shape[mapping.field] = v.optional(fieldSchema);
-          }
-        }
-        
-        const schema = v.object(shape);
-        const result = v.safeParse(schema, data);
-        
-        if (result.success) {
-          return {
-            success: true,
-            data: result.output,
-          };
-        } else {
-          return {
-            success: false,
-            error: {
-              message: 'Validation failed',
-              issues: result.issues.map((issue) => ({
-                path: issue.path?.map((p: any) => String(p.key)) || [],
-                message: issue.message,
-              })),
-            },
-          };
-        }
+
+        const schema = createSchemaFromMappings(paramsDefinition.mappings);
+        return validateWithValibotSchema(schema, data);
       } else if (paramsDefinition.schema) {
         // Schema-based validation
         const data: Record<string, unknown> = {};
@@ -397,31 +396,11 @@ export function createValidationFunction(
           data[`arg${index}`] = arg;
         });
         Object.assign(data, options);
-        
+
         // スキーマタイプの自動判別
         if (isValibotSchema(paramsDefinition.schema)) {
-          // valibotバリデーション
-          const result = v.safeParse(paramsDefinition.schema, data);
-
-          if (result.success) {
-            return {
-              success: true,
-              data: result.output,
-            };
-          } else {
-            return {
-              success: false,
-              error: {
-                message: 'Validation failed',
-                issues: result.issues.map((issue: any) => ({
-                  path: issue.path?.map((p: any) => String(p.key)) || [],
-                  message: issue.message,
-                })),
-              },
-            };
-          }
+          return validateWithValibotSchema(paramsDefinition.schema, data);
         } else if (isManualSchema(paramsDefinition.schema)) {
-          // オブジェクトベースのバリデーション
           return validateWithManualSchema(data, paramsDefinition.schema);
         } else {
           throw new Error(
@@ -429,8 +408,10 @@ export function createValidationFunction(
           );
         }
       }
-      
-      throw new Error('Invalid ParamsHandler: must provide either schema or mappings');
+
+      throw new Error(
+        'Invalid ParamsHandler: must provide either schema or mappings'
+      );
     } catch (error) {
       return {
         success: false,

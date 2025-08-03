@@ -127,13 +127,15 @@ export class CommandParserImpl implements CommandParser {
   private extractDescription(sourceFile: ts.SourceFile): string | undefined {
     // Extract from JSDoc comments
     const firstNode = sourceFile.statements[0];
-    if (
-      firstNode &&
-      (firstNode as any).jsDoc &&
-      (firstNode as any).jsDoc.length > 0
-    ) {
-      const comment = (firstNode as any).jsDoc[0].comment;
-      return typeof comment === 'string' ? comment : undefined;
+    if (firstNode && ts.getJSDocCommentsAndTags(firstNode).length > 0) {
+      const jsDoc = ts.getJSDocCommentsAndTags(firstNode)[0];
+      if (jsDoc && ts.isJSDoc(jsDoc) && jsDoc.comment) {
+        if (typeof jsDoc.comment === 'string') {
+          return jsDoc.comment;
+        } else if (Array.isArray(jsDoc.comment)) {
+          return jsDoc.comment.map(c => c.text || '').join('');
+        }
+      }
     }
     return undefined;
   }

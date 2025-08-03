@@ -93,7 +93,7 @@ export interface ManualSchema {
 /**
  * パラメータ定義（valibotスキーマとオブジェクトベースの両方をサポート）
  */
-export type ParamsHandler = 
+export type ParamsHandler =
   | {
       /** 明示的なvalibotスキーマを使用 */
       schema: v.GenericSchema | ManualSchema;
