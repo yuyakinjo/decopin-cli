@@ -9,6 +9,18 @@
 
 A TypeScript-first CLI builder inspired by Next.js App Router's file-based routing system. Create powerful command-line interfaces with zero configuration using familiar file-based conventions and pre-validated, type-safe command contexts.
 
+## 🎉 What's New
+
+### v0.5.0 - Major Updates
+- **🔄 Simplified ParamsHandler**: No more `type` field needed! The system automatically detects whether you're using `mappings`, `schema`, or both
+- **🎯 Context-based architecture**: All handlers now receive a consistent context object with environment variables, args, and options
+- **💪 Enhanced validation patterns**: Support for three validation approaches:
+  - Mappings-only (with automatic valibot schema generation)
+  - Schema-only (for complex validation rules)
+  - Combined (schema + mappings for maximum flexibility)
+- **🔧 Improved error handling**: Error handlers now receive full context including the error object
+- **📝 Better TypeScript support**: Enhanced type inference and discriminated unions
+
 ## ✨ Features
 
 - **📁 File-based routing**: Commands defined in `app/` directory with intuitive folder structure
@@ -70,20 +82,14 @@ export type HelloData = {
 
 export default function createParams(): ParamsHandler {
   return {
-    schema: {
-      name: {
-        type: 'string',
-        required: false,
-        default: 'World',
-        minLength: 1,
-        errorMessage: 'Name cannot be empty',
-      },
-    },
     mappings: [
       {
         field: 'name',
+        type: 'string',
         option: 'name',
         argIndex: 0,
+        defaultValue: 'World',
+        description: 'Name to greet'
       },
     ],
   };
@@ -171,67 +177,90 @@ export default async function createCommand(context: CommandContext<UserData>) {
 
 ### `params.ts` - Argument Definition and Validation
 
-Defines command argument types, validation schemas, and mapping configurations.
+Defines command argument types, validation schemas, and mapping configurations. The system automatically determines which pattern you're using based on the properties you provide - no explicit `type` field needed!
 
-#### Basic Pattern (Manual Schema)
+You can choose between three approaches:
 
-Simple and lightweight validation without external dependencies:
+#### Approach 1: Mappings-based Validation (Recommended for most cases)
+
+Automatically generates valibot schemas from mappings with built-in type coercion for CLI inputs:
 
 ```typescript
-import type { ParamsHandler } from 'decopin-cli';
+import type { ParamsHandler, BaseContext } from 'decopin-cli';
 
-export type UserData = {
-  name: string;
-  email: string;
-  age?: number;
-};
-
-export default function createParams(): ParamsHandler {
+export default function createParams(context: BaseContext<typeof process.env>): ParamsHandler {
   return {
-    schema: {
-      name: {
-        type: 'string',
-        required: true,
-        minLength: 1,
-        errorMessage: 'Name is required',
-      },
-      email: {
-        type: 'string',
-        required: true,
-        pattern: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-        errorMessage: 'Invalid email format',
-      },
-      age: {
-        type: 'number',
-        required: false,
-        default: 25,
-        min: 0,
-        max: 150,
-      },
-    },
     mappings: [
       {
         field: 'name',
+        type: 'string',
         option: 'name',      // --name option
         argIndex: 0,         // 1st positional argument
-      },
-      {
-        field: 'email',
-        option: 'email',     // --email option
-        argIndex: 1,         // 2nd positional argument
+        required: true,
+        description: 'User name',
       },
       {
         field: 'age',
-        option: 'age',       // --age option only (no positional)
+        type: 'number',      // Automatically converts string to number
+        option: 'age',       // --age option
+        argIndex: 1,         // 2nd positional argument
+        defaultValue: 18,
+      },
+      {
+        field: 'active',
+        type: 'boolean',     // Converts "true", "1", "yes" to true
+        option: 'active',
+        defaultValue: true,
       },
     ],
   };
 }
 ```
 
-#### Advanced Pattern (Valibot Schema)
+**Type coercion rules:**
+- `number`: Converts strings to numbers (e.g., "123" → 123)
+- `boolean`: Converts "true", "1", "yes" to true, others to false
+- `array`: Splits comma-separated strings (e.g., "a,b,c" → ["a", "b", "c"])
+- `object`: Parses JSON strings (e.g., '{"key":"value"}' → {key: "value"})
 
-For complex validation scenarios with full type inference:
+#### Approach 2: Schema-based Validation (For complex validation)
+
+Use valibot schemas directly for detailed validation rules:
+
+```typescript
+import * as v from 'valibot';
+import type { ParamsHandler, BaseContext } from 'decopin-cli';
+
+const UserSchema = v.object({
+  arg0: v.pipe(
+    v.string(),
+    v.email('Invalid email format'),
+    v.endsWith('@company.com', 'Must be a company email')
+  ),
+  arg1: v.pipe(
+    v.string(),
+    v.minLength(8, 'Password must be at least 8 characters'),
+    v.regex(/[A-Z]/, 'Must contain uppercase letter'),
+    v.regex(/[0-9]/, 'Must contain number')
+  ),
+  role: v.optional(
+    v.picklist(['admin', 'user', 'guest'], 'Invalid role'),
+    'user'
+  )
+});
+
+export type UserData = v.InferInput<typeof UserSchema>;
+
+export default function createParams(context: BaseContext<typeof process.env>): ParamsHandler {
+  return {
+    schema: UserSchema,
+  };
+}
+```
+
+#### Approach 3: Combined Pattern (Schema + Mappings)
+
+For complex validation scenarios where you need both custom validation rules and automatic argument mapping:
 
 ```typescript
 import * as v from 'valibot';
@@ -644,6 +673,64 @@ export default async function createCommand(context: CommandContext<UserData>) {
   }
 }
 ```
+
+### Context-Based Architecture
+
+All handlers in decopin-cli follow a consistent context-based pattern, providing a unified interface for accessing command execution information:
+
+#### Handler Patterns
+
+1. **Command Handler** (`command.ts`)
+   ```typescript
+   export default async function createCommand(context: CommandContext<T, E>) {
+     const { validatedData, args, env, options } = context;
+     // Direct command implementation
+   }
+   ```
+
+2. **Params Handler** (`params.ts`)
+   ```typescript
+   export default function createParams(context: BaseContext<E>): ParamsHandler {
+     // Can access environment during initialization
+     const { env } = context;
+     return {
+       mappings: [...] // or schema: ...
+     };
+   }
+   ```
+
+3. **Error Handler** (`error.ts`)
+   ```typescript
+   export default async function createErrorHandler(context: ErrorContext<T, E>) {
+     const { error, validatedData, args, env } = context;
+     // Custom error handling with full context
+   }
+   ```
+
+4. **Middleware Factory** (`middleware.ts`)
+   ```typescript
+   export default function createMiddleware(context: BaseContext<E>) {
+     return async (middlewareContext: MiddlewareContext, next: NextFunction) => {
+       // Middleware logic with access to factory context
+     };
+   }
+   ```
+
+5. **Global Error Handler** (`global-error.ts`)
+   ```typescript
+   export default function createGlobalErrorHandler(context: BaseContext<E>) {
+     return async (error: unknown) => {
+       // Global error handling with factory context
+     };
+   }
+   ```
+
+#### Context Types
+
+- **BaseContext**: Basic context with args, env, command, and options
+- **CommandContext**: Extends BaseContext with validatedData
+- **ErrorContext**: Extends CommandContext with error property
+- **MiddlewareContext**: Used within middleware execution
 
 ### Middleware Support
 

@@ -46,11 +46,13 @@ The library implements a pipeline that transforms file-based commands into a wor
 5. **Middleware** (`src/types/middleware.ts`, `src/generator/middleware-template.ts`) - Global middleware support for cross-cutting concerns
 
 ### Command Architecture Pattern
-Commands follow a simple async function pattern where validation and business logic are separated:
+Commands follow a simple async function pattern where validation and business logic are separated. All handlers follow a consistent context-based pattern:
 
 ```typescript
 // params.ts - Validation and type definitions
-export default function createParams(): ParamsHandler {
+import type { ParamsHandler, BaseContext } from 'decopin-cli';
+
+export default function createParams(context: BaseContext<typeof process.env>): ParamsHandler {
   return {
     schema: ValibotSchema,        // Runtime validation
     mappings: [...]              // CLI argument mapping
@@ -58,9 +60,20 @@ export default function createParams(): ParamsHandler {
 }
 
 // command.ts - Pre-validated command implementation
+import type { CommandContext } from 'decopin-cli';
+
 export default async function createCommand(context: CommandContext<T>) {
   const data = context.validatedData;  // Already validated!
   // Implementation directly in function body
+}
+
+// error.ts - Custom error handling (optional)
+import type { ErrorContext, ErrorHandler } from 'decopin-cli';
+
+export default async function createErrorHandler(context: ErrorContext<T>): Promise<ErrorHandler> {
+  const { error } = context;
+  // Custom error handling logic
+  process.exit(1);
 }
 ```
 
@@ -111,13 +124,13 @@ The middleware system allows for global cross-cutting concerns to be handled bef
 
 ```typescript
 // app/middleware.ts - Global middleware
-import type { MiddlewareFactory, MiddlewareContext, NextFunction } from '../dist/types/middleware.js';
+import type { MiddlewareFactory, MiddlewareContext, NextFunction, BaseContext } from '../dist/types/middleware.js';
 
-export default function createMiddleware(): MiddlewareFactory {
-  return async (context: MiddlewareContext<typeof process.env>, next: NextFunction) => {
+export default function createMiddleware(context: BaseContext<typeof process.env>): MiddlewareFactory {
+  return async (context: MiddlewareContext, next: NextFunction) => {
     // Pre-execution logic
     console.log(`[${new Date().toISOString()}] Executing: ${context.command}`);
-    
+
     try {
       await next(); // Execute the command
     } catch (error) {
@@ -143,6 +156,91 @@ export default function createMiddleware(): MiddlewareFactory {
 4. **Environment Setup**: Initialize services or validate environment
 5. **Request/Response Transformation**: Modify context or results
 
+## Context-Based Architecture
+
+All handlers in decopin-cli follow a consistent context-based pattern, providing a unified interface for accessing command execution information:
+
+### Handler Patterns
+
+1. **Command Handler** (`command.ts`)
+   ```typescript
+   export default async function createCommand(context: CommandContext<T, E>) {
+     const { validatedData, args, env, options } = context;
+     // Direct command implementation
+   }
+   ```
+
+2. **Params Handler** (`params.ts`)
+   ```typescript
+   export default function createParams(context: BaseContext<E>): ParamsHandler {
+     // Can access environment during initialization
+     const { env } = context;
+
+     // Either use mappings (recommended for most cases)
+     return {
+       mappings: [
+         {
+           field: 'name',
+           type: 'string',
+           option: 'name',
+           argIndex: 0,
+           required: true,
+           description: 'User name'
+         }
+       ]
+     };
+
+     // OR use schema (for complex validation)
+     return {
+       schema: v.object({
+         name: v.pipe(v.string(), v.minLength(1)),
+         email: v.pipe(v.string(), v.email())
+       })
+     };
+   }
+   ```
+
+3. **Error Handler** (`error.ts`)
+   ```typescript
+   export default async function createErrorHandler(context: ErrorContext<T, E>) {
+     const { error, validatedData, args, env } = context;
+     // Custom error handling with full context
+   }
+   ```
+
+4. **Middleware Factory** (`middleware.ts`)
+   ```typescript
+   export default function createMiddleware(context: BaseContext<E>) {
+     return async (middlewareContext: MiddlewareContext, next: NextFunction) => {
+       // Middleware logic with access to factory context
+     };
+   }
+   ```
+
+5. **Global Error Handler** (`global-error.ts`)
+   ```typescript
+   export default function createGlobalErrorHandler(context: BaseContext<E>) {
+     return async (error: unknown) => {
+       // Global error handling with factory context
+     };
+   }
+   ```
+
+### Context Types
+
+- **BaseContext**: Basic context with args, env, command, and options
+- **CommandContext**: Extends BaseContext with validatedData
+- **ErrorContext**: Extends CommandContext with error property
+- **MiddlewareContext**: Used within middleware execution
+
+### Benefits
+
+1. **Consistency**: All handlers follow the same pattern
+2. **Type Safety**: Full TypeScript support with generics
+3. **Flexibility**: Access to all execution information
+4. **Testability**: Easy to mock contexts for testing
+5. **Extensibility**: Context can be enhanced with additional properties
+
 ## Common Tasks
 
 ### Adding a New Command
@@ -160,12 +258,23 @@ export default function createMiddleware(): MiddlewareFactory {
 
 ### Adding Global Error Handler
 1. Create `app/global-error.ts` in the root of your app directory
-2. Export a factory function that returns an error handler
+2. Export a factory function that receives context and returns an error handler
 3. The handler will catch errors from commands without custom error.ts
 4. Use type-safe error handling with provided types and type guards:
    ```typescript
-   import type { GlobalErrorHandler, CLIError } from 'decopin-cli';
+   import type { GlobalErrorHandlerFactory, BaseContext } from 'decopin-cli';
    import { isValidationError, isModuleError, hasStackTrace } from 'decopin-cli';
+
+   export default function createGlobalErrorHandler(context: BaseContext<typeof process.env>) {
+     return async (error: unknown) => {
+       // Access environment from factory context
+       if (context.env.DEBUG) {
+         console.error('Stack trace:', error.stack);
+       }
+       // Handle error
+       process.exit(1);
+     };
+   }
    ```
 5. Useful for centralized error formatting, logging, and monitoring
 
