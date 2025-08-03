@@ -50,9 +50,9 @@ Commands follow a simple async function pattern where validation and business lo
 
 ```typescript
 // params.ts - Validation and type definitions
-import type { ParamsHandler, BaseContext } from 'decopin-cli';
+import type { ParamsHandler, Context } from 'decopin-cli';
 
-export default function createParams(context: BaseContext<typeof process.env>): ParamsHandler {
+export default function createParams(context: Context<typeof process.env>): ParamsHandler {
   return {
     schema: ValibotSchema,        // Runtime validation
     mappings: [...]              // CLI argument mapping
@@ -124,9 +124,9 @@ The middleware system allows for global cross-cutting concerns to be handled bef
 
 ```typescript
 // app/middleware.ts - Global middleware
-import type { MiddlewareFactory, MiddlewareContext, NextFunction, BaseContext } from '../dist/types/middleware.js';
+import type { MiddlewareFactory, MiddlewareContext, NextFunction, Context } from '../dist/types/middleware.js';
 
-export default function createMiddleware(context: BaseContext<typeof process.env>): MiddlewareFactory {
+export default function createMiddleware(context: Context<typeof process.env>): MiddlewareFactory {
   return async (context: MiddlewareContext, next: NextFunction) => {
     // Pre-execution logic
     console.log(`[${new Date().toISOString()}] Executing: ${context.command}`);
@@ -172,7 +172,7 @@ All handlers in decopin-cli follow a consistent context-based pattern, providing
 
 2. **Params Handler** (`params.ts`)
    ```typescript
-   export default function createParams(context: BaseContext<E>): ParamsHandler {
+   export default function createParams(context: Context<E>): ParamsHandler {
      // Can access environment during initialization
      const { env } = context;
 
@@ -210,7 +210,7 @@ All handlers in decopin-cli follow a consistent context-based pattern, providing
 
 4. **Middleware Factory** (`middleware.ts`)
    ```typescript
-   export default function createMiddleware(context: BaseContext<E>) {
+   export default function createMiddleware(context: Context<E>) {
      return async (middlewareContext: MiddlewareContext, next: NextFunction) => {
        // Middleware logic with access to factory context
      };
@@ -219,7 +219,7 @@ All handlers in decopin-cli follow a consistent context-based pattern, providing
 
 5. **Global Error Handler** (`global-error.ts`)
    ```typescript
-   export default function createGlobalErrorHandler(context: BaseContext<E>) {
+   export default function createGlobalErrorHandler(context: Context<E>) {
      return async (error: unknown) => {
        // Global error handling with factory context
      };
@@ -228,8 +228,8 @@ All handlers in decopin-cli follow a consistent context-based pattern, providing
 
 ### Context Types
 
-- **BaseContext**: Basic context with args, env, command, and options
-- **CommandContext**: Extends BaseContext with validatedData
+- **Context**: Basic context with args, env, command, and options
+- **CommandContext**: Extends Context with validatedData
 - **ErrorContext**: Extends CommandContext with error property
 - **MiddlewareContext**: Used within middleware execution
 
@@ -262,10 +262,10 @@ All handlers in decopin-cli follow a consistent context-based pattern, providing
 3. The handler will catch errors from commands without custom error.ts
 4. Use type-safe error handling with provided types and type guards:
    ```typescript
-   import type { GlobalErrorHandlerFactory, BaseContext } from 'decopin-cli';
+   import type { GlobalErrorHandlerFactory, Context } from 'decopin-cli';
    import { isValidationError, isModuleError, hasStackTrace } from 'decopin-cli';
 
-   export default function createGlobalErrorHandler(context: BaseContext<typeof process.env>) {
+   export default function createGlobalErrorHandler(context: Context<typeof process.env>) {
      return async (error: unknown) => {
        // Access environment from factory context
        if (context.env.DEBUG) {
