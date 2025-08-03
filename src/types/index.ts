@@ -4,6 +4,7 @@
 export type {
   BaseCommandContext,
   BaseContext,
+  Context,
   CommandContext,
   CommandHandler,
   ErrorContext,
@@ -45,12 +46,12 @@ export type {
   ValidationResult,
 } from './validation.js';
 
-import type { BaseContext } from './context.js';
+import type { Context } from './context.js';
 // グローバルエラーハンドラー
 import type { CLIError } from './errors.js';
 export type GlobalErrorHandler = (error: CLIError) => Promise<void> | void;
 export type GlobalErrorHandlerFactory<E = typeof process.env> = (
-  context: BaseContext<E>
+  context: Context<E>
 ) => GlobalErrorHandler;
 
 // ミドルウェア関連

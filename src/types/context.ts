@@ -57,9 +57,12 @@ export interface ErrorContext<T = unknown, E = unknown>
 }
 
 // 特化された型エイリアス
-export type BaseContext<E = typeof process.env> = BaseCommandContext & {
+export type Context<E = typeof process.env> = BaseCommandContext & {
   env: E;
 };
+
+// Backward compatibility alias (will be removed in future versions)
+export type BaseContext<E = typeof process.env> = Context<E>;
 export type ValidatedContext<T> = ValidatedCommandContext<T>;
 export type EnvContext<E> = EnvCommandContext<E>;
 
