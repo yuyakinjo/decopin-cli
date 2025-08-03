@@ -28,25 +28,5 @@ export default function createParams(context: BaseContext<typeof process.env>): 
         defaultValue: 'user',
       },
     },
-    mappings: [
-      {
-        field: 'name',
-        argIndex: 0,
-        option: 'name',
-      },
-      {
-        field: 'age',
-        argIndex: 1,
-        option: 'age',
-      },
-      {
-        field: 'active',
-        option: 'active',
-      },
-      {
-        field: 'role',
-        option: 'role',
-      },
-    ],
   };
 }

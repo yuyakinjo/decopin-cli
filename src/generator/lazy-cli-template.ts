@@ -303,15 +303,28 @@ ${
     ? `
 // Validate parameters lazily
 async function validateParams(args, paramsHandler) {
-  if (!paramsHandler || !paramsHandler.schema) {
+  if (!paramsHandler) {
     return args;
   }
   
-  // Extract data from args based on mappings
-  const data = {};
   const [positionalArgs, options] = parseArgs(args);
   
-  if (paramsHandler.mappings) {
+  // Handle based on which property exists
+  if (paramsHandler.schema) {
+    // Schema-based validation - no mappings, just validate raw args
+    const validator = await getValidator(paramsHandler.schema);
+    // For schema mode, pass the parsed arguments directly
+    const data = { ...options };
+    positionalArgs.forEach((arg, index) => {
+      data[\`arg\${index}\`] = arg;
+    });
+    const result = await validator.parseAsync(data);
+    return result;
+  } else if (paramsHandler.mappings) {
+    // Mappings-based validation
+    const data = {};
+    
+    // Extract values from arguments based on mappings
     for (const mapping of paramsHandler.mappings) {
       let value;
       
@@ -332,12 +345,17 @@ async function validateParams(args, paramsHandler) {
         data[mapping.field] = value;
       }
     }
+    
+    // Create schema from mappings
+    const valibot = await import('valibot');
+    const schema = await createSchemaFromMappings(paramsHandler.mappings, valibot);
+    const validator = await getValidator(schema);
+    const result = await validator.parseAsync(data);
+    return result;
   }
   
-  // Validate with schema
-  const validator = await getValidator(paramsHandler.schema);
-  const result = await validator.parseAsync(data);
-  return result;
+  // Invalid ParamsHandler - neither schema nor mappings provided
+  throw new Error('Invalid ParamsHandler: must provide either schema or mappings');
 }
 
 // Parse command line arguments
@@ -367,6 +385,82 @@ function parseArgs(args) {
   }
   
   return [positional, options];
+}
+
+// Create valibot schema from mappings
+async function createSchemaFromMappings(mappings, valibot) {
+  const shape = {};
+  
+  for (const mapping of mappings) {
+    let fieldSchema;
+    
+    // Create basic type schema with coercion for CLI inputs
+    switch (mapping.type) {
+      case 'number':
+        // Coerce string to number
+        fieldSchema = valibot.pipe(
+          valibot.union([valibot.string(), valibot.number()]),
+          valibot.transform((input) => {
+            if (typeof input === 'number') return input;
+            const num = Number(input);
+            if (isNaN(num)) {
+              throw new Error(\`Invalid number: \${input}\`);
+            }
+            return num;
+          })
+        );
+        break;
+      case 'boolean':
+        // Coerce string to boolean
+        fieldSchema = valibot.pipe(
+          valibot.union([valibot.string(), valibot.boolean()]),
+          valibot.transform((input) => {
+            if (typeof input === 'boolean') return input;
+            return input === 'true' || input === '1' || input === 'yes';
+          })
+        );
+        break;
+      case 'array':
+        // Parse comma-separated values
+        fieldSchema = valibot.pipe(
+          valibot.string(),
+          valibot.transform((input) => input.split(',').map(s => s.trim()))
+        );
+        break;
+      case 'object':
+        // Parse JSON string
+        fieldSchema = valibot.pipe(
+          valibot.string(),
+          valibot.transform((input) => {
+            try {
+              return JSON.parse(input);
+            } catch {
+              throw new Error(\`Invalid JSON: \${input}\`);
+            }
+          })
+        );
+        break;
+      case 'string':
+      default:
+        fieldSchema = valibot.string();
+        // Apply additional validation if specified
+        if (mapping.validation === 'email') {
+          fieldSchema = valibot.pipe(fieldSchema, valibot.email('Invalid email format'));
+        } else if (mapping.validation === 'url') {
+          fieldSchema = valibot.pipe(fieldSchema, valibot.url('Invalid URL format'));
+        }
+        break;
+    }
+    
+    // Apply required/optional
+    if (mapping.required === false || mapping.defaultValue !== undefined) {
+      fieldSchema = valibot.optional(fieldSchema, mapping.defaultValue);
+    }
+    
+    shape[mapping.field] = fieldSchema;
+  }
+  
+  return valibot.object(shape);
 }
 
 // Get validator based on schema type

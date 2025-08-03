@@ -47,6 +47,14 @@ export interface ParamMapping {
   option?: string;
   /** デフォルト値 */
   defaultValue?: unknown;
+  /** フィールドの型（基本的なバリデーション用） */
+  type?: 'string' | 'number' | 'boolean' | 'array' | 'object';
+  /** 必須フィールドかどうか */
+  required?: boolean;
+  /** フィールドの説明（ヘルプ表示用） */
+  description?: string;
+  /** 追加のバリデーション（例: 'email', 'url'） */
+  validation?: 'email' | 'url';
 }
 
 /**
@@ -85,12 +93,22 @@ export interface ManualSchema {
 /**
  * パラメータ定義（valibotスキーマとオブジェクトベースの両方をサポート）
  */
-export interface ParamsHandler {
-  /** valibotスキーマまたはオブジェクトベースのスキーマ */
-  schema: v.GenericSchema | ManualSchema;
-  /** パラメータマッピング */
-  mappings: ParamMapping[];
-}
+export type ParamsHandler = 
+  | {
+      /** 明示的なvalibotスキーマを使用 */
+      schema: v.GenericSchema | ManualSchema;
+      mappings?: never;
+    }
+  | {
+      /** mappingsから自動的にスキーマを生成 */
+      mappings: ParamMapping[];
+      schema?: never;
+    }
+  | {
+      /** 手動スキーマとマッピングを組み合わせて使用 */
+      schema: ManualSchema;
+      mappings: ParamMapping[];
+    };
 
 /**
  * エラーハンドラーの型

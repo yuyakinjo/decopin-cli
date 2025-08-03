@@ -10,13 +10,15 @@ export type CustomErrorTestData = v.InferInput<typeof CustomErrorTestSchema>;
 
 export default function createParams(context: BaseContext<typeof process.env>): ParamsHandler {
   return {
-    schema: CustomErrorTestSchema,
     mappings: [
       {
         field: 'input',
+        type: 'string',
         option: 'input',
         argIndex: 0,
-      },
-    ],
+        required: true,
+        description: 'Input value'
+      }
+    ]
   };
 }

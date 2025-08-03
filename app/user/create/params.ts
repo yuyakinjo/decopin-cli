@@ -11,18 +11,24 @@ export type CreateUserData = v.InferInput<typeof CreateUserSchema>;
 
 export default function createParams(context: BaseContext<typeof process.env>): ParamsHandler {
   return {
-    schema: CreateUserSchema,
     mappings: [
       {
         field: 'name',
+        type: 'string',
         option: 'name',
         argIndex: 0,
+        required: true,
+        description: 'User name'
       },
       {
         field: 'email',
+        type: 'string',
         option: 'email',
         argIndex: 1,
-      },
-    ],
+        required: true,
+        description: 'User email address',
+        validation: 'email'
+      }
+    ]
   };
 }

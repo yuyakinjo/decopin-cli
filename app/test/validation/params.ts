@@ -11,18 +11,23 @@ export type ValidationTestData = v.InferInput<typeof ValidationTestSchema>;
 
 export default function createParams(context: BaseContext<typeof process.env>): ParamsHandler {
   return {
-    schema: ValidationTestSchema,
     mappings: [
       {
         field: 'message',
+        type: 'string',
         option: 'message',
         argIndex: 0,
+        required: true,
+        description: 'Message to validate'
       },
       {
         field: 'count',
+        type: 'number',
         option: 'count',
         argIndex: 1,
-      },
-    ],
+        defaultValue: 1,
+        description: 'Count value'
+      }
+    ]
   };
 }

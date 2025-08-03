@@ -15,13 +15,14 @@ export type ListData = v.InferOutput<typeof ListSchema>;
 
 export default function createParams(context: BaseContext<typeof process.env>): ParamsHandler {
   return {
-    schema: ListSchema,
     mappings: [
       {
         field: 'limit',
+        type: 'number',
         option: 'limit',
         defaultValue: 10,
-      },
-    ],
+        description: 'Number of users to list (1-100)'
+      }
+    ]
   };
 }

@@ -6,13 +6,9 @@ import type { ParamsHandler } from '../../src/types/validation.js';
 describe('validation utils', () => {
   describe('extractData', () => {
     const paramsDefinition: ParamsHandler = {
-      schema: v.object({
-        name: v.string(),
-        age: v.number()
-      }),
       mappings: [
-        { field: 'name', option: 'name', argIndex: 0 },
-        { field: 'age', option: 'age', argIndex: 1, defaultValue: 25 }
+        { field: 'name', type: 'string', argIndex: 0, option: 'name' },
+        { field: 'age', type: 'number', argIndex: 1, option: 'age', defaultValue: 25 }
       ]
     };
 
@@ -89,13 +85,9 @@ describe('validation utils', () => {
 
   describe('createValidationFunction', () => {
     const paramsDefinition: ParamsHandler = {
-      schema: v.object({
-        name: v.pipe(v.string(), v.minLength(1)),
-        email: v.pipe(v.string(), v.email())
-      }),
       mappings: [
-        { field: 'name', option: 'name', argIndex: 0 },
-        { field: 'email', option: 'email', argIndex: 1 }
+        { field: 'name', type: 'string', option: 'name', argIndex: 0, required: true },
+        { field: 'email', type: 'string', option: 'email', argIndex: 1, required: true }
       ]
     };
 
@@ -115,12 +107,19 @@ describe('validation utils', () => {
       });
     });
 
-    it('should create a validation function that fails validation', async () => {
-      const validateFn = createValidationFunction(paramsDefinition);
+    it('should create a validation function that validates with schema', async () => {
+      const schemaDefinition: ParamsHandler = {
+        schema: v.object({
+          name: v.pipe(v.string(), v.minLength(1)),
+          email: v.pipe(v.string(), v.email())
+        })
+      };
+      
+      const validateFn = createValidationFunction(schemaDefinition);
 
       const result = await validateFn(
-        ['', 'invalid-email'],
-        {},
+        [],
+        { name: '', email: 'invalid-email' },
         {}
       );
 
@@ -131,13 +130,9 @@ describe('validation utils', () => {
 
     it('should handle validation with default values', async () => {
       const paramsWithDefaults: ParamsHandler = {
-        schema: v.object({
-          name: v.pipe(v.string(), v.minLength(1)),
-          count: v.optional(v.number(), 1)
-        }),
         mappings: [
-          { field: 'name', option: 'name', argIndex: 0 },
-          { field: 'count', option: 'count', argIndex: 1, defaultValue: 5 }
+          { field: 'name', type: 'string', option: 'name', argIndex: 0, required: true },
+          { field: 'count', type: 'number', option: 'count', argIndex: 1, defaultValue: 5 }
         ]
       };
 
@@ -154,8 +149,7 @@ describe('validation utils', () => {
 
     it('should handle validation errors gracefully', async () => {
       const invalidParamsDefinition = {
-        schema: { invalid: 'schema' }, // 無効なスキーマ
-        mappings: []
+        schema: { invalid: 'schema' } // 無効なスキーマ
       } as any;
 
       const validateFn = createValidationFunction(invalidParamsDefinition);
