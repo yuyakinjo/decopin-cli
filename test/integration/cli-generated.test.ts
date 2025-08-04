@@ -20,7 +20,8 @@ async function runCLI(args: string[]): Promise<{
         API_KEY: 'test-api-key-123456',
         NODE_ENV: 'test',
         PORT: '3000',
-        DEBUG: 'false'
+        DEBUG: 'false',
+        NODE_NO_WARNINGS: '1'
       }
     });
 
@@ -301,7 +302,7 @@ describe('Generated CLI Integration Tests', () => {
       expect(result.stdout).toContain('Say hello to someone');
       expect(result.stdout).toContain('Examples:');
       expect(result.stdout).toContain('cli hello Alice');
-      expect(result.stdout).toContain('Aliases: hi, greet');
+      expect(result.stdout).toContain('Aliases: hi, greet, hey');
       expect(result.stdout).toContain('This command greets a person with a friendly hello message.');
       // params.ts content
       expect(result.stdout).toContain('Arguments:');

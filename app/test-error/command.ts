@@ -1,22 +1,37 @@
-import type { BaseCommandContext } from '../../dist/types/index.js';
+import type { BaseCommandContext, CLIValidationError, ValidationIssue } from '../../dist/types/index.js';
+
+// Create a custom ValidationError class that implements our interface
+class CustomValidationError extends Error implements CLIValidationError {
+  issues: ValidationIssue[];
+  
+  constructor(message: string, issues: ValidationIssue[]) {
+    super(message);
+    this.name = 'ValidationError';
+    this.issues = issues;
+  }
+}
+
+// Create a custom ModuleError with proper typing
+interface ModuleError extends Error {
+  code: string;
+}
 
 export default async function createCommand(context: BaseCommandContext) {
   const errorType = context.args[0];
 
   if (errorType === 'validation') {
-    // Simulate a validation error
-    const error = new Error('Validation failed') as any;
-    error.issues = [
+    // Simulate a validation error with proper type
+    const error = new CustomValidationError('Validation failed', [
       { path: [{ key: 'name' }], message: 'Name is required' },
       { path: [{ key: 'email' }], message: 'Invalid email format' }
-    ];
+    ]);
     throw error;
   }
 
   if (errorType === 'module') {
-    // Simulate a module error
-    const error = new Error('Cannot find module \'missing-module\'');
-    (error as any).code = 'ERR_MODULE_NOT_FOUND';
+    // Simulate a module error with proper typing
+    const error = new Error('Cannot find module \'missing-module\'') as ModuleError;
+    Object.assign(error, { code: 'ERR_MODULE_NOT_FOUND' });
     throw error;
   }
 

@@ -1,22 +1,23 @@
 import type { ErrorContext } from '../../../dist/types/index.js';
+import { isValidationError } from '../../../dist/types/index.js';
+import type { CreateUserData } from './params.js';
 
-export default async function createErrorHandler(context: ErrorContext<any, typeof process.env>) {
+export default async function createErrorHandler(context: ErrorContext<CreateUserData, typeof process.env>) {
     const { error } = context;
     console.error('❌ User creation failed:');
 
-    // Type guard for validation error
-    const validationError = error as any;
-
-    if (validationError.issues && validationError.issues.length > 0) {
+    if (isValidationError(error)) {
       console.error('');
-      for (const issue of validationError.issues) {
+      for (const issue of error.issues) {
         const field = issue.path && issue.path.length > 0
-          ? issue.path.map((p: any) => typeof p === 'object' && p && 'key' in p ? p.key : p).join('.')
+          ? issue.path.map(p => p.key).join('.')
           : 'email';
         console.error(`  • ${field}: ${issue.message}`);
       }
+    } else if (error instanceof Error) {
+      console.error(`  ${error.message}`);
     } else {
-      console.error(`  ${validationError.message || 'Unknown error'}`);
+      console.error('  Unknown error');
     }
 
     console.error('');

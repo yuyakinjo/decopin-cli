@@ -30,31 +30,37 @@ export class CommandGeneratorImpl implements CommandGenerator {
       hasError: commands.some((cmd) => cmd.hasError),
     };
 
+    // Pass structure if provided
+    if (structure) {
+      options.structure = structure;
+    }
+
+    // Set individual handler flags based on structure
     if (structure?.middleware) {
       Object.assign(options, {
         hasMiddleware: true,
-        middlewarePath: './app/middleware.js',
+        middlewarePath: './app/middleware.ts',
       });
     }
 
     if (structure?.globalError) {
       Object.assign(options, {
         hasGlobalError: true,
-        globalErrorPath: './app/global-error.js',
+        globalErrorPath: './app/global-error.ts',
       });
     }
 
     if (structure?.env) {
       Object.assign(options, {
         hasEnv: true,
-        envPath: './app/env.js',
+        envPath: './app/env.ts',
       });
     }
 
     if (structure?.version) {
       Object.assign(options, {
         hasVersion: true,
-        versionPath: './app/version.js',
+        versionPath: './app/version.ts',
       });
     }
 

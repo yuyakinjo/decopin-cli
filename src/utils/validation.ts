@@ -1,5 +1,6 @@
 import * as v from 'valibot';
 import { isBoolean, isFunction, isString } from '../internal/guards/index.js';
+import type { ValidationError, ValidationIssue } from '../types/errors.js';
 import type {
   EnvFieldSchema,
   EnvSchema,
@@ -195,7 +196,7 @@ function validateWithManualSchema(
   schema: ManualSchema
 ): ValidationResult {
   const result: Record<string, unknown> = {};
-  const issues: Array<{ path: string[]; message: string }> = [];
+  const issues: ValidationIssue[] = [];
 
   for (const [fieldName, fieldSchema] of Object.entries(schema)) {
     const fieldResult = validateField(data[fieldName], fieldName, fieldSchema);
@@ -206,19 +207,18 @@ function validateWithManualSchema(
       }
     } else {
       issues.push({
-        path: [fieldName],
+        path: [{ key: fieldName }],
         message: fieldResult.error || 'Validation failed',
       });
     }
   }
 
   if (issues.length > 0) {
+    const error = new Error('Validation failed') as ValidationError;
+    error.issues = issues;
     return {
       success: false,
-      error: {
-        message: 'Validation failed',
-        issues,
-      },
+      error,
     };
   }
 
@@ -351,15 +351,14 @@ function validateWithValibotSchema(
       data: result.output,
     };
   } else {
+    const error = new Error('Validation failed') as ValidationError;
+    error.issues = result.issues.map((issue) => ({
+      path: issue.path?.map((p) => ({ key: String(p.key) })) || [],
+      message: issue.message,
+    }));
     return {
       success: false,
-      error: {
-        message: 'Validation failed',
-        issues: result.issues.map((issue) => ({
-          path: issue.path?.map((p) => String(p.key)) || [],
-          message: issue.message,
-        })),
-      },
+      error,
     };
   }
 }
@@ -412,12 +411,17 @@ export function createValidationFunction(
         'Invalid ParamsHandler: must provide either schema or mappings'
       );
     } catch (error) {
+      const validationError =
+        error instanceof Error ? error : new Error('Unknown validation error');
+
+      // Ensure it's a proper ValidationError
+      if (!('issues' in validationError)) {
+        Object.assign(validationError, { issues: [] });
+      }
+
       return {
         success: false,
-        error: {
-          message:
-            error instanceof Error ? error.message : 'Unknown validation error',
-        },
+        error: validationError as ValidationError,
       };
     }
   };
@@ -564,7 +568,7 @@ export function parseEnvironmentVariables(
   env: Record<string, string | undefined> = process.env
 ): EnvValidationResult {
   const result: Record<string, unknown> = {};
-  const issues: Array<{ path: string[]; message: string }> = [];
+  const issues: ValidationIssue[] = [];
 
   for (const [envName, fieldSchema] of Object.entries(envSchema)) {
     const fieldResult = validateEnvField(env[envName], envName, fieldSchema);
@@ -575,19 +579,20 @@ export function parseEnvironmentVariables(
       }
     } else {
       issues.push({
-        path: [envName],
+        path: [{ key: envName }],
         message: fieldResult.error || 'Environment variable validation failed',
       });
     }
   }
 
   if (issues.length > 0) {
+    const error = new Error(
+      'Environment variable validation failed'
+    ) as ValidationError;
+    error.issues = issues;
     return {
       success: false,
-      error: {
-        message: 'Environment variable validation failed',
-        issues,
-      },
+      error,
     };
   }
 
@@ -617,14 +622,19 @@ export async function createTypeSafeEnv<T extends Record<string, unknown>>(
       return result as EnvValidationResult<T>;
     }
   } catch (error) {
+    const validationError =
+      error instanceof Error
+        ? error
+        : new Error('Unknown environment variable error');
+
+    // Ensure it's a proper ValidationError
+    if (!('issues' in validationError)) {
+      Object.assign(validationError, { issues: [] });
+    }
+
     return {
       success: false,
-      error: {
-        message:
-          error instanceof Error
-            ? error.message
-            : 'Unknown environment variable error',
-      },
+      error: validationError as ValidationError,
     };
   }
 }

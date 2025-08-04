@@ -1,3 +1,4 @@
+import type { CLIStructure } from '../core/types.js';
 import type { CommandContext } from '../types/context.js';
 
 export interface CommandParser {
@@ -6,7 +7,10 @@ export interface CommandParser {
 }
 
 export interface CommandGenerator {
-  generate(commands: CommandDefinition[]): Promise<GeneratedCode>;
+  generate(
+    commands: CommandDefinition[],
+    structure?: CLIStructure
+  ): Promise<GeneratedCode>;
   createImports(commands: CommandDefinition[]): string[];
 }
 

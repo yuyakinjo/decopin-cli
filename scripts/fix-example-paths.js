@@ -16,8 +16,14 @@ const cliPath = join(__dirname, '..', 'examples', 'cli.js');
 try {
   let content = readFileSync(cliPath, 'utf-8');
   
-  // Replace all instances of './app/' with './'
-  content = content.replace(/\.\/app\//g, './');
+  // Replace import('app/' with import('../app/' - but not if it already has '../'
+  content = content.replace(/import\('app\//g, "import('../app/");
+  
+  // Replace import('./app/' with import('../app/' - but avoid creating '.../app/'
+  content = content.replace(/import\('\.\/app\//g, "import('../app/");
+  
+  // Fix any accidental '.../app/' that might have been created
+  content = content.replace(/\.\.\.\/app\//g, '../app/');
   
   writeFileSync(cliPath, content, 'utf-8');
   console.log('✅ Fixed import paths in examples/cli.js');

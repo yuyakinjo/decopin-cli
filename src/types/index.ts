@@ -3,7 +3,6 @@
 // 実行コンテキスト関連
 export type {
   BaseCommandContext,
-  BaseContext,
   CommandContext,
   CommandHandler,
   Context,
@@ -28,6 +27,7 @@ export type {
   CLIError,
   ModuleError,
   ValidationError as CLIValidationError,
+  ValidationError,
   ValidationIssue,
 } from './errors.js';
 export {
@@ -36,6 +36,20 @@ export {
   isModuleError,
   isValidationError,
 } from './errors.js';
+export type {
+  HandlerDefinition,
+  HandlerRegistryMap,
+  HandlerScope,
+} from './handler-registry.js';
+// ハンドラーレジストリ
+export {
+  createHandlerRegistryMap,
+  EXECUTION_ORDER,
+  getHandlersByExecutionOrder,
+  getHandlersByScope,
+  HANDLER_REGISTRY,
+  validateHandlerDependencies,
+} from './handler-registry.js';
 // ハンドラー関連
 export type {
   EnvHandler,
@@ -68,7 +82,6 @@ export type {
   ParamsHandler,
   // Factory types with inference
   ParamsHandlerFactory,
-  ValidationError,
   ValidationFunction,
   ValidationResult,
   VersionDefinitionFunction,

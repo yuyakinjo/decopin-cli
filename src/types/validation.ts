@@ -9,6 +9,7 @@ import type {
   ParamsContext,
   VersionContext,
 } from './context.js';
+import type { ValidationError } from './errors.js';
 import type {
   EnvHandler,
   GlobalErrorHandler,
@@ -30,21 +31,11 @@ export interface ValidationResult<T = unknown> {
 }
 
 /**
- * バリデーションエラー
- */
-export interface ValidationError {
-  /** エラーメッセージ */
-  message: string;
-  /** フィールド固有のエラー */
-  issues?: Array<{
-    path: string[];
-    message: string;
-  }>;
-}
-
-/**
  * バリデーション関数の型
  */
+// Re-export ValidationError from errors.ts
+export type { ValidationError } from './errors.js';
+
 export type ValidationFunction = (
   args: string[],
   options: Record<string, string | boolean>,

@@ -12,6 +12,10 @@ async function runCLI(args: string[]) {
       ['examples/cli.js', ...args],
       {
         cwd: process.cwd(),
+        env: {
+          ...process.env,
+          NODE_NO_WARNINGS: '1'
+        }
       }
     );
     return { stdout, stderr, exitCode: 0 };

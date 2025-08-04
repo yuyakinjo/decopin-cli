@@ -118,6 +118,51 @@ The project uses `mise` for file watching. When `npm run dev` is running:
 - All command handlers must be async functions that accept `CommandContext<T>`
 - Use `Object.assign()` instead of type assertions when extending objects
 
+### Handler Registry System
+
+The project uses a unified handler registry system to manage all handler types and their execution order:
+
+```typescript
+// src/types/handler-registry.ts
+export interface HandlerDefinition {
+  name: string;                    // Handler name (e.g., 'command', 'params')
+  fileName: string;                // Expected file name (e.g., 'command.ts')
+  handlerType: string;             // Handler type identifier
+  contextType: string;             // Expected context type
+  executionOrder: number;          // Numeric execution priority
+  scope: HandlerScope;             // 'global' or 'command'
+  required: boolean;               // Whether handler is required
+  dependencies?: string[];         // Other handlers this depends on
+  description?: string;            // Human-readable description
+}
+```
+
+**Key Features:**
+- **Centralized Management**: All handler types defined in one place
+- **Execution Order**: Handlers execute based on `executionOrder` value (lower = earlier)
+- **Dependency Validation**: Ensures required handlers are present
+- **Type Safety**: Each handler has defined context types
+- **Extensibility**: Easy to add new handler types
+
+**Handler Execution Order:**
+1. **global-error** (0): Global error handling setup
+2. **env** (100): Environment variable loading/validation
+3. **version** (200): Version information
+4. **middleware** (300): Middleware setup
+5. **help** (400): Help information
+6. **params** (500): Parameter validation
+7. **command** (1000): Command execution
+8. **error** (1100): Command-specific error handling
+
+**Using the Registry:**
+```typescript
+import { HandlerExecutor } from 'decopin-cli';
+
+const executor = new HandlerExecutor();
+const handlers = executor.getExecutionOrder('command'); // Get command-scoped handlers
+const validation = executor.validateDependencies(['command', 'params']); // Check deps
+```
+
 ### Middleware Architecture
 
 The middleware system allows for global cross-cutting concerns to be handled before and after command execution:
@@ -278,6 +323,33 @@ All handlers in decopin-cli follow a consistent context-based pattern, providing
    ```
 5. Useful for centralized error formatting, logging, and monitoring
 
+### Adding a New Handler Type
+
+To add a new handler type to the system:
+
+1. **Update Handler Registry** (`src/types/handler-registry.ts`):
+   ```typescript
+   {
+     name: 'new-handler',
+     fileName: 'new-handler.ts',
+     handlerType: 'NewHandler',
+     contextType: 'Context',
+     executionOrder: 450,  // Choose appropriate order
+     scope: 'command',     // or 'global'
+     required: false,
+     dependencies: ['params'],  // If depends on other handlers
+     description: 'Description of what this handler does'
+   }
+   ```
+
+2. **Update Types** if needed for the new handler interface
+
+3. **Update Generator** (`src/generator/lazy-cli-template.ts`):
+   - Add handler processing in `generateUnifiedCommandExecution`
+   - Handle the new handler type in execution flow
+
+4. **Add Tests** for the new handler type
+
 ### Debugging Parser Issues
 The AST parser in `src/parser/ast-parser.ts` extracts metadata from TypeScript files. If metadata isn't being extracted correctly:
 1. Check that exports use `export default function` pattern
@@ -286,7 +358,7 @@ The AST parser in `src/parser/ast-parser.ts` extracts metadata from TypeScript f
 
 ### Modifying the Generated CLI Structure
 The CLI generation logic is spread across several generator files:
-- `src/generator/cli-generator.ts` - Main CLI template generation (deprecated)
+
 - `src/generator/lazy-cli-template.ts` - Modern lazy-loading CLI generator with middleware support
 - `src/generator/middleware-template.ts` - Middleware integration templates
 - `generateCommandImports()` - Dynamic import generation

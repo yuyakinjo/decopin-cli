@@ -20,6 +20,12 @@
     "test:integration:only": "bun test test/integration/",
     "clean": "rm -rf dist examples",
     "lint": "biome check --write .",
+    "benchmark": "scripts/benchmark.sh",
+    "benchmark:before": "scripts/benchmark.sh before",
+    "benchmark:after": "scripts/benchmark.sh after",
+    "benchmark:compare": "scripts/benchmark.sh compare",
+    "benchmark:full": "scripts/benchmark.sh full",
+    "benchmark:clean": "scripts/benchmark.sh clean",
     "prepublishOnly": "bun run clean && bun run build:prod && bun run build:app && bun run dev:regen && bun test --bail"
   },
   "keywords": [
