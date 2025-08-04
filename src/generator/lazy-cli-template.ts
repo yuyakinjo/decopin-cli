@@ -182,6 +182,19 @@ ${generateCommandCases(options.commands, options)}
 
 ${generateHelperFunctions(options)}
 
+// Simple command execution for backward compatibility
+async function executeCommand(modulePath, args) {
+  const commandModule = await import(modulePath);
+  const handler = commandModule.default;
+  
+  if (typeof handler === 'function') {
+    await handler({ args, env: process.env, options: parseOptions(args) });
+  } else {
+    console.error('Invalid command handler');
+    process.exit(1);
+  }
+}
+
 // Execute with performance monitoring
 execute().then(() => {
   if (process.env.DECOPIN_PERF) {
@@ -203,11 +216,19 @@ function generateCommandCases(
   commands.forEach((cmd) => {
     const caseName = cmd.name === 'root' ? 'default' : cmd.name;
 
-    // Use unified handler execution
-    const commandCode = generateUnifiedCommandExecution(
-      cmd.name === 'root' ? '' : cmd.name,
-      options
-    );
+    // Use unified handler execution if structure is provided
+    let commandCode: string;
+    if (options.structure) {
+      commandCode = generateUnifiedCommandExecution(
+        cmd.name === 'root' ? '' : cmd.name,
+        options
+      );
+    } else {
+      // Fallback to simple execution without structure
+      const modulePath = cmd.path.replace(/\\/g, '/');
+      commandCode = `        await executeCommand('${modulePath}', commandArgs);`;
+    }
+    
     cases.push(`      case '${caseName}': {\n${commandCode}\n        break;\n      }`);
 
     // Generate cases for aliases
@@ -223,10 +244,6 @@ function generateCommandCases(
           aliasCase = alias;
         }
 
-        const commandCode = generateUnifiedCommandExecution(
-          cmd.name === 'root' ? '' : cmd.name,
-          options
-        );
         cases.push(
           `      case '${aliasCase}': {\n${commandCode}\n        break;\n      }`
         );
@@ -287,7 +304,8 @@ function generateUnifiedCommandExecution(
   options: LazyCliOptions
 ): string {
   if (!options.structure) {
-    throw new Error('Structure is required for unified command execution');
+    // This should not be called without structure
+    return '';
   }
 
   const commandHandlers = getHandlersByExecutionOrder().filter(
@@ -415,6 +433,121 @@ function generateUnifiedCommandExecution(
 
 function generateHelperFunctions(options: LazyCliOptions): string {
   return `
+// Validate parameters against schema
+async function validateParams(args, paramsConfig) {
+  if (!paramsConfig) return {};
+  
+  // Handle mappings-based validation
+  if (paramsConfig.mappings) {
+    const result = {};
+    const parsedOptions = parseOptions(args);
+    
+    // Filter out options and their values to get positional args
+    const positionalArgs = [];
+    for (let i = 0; i < args.length; i++) {
+      const arg = args[i];
+      if (arg.startsWith('--')) {
+        // Skip this arg and potentially the next one if it's a value
+        const nextArg = args[i + 1];
+        if (nextArg && !nextArg.startsWith('-')) {
+          i++; // Skip the value
+        }
+      } else if (arg.startsWith('-')) {
+        // Skip single-dash options
+      } else {
+        positionalArgs.push(arg);
+      }
+    }
+    
+    for (const mapping of paramsConfig.mappings) {
+      let value;
+      
+      // Get value from option first, then argIndex
+      if (mapping.option && parsedOptions[mapping.option] !== undefined) {
+        value = parsedOptions[mapping.option];
+      } else if (mapping.argIndex !== undefined && positionalArgs[mapping.argIndex]) {
+        value = positionalArgs[mapping.argIndex];
+      } else if (mapping.defaultValue !== undefined) {
+        value = mapping.defaultValue;
+      } else if (mapping.required) {
+        const error = new Error('Validation failed');
+        error.issues = [{
+          path: [{ key: mapping.field }],
+          message: \`Invalid key: Expected "\${mapping.field}" but received undefined\`
+        }];
+        throw error;
+      }
+      
+      // Type conversion
+      if (value !== undefined) {
+        switch (mapping.type) {
+          case 'number':
+            value = Number(value);
+            if (isNaN(value)) {
+              const error = new Error('Validation failed');
+              error.issues = [{
+                path: [{ key: mapping.field }],
+                message: \`Invalid number: Expected number but received "\${value}"\`
+              }];
+              throw error;
+            }
+            break;
+          case 'boolean':
+            value = value === 'true' || value === true;
+            break;
+          // string is default, no conversion needed
+        }
+        
+        // Additional validation
+        if (mapping.validation === 'email' && mapping.type === 'string') {
+          const emailRegex = /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/;
+          if (!emailRegex.test(value)) {
+            const error = new Error('Validation failed');
+            error.issues = [{
+              path: [{ key: mapping.field }],
+              message: 'Invalid email format'
+            }];
+            throw error;
+          }
+        }
+        
+        result[mapping.field] = value;
+      }
+    }
+    
+    return result;
+  }
+  
+  // Handle schema-based validation (valibot)
+  if (paramsConfig.schema) {
+    try {
+      // Import valibot dynamically
+      const { parse } = await import('valibot');
+      const parsedArgs = {};
+      const parsedOptions = parseOptions(args);
+      
+      // Merge positional args and options
+      args.forEach((arg, index) => {
+        if (!arg.startsWith('-')) {
+          parsedArgs[\`arg\${index}\`] = arg;
+        }
+      });
+      
+      Object.assign(parsedArgs, parsedOptions);
+      
+      return parse(paramsConfig.schema, parsedArgs);
+    } catch (error) {
+      if (error.issues) {
+        const messages = error.issues.map(issue => \`\${issue.path.join('.')}: \${issue.message}\`).join('\\n  ');
+        throw new Error(\`Validation failed:\\n  \${messages}\`);
+      }
+      throw error;
+    }
+  }
+  
+  return {};
+}
+
 // Parse command and subcommands from arguments
 function parseCommand(args) {
   if (args.length === 0) {

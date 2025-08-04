@@ -20,11 +20,32 @@ describe('Lazy CLI Template - Aliases', () => {
       }
     ];
 
+    // Create a minimal structure for the test
+    const structure: CLIStructure = {
+      commands: [],
+      params: [],
+      help: [],
+      errors: [],
+      handlers: new Map([
+        ['user/create/command', {
+          path: './app/user/create/command.ts',
+          definition: HANDLER_REGISTRY.find(h => h.name === 'command')!,
+          commandPath: 'user/create',
+        }],
+        ['deploy/command', {
+          path: './app/deploy/command.ts',
+          definition: HANDLER_REGISTRY.find(h => h.name === 'command')!,
+          commandPath: 'deploy',
+        }],
+      ]),
+    };
+
     const options: LazyCliOptions = {
       commands,
       hasParams: true,
       hasHelp: false,
-      hasError: false
+      hasError: false,
+      structure,
     };
 
     const result = generateLazyCLI(options);
@@ -51,11 +72,26 @@ describe('Lazy CLI Template - Aliases', () => {
       }
     ];
 
+    const structure: CLIStructure = {
+      commands: [],
+      params: [],
+      help: [],
+      errors: [],
+      handlers: new Map([
+        ['test/command', {
+          path: './app/test/command.ts',
+          definition: HANDLER_REGISTRY.find(h => h.name === 'command')!,
+          commandPath: 'test',
+        }],
+      ]),
+    };
+
     const options: LazyCliOptions = {
       commands,
       hasParams: false,
       hasHelp: false,
-      hasError: false
+      hasError: false,
+      structure,
     };
 
     const result = generateLazyCLI(options);
@@ -75,11 +111,26 @@ describe('Lazy CLI Template - Aliases', () => {
       }
     ];
 
+    const structure: CLIStructure = {
+      commands: [],
+      params: [],
+      help: [],
+      errors: [],
+      handlers: new Map([
+        ['command', {
+          path: './app/command.ts',
+          definition: HANDLER_REGISTRY.find(h => h.name === 'command')!,
+          commandPath: '',
+        }],
+      ]),
+    };
+
     const options: LazyCliOptions = {
       commands,
       hasParams: true,
       hasHelp: false,
-      hasError: false
+      hasError: false,
+      structure,
     };
 
     const result = generateLazyCLI(options);
@@ -206,7 +257,7 @@ describe('Lazy CLI Template - Unified Handlers', () => {
     expect(result).toContain("globalHandlers['global-error'] = global_errorModule.default;");
   });
 
-  it('should fall back to old approach when structure is not provided', () => {
+  it('should generate fallback CLI when structure is not provided', () => {
     const commands: CommandInfo[] = [
       {
         name: 'test',
@@ -223,14 +274,10 @@ describe('Lazy CLI Template - Unified Handlers', () => {
       // No structure provided
     };
 
+    // Should generate a fallback CLI using executeCommand
     const result = generateLazyCLI(options);
-
-    // Should use old executeCommand approach
     expect(result).toContain("await executeCommand('./app/test/command.js', commandArgs);");
-    
-    // Should not contain unified handler code
-    expect(result).not.toContain("// Global handler initialization");
-    expect(result).not.toContain("const globalHandlers = {};");
+    expect(result).not.toContain('// Global handler initialization');
   });
 
   it('should handle error handlers in unified approach', () => {

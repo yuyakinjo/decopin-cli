@@ -30,12 +30,12 @@ export class CommandGeneratorImpl implements CommandGenerator {
       hasError: commands.some((cmd) => cmd.hasError),
     };
     
-    // Pass the full structure to enable unified handler management
+    // Pass structure if provided
     if (structure) {
       options.structure = structure;
     }
 
-    // Keep backward compatibility for individual handler flags
+    // Set individual handler flags based on structure
     if (structure?.middleware) {
       Object.assign(options, {
         hasMiddleware: true,
