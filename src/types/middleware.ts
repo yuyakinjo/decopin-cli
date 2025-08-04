@@ -1,7 +1,7 @@
 /**
  * Middleware context passed to middleware functions
  */
-import type { Context } from './context.js';
+import type { Context, MiddlewareFactoryContext } from './context.js';
 
 export interface MiddlewareContext<
   Env extends Record<string, string | undefined> = Record<
@@ -36,7 +36,7 @@ export type MiddlewareHandler = (
  * Middleware factory function (exported from middleware.ts)
  */
 export type MiddlewareFactory<E = typeof process.env> = 
-  | ((context: Context<E>) => MiddlewareHandler)
+  | ((context: MiddlewareFactoryContext<E>) => MiddlewareHandler)
   | (() => MiddlewareHandler);
 
 /**

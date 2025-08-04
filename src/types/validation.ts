@@ -1,5 +1,5 @@
 import type * as v from 'valibot';
-import type { Context, ErrorContext } from './context.js';
+import type { Context, ErrorContext, ParamsContext, EnvContext, VersionContext } from './context.js';
 
 /**
  * バリデーション結果
@@ -121,7 +121,7 @@ export type ErrorHandler<T = unknown, E = typeof process.env> =
  * パラメータ定義関数の型
  */
 export type ParamsDefinitionFunction<E = typeof process.env> = 
-  | ((context: Context<E>) => ParamsHandler)
+  | ((context: ParamsContext<E>) => ParamsHandler)
   | (() => ParamsHandler);
 
 /**
@@ -185,7 +185,7 @@ export interface EnvValidationResult<T = Record<string, unknown>> {
  * 環境変数定義関数の型
  */
 export type EnvDefinitionFunction = 
-  | ((context: Context<typeof process.env>) => EnvHandler)
+  | ((context: EnvContext<typeof process.env>) => EnvHandler)
   | (() => EnvHandler);
 /**
  * バージョン情報のメタデータ
@@ -217,5 +217,5 @@ export interface VersionHandler {
  * バージョン定義関数の型
  */
 export type VersionDefinitionFunction = 
-  | ((context: Context<typeof process.env>) => VersionHandler)
+  | ((context: VersionContext<typeof process.env>) => VersionHandler)
   | (() => VersionHandler);

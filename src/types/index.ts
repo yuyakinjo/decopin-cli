@@ -8,6 +8,11 @@ export type {
   CommandHandler,
   Context,
   ErrorContext,
+  GlobalErrorContext,
+  EnvContext,
+  VersionContext,
+  HelpContext,
+  ParamsContext,
 } from './context.js';
 
 // コマンド定義関連
@@ -50,12 +55,12 @@ export type {
   VersionDefinitionFunction,
 } from './validation.js';
 
-import type { Context } from './context.js';
+import type { Context, GlobalErrorContext } from './context.js';
 // グローバルエラーハンドラー
 import type { CLIError } from './errors.js';
 export type GlobalErrorHandler = (error: CLIError) => Promise<void> | void;
 export type GlobalErrorHandlerFactory<E = typeof process.env> = 
-  | ((context: Context<E>) => GlobalErrorHandler)
+  | ((context: GlobalErrorContext<E>) => GlobalErrorHandler)
   | (() => GlobalErrorHandler);
 
 // ミドルウェア関連

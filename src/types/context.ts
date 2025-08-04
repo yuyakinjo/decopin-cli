@@ -107,11 +107,46 @@ export type ValidatedContext<T> = ValidatedCommandContext<T>;
  * function myFunc(context: Context<MyEnv>) { ... }
  * ```
  */
-export type EnvContext<E> = EnvCommandContext<E>;
+// Removed - replaced with new EnvContext definition below
 
 /**
  * コマンドハンドラーの型
  */
+/**
+ * グローバルエラーハンドラー用のコンテキスト
+ * ファクトリー関数で使用
+ */
+export type GlobalErrorContext<E = typeof process.env> = Context<E>;
+
+/**
+ * 環境変数ハンドラー用のコンテキスト
+ * ファクトリー関数で使用
+ */
+export type EnvContext<E = typeof process.env> = Context<E>;
+
+/**
+ * バージョンハンドラー用のコンテキスト
+ * ファクトリー関数で使用
+ */
+export type VersionContext<E = typeof process.env> = Context<E>;
+
+/**
+ * ヘルプハンドラー用のコンテキスト
+ * ファクトリー関数で使用
+ */
+export type HelpContext<E = typeof process.env> = Context<E>;
+
+/**
+ * パラメータハンドラー用のコンテキスト
+ * ファクトリー関数で使用
+ */
+export type ParamsContext<E = typeof process.env> = Context<E>;
+/**
+ * ミドルウェア用のコンテキスト
+ * 注: 実際のMiddlewareContext型はmiddleware.tsで定義されており、
+ * これはファクトリー関数用のContext型エイリアスです
+ */
+export type MiddlewareFactoryContext<E = typeof process.env> = Context<E>;
 export type CommandHandler<T = never, E = never> = 
   | ((context: CommandContext<T, E>) => Promise<void> | void)
   | (() => Promise<void> | void);
