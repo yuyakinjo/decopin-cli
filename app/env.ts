@@ -1,4 +1,4 @@
-import type { EnvHandler, EnvContext } from '../dist/types/index.js';
+import type { EnvHandler } from '../dist/types/index.js';
 import { SCHEMA_TYPE } from '../dist/types/index.js';
 
 // 環境変数の型を定義
