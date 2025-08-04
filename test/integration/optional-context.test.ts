@@ -1,15 +1,22 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { mkdtempSync, rmSync, writeFileSync } from 'fs';
+import { mkdtempSync, rmSync, writeFileSync, existsSync } from 'fs';
 import { join } from 'path';
 import { tmpdir } from 'os';
 import { execSync } from 'child_process';
 import { Scanner } from '../../src/core/scanner.js';
-import { generate as generateLazyCLI } from '../../src/command/generator.js';
+import { generateLazyCLI } from '../../src/generator/lazy-cli-template.js';
 
 describe('Optional Context Handlers', () => {
   let tempDir: string;
   let appDir: string;
   let outputDir: string;
+  
+  // Helper to convert absolute path to relative path for CLI generation
+  const toRelativePath = (absolutePath: string, baseDir: string): string => {
+    // Convert absolute path to relative and change extension
+    const relative = absolutePath.replace(baseDir, '.').replace(/\.ts$/, '.js');
+    return relative;
+  };
 
   beforeAll(() => {
     tempDir = mkdtempSync(join(tmpdir(), 'decopin-optional-context-'));
@@ -55,21 +62,29 @@ export default function createParams() {
       // Generate and test
       const scanner = new Scanner(appDir);
       const structure = await scanner.scan();
-      const generated = await generateLazyCLI(
-        structure.commands.map((cmd, idx) => ({
+      const generated = generateLazyCLI({
+        commands: structure.commands.map(cmd => ({
           name: cmd.name,
-          path: cmd.path,
-          hasParams: structure.params.some(p => p.commandPath === (cmd.name === 'root' ? '' : cmd.name)),
-          hasHelp: false,
-          hasError: false,
-          metadata: {}
+          path: toRelativePath(cmd.path, tempDir),
+          hasParams: !!cmd.params,
+          aliases: cmd.help?.aliases
         })),
-        structure
-      );
+        hasParams: structure.params.length > 0,
+        hasHelp: structure.commands.some(cmd => !!cmd.help),
+        hasError: structure.commands.some(cmd => !!cmd.error),
+        hasMiddleware: !!structure.middleware,
+        middlewarePath: structure.middleware ? toRelativePath(structure.middleware.path, tempDir) : undefined,
+        hasGlobalError: !!structure.globalError,
+        globalErrorPath: structure.globalError ? toRelativePath(structure.globalError.path, tempDir) : undefined,
+        hasEnv: !!structure.env,
+        envPath: structure.env ? toRelativePath(structure.env.path, tempDir) : undefined,
+        hasVersion: !!structure.version,
+        versionPath: structure.version ? toRelativePath(structure.version.path, tempDir) : undefined
+      });
 
       // When params exist, the generated code should check handler length
-      expect(generated.content).toContain('if (handler.length === 0)');
-      expect(generated.content).toContain('await handler()');
+      expect(generated).toContain('if (handler.length === 0)');
+      expect(generated).toContain('await handler()');
     });
 
     it('should support command handler with context', async () => {
@@ -87,20 +102,28 @@ export default async function withContextCommand(context: CommandContext<{ name:
       // Generate and test
       const scanner = new Scanner(appDir);
       const structure = await scanner.scan();
-      const generated = await generateLazyCLI(
-        structure.commands.map(cmd => ({
+      const generated = generateLazyCLI({
+        commands: structure.commands.map(cmd => ({
           name: cmd.name,
-          path: cmd.path,
-          hasParams: false,
-          hasHelp: false,
-          hasError: false,
-          metadata: {}
+          path: toRelativePath(cmd.path, tempDir),
+          hasParams: !!cmd.params,
+          aliases: cmd.help?.aliases
         })),
-        structure
-      );
+        hasParams: structure.params.length > 0,
+        hasHelp: structure.commands.some(cmd => !!cmd.help),
+        hasError: structure.commands.some(cmd => !!cmd.error),
+        hasMiddleware: !!structure.middleware,
+        middlewarePath: structure.middleware ? toRelativePath(structure.middleware.path, tempDir) : undefined,
+        hasGlobalError: !!structure.globalError,
+        globalErrorPath: structure.globalError ? toRelativePath(structure.globalError.path, tempDir) : undefined,
+        hasEnv: !!structure.env,
+        envPath: structure.env ? toRelativePath(structure.env.path, tempDir) : undefined,
+        hasVersion: !!structure.version,
+        versionPath: structure.version ? toRelativePath(structure.version.path, tempDir) : undefined
+      });
 
       // Check that the generated code handles context functions
-      expect(generated.content).toContain('await handler({ validatedData');
+      expect(generated).toContain('await handler({ validatedData');
     });
   });
 
@@ -137,18 +160,26 @@ export default async function paramsTestCommand(context: CommandContext<{ name: 
       const structure = await scanner.scan();
       
       // The generated code should check function length
-      const generated = await generateLazyCLI(
-        structure.commands.map(cmd => ({
+      const generated = generateLazyCLI({
+        commands: structure.commands.map(cmd => ({
           name: cmd.name,
-          path: cmd.path,
+          path: toRelativePath(cmd.path, tempDir),
           hasParams: !!cmd.params,
-          hasHelp: !!cmd.help,
-          hasError: !!cmd.error,
-          metadata: {}
+          aliases: cmd.help?.aliases
         })),
-        structure
-      );
-      expect(generated.content).toContain('createParams.length === 0');
+        hasParams: structure.params.length > 0,
+        hasHelp: structure.commands.some(cmd => !!cmd.help),
+        hasError: structure.commands.some(cmd => !!cmd.error),
+        hasMiddleware: !!structure.middleware,
+        middlewarePath: structure.middleware ? toRelativePath(structure.middleware.path, tempDir) : undefined,
+        hasGlobalError: !!structure.globalError,
+        globalErrorPath: structure.globalError ? toRelativePath(structure.globalError.path, tempDir) : undefined,
+        hasEnv: !!structure.env,
+        envPath: structure.env ? toRelativePath(structure.env.path, tempDir) : undefined,
+        hasVersion: !!structure.version,
+        versionPath: structure.version ? toRelativePath(structure.version.path, tempDir) : undefined
+      });
+      expect(generated).toContain('createParams.length === 0');
     });
 
     it('should support params handler with context', async () => {
@@ -186,18 +217,26 @@ export default async function paramsContextCommand(context: CommandContext<{ nam
       const scanner = new Scanner(appDir);
       const structure = await scanner.scan();
       
-      const generated = await generateLazyCLI(
-        structure.commands.map(cmd => ({
+      const generated = generateLazyCLI({
+        commands: structure.commands.map(cmd => ({
           name: cmd.name,
-          path: cmd.path,
+          path: toRelativePath(cmd.path, tempDir),
           hasParams: !!cmd.params,
-          hasHelp: !!cmd.help,
-          hasError: !!cmd.error,
-          metadata: {}
+          aliases: cmd.help?.aliases
         })),
-        structure
-      );
-      expect(generated.content).toContain('createParams(baseContext)');
+        hasParams: structure.params.length > 0,
+        hasHelp: structure.commands.some(cmd => !!cmd.help),
+        hasError: structure.commands.some(cmd => !!cmd.error),
+        hasMiddleware: !!structure.middleware,
+        middlewarePath: structure.middleware ? toRelativePath(structure.middleware.path, tempDir) : undefined,
+        hasGlobalError: !!structure.globalError,
+        globalErrorPath: structure.globalError ? toRelativePath(structure.globalError.path, tempDir) : undefined,
+        hasEnv: !!structure.env,
+        envPath: structure.env ? toRelativePath(structure.env.path, tempDir) : undefined,
+        hasVersion: !!structure.version,
+        versionPath: structure.version ? toRelativePath(structure.version.path, tempDir) : undefined
+      });
+      expect(generated).toContain('createParams(baseContext)');
     });
   });
 
@@ -223,19 +262,27 @@ export default async function errorTestCommand() {
       const scanner = new Scanner(appDir);
       const structure = await scanner.scan();
       
-      const generated = await generateLazyCLI(
-        structure.commands.map(cmd => ({
+      const generated = generateLazyCLI({
+        commands: structure.commands.map(cmd => ({
           name: cmd.name,
-          path: cmd.path,
+          path: toRelativePath(cmd.path, tempDir),
           hasParams: !!cmd.params,
-          hasHelp: !!cmd.help,
-          hasError: !!cmd.error,
-          metadata: {}
+          aliases: cmd.help?.aliases
         })),
-        structure
-      );
-      expect(generated.content).toContain('errorHandler.length === 0');
-      expect(generated.content).toContain('errorHandler.length === 1');
+        hasParams: structure.params.length > 0,
+        hasHelp: structure.commands.some(cmd => !!cmd.help),
+        hasError: structure.commands.some(cmd => !!cmd.error),
+        hasMiddleware: !!structure.middleware,
+        middlewarePath: structure.middleware ? toRelativePath(structure.middleware.path, tempDir) : undefined,
+        hasGlobalError: !!structure.globalError,
+        globalErrorPath: structure.globalError ? toRelativePath(structure.globalError.path, tempDir) : undefined,
+        hasEnv: !!structure.env,
+        envPath: structure.env ? toRelativePath(structure.env.path, tempDir) : undefined,
+        hasVersion: !!structure.version,
+        versionPath: structure.version ? toRelativePath(structure.version.path, tempDir) : undefined
+      });
+      expect(generated).toContain('errorHandler.length === 0');
+      expect(generated).toContain('errorHandler.length === 1');
     });
 
     it('should support error handler with context', async () => {
@@ -262,25 +309,38 @@ export default async function errorContextCommand() {
       const scanner = new Scanner(appDir);
       const structure = await scanner.scan();
       
-      const generated = await generateLazyCLI(
-        structure.commands.map(cmd => ({
+      const generated = generateLazyCLI({
+        commands: structure.commands.map(cmd => ({
           name: cmd.name,
-          path: cmd.path,
+          path: toRelativePath(cmd.path, tempDir),
           hasParams: !!cmd.params,
-          hasHelp: !!cmd.help,
-          hasError: !!cmd.error,
-          metadata: {}
+          aliases: cmd.help?.aliases
         })),
-        structure
-      );
-      expect(generated.content).toContain('await errorHandler(errorContext)');
+        hasParams: structure.params.length > 0,
+        hasHelp: structure.commands.some(cmd => !!cmd.help),
+        hasError: structure.commands.some(cmd => !!cmd.error),
+        hasMiddleware: !!structure.middleware,
+        middlewarePath: structure.middleware ? toRelativePath(structure.middleware.path, tempDir) : undefined,
+        hasGlobalError: !!structure.globalError,
+        globalErrorPath: structure.globalError ? toRelativePath(structure.globalError.path, tempDir) : undefined,
+        hasEnv: !!structure.env,
+        envPath: structure.env ? toRelativePath(structure.env.path, tempDir) : undefined,
+        hasVersion: !!structure.version,
+        versionPath: structure.version ? toRelativePath(structure.version.path, tempDir) : undefined
+      });
+      expect(generated).toContain('await errorHandler(errorContext)');
     });
   });
 
   describe('Middleware Handler', () => {
     it('should support middleware factory without context', async () => {
-      // Create middleware without context
+      // Clean up any existing middleware.ts
       const middlewarePath = join(appDir, 'middleware.ts');
+      if (existsSync(middlewarePath)) {
+        rmSync(middlewarePath);
+      }
+      
+      // Create middleware without context
       writeFileSync(middlewarePath, `
 export default function createMiddleware() {
   return async (context, next) => {
@@ -294,14 +354,37 @@ export default function createMiddleware() {
       const scanner = new Scanner(appDir);
       const structure = await scanner.scan();
       
-      const generated = await generateLazyCLI([], structure);
-      expect(generated.content).toContain('createMiddleware.length === 0');
-      expect(generated.content).toContain('createMiddleware()');
+      const generated = generateLazyCLI({
+        commands: structure.commands.map(cmd => ({
+          name: cmd.name,
+          path: toRelativePath(cmd.path, tempDir),
+          hasParams: !!cmd.params,
+          aliases: cmd.help?.aliases
+        })),
+        hasParams: structure.params.length > 0,
+        hasHelp: structure.commands.some(cmd => !!cmd.help),
+        hasError: structure.commands.some(cmd => !!cmd.error),
+        hasMiddleware: !!structure.middleware,
+        middlewarePath: structure.middleware ? toRelativePath(structure.middleware.path, tempDir) : undefined,
+        hasGlobalError: !!structure.globalError,
+        globalErrorPath: structure.globalError ? toRelativePath(structure.globalError.path, tempDir) : undefined,
+        hasEnv: !!structure.env,
+        envPath: structure.env ? toRelativePath(structure.env.path, tempDir) : undefined,
+        hasVersion: !!structure.version,
+        versionPath: structure.version ? toRelativePath(structure.version.path, tempDir) : undefined
+      });
+      expect(generated).toContain('createMiddleware.length === 0');
+      expect(generated).toContain('createMiddleware()');
     });
 
     it('should support middleware factory with context', async () => {
-      // Create middleware with context
+      // Clean up any existing middleware.ts
       const middlewarePath = join(appDir, 'middleware.ts');
+      if (existsSync(middlewarePath)) {
+        rmSync(middlewarePath);
+      }
+      
+      // Create middleware with context
       writeFileSync(middlewarePath, `
 import type { Context } from 'decopin-cli';
 
@@ -320,15 +403,38 @@ export default function createMiddleware(context: Context) {
       const structure = await scanner.scan();
       
       // Even if this specific file isn't picked up, we verify the pattern
-      const generated = await generateLazyCLI([], structure);
-      expect(generated.content).toContain('createMiddleware(baseContext)');
+      const generated = generateLazyCLI({
+        commands: structure.commands.map(cmd => ({
+          name: cmd.name,
+          path: toRelativePath(cmd.path, tempDir),
+          hasParams: !!cmd.params,
+          aliases: cmd.help?.aliases
+        })),
+        hasParams: structure.params.length > 0,
+        hasHelp: structure.commands.some(cmd => !!cmd.help),
+        hasError: structure.commands.some(cmd => !!cmd.error),
+        hasMiddleware: !!structure.middleware,
+        middlewarePath: structure.middleware ? toRelativePath(structure.middleware.path, tempDir) : undefined,
+        hasGlobalError: !!structure.globalError,
+        globalErrorPath: structure.globalError ? toRelativePath(structure.globalError.path, tempDir) : undefined,
+        hasEnv: !!structure.env,
+        envPath: structure.env ? toRelativePath(structure.env.path, tempDir) : undefined,
+        hasVersion: !!structure.version,
+        versionPath: structure.version ? toRelativePath(structure.version.path, tempDir) : undefined
+      });
+      expect(generated).toContain('createMiddleware(baseContext)');
     });
   });
 
   describe('Global Error Handler', () => {
     it('should support global error handler factory without context', async () => {
-      // Create global error handler without context
+      // Clean up any existing global-error.ts
       const globalErrorPath = join(appDir, 'global-error.ts');
+      if (existsSync(globalErrorPath)) {
+        rmSync(globalErrorPath);
+      }
+      
+      // Create global error handler without context
       writeFileSync(globalErrorPath, `
 export default function createGlobalErrorHandler() {
   return async (error) => {
@@ -342,14 +448,37 @@ export default function createGlobalErrorHandler() {
       const scanner = new Scanner(appDir);
       const structure = await scanner.scan();
       
-      const generated = await generateLazyCLI([], structure);
-      expect(generated.content).toContain('globalErrorModule.default.length === 0');
-      expect(generated.content).toContain('globalErrorModule.default()');
+      const generated = generateLazyCLI({
+        commands: structure.commands.map(cmd => ({
+          name: cmd.name,
+          path: toRelativePath(cmd.path, tempDir),
+          hasParams: !!cmd.params,
+          aliases: cmd.help?.aliases
+        })),
+        hasParams: structure.params.length > 0,
+        hasHelp: structure.commands.some(cmd => !!cmd.help),
+        hasError: structure.commands.some(cmd => !!cmd.error),
+        hasMiddleware: !!structure.middleware,
+        middlewarePath: structure.middleware ? toRelativePath(structure.middleware.path, tempDir) : undefined,
+        hasGlobalError: !!structure.globalError,
+        globalErrorPath: structure.globalError ? toRelativePath(structure.globalError.path, tempDir) : undefined,
+        hasEnv: !!structure.env,
+        envPath: structure.env ? toRelativePath(structure.env.path, tempDir) : undefined,
+        hasVersion: !!structure.version,
+        versionPath: structure.version ? toRelativePath(structure.version.path, tempDir) : undefined
+      });
+      expect(generated).toContain('globalErrorModule.default.length === 0');
+      expect(generated).toContain('globalErrorModule.default()');
     });
 
     it('should support global error handler factory with context', async () => {
-      // Create global error handler with context
+      // Clean up any existing global-error.ts
       const globalErrorPath = join(appDir, 'global-error.ts');
+      if (existsSync(globalErrorPath)) {
+        rmSync(globalErrorPath);
+      }
+      
+      // Create global error handler with context
       writeFileSync(globalErrorPath, `
 import type { Context } from 'decopin-cli';
 
@@ -370,8 +499,26 @@ export default function createGlobalErrorHandler(context: Context) {
       const scanner = new Scanner(appDir);
       const structure = await scanner.scan();
       
-      const generated = await generateLazyCLI([], structure);
-      expect(generated.content).toContain('globalErrorModule.default(baseContext)');
+      const generated = generateLazyCLI({
+        commands: structure.commands.map(cmd => ({
+          name: cmd.name,
+          path: toRelativePath(cmd.path, tempDir),
+          hasParams: !!cmd.params,
+          aliases: cmd.help?.aliases
+        })),
+        hasParams: structure.params.length > 0,
+        hasHelp: structure.commands.some(cmd => !!cmd.help),
+        hasError: structure.commands.some(cmd => !!cmd.error),
+        hasMiddleware: !!structure.middleware,
+        middlewarePath: structure.middleware ? toRelativePath(structure.middleware.path, tempDir) : undefined,
+        hasGlobalError: !!structure.globalError,
+        globalErrorPath: structure.globalError ? toRelativePath(structure.globalError.path, tempDir) : undefined,
+        hasEnv: !!structure.env,
+        envPath: structure.env ? toRelativePath(structure.env.path, tempDir) : undefined,
+        hasVersion: !!structure.version,
+        versionPath: structure.version ? toRelativePath(structure.version.path, tempDir) : undefined
+      });
+      expect(generated).toContain('globalErrorModule.default(baseContext)');
     });
   });
 
@@ -395,9 +542,27 @@ export default function createVersion() {
       const scanner = new Scanner(appDir);
       const structure = await scanner.scan();
       
-      const generated = await generateLazyCLI([], structure);
-      expect(generated.content).toContain('versionModule.default.length === 0');
-      expect(generated.content).toContain('versionModule.default()');
+      const generated = generateLazyCLI({
+        commands: structure.commands.map(cmd => ({
+          name: cmd.name,
+          path: toRelativePath(cmd.path, tempDir),
+          hasParams: !!cmd.params,
+          aliases: cmd.help?.aliases
+        })),
+        hasParams: structure.params.length > 0,
+        hasHelp: structure.commands.some(cmd => !!cmd.help),
+        hasError: structure.commands.some(cmd => !!cmd.error),
+        hasMiddleware: !!structure.middleware,
+        middlewarePath: structure.middleware ? toRelativePath(structure.middleware.path, tempDir) : undefined,
+        hasGlobalError: !!structure.globalError,
+        globalErrorPath: structure.globalError ? toRelativePath(structure.globalError.path, tempDir) : undefined,
+        hasEnv: !!structure.env,
+        envPath: structure.env ? toRelativePath(structure.env.path, tempDir) : undefined,
+        hasVersion: !!structure.version,
+        versionPath: structure.version ? toRelativePath(structure.version.path, tempDir) : undefined
+      });
+      expect(generated).toContain('versionModule.default.length === 0');
+      expect(generated).toContain('versionModule.default()');
     });
 
     it('should support version handler with context', async () => {
@@ -422,8 +587,26 @@ export default function createVersion(context: Context) {
       const scanner = new Scanner(appDir);
       const structure = await scanner.scan();
       
-      const generated = await generateLazyCLI([], structure);
-      expect(generated.content).toContain('versionModule.default({ args:');
+      const generated = generateLazyCLI({
+        commands: structure.commands.map(cmd => ({
+          name: cmd.name,
+          path: toRelativePath(cmd.path, tempDir),
+          hasParams: !!cmd.params,
+          aliases: cmd.help?.aliases
+        })),
+        hasParams: structure.params.length > 0,
+        hasHelp: structure.commands.some(cmd => !!cmd.help),
+        hasError: structure.commands.some(cmd => !!cmd.error),
+        hasMiddleware: !!structure.middleware,
+        middlewarePath: structure.middleware ? toRelativePath(structure.middleware.path, tempDir) : undefined,
+        hasGlobalError: !!structure.globalError,
+        globalErrorPath: structure.globalError ? toRelativePath(structure.globalError.path, tempDir) : undefined,
+        hasEnv: !!structure.env,
+        envPath: structure.env ? toRelativePath(structure.env.path, tempDir) : undefined,
+        hasVersion: !!structure.version,
+        versionPath: structure.version ? toRelativePath(structure.version.path, tempDir) : undefined
+      });
+      expect(generated).toContain('versionModule.default({ args:');
     });
   });
 
@@ -447,9 +630,27 @@ export default function createEnv() {
       const scanner = new Scanner(appDir);
       const structure = await scanner.scan();
       
-      const generated = await generateLazyCLI([], structure);
-      expect(generated.content).toContain('envModule.default.length === 0');
-      expect(generated.content).toContain('envModule.default()');
+      const generated = generateLazyCLI({
+        commands: structure.commands.map(cmd => ({
+          name: cmd.name,
+          path: toRelativePath(cmd.path, tempDir),
+          hasParams: !!cmd.params,
+          aliases: cmd.help?.aliases
+        })),
+        hasParams: structure.params.length > 0,
+        hasHelp: structure.commands.some(cmd => !!cmd.help),
+        hasError: structure.commands.some(cmd => !!cmd.error),
+        hasMiddleware: !!structure.middleware,
+        middlewarePath: structure.middleware ? toRelativePath(structure.middleware.path, tempDir) : undefined,
+        hasGlobalError: !!structure.globalError,
+        globalErrorPath: structure.globalError ? toRelativePath(structure.globalError.path, tempDir) : undefined,
+        hasEnv: !!structure.env,
+        envPath: structure.env ? toRelativePath(structure.env.path, tempDir) : undefined,
+        hasVersion: !!structure.version,
+        versionPath: structure.version ? toRelativePath(structure.version.path, tempDir) : undefined
+      });
+      expect(generated).toContain('envModule.default.length === 0');
+      expect(generated).toContain('envModule.default()');
     });
 
     it('should support env handler with context', async () => {
@@ -476,8 +677,26 @@ export default function createEnv(context: Context) {
       const scanner = new Scanner(appDir);
       const structure = await scanner.scan();
       
-      const generated = await generateLazyCLI([], structure);
-      expect(generated.content).toContain('envModule.default({ args:');
+      const generated = generateLazyCLI({
+        commands: structure.commands.map(cmd => ({
+          name: cmd.name,
+          path: toRelativePath(cmd.path, tempDir),
+          hasParams: !!cmd.params,
+          aliases: cmd.help?.aliases
+        })),
+        hasParams: structure.params.length > 0,
+        hasHelp: structure.commands.some(cmd => !!cmd.help),
+        hasError: structure.commands.some(cmd => !!cmd.error),
+        hasMiddleware: !!structure.middleware,
+        middlewarePath: structure.middleware ? toRelativePath(structure.middleware.path, tempDir) : undefined,
+        hasGlobalError: !!structure.globalError,
+        globalErrorPath: structure.globalError ? toRelativePath(structure.globalError.path, tempDir) : undefined,
+        hasEnv: !!structure.env,
+        envPath: structure.env ? toRelativePath(structure.env.path, tempDir) : undefined,
+        hasVersion: !!structure.version,
+        versionPath: structure.version ? toRelativePath(structure.version.path, tempDir) : undefined
+      });
+      expect(generated).toContain('envModule.default({ args:');
     });
   });
 });
