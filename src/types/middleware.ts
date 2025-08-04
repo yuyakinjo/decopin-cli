@@ -35,9 +35,9 @@ export type MiddlewareHandler = (
 /**
  * Middleware factory function (exported from middleware.ts)
  */
-export type MiddlewareFactory<E = typeof process.env> = (
-  context: Context<E>
-) => MiddlewareHandler;
+export type MiddlewareFactory<E = typeof process.env> = 
+  | ((context: Context<E>) => MiddlewareHandler)
+  | (() => MiddlewareHandler);
 
 /**
  * Middleware export structure

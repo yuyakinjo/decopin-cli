@@ -27,7 +27,9 @@ async function handleDefaultError(error) {
     const globalErrorModule = await import('${globalErrorImportPath}');
     if (globalErrorModule.default && typeof globalErrorModule.default === 'function') {
       const baseContext = { args: process.argv.slice(2), env: process.env, command: process.argv.slice(2), options: {} };
-      const errorHandler = globalErrorModule.default(baseContext);
+      const errorHandler = globalErrorModule.default.length === 0 
+        ? globalErrorModule.default() 
+        : globalErrorModule.default(baseContext);
       if (typeof errorHandler === 'function') {
         await errorHandler(error);
         return; // Global error handler should handle process.exit
@@ -60,7 +62,9 @@ async function showVersion() {
   try {
     const versionModule = await import('${versionImportPath}');
     if (versionModule.default && typeof versionModule.default === 'function') {
-      const versionInfo = versionModule.default();
+      const versionInfo = versionModule.default.length === 0 
+        ? versionModule.default() 
+        : versionModule.default({ args: process.argv.slice(2), env: process.env, command: process.argv.slice(2), options: {} });
       if (versionInfo && versionInfo.version) {
         console.log(versionInfo.version);
       } else {
@@ -88,7 +92,9 @@ let env = process.env;
 try {
   const envModule = await import('${envImportPath}');
   if (envModule.default && typeof envModule.default === 'function') {
-    const envHandler = envModule.default();
+    const envHandler = envModule.default.length === 0 
+      ? envModule.default() 
+      : envModule.default({ args: process.argv.slice(2), env: process.env, command: process.argv.slice(2), options: {} });
     // TODO: Apply validation based on envHandler schema
     // For now, just use process.env directly
     env = process.env;
@@ -317,9 +323,16 @@ async function executeCommand(modulePath, args) {
     const paramsModule = await import(paramsPath);
     const createParams = paramsModule.default;
     const baseContext = { args, env: process.env, command: args, options: {} };
-    const paramsHandler = typeof createParams === 'function' ? createParams(baseContext) : createParams;
+    const paramsHandler = typeof createParams === 'function' 
+      ? (createParams.length === 0 ? createParams() : createParams(baseContext))
+      : createParams;
     const params = await validateParams(args, paramsHandler);
-    await handler({ validatedData: params, args, env: process.env, command: args, options: {} });
+    // Call handler with or without context based on function length
+    if (handler.length === 0) {
+      await handler();
+    } else {
+      await handler({ validatedData: params, args, env: process.env, command: args, options: {} });
+    }
   } catch (e) {
     // Check if this is a validation error or missing params file
     if (e.code === 'ERR_MODULE_NOT_FOUND') {
@@ -327,7 +340,12 @@ async function executeCommand(modulePath, args) {
       if (process.env.DEBUG) {
         console.error('No params file found, running without validation');
       }
-      await handler({ validatedData: {}, args, env: process.env, command: args, options: {} });
+      // Call handler with or without context based on function length
+      if (handler.length === 0) {
+        await handler();
+      } else {
+        await handler({ validatedData: {}, args, env: process.env, command: args, options: {} });
+      }
     } else {
       // Validation error or other error
       if (e.issues) {
@@ -338,7 +356,15 @@ async function executeCommand(modulePath, args) {
           if (errorModule.default && typeof errorModule.default === 'function') {
             const errorHandler = errorModule.default;
             const errorContext = { validatedData: {}, args, env: process.env, command: args, options: {}, error: e };
-            await errorHandler(errorContext);
+            // Call error handler with or without context based on function length
+            if (errorHandler.length === 0) {
+              await errorHandler();
+            } else if (errorHandler.length === 1 && !errorContext.validatedData) {
+              // If handler expects only error parameter
+              await errorHandler(e);
+            } else {
+              await errorHandler(errorContext);
+            }
             return; // Error handler should handle process.exit
           }
         } catch {
@@ -549,7 +575,9 @@ async function showDefaultHelp() {
   try {
     const versionModule = await import('./app/version.js');
     if (versionModule.default && typeof versionModule.default === 'function') {
-      versionInfo = versionModule.default();
+      versionInfo = versionModule.default.length === 0 
+        ? versionModule.default() 
+        : versionModule.default({ args: process.argv.slice(2), env: process.env, command: process.argv.slice(2), options: {} });
     }
   } catch {
     // No version file
@@ -604,7 +632,9 @@ async function showCommandHelp(modulePath) {
         try {
           const paramsModule = await import(paramsPath);
           if (paramsModule.default && typeof paramsModule.default === 'function') {
-            const paramsHandler = paramsModule.default();
+            const paramsHandler = paramsModule.default.length === 0 
+              ? paramsModule.default() 
+              : paramsModule.default({ args: [], env: process.env, command: [], options: {} });
             if (paramsHandler.mappings && paramsHandler.mappings.length > 0) {
               console.log('\\nArguments:');
               paramsHandler.mappings.forEach(mapping => {
@@ -643,7 +673,9 @@ async function showCommandHelp(modulePath) {
     try {
       const paramsModule = await import(paramsPath);
       if (paramsModule.default && typeof paramsModule.default === 'function') {
-        const paramsHandler = paramsModule.default();
+        const paramsHandler = paramsModule.default.length === 0 
+          ? paramsModule.default() 
+          : paramsModule.default({ args: [], env: process.env, command: [], options: {} });
         if (paramsHandler.mappings && paramsHandler.mappings.length > 0) {
           console.log('\\nArguments:');
           paramsHandler.mappings.forEach(mapping => {

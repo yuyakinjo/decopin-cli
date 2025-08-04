@@ -112,6 +112,6 @@ export type EnvContext<E> = EnvCommandContext<E>;
 /**
  * コマンドハンドラーの型
  */
-export type CommandHandler<T = never, E = never> = (
-  context: CommandContext<T, E>
-) => Promise<void> | void;
+export type CommandHandler<T = never, E = never> = 
+  | ((context: CommandContext<T, E>) => Promise<void> | void)
+  | (() => Promise<void> | void);

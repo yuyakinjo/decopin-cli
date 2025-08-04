@@ -31,7 +31,9 @@ export function generateMiddlewareExecution(
     const createMiddleware = middlewareModule.default;
     if (typeof createMiddleware === 'function') {
       const baseContext = { args: commandArgs, env: process.env, command: commandPath.split('/'), options: parseOptions(commandArgs) };
-      const middleware = createMiddleware(baseContext);
+      const middleware = createMiddleware.length === 0 
+        ? createMiddleware() 
+        : createMiddleware(baseContext);
       const context = {
         command: commandPath.split('/'),
         args: commandArgs,

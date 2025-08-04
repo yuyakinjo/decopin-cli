@@ -54,9 +54,9 @@ import type { Context } from './context.js';
 // グローバルエラーハンドラー
 import type { CLIError } from './errors.js';
 export type GlobalErrorHandler = (error: CLIError) => Promise<void> | void;
-export type GlobalErrorHandlerFactory<E = typeof process.env> = (
-  context: Context<E>
-) => GlobalErrorHandler;
+export type GlobalErrorHandlerFactory<E = typeof process.env> = 
+  | ((context: Context<E>) => GlobalErrorHandler)
+  | (() => GlobalErrorHandler);
 
 // ミドルウェア関連
 export type {
