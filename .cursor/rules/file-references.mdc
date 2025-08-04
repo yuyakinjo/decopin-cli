@@ -6,8 +6,7 @@ file-references
 
 ## Core Source Files
 - `src/cli.ts` - Main CLI entry point
-- `src/generator/cli-generator.ts` - CLI generation logic
-- `src/parser/ast-parser.ts` - TypeScript AST parsing
+- `src/generator/lazy-cli-template.ts` - CLI generation logic- `src/parser/ast-parser.ts` - TypeScript AST parsing
 - `src/parser/version-parser.ts` - Version parsing utilities
 - `src/scanner/directory-scanner.ts` - File system scanning
 - `src/utils/validation.ts` - Argument validation utilities
@@ -28,8 +27,7 @@ file-references
 - `src/scanner/directory-scanner.test.ts` - Directory scanning tests
 - `src/utils/validation.test.ts` - Validation utility tests
 - `src/utils/params.test.ts` - Params validation tests
-- `src/generator/cli-generator.test.ts` - CLI generator tests
-
+- `src/generator/lazy-cli-template.test.ts` - CLI generator tests
 ## Example Files
 - `app/hello/command.ts` - Simple command example
 - `app/hello/params.ts` - Simple validation example

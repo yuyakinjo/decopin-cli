@@ -26,8 +26,7 @@ alwaysApply: false
 
 ## Core Source Files
 - `src/cli.ts` - Main CLI entry point
-- `src/generator/cli-generator.ts` - CLI generation logic
-- `src/parser/ast-parser.ts` - TypeScript AST parsing
+- `src/generator/lazy-cli-template.ts` - CLI generation logic- `src/parser/ast-parser.ts` - TypeScript AST parsing
 - `src/scanner/directory-scanner.ts` - File system scanning
 - `src/utils/validation.ts` - Argument validation utilities
 
