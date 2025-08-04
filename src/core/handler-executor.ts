@@ -7,14 +7,34 @@ import {
   type HandlerRegistryMap,
   type HandlerScope,
 } from '../types/handler-registry.js';
+import type {
+  GlobalErrorHandler,
+  HelpHandler,
+  VersionHandler,
+} from '../types/handlers.js';
+import type { ParamsHandler } from '../types/validation.js';
 
 /**
  * Handler information with loaded module
  */
 export interface LoadedHandler {
   definition: HandlerDefinition;
-  handler: any;
+  handler: unknown;
   commandPath?: string;
+}
+
+/**
+ * Extended context with handler results
+ */
+interface ExtendedContext extends Context<Record<string, unknown>> {
+  version?: VersionHandler;
+  hasMiddleware?: boolean;
+  help?: HelpHandler;
+  paramsHandler?: ParamsHandler;
+  errorHandler?: (
+    context: Context<Record<string, unknown>> & { error: unknown }
+  ) => Promise<void> | void;
+  globalErrorHandler?: GlobalErrorHandler;
 }
 
 /**
@@ -67,10 +87,10 @@ export class HandlerExecutor {
    * Build context by executing handlers in order
    */
   async buildContext(
-    initialContext: Context<any>,
+    initialContext: Context<Record<string, unknown>>,
     loadedHandlers: Map<string, LoadedHandler>
-  ): Promise<any> {
-    let context: any = { ...initialContext };
+  ): Promise<ExtendedContext> {
+    let context: ExtendedContext = { ...initialContext };
     const executionOrder = this.getExecutionOrder();
 
     for (const handlerDef of executionOrder) {
@@ -84,59 +104,70 @@ export class HandlerExecutor {
   }
 
   /**
+   * Helper to execute a handler function with proper typing
+   */
+  private async executeHandlerFunction(
+    handler: unknown,
+    context: ExtendedContext
+  ): Promise<unknown> {
+    if (typeof handler !== 'function') {
+      throw new Error('Handler is not a function');
+    }
+
+    // Check if handler expects context (has parameters)
+    if (handler.length > 0) {
+      return await handler(context);
+    } else {
+      // Handler doesn't expect context
+      return await handler();
+    }
+  }
+
+  /**
    * Execute a single handler and update context
    */
   private async executeHandler(
     definition: HandlerDefinition,
     loaded: LoadedHandler,
-    context: any
-  ): Promise<any> {
+    context: ExtendedContext
+  ): Promise<ExtendedContext> {
     try {
+      const result = await this.executeHandlerFunction(loaded.handler, context);
+
       switch (definition.name) {
-        case 'env': {
-          // EnvHandler returns validated environment
-          const envResult = await loaded.handler(context);
-          return { ...context, env: envResult };
-        }
+        case 'env':
+          return { ...context, env: result as Record<string, unknown> };
 
-        case 'version': {
-          // VersionHandler returns version info
-          const versionResult = await loaded.handler(context);
-          return { ...context, version: versionResult };
-        }
+        case 'version':
+          return { ...context, version: result as VersionHandler };
 
-        case 'middleware': {
+        case 'middleware':
           // Middleware is handled separately in the generator
-          // Just mark it as available
           return { ...context, hasMiddleware: true };
-        }
 
-        case 'help': {
-          // HelpHandler returns help information
-          const helpResult = await loaded.handler(context);
-          return { ...context, help: helpResult };
-        }
+        case 'help':
+          return { ...context, help: result as HelpHandler };
 
-        case 'params': {
-          // ParamsHandler returns validation schema and mappings
-          const paramsResult = await loaded.handler(context);
-          return { ...context, params: paramsResult };
-        }
+        case 'params':
+          return { ...context, paramsHandler: result as ParamsHandler };
 
-        case 'command': {
+        case 'command':
           // Command execution is handled by the CLI runtime
           return context;
-        }
 
         case 'error': {
           // Error handler is stored for later use
-          return { ...context, errorHandler: loaded.handler };
+          const errorHandler =
+            loaded.handler as ExtendedContext['errorHandler'];
+          return errorHandler ? { ...context, errorHandler } : context;
         }
 
-        case 'global-error': {
+        case 'global-error':
           // Global error handler is stored for later use
-          return { ...context, globalErrorHandler: loaded.handler };
-        }
+          return {
+            ...context,
+            globalErrorHandler: loaded.handler as GlobalErrorHandler,
+          };
 
         default:
           // Unknown handler, skip

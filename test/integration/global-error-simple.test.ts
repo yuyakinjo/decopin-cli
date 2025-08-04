@@ -13,8 +13,8 @@ describe('Global Error Handler - Simple Integration Test', () => {
         encoding: 'utf8'
       });
       expect.fail('Should have thrown an error');
-    } catch (error: any) {
-      const output = error.stderr || error.stdout;
+    } catch (error) {
+      const output = (error as { stderr?: string; stdout?: string }).stderr || (error as { stderr?: string; stdout?: string }).stdout;
       
       // Check that global error handler was used
       expect(output).toContain('❌ An error occurred');
@@ -30,8 +30,8 @@ describe('Global Error Handler - Simple Integration Test', () => {
         encoding: 'utf8'
       });
       expect.fail('Should have thrown an error');
-    } catch (error: any) {
-      const output = error.stderr || error.stdout;
+    } catch (error) {
+      const output = (error as { stderr?: string; stdout?: string }).stderr || (error as { stderr?: string; stdout?: string }).stdout;
       
       // This command has custom error handler, so it should NOT use global handler
       expect(output).not.toContain('❌ An error occurred');
@@ -47,8 +47,8 @@ describe('Global Error Handler - Simple Integration Test', () => {
         env: { ...process.env, DEBUG: 'true' }
       });
       expect.fail('Should have thrown an error');
-    } catch (error: any) {
-      const output = error.stderr || error.stdout;
+    } catch (error) {
+      const output = (error as { stderr?: string; stdout?: string }).stderr || (error as { stderr?: string; stdout?: string }).stdout;
       
       // Check that stack trace is shown
       expect(output).toContain('📍 Stack Trace:');

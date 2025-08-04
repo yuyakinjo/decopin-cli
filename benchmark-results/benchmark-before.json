@@ -1,0 +1,154 @@
+{
+  "timestamp": "2025-08-04T17:00:14.978Z",
+  "version": "unknown",
+  "totalCommands": 12,
+  "averageExecutionTime": 107.47569376666668,
+  "averageMemoryUsage": 17.317989530080137,
+  "averageStartupTime": 56.52067190195794,
+  "results": [
+    {
+      "command": "context-demo",
+      "executionTime": 102.1029498,
+      "memoryUsage": {
+        "rss": 22.641757290387435,
+        "heapUsed": 18.15747646635804,
+        "heapTotal": 22.203880882560874,
+        "external": 9.19153361929364
+      },
+      "startupTime": 59.77175689388362,
+      "moduleLoadTime": 105.07800839155679
+    },
+    {
+      "command": "hello",
+      "executionTime": 107.93151679999994,
+      "memoryUsage": {
+        "rss": 26.039462179305552,
+        "heapUsed": 17.70669655413205,
+        "heapTotal": 28.55191594764485,
+        "external": 8.554699010232351
+      },
+      "startupTime": 67.06187327641604,
+      "moduleLoadTime": 76.42785330562785
+    },
+    {
+      "command": "simple",
+      "executionTime": 106.18389159999992,
+      "memoryUsage": {
+        "rss": 21.070424478603794,
+        "heapUsed": 16.011028190935953,
+        "heapTotal": 27.40321806510043,
+        "external": 8.964664308828354
+      },
+      "startupTime": 51.29238664669189,
+      "moduleLoadTime": 105.00711517519196
+    },
+    {
+      "command": "simple-error",
+      "executionTime": 106.05935020000001,
+      "memoryUsage": {
+        "rss": 22.733999498892366,
+        "heapUsed": 17.620311447348293,
+        "heapTotal": 23.600099796865116,
+        "external": 10.10418437289139
+      },
+      "startupTime": 65.76859617513665,
+      "moduleLoadTime": 113.00993480319167
+    },
+    {
+      "command": "test-error",
+      "executionTime": 106.67558319999989,
+      "memoryUsage": {
+        "rss": 23.869237603910136,
+        "heapUsed": 17.123740632738794,
+        "heapTotal": 27.742247210855417,
+        "external": 9.055386721836372
+      },
+      "startupTime": 45.83280941849593,
+      "moduleLoadTime": 112.35664793468725
+    },
+    {
+      "command": "test-inference-demo",
+      "executionTime": 102.38245819999983,
+      "memoryUsage": {
+        "rss": 21.987738472492413,
+        "heapUsed": 17.143055927142633,
+        "heapTotal": 20.98071853965909,
+        "external": 9.237035370766089
+      },
+      "startupTime": 55.534149675670434,
+      "moduleLoadTime": 98.3741546849111
+    },
+    {
+      "command": "test/basic",
+      "executionTime": 110.02827520000001,
+      "memoryUsage": {
+        "rss": 31.663054046171386,
+        "heapUsed": 16.439521765456856,
+        "heapTotal": 26.259760963570464,
+        "external": 10.020640454777695
+      },
+      "startupTime": 59.5688113596896,
+      "moduleLoadTime": 116.6381573957174
+    },
+    {
+      "command": "test/custom-error",
+      "executionTime": 112.36981680000008,
+      "memoryUsage": {
+        "rss": 25.691188459796955,
+        "heapUsed": 17.962616570655634,
+        "heapTotal": 29.50222502024627,
+        "external": 10.513600391842445
+      },
+      "startupTime": 63.64045298021284,
+      "moduleLoadTime": 104.18258064280894
+    },
+    {
+      "command": "test/manual-schema",
+      "executionTime": 111.49864160000016,
+      "memoryUsage": {
+        "rss": 24.573107671839665,
+        "heapUsed": 14.315010740671763,
+        "heapTotal": 22.569675722731557,
+        "external": 8.755397664986045
+      },
+      "startupTime": 47.93847056817955,
+      "moduleLoadTime": 108.79037205715505
+    },
+    {
+      "command": "test/mappings-with-schema",
+      "executionTime": 111.47870839999996,
+      "memoryUsage": {
+        "rss": 27.207022782029707,
+        "heapUsed": 18.00790578375009,
+        "heapTotal": 25.0202481064822,
+        "external": 8.44540910137397
+      },
+      "startupTime": 53.715942724734916,
+      "moduleLoadTime": 98.68021629012733
+    },
+    {
+      "command": "test/validation",
+      "executionTime": 103.03376660000012,
+      "memoryUsage": {
+        "rss": 21.819267364667862,
+        "heapUsed": 19.1086306178218,
+        "heapTotal": 23.548258312616518,
+        "external": 8.860335710200381
+      },
+      "startupTime": 55.52723084860405,
+      "moduleLoadTime": 104.8571521645013
+    },
+    {
+      "command": "user/list",
+      "executionTime": 109.96336680000005,
+      "memoryUsage": {
+        "rss": 28.847446689363643,
+        "heapUsed": 18.219879663949747,
+        "heapTotal": 27.878587934324486,
+        "external": 8.98892107877811
+      },
+      "startupTime": 52.59558225577975,
+      "moduleLoadTime": 102.52585627427732
+    }
+  ]
+}

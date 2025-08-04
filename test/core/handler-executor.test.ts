@@ -110,14 +110,14 @@ describe('HandlerExecutor', () => {
   describe('buildContext', () => {
     test('should build context with env handler', async () => {
       const executor = new HandlerExecutor();
-      const initialContext: Context<any> = {
+      const initialContext: Context<Record<string, unknown>> = {
         args: [],
         options: {},
         env: process.env,
         command: 'test',
       };
       
-      const envHandler = async (ctx: Context<any>) => ({ NODE_ENV: 'test' });
+      const envHandler = async (ctx: Context<Record<string, unknown>>) => ({ NODE_ENV: 'test' });
       const loadedHandlers = new Map<string, LoadedHandler>([
         ['env', {
           definition: executor.getHandler('env')!,
@@ -132,16 +132,16 @@ describe('HandlerExecutor', () => {
 
     test('should build context with multiple handlers', async () => {
       const executor = new HandlerExecutor();
-      const initialContext: Context<any> = {
+      const initialContext: Context<Record<string, unknown>> = {
         args: [],
         options: {},
         env: process.env,
         command: 'test',
       };
       
-      const envHandler = async (ctx: Context<any>) => ({ NODE_ENV: 'test' });
-      const versionHandler = async (ctx: Context<any>) => ({ version: '1.0.0' });
-      const paramsHandler = async (ctx: Context<any>) => ({ 
+      const envHandler = async (ctx: Context<Record<string, unknown>>) => ({ NODE_ENV: 'test' });
+      const versionHandler = async (ctx: Context<Record<string, unknown>>) => ({ version: '1.0.0' });
+      const paramsHandler = async (ctx: Context<Record<string, unknown>>) => ({ 
         schema: {}, 
         mappings: [] 
       });
@@ -170,7 +170,7 @@ describe('HandlerExecutor', () => {
 
     test('should handle middleware and global-error handlers', async () => {
       const executor = new HandlerExecutor();
-      const initialContext: Context<any> = {
+      const initialContext: Context<Record<string, unknown>> = {
         args: [],
         options: {},
         env: process.env,
@@ -199,7 +199,7 @@ describe('HandlerExecutor', () => {
 
     test('should throw error if handler execution fails', async () => {
       const executor = new HandlerExecutor();
-      const initialContext: Context<any> = {
+      const initialContext: Context<Record<string, unknown>> = {
         args: [],
         options: {},
         env: process.env,
