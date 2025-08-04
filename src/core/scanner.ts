@@ -1,5 +1,5 @@
-import { existsSync, readdirSync, statSync } from 'fs';
-import { dirname, join, relative } from 'path';
+import { existsSync, readdirSync, statSync } from 'node:fs';
+import { dirname, join, relative } from 'node:path';
 import type { CLIStructure } from './types.js';
 
 export class Scanner {

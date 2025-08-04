@@ -14,7 +14,7 @@
     "build:app": "tsc -p app/tsconfig.json",
     "dev": "bun --env-file app/.env scripts/dev-watch.ts",
     "dev:build-all": "bun run build && bun run build:app",
-    "dev:regen": "bunx tsx src/cli.ts build --app-dir app --output-dir examples --cli-name cli --verbose",
+    "dev:regen": "bunx tsx src/cli.ts build --app-dir app --output-dir examples --cli-name cli --verbose && node scripts/fix-example-paths.js",
     "test": "bun test",
     "test:integration": "bun run build && bun run build:app && bun run dev:regen && bun test test/integration/",
     "test:integration:only": "bun test test/integration/",

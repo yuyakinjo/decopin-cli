@@ -7,13 +7,13 @@ export type {
   CommandContext,
   CommandHandler,
   Context,
+  EnvContext,
   ErrorContext,
   GlobalErrorContext,
-  EnvContext,
-  VersionContext,
   HelpContext,
-  ParamsContext,
   MiddlewareFactoryContext,
+  ParamsContext,
+  VersionContext,
 } from './context.js';
 
 // コマンド定義関連
@@ -36,35 +36,15 @@ export {
   isModuleError,
   isValidationError,
 } from './errors.js';
-// メタデータ関連
+// ハンドラー関連
 export type {
-  CommandMetadata,
-  HelpHandler,
-} from './metadata.js';
-// バリデーション関連（valibotのみ）
-export type {
-  ErrorHandler,
-  ParamMapping,
-  ParamsDefinitionFunction,
-  ParamsHandler,
-  ValidationError,
-  ValidationFunction,
-  ValidationResult,
   EnvHandler,
-  EnvDefinitionFunction,
+  GlobalErrorHandler,
+  HelpHandler,
   VersionHandler,
-  VersionDefinitionFunction,
-} from './validation.js';
-export { SCHEMA_TYPE } from './validation.js';
-
-import type { GlobalErrorContext } from './context.js';
-// グローバルエラーハンドラー
-import type { CLIError } from './errors.js';
-export type GlobalErrorHandler = (error: CLIError) => Promise<void> | void;
-export type GlobalErrorHandlerFactory<E = typeof process.env> = 
-  | ((context: GlobalErrorContext<E>) => GlobalErrorHandler)
-  | (() => GlobalErrorHandler);
-
+} from './handlers.js';
+// メタデータ関連
+export type { CommandMetadata } from './metadata.js';
 // ミドルウェア関連
 export type {
   MiddlewareContext,
@@ -73,3 +53,25 @@ export type {
   MiddlewareHandler,
   NextFunction,
 } from './middleware.js';
+// バリデーション関連（valibotのみ）
+export type {
+  CommandHandlerFactory,
+  EnvDefinitionFunction,
+  EnvHandlerFactory,
+  ErrorHandler,
+  ErrorHandlerFactory,
+  GlobalErrorHandlerFactory,
+  HelpHandlerFactory,
+  MiddlewareHandlerFactory,
+  ParamMapping,
+  ParamsDefinitionFunction,
+  ParamsHandler,
+  // Factory types with inference
+  ParamsHandlerFactory,
+  ValidationError,
+  ValidationFunction,
+  ValidationResult,
+  VersionDefinitionFunction,
+  VersionHandlerFactory,
+} from './validation.js';
+export { SCHEMA_TYPE } from './validation.js';

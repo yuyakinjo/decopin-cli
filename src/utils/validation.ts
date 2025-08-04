@@ -321,7 +321,6 @@ function createSchemaFromMappings(mappings: ParamMapping[]): v.GenericSchema {
           })
         );
         break;
-      case 'string':
       default:
         fieldSchema = v.string();
         break;

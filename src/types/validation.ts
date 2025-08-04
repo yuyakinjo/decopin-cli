@@ -1,5 +1,21 @@
 import type * as v from 'valibot';
-import type { ErrorContext, ParamsContext, EnvContext, VersionContext } from './context.js';
+import type {
+  CommandContext,
+  EnvContext,
+  ErrorContext,
+  GlobalErrorContext,
+  HelpContext,
+  MiddlewareFactoryContext,
+  ParamsContext,
+  VersionContext,
+} from './context.js';
+import type {
+  EnvHandler,
+  GlobalErrorHandler,
+  HelpHandler,
+  VersionHandler,
+} from './handlers.js';
+import type { MiddlewareHandler } from './middleware.js';
 
 /**
  * バリデーション結果
@@ -93,6 +109,48 @@ export interface ManualSchema {
 /**
  * パラメータ定義（valibotスキーマとオブジェクトベースの両方をサポート）
  */
+/**
+ * Handler factory function types that allow context parameter inference
+ */
+export interface ParamsHandlerFactory<E = typeof process.env> {
+  (context: ParamsContext<E>): ParamsHandler;
+  (): ParamsHandler;
+}
+
+export interface GlobalErrorHandlerFactory<E = typeof process.env> {
+  (context: GlobalErrorContext<E>): GlobalErrorHandler;
+  (): GlobalErrorHandler;
+}
+
+export interface EnvHandlerFactory<E = typeof process.env> {
+  (context: EnvContext<E>): EnvHandler;
+  (): EnvHandler;
+}
+
+export interface VersionHandlerFactory<E = typeof process.env> {
+  (context: VersionContext<E>): VersionHandler;
+  (): VersionHandler;
+}
+
+export interface HelpHandlerFactory<E = typeof process.env> {
+  (context: HelpContext<E>): HelpHandler;
+  (): HelpHandler;
+}
+
+export interface MiddlewareHandlerFactory<E = typeof process.env> {
+  (context: MiddlewareFactoryContext<E>): MiddlewareHandler;
+  (): MiddlewareHandler;
+}
+
+export interface ErrorHandlerFactory<T = unknown, E = typeof process.env> {
+  (context: ErrorContext<T, E>): Promise<void> | void;
+  (): Promise<void> | void;
+}
+
+export interface CommandHandlerFactory<T = unknown, E = typeof process.env> {
+  (context: CommandContext<T, E>): Promise<void> | void;
+  (): Promise<void> | void;
+}
 export type ParamsHandler =
   | {
       /** 明示的なvalibotスキーマを使用 */
@@ -113,14 +171,14 @@ export type ParamsHandler =
 /**
  * エラーハンドラーの型
  */
-export type ErrorHandler<T = unknown, E = typeof process.env> = 
+export type ErrorHandler<T = unknown, E = typeof process.env> =
   | ((context: ErrorContext<T, E>) => Promise<void> | void)
   | ((error: unknown) => Promise<void> | void);
 
 /**
  * パラメータ定義関数の型
  */
-export type ParamsDefinitionFunction<E = typeof process.env> = 
+export type ParamsDefinitionFunction<E = typeof process.env> =
   | ((context: ParamsContext<E>) => ParamsHandler)
   | (() => ParamsHandler);
 
@@ -165,11 +223,6 @@ export interface EnvSchema {
 }
 
 /**
- * 環境変数ハンドラー
- */
-export type EnvHandler = EnvSchema;
-
-/**
  * 環境変数バリデーション結果
  */
 export interface EnvValidationResult<T = Record<string, unknown>> {
@@ -184,7 +237,7 @@ export interface EnvValidationResult<T = Record<string, unknown>> {
 /**
  * 環境変数定義関数の型
  */
-export type EnvDefinitionFunction = 
+export type EnvDefinitionFunction =
   | ((context: EnvContext<typeof process.env>) => EnvHandler)
   | (() => EnvHandler);
 /**
@@ -204,18 +257,8 @@ export interface VersionMetadata {
 }
 
 /**
- * バージョンハンドラー
- */
-export interface VersionHandler {
-  /** バージョン番号 */
-  version: string;
-  /** バージョンメタデータ */
-  metadata?: VersionMetadata;
-}
-
-/**
  * バージョン定義関数の型
  */
-export type VersionDefinitionFunction = 
+export type VersionDefinitionFunction =
   | ((context: VersionContext<typeof process.env>) => VersionHandler)
   | (() => VersionHandler);

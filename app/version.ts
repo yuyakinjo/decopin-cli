@@ -1,4 +1,4 @@
-import type { VersionHandler, VersionContext } from '../dist/types/index.js';
+import type { VersionHandler } from '../dist/types/index.js';
 
 /**
  * CLI バージョン情報

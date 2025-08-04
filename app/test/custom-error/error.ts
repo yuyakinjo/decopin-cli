@@ -1,6 +1,6 @@
-import type { ErrorHandler, ErrorContext } from '../../../dist/types/index.js';
+import type { ErrorContext } from '../../../dist/types/index.js';
 
-export default async function createErrorHandler(context: ErrorContext<any, typeof process.env>): Promise<ErrorHandler> {
+export default async function createErrorHandler(context: ErrorContext<any, typeof process.env>) {
   const { error } = context;
   console.error('❌ Custom error handler triggered');
 
@@ -16,4 +16,4 @@ export default async function createErrorHandler(context: ErrorContext<any, type
   }
 
   process.exit(1);
-};
+}

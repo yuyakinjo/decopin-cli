@@ -1,5 +1,5 @@
-import { readFileSync } from 'fs';
-import { dirname } from 'path';
+import { readFileSync } from 'node:fs';
+import { dirname } from 'node:path';
 import * as ts from 'typescript';
 import type { CommandFile } from '../core/types.js';
 import {
@@ -133,7 +133,7 @@ export class CommandParserImpl implements CommandParser {
         if (typeof jsDoc.comment === 'string') {
           return jsDoc.comment;
         } else if (Array.isArray(jsDoc.comment)) {
-          return jsDoc.comment.map(c => c.text || '').join('');
+          return jsDoc.comment.map((c) => c.text || '').join('');
         }
       }
     }

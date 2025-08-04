@@ -30,7 +30,6 @@ interface ValidatedCommandContext<T> extends BaseContextProperties {
   env: Record<string, unknown>;
 }
 
-
 /**
  * コマンドの実行コンテキスト（関数オーバーロード型定義）
  */
@@ -140,6 +139,6 @@ export type ParamsContext<E = typeof process.env> = Context<E>;
  * これはファクトリー関数用のContext型エイリアスです
  */
 export type MiddlewareFactoryContext<E = typeof process.env> = Context<E>;
-export type CommandHandler<T = never, E = never> = 
+export type CommandHandler<T = never, E = never> =
   | ((context: CommandContext<T, E>) => Promise<void> | void)
   | (() => Promise<void> | void);

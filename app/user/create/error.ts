@@ -1,6 +1,6 @@
-import type { ErrorHandler, ErrorContext } from '../../../dist/types/index.js';
+import type { ErrorContext } from '../../../dist/types/index.js';
 
-export default async function createErrorHandler(context: ErrorContext<any, typeof process.env>): Promise<ErrorHandler> {
+export default async function createErrorHandler(context: ErrorContext<any, typeof process.env>) {
     const { error } = context;
     console.error('❌ User creation failed:');
 
@@ -25,4 +25,4 @@ export default async function createErrorHandler(context: ErrorContext<any, type
     console.error('  user create "John Doe" "john@example.com"');
 
     process.exit(1);
-};
+}
