@@ -1,4 +1,4 @@
-import type { CommandContext } from '../../src/types/context.js';
+import type { CommandContext } from '../../dist/types/index.js';
 
 interface ContextData {
   name: string;

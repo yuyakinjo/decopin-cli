@@ -1,5 +1,5 @@
 // Type guards for error parsing
-import type { Context } from '../src/types/context.js';
+import type { GlobalErrorContext, GlobalErrorHandler } from '../dist/types/index.js';
 
 function hasIssues(error: unknown): error is { issues: unknown[] } {
   return typeof error === 'object' && error !== null && 'issues' in error && Array.isArray((error as any).issues);
@@ -17,7 +17,7 @@ function hasStack(error: unknown): error is { stack: string } {
  * Global error handler for uncaught errors
  * This handler runs when no command-specific error.ts is available
  */
-export default function createGlobalErrorHandler(context: Context<typeof process.env>) {
+export default function createGlobalErrorHandler(context: GlobalErrorContext<typeof process.env>): GlobalErrorHandler {
   return async (error: unknown) => {
     // Enhanced error display
     console.error('\n❌ An error occurred\n');

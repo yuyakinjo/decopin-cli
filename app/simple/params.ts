@@ -1,4 +1,4 @@
-import type { ParamsHandler } from '../../src/types/validation.js';
+import type { ParamsHandler } from '../../dist/types/validation.js';
 
 // contextを使わないパラメータ定義の例
 export default function createParams(): ParamsHandler {

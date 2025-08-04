@@ -30,13 +30,6 @@ interface ValidatedCommandContext<T> extends BaseContextProperties {
   env: Record<string, unknown>;
 }
 
-/**
- * 環境変数付きコマンドコンテキスト
- */
-interface EnvCommandContext<E> extends BaseContextProperties {
-  /** 型安全な環境変数 */
-  env: E;
-}
 
 /**
  * コマンドの実行コンテキスト（関数オーバーロード型定義）

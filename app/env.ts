@@ -1,5 +1,5 @@
-import type { EnvHandler } from '../src/types/validation.js';
-import { SCHEMA_TYPE } from '../src/types/validation.js';
+import type { EnvHandler, EnvContext } from '../dist/types/index.js';
+import { SCHEMA_TYPE } from '../dist/types/index.js';
 
 // 環境変数の型を定義
 export interface AppEnv {

@@ -1,7 +1,7 @@
 /**
  * Middleware context passed to middleware functions
  */
-import type { Context, MiddlewareFactoryContext } from './context.js';
+import type { MiddlewareFactoryContext } from './context.js';
 
 export interface MiddlewareContext<
   Env extends Record<string, string | undefined> = Record<

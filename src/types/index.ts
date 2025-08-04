@@ -13,6 +13,7 @@ export type {
   VersionContext,
   HelpContext,
   ParamsContext,
+  MiddlewareFactoryContext,
 } from './context.js';
 
 // コマンド定義関連
@@ -54,8 +55,9 @@ export type {
   VersionHandler,
   VersionDefinitionFunction,
 } from './validation.js';
+export { SCHEMA_TYPE } from './validation.js';
 
-import type { Context, GlobalErrorContext } from './context.js';
+import type { GlobalErrorContext } from './context.js';
 // グローバルエラーハンドラー
 import type { CLIError } from './errors.js';
 export type GlobalErrorHandler = (error: CLIError) => Promise<void> | void;

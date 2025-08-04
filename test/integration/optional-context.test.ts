@@ -108,6 +108,7 @@ export default async function withContextCommand(context: CommandContext<{ name:
     it('should support params handler without context', async () => {
       // Create params without context
       const paramsPath = join(appDir, 'params-test', 'params.ts');
+      const commandPath = join(appDir, 'params-test', 'command.ts');
       execSync(`mkdir -p ${join(appDir, 'params-test')}`);
       writeFileSync(paramsPath, `
 export default function createParams() {
@@ -123,19 +124,37 @@ export default function createParams() {
   };
 }
       `);
+      writeFileSync(commandPath, `
+import type { CommandContext } from 'decopin-cli';
+
+export default async function paramsTestCommand(context: CommandContext<{ name: string }>) {
+  console.log(\`Hello, \${context.validatedData.name}\`);
+}
+      `);
 
       // Generate and test
       const scanner = new Scanner(appDir);
       const structure = await scanner.scan();
       
       // The generated code should check function length
-      const generated = await generateLazyCLI([], structure);
+      const generated = await generateLazyCLI(
+        structure.commands.map(cmd => ({
+          name: cmd.name,
+          path: cmd.path,
+          hasParams: !!cmd.params,
+          hasHelp: !!cmd.help,
+          hasError: !!cmd.error,
+          metadata: {}
+        })),
+        structure
+      );
       expect(generated.content).toContain('createParams.length === 0');
     });
 
     it('should support params handler with context', async () => {
       // Create params with context
       const paramsPath = join(appDir, 'params-context', 'params.ts');
+      const commandPath = join(appDir, 'params-context', 'command.ts');
       execSync(`mkdir -p ${join(appDir, 'params-context')}`);
       writeFileSync(paramsPath, `
 import type { Context } from 'decopin-cli';
@@ -155,12 +174,29 @@ export default function createParams(context: Context) {
   };
 }
       `);
+      writeFileSync(commandPath, `
+import type { CommandContext } from 'decopin-cli';
+
+export default async function paramsContextCommand(context: CommandContext<{ name: string }>) {
+  console.log(\`Hello, \${context.validatedData.name}\`);
+}
+      `);
 
       // Generate and test
       const scanner = new Scanner(appDir);
       const structure = await scanner.scan();
       
-      const generated = await generateLazyCLI([], structure);
+      const generated = await generateLazyCLI(
+        structure.commands.map(cmd => ({
+          name: cmd.name,
+          path: cmd.path,
+          hasParams: !!cmd.params,
+          hasHelp: !!cmd.help,
+          hasError: !!cmd.error,
+          metadata: {}
+        })),
+        structure
+      );
       expect(generated.content).toContain('createParams(baseContext)');
     });
   });
@@ -169,6 +205,7 @@ export default function createParams(context: Context) {
     it('should support error handler without context', async () => {
       // Create error handler without context
       const errorPath = join(appDir, 'error-test', 'error.ts');
+      const commandPath = join(appDir, 'error-test', 'command.ts');
       execSync(`mkdir -p ${join(appDir, 'error-test')}`);
       writeFileSync(errorPath, `
 export default async function errorHandler(error: unknown) {
@@ -176,12 +213,27 @@ export default async function errorHandler(error: unknown) {
   process.exit(1);
 }
       `);
+      writeFileSync(commandPath, `
+export default async function errorTestCommand() {
+  throw new Error('Test error');
+}
+      `);
 
       // Generate and test
       const scanner = new Scanner(appDir);
       const structure = await scanner.scan();
       
-      const generated = await generateLazyCLI([], structure);
+      const generated = await generateLazyCLI(
+        structure.commands.map(cmd => ({
+          name: cmd.name,
+          path: cmd.path,
+          hasParams: !!cmd.params,
+          hasHelp: !!cmd.help,
+          hasError: !!cmd.error,
+          metadata: {}
+        })),
+        structure
+      );
       expect(generated.content).toContain('errorHandler.length === 0');
       expect(generated.content).toContain('errorHandler.length === 1');
     });
@@ -189,6 +241,7 @@ export default async function errorHandler(error: unknown) {
     it('should support error handler with context', async () => {
       // Create error handler with context
       const errorPath = join(appDir, 'error-context', 'error.ts');
+      const commandPath = join(appDir, 'error-context', 'command.ts');
       execSync(`mkdir -p ${join(appDir, 'error-context')}`);
       writeFileSync(errorPath, `
 import type { ErrorContext } from 'decopin-cli';
@@ -199,12 +252,27 @@ export default async function errorHandler(context: ErrorContext<{ name: string 
   process.exit(1);
 }
       `);
+      writeFileSync(commandPath, `
+export default async function errorContextCommand() {
+  throw new Error('Test error with context');
+}
+      `);
 
       // Generate and test
       const scanner = new Scanner(appDir);
       const structure = await scanner.scan();
       
-      const generated = await generateLazyCLI([], structure);
+      const generated = await generateLazyCLI(
+        structure.commands.map(cmd => ({
+          name: cmd.name,
+          path: cmd.path,
+          hasParams: !!cmd.params,
+          hasHelp: !!cmd.help,
+          hasError: !!cmd.error,
+          metadata: {}
+        })),
+        structure
+      );
       expect(generated.content).toContain('await errorHandler(errorContext)');
     });
   });
@@ -233,7 +301,7 @@ export default function createMiddleware() {
 
     it('should support middleware factory with context', async () => {
       // Create middleware with context
-      const middlewarePath = join(appDir, 'middleware-context.ts');
+      const middlewarePath = join(appDir, 'middleware.ts');
       writeFileSync(middlewarePath, `
 import type { Context } from 'decopin-cli';
 
@@ -281,7 +349,7 @@ export default function createGlobalErrorHandler() {
 
     it('should support global error handler factory with context', async () => {
       // Create global error handler with context
-      const globalErrorPath = join(appDir, 'global-error-context.ts');
+      const globalErrorPath = join(appDir, 'global-error.ts');
       writeFileSync(globalErrorPath, `
 import type { Context } from 'decopin-cli';
 

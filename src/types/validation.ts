@@ -1,5 +1,5 @@
 import type * as v from 'valibot';
-import type { Context, ErrorContext, ParamsContext, EnvContext, VersionContext } from './context.js';
+import type { ErrorContext, ParamsContext, EnvContext, VersionContext } from './context.js';
 
 /**
  * バリデーション結果
