@@ -20,7 +20,6 @@ export interface BaseCommandContext extends BaseContextProperties {
   env: Record<string, unknown>;
 }
 
-
 /**
  * コマンドの実行コンテキスト（関数オーバーロード型定義）
  */

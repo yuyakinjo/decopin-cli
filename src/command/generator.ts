@@ -29,7 +29,7 @@ export class CommandGeneratorImpl implements CommandGenerator {
       hasHelp: commands.some((cmd) => cmd.hasHelp),
       hasError: commands.some((cmd) => cmd.hasError),
     };
-    
+
     // Pass structure if provided
     if (structure) {
       options.structure = structure;

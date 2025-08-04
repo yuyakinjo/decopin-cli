@@ -228,8 +228,10 @@ function generateCommandCases(
       const modulePath = cmd.path.replace(/\\/g, '/');
       commandCode = `        await executeCommand('${modulePath}', commandArgs);`;
     }
-    
-    cases.push(`      case '${caseName}': {\n${commandCode}\n        break;\n      }`);
+
+    cases.push(
+      `      case '${caseName}': {\n${commandCode}\n        break;\n      }`
+    );
 
     // Generate cases for aliases
     if (cmd.aliases && cmd.aliases.length > 0) {
@@ -280,7 +282,7 @@ function generateUnifiedGlobalHandlers(options: LazyCliOptions): string {
       code += `// ${handler.description || handler.name}\n`;
       code += `try {\n`;
       const varName = handler.name.replace(/-/g, '_');
-      // Use the path as-is for global handlers 
+      // Use the path as-is for global handlers
       const importPath = handlerInfo.path.replace(/\\/g, '/');
       code += `  const ${varName}Module = await import('${importPath}');\n`;
       code += `  globalHandlers['${handler.name}'] = ${varName}Module.default;\n`;
@@ -335,7 +337,7 @@ function generateUnifiedCommandExecution(
     if (path) {
       const varName = handler.name.replace(/-/g, '_');
       // Convert absolute path to relative path from CLI location
-      const relativePath = path.includes('/app/') 
+      const relativePath = path.includes('/app/')
         ? './app/' + path.split('/app/')[1]
         : path;
       code += `        const ${varName}Module = await import('${relativePath.replace(/\\/g, '/')}');\n`;
@@ -634,14 +636,17 @@ async function showDefaultHelp() {
   // Try to load version info
   let versionInfo = null;
   try {
-    const versionModule = await import('./app/version.ts');
+    const versionModule = await import('./version.js');
     if (versionModule.default && typeof versionModule.default === 'function') {
       versionInfo = versionModule.default.length === 0 
         ? versionModule.default() 
         : versionModule.default({ args: process.argv.slice(2), env: process.env, command: process.argv.slice(2), options: {} });
     }
-  } catch {
+  } catch (e) {
     // No version file
+    if (process.env.DEBUG) {
+      console.error('Failed to load version:', e);
+    }
   }
   
   if (versionInfo && versionInfo.metadata) {
