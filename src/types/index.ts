@@ -3,7 +3,6 @@
 // 実行コンテキスト関連
 export type {
   BaseCommandContext,
-  BaseContext,
   CommandContext,
   CommandHandler,
   Context,
@@ -36,6 +35,20 @@ export {
   isModuleError,
   isValidationError,
 } from './errors.js';
+export type {
+  HandlerDefinition,
+  HandlerRegistryMap,
+  HandlerScope,
+} from './handler-registry.js';
+// ハンドラーレジストリ
+export {
+  createHandlerRegistryMap,
+  EXECUTION_ORDER,
+  getHandlersByExecutionOrder,
+  getHandlersByScope,
+  HANDLER_REGISTRY,
+  validateHandlerDependencies,
+} from './handler-registry.js';
 // ハンドラー関連
 export type {
   EnvHandler,

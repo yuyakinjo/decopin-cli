@@ -1,9 +1,19 @@
 import { existsSync, readdirSync, statSync } from 'node:fs';
 import { dirname, join, relative } from 'node:path';
+import {
+  HANDLER_REGISTRY,
+  type HandlerDefinition,
+} from '../types/handler-registry.js';
 import type { CLIStructure } from './types.js';
 
 export class Scanner {
-  constructor(private appDir: string) {}
+  private handlerRegistry: Map<string, HandlerDefinition>;
+
+  constructor(private appDir: string) {
+    this.handlerRegistry = new Map(
+      HANDLER_REGISTRY.map((h) => [h.fileName, h])
+    );
+  }
 
   async scan(): Promise<CLIStructure> {
     const structure: CLIStructure = {
@@ -11,44 +21,28 @@ export class Scanner {
       params: [],
       help: [],
       errors: [],
+      handlers: new Map(),
     };
 
     if (!existsSync(this.appDir)) {
       return structure;
     }
 
-    // Check for middleware.ts in root
-    const middlewarePath = join(this.appDir, 'middleware.ts');
-    if (existsSync(middlewarePath)) {
-      structure.middleware = {
-        path: middlewarePath,
-      };
+    // Scan for global handlers
+    for (const [fileName, definition] of this.handlerRegistry) {
+      if (definition.scope === 'global') {
+        const handlerPath = join(this.appDir, fileName);
+        if (existsSync(handlerPath)) {
+          structure.handlers.set(definition.name, {
+            path: handlerPath,
+            definition,
+          });
+
+        }
+      }
     }
 
-    // Check for global-error.ts in root
-    const globalErrorPath = join(this.appDir, 'global-error.ts');
-    if (existsSync(globalErrorPath)) {
-      structure.globalError = {
-        path: globalErrorPath,
-      };
-    }
-
-    // Check for env.ts in root
-    const envPath = join(this.appDir, 'env.ts');
-    if (existsSync(envPath)) {
-      structure.env = {
-        path: envPath,
-      };
-    }
-
-    // Check for version.ts in root
-    const versionPath = join(this.appDir, 'version.ts');
-    if (existsSync(versionPath)) {
-      structure.version = {
-        path: versionPath,
-      };
-    }
-
+    // Scan directories for command handlers
     this.scanDirectory(this.appDir, structure);
     return structure;
   }
@@ -77,27 +71,19 @@ export class Scanner {
         const commandPath =
           dirname(relativePath) === '.' ? '' : dirname(relativePath);
 
-        if (entry === 'command.ts') {
-          structure.commands.push({
+        // Check if this file is a handler
+        const definition = this.handlerRegistry.get(entry);
+        if (definition && definition.scope === 'command') {
+          const key = parentPath
+            ? `${parentPath}/${definition.name}`
+            : definition.name;
+          structure.handlers.set(key, {
             path: fullPath,
-            name: parentPath || 'root',
-          });
-        } else if (entry === 'params.ts') {
-          structure.params.push({
-            path: fullPath,
-            commandPath,
-          });
-        } else if (entry === 'help.ts') {
-          structure.help.push({
-            path: fullPath,
-            commandPath,
-          });
-        } else if (entry === 'error.ts') {
-          structure.errors.push({
-            path: fullPath,
-            commandPath,
+            definition,
+            commandPath: parentPath,
           });
         }
+
       }
     }
   }
@@ -113,42 +99,25 @@ export class Scanner {
       params: [],
       help: [],
       errors: [],
+      handlers: new Map(),
     };
 
     if (!existsSync(this.appDir)) {
       return structure;
     }
 
-    // Check for middleware.ts in root
-    const middlewarePath = join(this.appDir, 'middleware.ts');
-    if (existsSync(middlewarePath)) {
-      structure.middleware = {
-        path: middlewarePath,
-      };
-    }
+    // Scan for global handlers
+    for (const [fileName, definition] of this.handlerRegistry) {
+      if (definition.scope === 'global') {
+        const handlerPath = join(this.appDir, fileName);
+        if (existsSync(handlerPath)) {
+          structure.handlers.set(definition.name, {
+            path: handlerPath,
+            definition,
+          });
 
-    // Check for global-error.ts in root
-    const globalErrorPath = join(this.appDir, 'global-error.ts');
-    if (existsSync(globalErrorPath)) {
-      structure.globalError = {
-        path: globalErrorPath,
-      };
-    }
-
-    // Check for env.ts in root
-    const envPath = join(this.appDir, 'env.ts');
-    if (existsSync(envPath)) {
-      structure.env = {
-        path: envPath,
-      };
-    }
-
-    // Check for version.ts in root
-    const versionPath = join(this.appDir, 'version.ts');
-    if (existsSync(versionPath)) {
-      structure.version = {
-        path: versionPath,
-      };
+        }
+      }
     }
 
     this.scanDirectory(this.appDir, structure);

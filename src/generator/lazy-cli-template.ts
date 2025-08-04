@@ -3,6 +3,11 @@
  * Generates CLI code that uses dynamic imports for optimal performance
  */
 
+import type { CLIStructure } from '../core/types.js';
+import {
+  getHandlersByExecutionOrder,
+  type HandlerDefinition,
+} from '../types/handler-registry.js';
 import {
   generateMiddlewareExecution,
   generateMiddlewareWrapper,
@@ -18,7 +23,7 @@ async function handleDefaultError(error) {
 }`;
   }
 
-  const globalErrorImportPath = options.globalErrorPath.replace(/\.ts$/, '.js');
+  const globalErrorImportPath = options.globalErrorPath;
 
   return `// Error handler with global error fallback
 async function handleDefaultError(error) {
@@ -119,6 +124,8 @@ export interface LazyCliOptions {
   envPath?: string;
   hasVersion?: boolean;
   versionPath?: string;
+  /** New: CLI structure with unified handler management */
+  structure?: CLIStructure;
 }
 
 export interface CommandInfo {
@@ -129,6 +136,8 @@ export interface CommandInfo {
 }
 
 export function generateLazyCLI(options: LazyCliOptions): string {
+  const useUnifiedHandlers = options.structure !== undefined;
+
   return `#!/usr/bin/env node
 
 /**
@@ -139,6 +148,7 @@ export function generateLazyCLI(options: LazyCliOptions): string {
 // Minimal startup - just parse arguments
 const args = process.argv.slice(2);
 
+${useUnifiedHandlers ? generateUnifiedGlobalHandlers(options) : ''}
 ${generateEnvHandler(options)}
 
 // Performance tracking (optional)
@@ -151,7 +161,7 @@ async function execute() {
     const { commandPath, commandArgs } = parseCommand(args);
     ${generateMiddlewareWrapper(options.hasMiddleware || false, options.middlewarePath)}
     switch (commandPath) {
-${generateCommandCases(options.commands)}
+${generateCommandCases(options.commands, options)}
       case '--help':
       case '-h':
         await showDefaultHelp();
@@ -183,15 +193,22 @@ execute().then(() => {
 `;
 }
 
-function generateCommandCases(commands: CommandInfo[]): string {
+function generateCommandCases(
+  commands: CommandInfo[],
+  options: LazyCliOptions
+): string {
   const cases: string[] = [];
 
   // Generate cases for actual commands
   commands.forEach((cmd) => {
     const caseName = cmd.name === 'root' ? 'default' : cmd.name;
-    cases.push(`      case '${caseName}':
-        await executeCommand('${cmd.path}', commandArgs);
-        break;`);
+
+    // Use unified handler execution
+    const commandCode = generateUnifiedCommandExecution(
+      cmd.name === 'root' ? '' : cmd.name,
+      options
+    );
+    cases.push(`      case '${caseName}': {\n${commandCode}\n        break;\n      }`);
 
     // Generate cases for aliases
     if (cmd.aliases && cmd.aliases.length > 0) {
@@ -206,14 +223,194 @@ function generateCommandCases(commands: CommandInfo[]): string {
           aliasCase = alias;
         }
 
-        cases.push(`      case '${aliasCase}':
-        await executeCommand('${cmd.path}', commandArgs);
-        break;`);
+        const commandCode = generateUnifiedCommandExecution(
+          cmd.name === 'root' ? '' : cmd.name,
+          options
+        );
+        cases.push(
+          `      case '${aliasCase}': {\n${commandCode}\n        break;\n      }`
+        );
       });
     }
   });
 
   return cases.join('\n');
+}
+
+/**
+ * Generate unified global handler initialization
+ */
+function generateUnifiedGlobalHandlers(options: LazyCliOptions): string {
+  if (!options.structure) {
+    // Fall back to old approach if no structure provided
+    return '';
+  }
+
+  const globalHandlers = getHandlersByExecutionOrder()
+    .filter((h) => h.scope === 'global')
+    .filter((h) => options.structure!.handlers.has(h.name));
+
+  if (globalHandlers.length === 0) {
+    return '';
+  }
+
+  let code = '// Global handler initialization\n';
+  code += 'const globalHandlers = {};\n\n';
+
+  for (const handler of globalHandlers) {
+    const handlerInfo = options.structure.handlers.get(handler.name);
+    if (handlerInfo) {
+      code += `// ${handler.description || handler.name}\n`;
+      code += `try {\n`;
+      const varName = handler.name.replace(/-/g, '_');
+      // Use the path as-is for global handlers 
+      const importPath = handlerInfo.path.replace(/\\/g, '/');
+      code += `  const ${varName}Module = await import('${importPath}');\n`;
+      code += `  globalHandlers['${handler.name}'] = ${varName}Module.default;\n`;
+      code += `} catch (error) {\n`;
+      code += `  // ${handler.name} is optional\n`;
+      code += `  if (process.env.DEBUG) {\n`;
+      code += `    console.warn('Failed to load ${handler.name}:', error.message);\n`;
+      code += `  }\n`;
+      code += `}\n\n`;
+    }
+  }
+
+  return code;
+}
+
+/**
+ * Generate unified command handler execution
+ */
+function generateUnifiedCommandExecution(
+  commandPath: string,
+  options: LazyCliOptions
+): string {
+  if (!options.structure) {
+    throw new Error('Structure is required for unified command execution');
+  }
+
+  const commandHandlers = getHandlersByExecutionOrder().filter(
+    (h) => h.scope === 'command'
+  );
+
+  let code = '';
+
+  // Check which handlers exist for this command
+  const availableHandlers: HandlerDefinition[] = [];
+  const handlerPaths: Map<string, string> = new Map();
+
+  for (const handler of commandHandlers) {
+    const key = commandPath ? `${commandPath}/${handler.name}` : handler.name;
+    if (options.structure.handlers.has(key)) {
+      availableHandlers.push(handler);
+      const handlerInfo = options.structure.handlers.get(key);
+      if (handlerInfo) {
+        handlerPaths.set(handler.name, handlerInfo.path);
+      }
+    }
+  }
+
+  // Import available handlers
+  for (const handler of availableHandlers) {
+    const path = handlerPaths.get(handler.name);
+    if (path) {
+      const varName = handler.name.replace(/-/g, '_');
+      // Convert absolute path to relative path from CLI location
+      const relativePath = path.includes('/app/') 
+        ? './app/' + path.split('/app/')[1]
+        : path;
+      code += `        const ${varName}Module = await import('${relativePath.replace(/\\/g, '/')}');\n`;
+    }
+  }
+
+  code += `        const parsedOptions = parseOptions(commandArgs);\n`;
+
+  // Build context progressively
+  code += `        let context = {\n`;
+  code += `          args: commandArgs,\n`;
+  code += `          options: parsedOptions,\n`;
+  code += `          env: env || process.env,\n`;
+  code += `          command: '${commandPath}',\n`;
+  code += `        };\n\n`;
+
+  // Execute handlers in order
+  let hasError = false;
+  let hasHelp = false;
+  let hasParams = false;
+  let hasCommand = false;
+
+  for (const handler of availableHandlers) {
+    if (handler.name === 'error') hasError = true;
+    if (handler.name === 'help') hasHelp = true;
+    if (handler.name === 'params') hasParams = true;
+    if (handler.name === 'command') hasCommand = true;
+  }
+
+  // Help handling
+  if (hasHelp) {
+    code += `        // Check for help flag\n`;
+    code += `        if (commandArgs.includes('--help') || commandArgs.includes('-h')) {\n`;
+    code += `          const helpHandler = helpModule.default;\n`;
+    code += `          const helpInfo = typeof helpHandler === 'function' ? await helpHandler(context) : helpHandler;\n`;
+    if (hasParams) {
+      code += `          const paramsHandler = paramsModule.default;\n`;
+      code += `          const paramsConfig = typeof paramsHandler === 'function' ? await paramsHandler(context) : paramsHandler;\n`;
+      code += `          showUnifiedCommandHelp('${commandPath}', helpInfo, paramsConfig);\n`;
+    } else {
+      code += `          showUnifiedCommandHelp('${commandPath}', helpInfo);\n`;
+    }
+    code += `          return;\n`;
+    code += `        }\n\n`;
+  } else {
+    // Even without help.ts, we should handle help flags
+    code += `        // Check for help flag (no help.ts file)\n`;
+    code += `        if (commandArgs.includes('--help') || commandArgs.includes('-h')) {\n`;
+    // Convert to relative path - use .ts extension for source files
+    const relativePath = '../app/' + commandPath + '/command.ts';
+    code += `          await showCommandHelp('${relativePath}');\n`;
+    code += `          return;\n`;
+    code += `        }\n\n`;
+  }
+
+  // Main execution with error handling
+  if (hasError) {
+    code += `        try {\n`;
+  }
+
+  // Params validation
+  if (hasParams) {
+    code += `        // Validate parameters\n`;
+    code += `        const paramsHandler = paramsModule.default;\n`;
+    code += `        const paramsConfig = typeof paramsHandler === 'function' ? await paramsHandler(context) : paramsHandler;\n`;
+    code += `        const validatedData = await validateParams(commandArgs, paramsConfig);\n`;
+    code += `        context.validatedData = validatedData;\n\n`;
+  }
+
+  // Command execution
+  if (hasCommand) {
+    code += `        // Execute command\n`;
+    code += `        const commandHandler = commandModule.default;\n`;
+    code += `        if (typeof commandHandler === 'function') {\n`;
+    code += `          await commandHandler(context);\n`;
+    code += `        } else {\n`;
+    code += `          console.error('Invalid command handler');\n`;
+    code += `          process.exit(1);\n`;
+    code += `        }\n`;
+  }
+
+  if (hasError) {
+    code += `        } catch (error) {\n`;
+    code += `          const errorHandler = errorModule.default;\n`;
+    code += `          if (typeof errorHandler === 'function') {\n`;
+    code += `            await errorHandler({ ...context, error });\n`;
+    code += `          } else {\n`;
+    code += `            throw error;\n`;
+    code += `          }\n`;
+    code += `        }\n`;
+  }
+
+  return code;
 }
 
 function generateHelperFunctions(options: LazyCliOptions): string {
@@ -299,281 +496,12 @@ function parseCommand(args) {
   };
 }
 
-// Execute a command with lazy loading
-async function executeCommand(modulePath, args) {
-  // Check for command-specific help
-  if (args.includes('--help') || args.includes('-h')) {
-    await showCommandHelp(modulePath);
-    return;
-  }
-  
-  const module = await import(modulePath);
-  const handler = module.default;
-  
-  if (typeof handler !== 'function') {
-    throw new Error(\`Invalid command module: \${modulePath}\`);
-  }
-
-  ${
-    options.hasParams
-      ? `
-  // Load params if needed
-  const paramsPath = modulePath.replace('/command.js', '/params.js');
-  try {
-    const paramsModule = await import(paramsPath);
-    const createParams = paramsModule.default;
-    const baseContext = { args, env: process.env, command: args, options: {} };
-    const paramsHandler = typeof createParams === 'function' 
-      ? (createParams.length === 0 ? createParams() : createParams(baseContext))
-      : createParams;
-    const params = await validateParams(args, paramsHandler);
-    // Call handler with or without context based on function length
-    if (handler.length === 0) {
-      await handler();
-    } else {
-      await handler({ validatedData: params, args, env: process.env, command: args, options: {} });
-    }
-  } catch (e) {
-    // Check if this is a validation error or missing params file
-    if (e.code === 'ERR_MODULE_NOT_FOUND') {
-      // No params file, execute without validation
-      if (process.env.DEBUG) {
-        console.error('No params file found, running without validation');
-      }
-      // Call handler with or without context based on function length
-      if (handler.length === 0) {
-        await handler();
-      } else {
-        await handler({ validatedData: {}, args, env: process.env, command: args, options: {} });
-      }
-    } else {
-      // Validation error or other error
-      if (e.issues) {
-        // Valibot validation error - check for custom error handler
-        const errorPath = modulePath.replace('/command.js', '/error.js');
-        try {
-          const errorModule = await import(errorPath);
-          if (errorModule.default && typeof errorModule.default === 'function') {
-            const errorHandler = errorModule.default;
-            const errorContext = { validatedData: {}, args, env: process.env, command: args, options: {}, error: e };
-            // Call error handler with or without context based on function length
-            if (errorHandler.length === 0) {
-              await errorHandler();
-            } else if (errorHandler.length === 1 && !errorContext.validatedData) {
-              // If handler expects only error parameter
-              await errorHandler(e);
-            } else {
-              await errorHandler(errorContext);
-            }
-            return; // Error handler should handle process.exit
-          }
-        } catch {
-          // No custom error handler, use global error handler
-          await handleDefaultError(e);
-          return;
-        }
-      } else {
-        // Other error
-        throw e;
-      }
-    }
-  }`
-      : `
-  // Execute without params validation
-  await handler({ validatedData: {}, args, env: process.env, command: args, options: {} });`
-  }
-}
-
-${
-  options.hasParams
-    ? `
-// Validate parameters lazily
-async function validateParams(args, paramsHandler) {
-  if (!paramsHandler) {
-    return args;
-  }
-  
-  const [positionalArgs, options] = parseArgs(args);
-  
-  // Handle based on which property exists
-  if (paramsHandler.schema) {
-    // Schema-based validation - no mappings, just validate raw args
-    const validator = await getValidator(paramsHandler.schema);
-    // For schema mode, pass the parsed arguments directly
-    const data = { ...options };
-    positionalArgs.forEach((arg, index) => {
-      data[\`arg\${index}\`] = arg;
-    });
-    const result = await validator.parseAsync(data);
-    return result;
-  } else if (paramsHandler.mappings) {
-    // Mappings-based validation
-    const data = {};
-    
-    // Extract values from arguments based on mappings
-    for (const mapping of paramsHandler.mappings) {
-      let value;
-      
-      // Get value from positional args
-      if (mapping.argIndex !== undefined && positionalArgs[mapping.argIndex] !== undefined) {
-        value = positionalArgs[mapping.argIndex];
-      }
-      // Get value from options
-      else if (mapping.option && options[mapping.option] !== undefined) {
-        value = options[mapping.option];
-      }
-      // Use default value
-      else if (mapping.defaultValue !== undefined) {
-        value = mapping.defaultValue;
-      }
-      
-      if (value !== undefined) {
-        data[mapping.field] = value;
-      }
-    }
-    
-    // Create schema from mappings
-    const valibot = await import('valibot');
-    const schema = await createSchemaFromMappings(paramsHandler.mappings, valibot);
-    const validator = await getValidator(schema);
-    const result = await validator.parseAsync(data);
-    return result;
-  }
-  
-  // Invalid ParamsHandler - neither schema nor mappings provided
-  throw new Error('Invalid ParamsHandler: must provide either schema or mappings');
-}
-
-// Parse command line arguments
-function parseArgs(args) {
-  const positional = [];
-  const options = {};
-  
-  for (let i = 0; i < args.length; i++) {
-    const arg = args[i];
-    
-    if (arg.startsWith('--')) {
-      const key = arg.slice(2);
-      const nextArg = args[i + 1];
-      
-      if (nextArg && !nextArg.startsWith('-')) {
-        options[key] = nextArg;
-        i++;
-      } else {
-        options[key] = true;
-      }
-    } else if (arg.startsWith('-')) {
-      const key = arg.slice(1);
-      options[key] = true;
-    } else {
-      positional.push(arg);
-    }
-  }
-  
-  return [positional, options];
-}
-
-// Create valibot schema from mappings
-async function createSchemaFromMappings(mappings, valibot) {
-  const shape = {};
-  
-  for (const mapping of mappings) {
-    let fieldSchema;
-    
-    // Create basic type schema with coercion for CLI inputs
-    switch (mapping.type) {
-      case 'number':
-        // Coerce string to number
-        fieldSchema = valibot.pipe(
-          valibot.union([valibot.string(), valibot.number()]),
-          valibot.transform((input) => {
-            if (typeof input === 'number') return input;
-            const num = Number(input);
-            if (isNaN(num)) {
-              throw new Error(\`Invalid number: \${input}\`);
-            }
-            return num;
-          })
-        );
-        break;
-      case 'boolean':
-        // Coerce string to boolean
-        fieldSchema = valibot.pipe(
-          valibot.union([valibot.string(), valibot.boolean()]),
-          valibot.transform((input) => {
-            if (typeof input === 'boolean') return input;
-            return input === 'true' || input === '1' || input === 'yes';
-          })
-        );
-        break;
-      case 'array':
-        // Parse comma-separated values
-        fieldSchema = valibot.pipe(
-          valibot.string(),
-          valibot.transform((input) => input.split(',').map(s => s.trim()))
-        );
-        break;
-      case 'object':
-        // Parse JSON string
-        fieldSchema = valibot.pipe(
-          valibot.string(),
-          valibot.transform((input) => {
-            try {
-              return JSON.parse(input);
-            } catch {
-              throw new Error(\`Invalid JSON: \${input}\`);
-            }
-          })
-        );
-        break;
-      case 'string':
-      default:
-        fieldSchema = valibot.string();
-        // Apply additional validation if specified
-        if (mapping.validation === 'email') {
-          fieldSchema = valibot.pipe(fieldSchema, valibot.email('Invalid email format'));
-        } else if (mapping.validation === 'url') {
-          fieldSchema = valibot.pipe(fieldSchema, valibot.url('Invalid URL format'));
-        }
-        break;
-    }
-    
-    // Apply required/optional
-    if (mapping.required === false || mapping.defaultValue !== undefined) {
-      fieldSchema = valibot.optional(fieldSchema, mapping.defaultValue);
-    }
-    
-    shape[mapping.field] = fieldSchema;
-  }
-  
-  return valibot.object(shape);
-}
-
-// Get validator based on schema type
-async function getValidator(schema) {
-  // Detect and lazy load the appropriate validator
-  if (schema._def) {
-    // Zod schema
-    return schema;
-  } else if (schema.async || schema['~run']) {
-    // Valibot schema - need to use parseAsync from valibot
-    const valibot = await import('valibot');
-    return {
-      parseAsync: async (data) => valibot.parseAsync(schema, data)
-    };
-  } else {
-    return { parseAsync: async (data) => data };
-  }
-}`
-    : ''
-}
-
 // Default help message
 async function showDefaultHelp() {
   // Try to load version info
   let versionInfo = null;
   try {
-    const versionModule = await import('./app/version.js');
+    const versionModule = await import('./app/version.ts');
     if (versionModule.default && typeof versionModule.default === 'function') {
       versionInfo = versionModule.default.length === 0 
         ? versionModule.default() 
@@ -607,11 +535,45 @@ async function showDefaultHelp() {
   }
 }
 
+// Show unified command help with help info object
+function showUnifiedCommandHelp(commandPath, helpInfo, paramsConfig) {
+  console.log(\`Usage: cli \${commandPath} [options]\`);
+  
+  if (helpInfo && typeof helpInfo === 'object') {
+    if (helpInfo.description) {
+      console.log(\`\\n\${helpInfo.description}\`);
+    }
+    
+    // Show params info if available
+    if (paramsConfig && paramsConfig.mappings && paramsConfig.mappings.length > 0) {
+      console.log('\\nArguments:');
+      paramsConfig.mappings.forEach(mapping => {
+        const argNum = mapping.argIndex !== undefined ? \`[\${mapping.argIndex + 1}] \` : '';
+        const option = mapping.option ? \` (or --\${mapping.option})\` : '';
+        console.log(\`  \${argNum}\${mapping.field}\${option}\`);
+      });
+    }
+    
+    if (helpInfo.aliases && helpInfo.aliases.length > 0) {
+      console.log(\`\\nAliases: \${helpInfo.aliases.join(', ')}\`);
+    }
+    
+    if (helpInfo.examples && helpInfo.examples.length > 0) {
+      console.log('\\nExamples:');
+      helpInfo.examples.forEach(ex => console.log(\`  cli \${ex}\`));
+    }
+    
+    if (helpInfo.additionalHelp) {
+      console.log(\`\\n\${helpInfo.additionalHelp}\`);
+    }
+  }
+}
+
 // Show command-specific help
 async function showCommandHelp(modulePath) {
-  const commandName = modulePath.replace('./app/', '').replace('/command.js', '');
-  const helpPath = modulePath.replace('/command.js', '/help.js');
-  const paramsPath = modulePath.replace('/command.js', '/params.js');
+  const commandName = modulePath.replace('../app/', '').replace('./app/', '').replace('/command.ts', '').replace('/command.js', '');
+  const helpPath = modulePath.replace('/command.ts', '/help.ts').replace('/command.js', '/help.js');
+  const paramsPath = modulePath.replace('/command.ts', '/params.ts').replace('/command.js', '/params.js');
   
   let helpDisplayed = false;
   

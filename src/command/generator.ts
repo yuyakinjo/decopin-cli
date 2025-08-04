@@ -29,32 +29,38 @@ export class CommandGeneratorImpl implements CommandGenerator {
       hasHelp: commands.some((cmd) => cmd.hasHelp),
       hasError: commands.some((cmd) => cmd.hasError),
     };
+    
+    // Pass the full structure to enable unified handler management
+    if (structure) {
+      options.structure = structure;
+    }
 
+    // Keep backward compatibility for individual handler flags
     if (structure?.middleware) {
       Object.assign(options, {
         hasMiddleware: true,
-        middlewarePath: './app/middleware.js',
+        middlewarePath: './app/middleware.ts',
       });
     }
 
     if (structure?.globalError) {
       Object.assign(options, {
         hasGlobalError: true,
-        globalErrorPath: './app/global-error.js',
+        globalErrorPath: './app/global-error.ts',
       });
     }
 
     if (structure?.env) {
       Object.assign(options, {
         hasEnv: true,
-        envPath: './app/env.js',
+        envPath: './app/env.ts',
       });
     }
 
     if (structure?.version) {
       Object.assign(options, {
         hasVersion: true,
-        versionPath: './app/version.js',
+        versionPath: './app/version.ts',
       });
     }
 

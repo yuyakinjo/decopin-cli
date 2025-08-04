@@ -3,6 +3,18 @@
  * These types are always loaded as they define the fundamental structures
  */
 
+import type { HandlerDefinition } from '../types/handler-registry.js';
+
+/**
+ * Handler information discovered by scanner
+ */
+export interface HandlerInfo {
+  path: string;
+  definition: HandlerDefinition;
+  commandPath?: string;
+  content?: string;
+}
+
 export interface CLIStructure {
   commands: CommandFile[];
   params: ParamsFile[];
@@ -12,6 +24,13 @@ export interface CLIStructure {
   globalError?: GlobalErrorFile;
   env?: EnvFile;
   version?: VersionFile;
+  /**
+   * New unified handler management
+   * Key format:
+   * - Global handlers: handler name (e.g., 'env', 'middleware')
+   * - Command handlers: 'commandPath/handlerName' (e.g., 'user/create/params')
+   */
+  handlers: Map<string, HandlerInfo>;
 }
 
 export interface CommandFile {

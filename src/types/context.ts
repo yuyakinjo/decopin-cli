@@ -20,15 +20,6 @@ export interface BaseCommandContext extends BaseContextProperties {
   env: Record<string, unknown>;
 }
 
-/**
- * バリデーション済みコマンドコンテキスト（params.tsあり）
- */
-interface ValidatedCommandContext<T> extends BaseContextProperties {
-  /** バリデーション済みデータ（必須） */
-  validatedData: T;
-  /** 型安全な環境変数 */
-  env: Record<string, unknown>;
-}
 
 /**
  * コマンドの実行コンテキスト（関数オーバーロード型定義）
@@ -54,56 +45,12 @@ export type Context<E = typeof process.env> = BaseCommandContext & {
 };
 
 /**
- * @deprecated Use `Context` instead. Will be removed in v1.0.0.
- *
- * Migration guide:
- * ```typescript
- * // Before
- * import type { BaseContext } from 'decopin-cli';
- * function myFunc(context: BaseContext<MyEnv>) { ... }
- *
- * // After
- * import type { Context } from 'decopin-cli';
- * function myFunc(context: Context<MyEnv>) { ... }
- * ```
- */
-export type BaseContext<E = typeof process.env> = Context<E>;
-
-/**
- * @deprecated Use `CommandContext` with generic parameters instead. Will be removed in v1.0.0.
- *
- * Migration guide:
- * ```typescript
- * // Before
- * import type { ValidatedContext } from 'decopin-cli';
- * function myFunc(context: ValidatedContext<MyData>) { ... }
- *
- * // After
- * import type { CommandContext } from 'decopin-cli';
- * function myFunc(context: CommandContext<MyData>) { ... }
- * ```
- */
-export type ValidatedContext<T> = ValidatedCommandContext<T>;
-
-/**
- * @deprecated Use `Context` instead. Will be removed in v1.0.0.
- *
- * Migration guide:
- * ```typescript
- * // Before
- * import type { EnvContext } from 'decopin-cli';
- * function myFunc(context: EnvContext<MyEnv>) { ... }
- *
- * // After
- * import type { Context } from 'decopin-cli';
- * function myFunc(context: Context<MyEnv>) { ... }
- * ```
- */
-// Removed - replaced with new EnvContext definition below
-
-/**
  * コマンドハンドラーの型
  */
+export type CommandHandler<T = never, E = never> =
+  | ((context: CommandContext<T, E>) => Promise<void> | void)
+  | (() => Promise<void> | void);
+
 /**
  * グローバルエラーハンドラー用のコンテキスト
  * ファクトリー関数で使用
@@ -133,12 +80,10 @@ export type HelpContext<E = typeof process.env> = Context<E>;
  * ファクトリー関数で使用
  */
 export type ParamsContext<E = typeof process.env> = Context<E>;
+
 /**
  * ミドルウェア用のコンテキスト
  * 注: 実際のMiddlewareContext型はmiddleware.tsで定義されており、
  * これはファクトリー関数用のContext型エイリアスです
  */
 export type MiddlewareFactoryContext<E = typeof process.env> = Context<E>;
-export type CommandHandler<T = never, E = never> =
-  | ((context: CommandContext<T, E>) => Promise<void> | void)
-  | (() => Promise<void> | void);
