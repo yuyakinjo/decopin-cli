@@ -27,6 +27,7 @@ export type {
   CLIError,
   ModuleError,
   ValidationError as CLIValidationError,
+  ValidationError,
   ValidationIssue,
 } from './errors.js';
 export {
@@ -81,7 +82,6 @@ export type {
   ParamsHandler,
   // Factory types with inference
   ParamsHandlerFactory,
-  ValidationError,
   ValidationFunction,
   ValidationResult,
   VersionDefinitionFunction,

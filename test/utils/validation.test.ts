@@ -150,7 +150,7 @@ describe('validation utils', () => {
     it('should handle validation errors gracefully', async () => {
       const invalidParamsDefinition = {
         schema: { invalid: 'schema' } // 無効なスキーマ
-      } as any;
+      } as ParamsHandler;
 
       const validateFn = createValidationFunction(invalidParamsDefinition);
 

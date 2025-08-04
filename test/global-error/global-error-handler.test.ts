@@ -1,9 +1,9 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach, type MockInstance } from 'vitest';
 import type { CLIError, ValidationError, ModuleError } from '../../src/types/errors.js';
 
 describe('Global Error Handler', () => {
-  let consoleErrorSpy: any;
-  let processExitSpy: any;
+  let consoleErrorSpy: MockInstance<typeof console.error>;
+  let processExitSpy: MockInstance<typeof process.exit>;
 
   beforeEach(() => {
     consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
@@ -108,7 +108,7 @@ describe('Global Error Handler', () => {
     });
 
     it('should handle unknown error types', async () => {
-      const unknownError = 'String error' as any;
+      const unknownError: unknown = 'String error';
 
       const createHandler = (await import('../../app/global-error.js')).default;
       const mockContext = { env: process.env, args: [], command: [], options: {} };

@@ -133,7 +133,7 @@ describe('Manual Schema Validation', () => {
 
       expect(result.success).toBe(false);
       expect(result.error?.issues).toHaveLength(1);
-      expect(result.error?.issues?.[0].path).toEqual(['name']);
+      expect(result.error?.issues?.[0].path).toEqual([{ key: 'name' }]);
       expect(result.error?.issues?.[0].message).toBe('name is required');
     });
 
@@ -176,15 +176,15 @@ describe('Manual Schema Validation', () => {
 
             const result1 = await validateFunction(['John'], { active: 'true' }, {});
       expect(result1.success).toBe(true);
-      expect((result1.data as any)?.active).toBe(true);
+      expect(result1.data && 'active' in result1.data && result1.data.active).toBe(true);
 
       const result2 = await validateFunction(['John'], { active: 'false' }, {});
       expect(result2.success).toBe(true);
-      expect((result2.data as any)?.active).toBe(false);
+      expect(result2.data && 'active' in result2.data && result2.data.active).toBe(false);
 
       const result3 = await validateFunction(['John'], { active: '1' }, {});
       expect(result3.success).toBe(true);
-      expect((result3.data as any)?.active).toBe(true);
+      expect(result3.data && 'active' in result3.data && result3.data.active).toBe(true);
     });
 
     it('should prioritize positional arguments over options', async () => {

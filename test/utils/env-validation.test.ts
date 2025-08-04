@@ -78,7 +78,7 @@ describe('Environment Variable Validation', () => {
 
       expect(result.success).toBe(false);
       expect(result.error?.issues).toHaveLength(1);
-      expect(result.error?.issues?.[0].path).toEqual(['API_KEY']);
+      expect(result.error?.issues?.[0].path).toEqual([{ key: 'API_KEY' }]);
       expect(result.error?.issues?.[0].message).toBe('API_KEY is required');
     });
 

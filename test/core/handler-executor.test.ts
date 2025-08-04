@@ -165,7 +165,7 @@ describe('HandlerExecutor', () => {
       
       expect(result.env).toEqual({ NODE_ENV: 'test' });
       expect(result.version).toEqual({ version: '1.0.0' });
-      expect(result.params).toEqual({ schema: {}, mappings: [] });
+      expect(result.paramsHandler).toEqual({ schema: {}, mappings: [] });
     });
 
     test('should handle middleware and global-error handlers', async () => {
