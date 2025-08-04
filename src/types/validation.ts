@@ -185,3 +185,33 @@ export interface EnvValidationResult<T = Record<string, unknown>> {
  * 環境変数定義関数の型
  */
 export type EnvDefinitionFunction = () => EnvHandler;
+/**
+ * バージョン情報のメタデータ
+ */
+export interface VersionMetadata {
+  /** パッケージ名 */
+  name?: string;
+  /** バージョン番号 */
+  version: string;
+  /** 説明 */
+  description?: string;
+  /** 作成者 */
+  author?: string;
+  /** その他のメタデータ */
+  [key: string]: unknown;
+}
+
+/**
+ * バージョンハンドラー
+ */
+export interface VersionHandler {
+  /** バージョン番号 */
+  version: string;
+  /** バージョンメタデータ */
+  metadata?: VersionMetadata;
+}
+
+/**
+ * バージョン定義関数の型
+ */
+export type VersionDefinitionFunction = () => VersionHandler;

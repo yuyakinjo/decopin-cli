@@ -44,6 +44,20 @@ export class CommandGeneratorImpl implements CommandGenerator {
       });
     }
 
+    if (structure?.env) {
+      Object.assign(options, {
+        hasEnv: true,
+        envPath: './app/env.js',
+      });
+    }
+
+    if (structure?.version) {
+      Object.assign(options, {
+        hasVersion: true,
+        versionPath: './app/version.js',
+      });
+    }
+
     const content = generateLazyCLI(options);
 
     return {

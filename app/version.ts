@@ -1,4 +1,4 @@
-import type { VersionHandler } from '../dist/index.js';
+import type { VersionHandler } from '../src/types/validation.js';
 
 /**
  * CLI バージョン情報

@@ -44,6 +44,10 @@ export type {
   ValidationError,
   ValidationFunction,
   ValidationResult,
+  EnvHandler,
+  EnvDefinitionFunction,
+  VersionHandler,
+  VersionDefinitionFunction,
 } from './validation.js';
 
 import type { Context } from './context.js';

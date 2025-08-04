@@ -33,6 +33,22 @@ export class Scanner {
       };
     }
 
+    // Check for env.ts in root
+    const envPath = join(this.appDir, 'env.ts');
+    if (existsSync(envPath)) {
+      structure.env = {
+        path: envPath,
+      };
+    }
+
+    // Check for version.ts in root
+    const versionPath = join(this.appDir, 'version.ts');
+    if (existsSync(versionPath)) {
+      structure.version = {
+        path: versionPath,
+      };
+    }
+
     this.scanDirectory(this.appDir, structure);
     return structure;
   }
@@ -116,6 +132,22 @@ export class Scanner {
     if (existsSync(globalErrorPath)) {
       structure.globalError = {
         path: globalErrorPath,
+      };
+    }
+
+    // Check for env.ts in root
+    const envPath = join(this.appDir, 'env.ts');
+    if (existsSync(envPath)) {
+      structure.env = {
+        path: envPath,
+      };
+    }
+
+    // Check for version.ts in root
+    const versionPath = join(this.appDir, 'version.ts');
+    if (existsSync(versionPath)) {
+      structure.version = {
+        path: versionPath,
       };
     }
 

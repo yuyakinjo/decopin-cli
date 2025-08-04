@@ -46,6 +46,60 @@ async function handleDefaultError(error) {
 }`;
 }
 
+function generateShowVersionFunction(options: LazyCliOptions): string {
+  if (!options.hasVersion || !options.versionPath) {
+    return `// Show version
+async function showVersion() {
+  console.log('0.2.0');
+}`;
+  }
+
+  const versionImportPath = options.versionPath.replace(/\\/g, '/');
+  return `// Show version
+async function showVersion() {
+  try {
+    const versionModule = await import('${versionImportPath}');
+    if (versionModule.default && typeof versionModule.default === 'function') {
+      const versionInfo = versionModule.default();
+      if (versionInfo && versionInfo.version) {
+        console.log(versionInfo.version);
+      } else {
+        console.log('0.2.0');
+      }
+    } else {
+      console.log('0.2.0');
+    }
+  } catch {
+    // No version file, use default
+    console.log('0.2.0');
+  }
+}`;
+}
+
+function generateEnvHandler(options: LazyCliOptions): string {
+  if (!options.hasEnv || !options.envPath) {
+    return `// Environment variables (raw process.env)
+const env = process.env;`;
+  }
+
+  const envImportPath = options.envPath.replace(/\\/g, '/');
+  return `// Load and validate environment variables
+let env = process.env;
+try {
+  const envModule = await import('${envImportPath}');
+  if (envModule.default && typeof envModule.default === 'function') {
+    const envHandler = envModule.default();
+    // TODO: Apply validation based on envHandler schema
+    // For now, just use process.env directly
+    env = process.env;
+  }
+} catch (e) {
+  if (process.env.DEBUG) {
+    console.error('Failed to load env.ts:', e);
+  }
+}`;
+}
+
 export interface LazyCliOptions {
   commands: CommandInfo[];
   hasParams: boolean;
@@ -55,6 +109,10 @@ export interface LazyCliOptions {
   middlewarePath?: string;
   hasGlobalError?: boolean;
   globalErrorPath?: string;
+  hasEnv?: boolean;
+  envPath?: string;
+  hasVersion?: boolean;
+  versionPath?: string;
 }
 
 export interface CommandInfo {
@@ -74,6 +132,8 @@ export function generateLazyCLI(options: LazyCliOptions): string {
 
 // Minimal startup - just parse arguments
 const args = process.argv.slice(2);
+
+${generateEnvHandler(options)}
 
 // Performance tracking (optional)
 const startTime = performance.now();
@@ -599,25 +659,7 @@ async function showCommandHelp(modulePath) {
   }
 }
 
-// Show version
-async function showVersion() {
-  try {
-    const versionModule = await import('./app/version.js');
-    if (versionModule.default && typeof versionModule.default === 'function') {
-      const versionInfo = versionModule.default();
-      if (versionInfo && versionInfo.version) {
-        console.log(versionInfo.version);
-      } else {
-        console.log('0.2.0');
-      }
-    } else {
-      console.log('0.2.0');
-    }
-  } catch {
-    // No version file, use default
-    console.log('0.2.0');
-  }
-}
+${generateShowVersionFunction(options)}
 
 ${generateParseOptionsFunction(options.hasMiddleware || false)}
 

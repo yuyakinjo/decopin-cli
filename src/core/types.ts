@@ -10,6 +10,8 @@ export interface CLIStructure {
   errors: ErrorFile[];
   middleware?: MiddlewareFile;
   globalError?: GlobalErrorFile;
+  env?: EnvFile;
+  version?: VersionFile;
 }
 
 export interface CommandFile {
@@ -42,6 +44,16 @@ export interface MiddlewareFile {
 }
 
 export interface GlobalErrorFile {
+  path: string;
+  content?: string;
+}
+
+export interface EnvFile {
+  path: string;
+  content?: string;
+}
+
+export interface VersionFile {
   path: string;
   content?: string;
 }
