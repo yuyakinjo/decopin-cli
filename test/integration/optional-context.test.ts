@@ -6,7 +6,7 @@ import { execSync } from 'child_process';
 import { Scanner } from '../../src/core/scanner.js';
 import { generateLazyCLI } from '../../src/generator/lazy-cli-template.js';
 
-describe('Optional Context Handlers', () => {
+describe('Unified Handler Context System', () => {
   let tempDir: string;
   let appDir: string;
   let outputDir: string;
@@ -79,12 +79,12 @@ export default function createParams() {
         hasEnv: !!structure.env,
         envPath: structure.env ? toRelativePath(structure.env.path, tempDir) : undefined,
         hasVersion: !!structure.version,
-        versionPath: structure.version ? toRelativePath(structure.version.path, tempDir) : undefined
+        versionPath: structure.version ? toRelativePath(structure.version.path, tempDir) : undefined,
+        structure
       });
 
-      // When params exist, the generated code should check handler length
-      expect(generated).toContain('if (handler.length === 0)');
-      expect(generated).toContain('await handler()');
+      // With unified handlers, command handlers always receive context
+      expect(generated).toContain('await commandHandler(context);');
     });
 
     it('should support command handler with context', async () => {
@@ -119,11 +119,12 @@ export default async function withContextCommand(context: CommandContext<{ name:
         hasEnv: !!structure.env,
         envPath: structure.env ? toRelativePath(structure.env.path, tempDir) : undefined,
         hasVersion: !!structure.version,
-        versionPath: structure.version ? toRelativePath(structure.version.path, tempDir) : undefined
+        versionPath: structure.version ? toRelativePath(structure.version.path, tempDir) : undefined,
+        structure
       });
 
       // Check that the generated code handles context functions
-      expect(generated).toContain('await handler({ validatedData');
+      expect(generated).toContain('await commandHandler(context);');
     });
   });
 
@@ -177,9 +178,10 @@ export default async function paramsTestCommand(context: CommandContext<{ name: 
         hasEnv: !!structure.env,
         envPath: structure.env ? toRelativePath(structure.env.path, tempDir) : undefined,
         hasVersion: !!structure.version,
-        versionPath: structure.version ? toRelativePath(structure.version.path, tempDir) : undefined
+        versionPath: structure.version ? toRelativePath(structure.version.path, tempDir) : undefined,
+        structure
       });
-      expect(generated).toContain('createParams.length === 0');
+      expect(generated).toContain('const paramsHandler = paramsModule.default');
     });
 
     it('should support params handler with context', async () => {
@@ -234,9 +236,10 @@ export default async function paramsContextCommand(context: CommandContext<{ nam
         hasEnv: !!structure.env,
         envPath: structure.env ? toRelativePath(structure.env.path, tempDir) : undefined,
         hasVersion: !!structure.version,
-        versionPath: structure.version ? toRelativePath(structure.version.path, tempDir) : undefined
+        versionPath: structure.version ? toRelativePath(structure.version.path, tempDir) : undefined,
+        structure
       });
-      expect(generated).toContain('createParams(baseContext)');
+      expect(generated).toContain('typeof paramsHandler === \'function\' ? await paramsHandler(context)');
     });
   });
 
@@ -279,10 +282,10 @@ export default async function errorTestCommand() {
         hasEnv: !!structure.env,
         envPath: structure.env ? toRelativePath(structure.env.path, tempDir) : undefined,
         hasVersion: !!structure.version,
-        versionPath: structure.version ? toRelativePath(structure.version.path, tempDir) : undefined
+        versionPath: structure.version ? toRelativePath(structure.version.path, tempDir) : undefined,
+        structure
       });
-      expect(generated).toContain('errorHandler.length === 0');
-      expect(generated).toContain('errorHandler.length === 1');
+      expect(generated).toContain('await errorHandler({ ...context, error });');
     });
 
     it('should support error handler with context', async () => {
@@ -326,9 +329,10 @@ export default async function errorContextCommand() {
         hasEnv: !!structure.env,
         envPath: structure.env ? toRelativePath(structure.env.path, tempDir) : undefined,
         hasVersion: !!structure.version,
-        versionPath: structure.version ? toRelativePath(structure.version.path, tempDir) : undefined
+        versionPath: structure.version ? toRelativePath(structure.version.path, tempDir) : undefined,
+        structure
       });
-      expect(generated).toContain('await errorHandler(errorContext)');
+      expect(generated).toContain('await errorHandler({ ...context, error });');
     });
   });
 
@@ -371,10 +375,11 @@ export default function createMiddleware() {
         hasEnv: !!structure.env,
         envPath: structure.env ? toRelativePath(structure.env.path, tempDir) : undefined,
         hasVersion: !!structure.version,
-        versionPath: structure.version ? toRelativePath(structure.version.path, tempDir) : undefined
+        versionPath: structure.version ? toRelativePath(structure.version.path, tempDir) : undefined,
+        structure
       });
-      expect(generated).toContain('createMiddleware.length === 0');
-      expect(generated).toContain('createMiddleware()');
+      // In unified system, middleware is loaded as a global handler
+      expect(generated).toContain("globalHandlers['middleware'] = middlewareModule.default;");
     });
 
     it('should support middleware factory with context', async () => {
@@ -420,9 +425,11 @@ export default function createMiddleware(context: Context) {
         hasEnv: !!structure.env,
         envPath: structure.env ? toRelativePath(structure.env.path, tempDir) : undefined,
         hasVersion: !!structure.version,
-        versionPath: structure.version ? toRelativePath(structure.version.path, tempDir) : undefined
+        versionPath: structure.version ? toRelativePath(structure.version.path, tempDir) : undefined,
+        structure
       });
-      expect(generated).toContain('createMiddleware(baseContext)');
+      // Middleware execution is handled differently in unified system
+      expect(generated).toContain('createMiddleware.length === 0');
     });
   });
 
@@ -465,7 +472,8 @@ export default function createGlobalErrorHandler() {
         hasEnv: !!structure.env,
         envPath: structure.env ? toRelativePath(structure.env.path, tempDir) : undefined,
         hasVersion: !!structure.version,
-        versionPath: structure.version ? toRelativePath(structure.version.path, tempDir) : undefined
+        versionPath: structure.version ? toRelativePath(structure.version.path, tempDir) : undefined,
+        structure
       });
       expect(generated).toContain('globalErrorModule.default.length === 0');
       expect(generated).toContain('globalErrorModule.default()');
@@ -516,7 +524,8 @@ export default function createGlobalErrorHandler(context: Context) {
         hasEnv: !!structure.env,
         envPath: structure.env ? toRelativePath(structure.env.path, tempDir) : undefined,
         hasVersion: !!structure.version,
-        versionPath: structure.version ? toRelativePath(structure.version.path, tempDir) : undefined
+        versionPath: structure.version ? toRelativePath(structure.version.path, tempDir) : undefined,
+        structure
       });
       expect(generated).toContain('globalErrorModule.default(baseContext)');
     });
@@ -559,7 +568,8 @@ export default function createVersion() {
         hasEnv: !!structure.env,
         envPath: structure.env ? toRelativePath(structure.env.path, tempDir) : undefined,
         hasVersion: !!structure.version,
-        versionPath: structure.version ? toRelativePath(structure.version.path, tempDir) : undefined
+        versionPath: structure.version ? toRelativePath(structure.version.path, tempDir) : undefined,
+        structure
       });
       expect(generated).toContain('versionModule.default.length === 0');
       expect(generated).toContain('versionModule.default()');
@@ -604,9 +614,10 @@ export default function createVersion(context: Context) {
         hasEnv: !!structure.env,
         envPath: structure.env ? toRelativePath(structure.env.path, tempDir) : undefined,
         hasVersion: !!structure.version,
-        versionPath: structure.version ? toRelativePath(structure.version.path, tempDir) : undefined
+        versionPath: structure.version ? toRelativePath(structure.version.path, tempDir) : undefined,
+        structure
       });
-      expect(generated).toContain('versionModule.default({ args:');
+      expect(generated).toContain('versionModule.default({ args: process.argv.slice(2), env: process.env');
     });
   });
 
@@ -647,7 +658,8 @@ export default function createEnv() {
         hasEnv: !!structure.env,
         envPath: structure.env ? toRelativePath(structure.env.path, tempDir) : undefined,
         hasVersion: !!structure.version,
-        versionPath: structure.version ? toRelativePath(structure.version.path, tempDir) : undefined
+        versionPath: structure.version ? toRelativePath(structure.version.path, tempDir) : undefined,
+        structure
       });
       expect(generated).toContain('envModule.default.length === 0');
       expect(generated).toContain('envModule.default()');
@@ -694,9 +706,10 @@ export default function createEnv(context: Context) {
         hasEnv: !!structure.env,
         envPath: structure.env ? toRelativePath(structure.env.path, tempDir) : undefined,
         hasVersion: !!structure.version,
-        versionPath: structure.version ? toRelativePath(structure.version.path, tempDir) : undefined
+        versionPath: structure.version ? toRelativePath(structure.version.path, tempDir) : undefined,
+        structure
       });
-      expect(generated).toContain('envModule.default({ args:');
+      expect(generated).toContain('envModule.default({ args: process.argv.slice(2), env: process.env');
     });
   });
 });
