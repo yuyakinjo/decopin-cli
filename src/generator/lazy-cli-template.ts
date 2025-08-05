@@ -32,8 +32,8 @@ async function handleDefaultError(error) {
     const globalErrorModule = await import('${globalErrorImportPath}');
     if (globalErrorModule.default && typeof globalErrorModule.default === 'function') {
       const baseContext = { args: process.argv.slice(2), env: process.env, command: process.argv.slice(2), options: {} };
-      const errorHandler = globalErrorModule.default.length === 0 
-        ? globalErrorModule.default() 
+      const errorHandler = globalErrorModule.default.length === 0
+        ? globalErrorModule.default()
         : globalErrorModule.default(baseContext);
       if (typeof errorHandler === 'function') {
         await errorHandler(error);
@@ -46,7 +46,7 @@ async function handleDefaultError(error) {
       console.error('Global error handler failed:', e);
     }
   }
-  
+
   // Default error handling
   console.error('Error:', error);
   process.exit(1);
@@ -67,8 +67,8 @@ async function showVersion() {
   try {
     const versionModule = await import('${versionImportPath}');
     if (versionModule.default && typeof versionModule.default === 'function') {
-      const versionInfo = versionModule.default.length === 0 
-        ? versionModule.default() 
+      const versionInfo = versionModule.default.length === 0
+        ? versionModule.default()
         : versionModule.default({ args: process.argv.slice(2), env: process.env, command: process.argv.slice(2), options: {} });
       if (versionInfo && versionInfo.version) {
         console.log(versionInfo.version);
@@ -97,8 +97,8 @@ let env = process.env;
 try {
   const envModule = await import('${envImportPath}');
   if (envModule.default && typeof envModule.default === 'function') {
-    const envHandler = envModule.default.length === 0 
-      ? envModule.default() 
+    const envHandler = envModule.default.length === 0
+      ? envModule.default()
       : envModule.default({ args: process.argv.slice(2), env: process.env, command: process.argv.slice(2), options: {} });
     // TODO: Apply validation based on envHandler schema
     // For now, just use process.env directly
@@ -186,7 +186,7 @@ ${generateHelperFunctions(options)}
 async function executeCommand(modulePath, args) {
   const commandModule = await import(modulePath);
   const handler = commandModule.default;
-  
+
   if (typeof handler === 'function') {
     await handler({ args, env: process.env, options: parseOptions(args) });
   } else {
@@ -338,7 +338,7 @@ function generateUnifiedCommandExecution(
       const varName = handler.name.replace(/-/g, '_');
       // Convert absolute path to relative path from CLI location
       const relativePath = path.includes('/app/')
-        ? './app/' + path.split('/app/')[1]
+        ? `./app/${path.split('/app/')[1]}`
         : path;
       code += `        const ${varName}Module = await import('${relativePath.replace(/\\/g, '/')}');\n`;
     }
@@ -387,7 +387,7 @@ function generateUnifiedCommandExecution(
     code += `        // Check for help flag (no help.ts file)\n`;
     code += `        if (commandArgs.includes('--help') || commandArgs.includes('-h')) {\n`;
     // Convert to relative path - use .ts extension for source files
-    const relativePath = '../app/' + commandPath + '/command.ts';
+    const relativePath = `../app/${commandPath}/command.ts`;
     code += `          await showCommandHelp('${relativePath}');\n`;
     code += `          return;\n`;
     code += `        }\n\n`;
@@ -438,12 +438,12 @@ function generateHelperFunctions(options: LazyCliOptions): string {
 // Validate parameters against schema
 async function validateParams(args, paramsConfig) {
   if (!paramsConfig) return {};
-  
+
   // Handle mappings-based validation
   if (paramsConfig.mappings) {
     const result = {};
     const parsedOptions = parseOptions(args);
-    
+
     // Filter out options and their values to get positional args
     const positionalArgs = [];
     for (let i = 0; i < args.length; i++) {
@@ -460,10 +460,10 @@ async function validateParams(args, paramsConfig) {
         positionalArgs.push(arg);
       }
     }
-    
+
     for (const mapping of paramsConfig.mappings) {
       let value;
-      
+
       // Get value from option first, then argIndex
       if (mapping.option && parsedOptions[mapping.option] !== undefined) {
         value = parsedOptions[mapping.option];
@@ -479,7 +479,7 @@ async function validateParams(args, paramsConfig) {
         }];
         throw error;
       }
-      
+
       // Type conversion
       if (value !== undefined) {
         switch (mapping.type) {
@@ -499,7 +499,7 @@ async function validateParams(args, paramsConfig) {
             break;
           // string is default, no conversion needed
         }
-        
+
         // Additional validation
         if (mapping.validation === 'email' && mapping.type === 'string') {
           const emailRegex = /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/;
@@ -512,14 +512,14 @@ async function validateParams(args, paramsConfig) {
             throw error;
           }
         }
-        
+
         result[mapping.field] = value;
       }
     }
-    
+
     return result;
   }
-  
+
   // Handle schema-based validation (valibot)
   if (paramsConfig.schema) {
     try {
@@ -527,16 +527,16 @@ async function validateParams(args, paramsConfig) {
       const { parse } = await import('valibot');
       const parsedArgs = {};
       const parsedOptions = parseOptions(args);
-      
+
       // Merge positional args and options
       args.forEach((arg, index) => {
         if (!arg.startsWith('-')) {
           parsedArgs[\`arg\${index}\`] = arg;
         }
       });
-      
+
       Object.assign(parsedArgs, parsedOptions);
-      
+
       return parse(paramsConfig.schema, parsedArgs);
     } catch (error) {
       if (error.issues) {
@@ -546,7 +546,7 @@ async function validateParams(args, paramsConfig) {
       throw error;
     }
   }
-  
+
   return {};
 }
 
@@ -555,11 +555,11 @@ function parseCommand(args) {
   if (args.length === 0) {
     return { commandPath: '--help', commandArgs: [] };
   }
-  
+
   if (args[0].startsWith('-')) {
     return { commandPath: args[0], commandArgs: args.slice(1) };
   }
-  
+
   // Check if this could be a nested command
   const commandList = [];
   ${options.commands
@@ -579,29 +579,29 @@ function parseCommand(args) {
       return names.map((n) => `commandList.push('${n}');`).join('\n  ');
     })
     .join('\n  ')}
-  
+
   let bestMatch = '';
   let bestMatchLength = 0;
-  
+
   // Build potential command paths and find the longest match
   let currentPath = '';
   for (let i = 0; i < args.length; i++) {
     if (args[i].startsWith('-')) break;
-    
+
     currentPath = i === 0 ? args[i] : currentPath + '/' + args[i];
     if (commandList.includes(currentPath)) {
       bestMatch = currentPath;
       bestMatchLength = i + 1;
     }
   }
-  
+
   if (bestMatch) {
     return {
       commandPath: bestMatch,
       commandArgs: args.slice(bestMatchLength)
     };
   }
-  
+
   // No match found, check if the first arg might be a command
   if (commandList.includes(args[0])) {
     return {
@@ -609,7 +609,7 @@ function parseCommand(args) {
       commandArgs: args.slice(1)
     };
   }
-  
+
   // Check if unknown command with --help
   if (args.length > 1 && (args[1] === '--help' || args[1] === '-h')) {
     return {
@@ -617,17 +617,17 @@ function parseCommand(args) {
       commandArgs: []
     };
   }
-  
+
   // For unknown commands, build the full path tried
   let unknownPath = '';
   for (let i = 0; i < args.length; i++) {
     if (args[i].startsWith('-')) break;
     unknownPath = i === 0 ? args[i] : unknownPath + ' ' + args[i];
   }
-  
-  return { 
-    commandPath: unknownPath, 
-    commandArgs: args.slice(unknownPath.split(' ').length) 
+
+  return {
+    commandPath: unknownPath,
+    commandArgs: args.slice(unknownPath.split(' ').length)
   };
 }
 
@@ -638,8 +638,8 @@ async function showDefaultHelp() {
   try {
     const versionModule = await import('./version.js');
     if (versionModule.default && typeof versionModule.default === 'function') {
-      versionInfo = versionModule.default.length === 0 
-        ? versionModule.default() 
+      versionInfo = versionModule.default.length === 0
+        ? versionModule.default()
         : versionModule.default({ args: process.argv.slice(2), env: process.env, command: process.argv.slice(2), options: {} });
     }
   } catch (e) {
@@ -648,7 +648,7 @@ async function showDefaultHelp() {
       console.error('Failed to load version:', e);
     }
   }
-  
+
   if (versionInfo && versionInfo.metadata) {
     console.log(\`\${versionInfo.metadata.name} \${versionInfo.metadata.version}\`);
     if (versionInfo.metadata.description) {
@@ -656,7 +656,7 @@ async function showDefaultHelp() {
     }
     console.log();
   }
-  
+
   console.log('Usage: cli <command> [options]');
   console.log('\\nAvailable commands:');
   ${options.commands
@@ -667,7 +667,7 @@ async function showDefaultHelp() {
   console.log('\\nOptions:');
   console.log('  --help, -h     Show help');
   console.log('  --version, -v  Show version');
-  
+
   if (versionInfo && versionInfo.metadata && versionInfo.metadata.author) {
     console.log(\`\\nAuthor: \${versionInfo.metadata.author}\`);
   }
@@ -676,12 +676,12 @@ async function showDefaultHelp() {
 // Show unified command help with help info object
 function showUnifiedCommandHelp(commandPath, helpInfo, paramsConfig) {
   console.log(\`Usage: cli \${commandPath} [options]\`);
-  
+
   if (helpInfo && typeof helpInfo === 'object') {
     if (helpInfo.description) {
       console.log(\`\\n\${helpInfo.description}\`);
     }
-    
+
     // Show params info if available
     if (paramsConfig && paramsConfig.mappings && paramsConfig.mappings.length > 0) {
       console.log('\\nArguments:');
@@ -691,16 +691,16 @@ function showUnifiedCommandHelp(commandPath, helpInfo, paramsConfig) {
         console.log(\`  \${argNum}\${mapping.field}\${option}\`);
       });
     }
-    
+
     if (helpInfo.aliases && helpInfo.aliases.length > 0) {
       console.log(\`\\nAliases: \${helpInfo.aliases.join(', ')}\`);
     }
-    
+
     if (helpInfo.examples && helpInfo.examples.length > 0) {
       console.log('\\nExamples:');
       helpInfo.examples.forEach(ex => console.log(\`  cli \${ex}\`));
     }
-    
+
     if (helpInfo.additionalHelp) {
       console.log(\`\\n\${helpInfo.additionalHelp}\`);
     }
@@ -712,9 +712,9 @@ async function showCommandHelp(modulePath) {
   const commandName = modulePath.replace('../app/', '').replace('./app/', '').replace('/command.ts', '').replace('/command.js', '');
   const helpPath = modulePath.replace('/command.ts', '/help.ts').replace('/command.js', '/help.js');
   const paramsPath = modulePath.replace('/command.ts', '/params.ts').replace('/command.js', '/params.js');
-  
+
   let helpDisplayed = false;
-  
+
   // Try to load help.ts
   try {
     const helpModule = await import(helpPath);
@@ -727,13 +727,13 @@ async function showCommandHelp(modulePath) {
           console.log(\`\\n\${helpHandler.description}\`);
         }
         helpDisplayed = true;
-        
+
         // Show params info if available
         try {
           const paramsModule = await import(paramsPath);
           if (paramsModule.default && typeof paramsModule.default === 'function') {
-            const paramsHandler = paramsModule.default.length === 0 
-              ? paramsModule.default() 
+            const paramsHandler = paramsModule.default.length === 0
+              ? paramsModule.default()
               : paramsModule.default({ args: [], env: process.env, command: [], options: {} });
             if (paramsHandler.mappings && paramsHandler.mappings.length > 0) {
               console.log('\\nArguments:');
@@ -747,7 +747,7 @@ async function showCommandHelp(modulePath) {
         } catch {
           // No params file
         }
-        
+
         if (helpHandler.aliases && helpHandler.aliases.length > 0) {
           console.log(\`\\nAliases: \${helpHandler.aliases.join(', ')}\`);
         }
@@ -764,17 +764,17 @@ async function showCommandHelp(modulePath) {
   } catch {
     // No help file
   }
-  
+
   // If no help.ts or help wasn't displayed, show basic help with params
   if (!helpDisplayed) {
     console.log(\`Usage: cli \${commandName} [options]\`);
-    
+
     // Try to show params info
     try {
       const paramsModule = await import(paramsPath);
       if (paramsModule.default && typeof paramsModule.default === 'function') {
-        const paramsHandler = paramsModule.default.length === 0 
-          ? paramsModule.default() 
+        const paramsHandler = paramsModule.default.length === 0
+          ? paramsModule.default()
           : paramsModule.default({ args: [], env: process.env, command: [], options: {} });
         if (paramsHandler.mappings && paramsHandler.mappings.length > 0) {
           console.log('\\nArguments:');

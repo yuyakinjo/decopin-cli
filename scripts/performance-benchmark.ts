@@ -84,7 +84,7 @@ class PerformanceBenchmark {
 
     for (let i = 0; i < this.iterations; i++) {
       const startTime = performance.now();
-      
+
       const result = await new Promise<BenchmarkResult>((resolve, reject) => {
         const args = command === 'root' ? [] : command.split('/');
         const child = spawn('node', [this.cliPath, ...args], {
@@ -108,7 +108,7 @@ class PerformanceBenchmark {
           const executionTime = endTime - startTime;
 
           // スキップすべきエラーコマンドの判定
-          const isExpectedError = stderr.includes('This is an expected error') || 
+          const isExpectedError = stderr.includes('This is an expected error') ||
                                  stderr.includes('error') ||
                                  command.includes('error');
 
@@ -120,7 +120,7 @@ class PerformanceBenchmark {
           // 実際のメモリ使用量を推定
           const baseMemory = 15; // 基本メモリ使用量(MB)
           const commandComplexity = args.length + (stdout.length / 100); // 複雑度
-          
+
           const memoryUsage = {
             rss: baseMemory + Math.random() * 20 + commandComplexity,
             heapUsed: baseMemory * 0.6 + Math.random() * 15 + commandComplexity * 0.5,
@@ -138,7 +138,7 @@ class PerformanceBenchmark {
         });
 
         child.on('error', reject);
-        
+
         // タイムアウト設定（10秒）
         setTimeout(() => {
           child.kill();
