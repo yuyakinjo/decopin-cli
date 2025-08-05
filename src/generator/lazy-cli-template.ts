@@ -182,6 +182,7 @@ ${generateCommandCases(options.commands, options)}
 
 ${generateHelperFunctions(options)}
 
+```javascript
 // Simple command execution for backward compatibility
 async function executeCommand(modulePath, args) {
   const commandModule = await import(modulePath);
@@ -194,7 +195,7 @@ async function executeCommand(modulePath, args) {
     process.exit(1);
   }
 }
-
+```
 // Execute with performance monitoring
 execute().then(() => {
   if (process.env.DECOPIN_PERF) {
@@ -256,6 +257,7 @@ function generateCommandCases(
   return cases.join('\n');
 }
 
+```javascript
 /**
  * Generate unified global handler initialization
  */
@@ -432,9 +434,10 @@ function generateUnifiedCommandExecution(
 
   return code;
 }
-
+```
 function generateHelperFunctions(options: LazyCliOptions): string {
   return `
+```javascript
 // Validate parameters against schema
 async function validateParams(args, paramsConfig) {
   if (!paramsConfig) return {};
@@ -475,7 +478,7 @@ async function validateParams(args, paramsConfig) {
         const error = new Error('Validation failed');
         error.issues = [{
           path: [{ key: mapping.field }],
-          message: \`Invalid key: Expected "\${mapping.field}" but received undefined\`
+          message: `Invalid key: Expected "${mapping.field}" but received undefined`
         }];
         throw error;
       }
@@ -489,7 +492,7 @@ async function validateParams(args, paramsConfig) {
               const error = new Error('Validation failed');
               error.issues = [{
                 path: [{ key: mapping.field }],
-                message: \`Invalid number: Expected number but received "\${value}"\`
+                message: `Invalid number: Expected number but received "${value}"`
               }];
               throw error;
             }
@@ -502,7 +505,7 @@ async function validateParams(args, paramsConfig) {
 
         // Additional validation
         if (mapping.validation === 'email' && mapping.type === 'string') {
-          const emailRegex = /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/;
+          const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
           if (!emailRegex.test(value)) {
             const error = new Error('Validation failed');
             error.issues = [{
@@ -531,7 +534,7 @@ async function validateParams(args, paramsConfig) {
       // Merge positional args and options
       args.forEach((arg, index) => {
         if (!arg.startsWith('-')) {
-          parsedArgs[\`arg\${index}\`] = arg;
+          parsedArgs[`arg${index}`] = arg;
         }
       });
 
@@ -540,8 +543,8 @@ async function validateParams(args, paramsConfig) {
       return parse(paramsConfig.schema, parsedArgs);
     } catch (error) {
       if (error.issues) {
-        const messages = error.issues.map(issue => \`\${issue.path.join('.')}: \${issue.message}\`).join('\\n  ');
-        throw new Error(\`Validation failed:\\n  \${messages}\`);
+        const messages = error.issues.map(issue => `${issue.path.join('.')}: ${issue.message}`).join('\n  ');
+        throw new Error(`Validation failed:\n  ${messages}`);
       }
       throw error;
     }
@@ -549,7 +552,7 @@ async function validateParams(args, paramsConfig) {
 
   return {};
 }
-
+```
 // Parse command and subcommands from arguments
 function parseCommand(args) {
   if (args.length === 0) {
@@ -673,46 +676,48 @@ async function showDefaultHelp() {
   }
 }
 
+```javascript
 // Show unified command help with help info object
 function showUnifiedCommandHelp(commandPath, helpInfo, paramsConfig) {
-  console.log(\`Usage: cli \${commandPath} [options]\`);
+  console.log(`Usage: cli ${commandPath} [options]`);
 
   if (helpInfo && typeof helpInfo === 'object') {
     if (helpInfo.description) {
-      console.log(\`\\n\${helpInfo.description}\`);
+      console.log(`\n${helpInfo.description}`);
     }
 
     // Show params info if available
     if (paramsConfig && paramsConfig.mappings && paramsConfig.mappings.length > 0) {
-      console.log('\\nArguments:');
+      console.log('\nArguments:');
       paramsConfig.mappings.forEach(mapping => {
-        const argNum = mapping.argIndex !== undefined ? \`[\${mapping.argIndex + 1}] \` : '';
-        const option = mapping.option ? \` (or --\${mapping.option})\` : '';
-        console.log(\`  \${argNum}\${mapping.field}\${option}\`);
+        const argNum = mapping.argIndex !== undefined ? `[${mapping.argIndex + 1}] ` : '';
+        const option = mapping.option ? ` (or --${mapping.option})` : '';
+        console.log(`  ${argNum}${mapping.field}${option}`);
       });
     }
 
     if (helpInfo.aliases && helpInfo.aliases.length > 0) {
-      console.log(\`\\nAliases: \${helpInfo.aliases.join(', ')}\`);
+      console.log(`\nAliases: ${helpInfo.aliases.join(', ')}`);
     }
 
     if (helpInfo.examples && helpInfo.examples.length > 0) {
-      console.log('\\nExamples:');
-      helpInfo.examples.forEach(ex => console.log(\`  cli \${ex}\`));
+      console.log('\nExamples:');
+      helpInfo.examples.forEach(ex => console.log(`  cli ${ex}`));
     }
 
     if (helpInfo.additionalHelp) {
-      console.log(\`\\n\${helpInfo.additionalHelp}\`);
+      console.log(`\n${helpInfo.additionalHelp}`);
     }
   }
 }
-
+```
 // Show command-specific help
 async function showCommandHelp(modulePath) {
-  const commandName = modulePath.replace('../app/', '').replace('./app/', '').replace('/command.ts', '').replace('/command.js', '');
-  const helpPath = modulePath.replace('/command.ts', '/help.ts').replace('/command.js', '/help.js');
-  const paramsPath = modulePath.replace('/command.ts', '/params.ts').replace('/command.js', '/params.js');
-
+```javascript
+const commandName = modulePath.replace('../app/', '').replace('./app/', '').replace('/command.ts', '').replace('/command.js', '');
+const helpPath = modulePath.replace('/command.ts', '/help.ts').replace('/command.js', '/help.js');
+const paramsPath = modulePath.replace('/command.ts', '/params.ts').replace('/command.js', '/params.js');
+```
   let helpDisplayed = false;
 
   // Try to load help.ts
