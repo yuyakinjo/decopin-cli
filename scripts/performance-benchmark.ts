@@ -86,7 +86,7 @@ class PerformanceBenchmark {
       const startTime = performance.now();
 
       const result = await new Promise<BenchmarkResult>((resolve, reject) => {
-        const args = command === 'root' ? [] : command.split('/');
+        const args = this.getCommandArgs(command);
         const child = spawn('node', [this.cliPath, ...args], {
           stdio: ['pipe', 'pipe', 'pipe'],
           env: { ...process.env, NODE_ENV: 'production' }
@@ -267,6 +267,35 @@ class PerformanceBenchmark {
       console.log(`  Execution: ${result.executionTime.toFixed(2)}ms`);
       console.log(`  Memory: ${result.memoryUsage.heapUsed.toFixed(2)}MB`);
       console.log(`  Startup: ${result.startupTime.toFixed(2)}ms`);
+    }
+  }
+
+  /**
+   * コマンドに応じて適切な引数を生成
+   */
+  private getCommandArgs(command: string): string[] {
+    const baseArgs = command === 'root' ? [] : command.split('/');
+
+    // 特定のコマンドに必要な引数を追加
+    switch (command) {
+      case 'test/schema-only':
+        return [...baseArgs, 'testtest@example.com', 'Testtest1'];
+      
+      case 'user/create':
+        return [...baseArgs, '--name', 'Test User', '--email', 'test@example.com'];
+      
+      case 'hello':
+        return [...baseArgs, '--name', 'Benchmark'];
+      
+      case 'context-demo':
+        return [...baseArgs, '--name', 'Benchmark User'];
+      
+      case 'test/mappings-only':
+        // このコマンドは引数が複雑なので、デフォルト値で試す
+        return [...baseArgs, 'test@example.com', 'password123', '25'];
+      
+      default:
+        return baseArgs;
     }
   }
 
