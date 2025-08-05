@@ -1,4 +1,4 @@
-import type { ErrorContext } from '../../dist/types/index.js';
+import type { ErrorContext, ErrorHandler } from '../../dist/types/index.js';
 import { isValidationError, isModuleError } from '../../dist/types/index.js';
 
 interface UserData {
@@ -7,9 +7,7 @@ interface UserData {
 }
 
 // Error handler with full context
-export default async function createErrorHandler(
-  context: ErrorContext<UserData, typeof process.env>
-) {
+export default async function createErrorHandler(context: ErrorContext<UserData, typeof process.env>): Promise<ErrorHandler<UserData, typeof process.env>> {
   const { error, validatedData, env } = context;
   
   // Show detailed errors in development
@@ -45,4 +43,4 @@ export default async function createErrorHandler(
   console.error('\n💡 Use --help for usage information');
   
   process.exit(1);
-}
+};
