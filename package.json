@@ -9,7 +9,8 @@
     "decopin": "dist/cli.js"
   },
   "scripts": {
-    "build": "tsc && bun run build:app && bun run build:prod",
+    "build": "tsc && bun run generate:env-types && bun run build:app && bun run build:prod",
+    "generate:env-types": "bunx tsx scripts/generate-env-types.ts",
     "build:prod": "tsc -p tsconfig.prod.json",
     "build:app": "tsc -p app/tsconfig.json",
     "dev": "bun --env-file app/.env scripts/dev-watch.ts",
