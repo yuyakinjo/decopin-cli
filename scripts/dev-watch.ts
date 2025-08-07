@@ -106,6 +106,11 @@ async function buildAndRegen() {
 function watchDirectory(dir: string, label: string) {
   watch(dir, { recursive: true }, (event, filename) => {
     if (filename && filename.endsWith('.ts')) {
+      // 生成されたファイルは無視
+      if (filename.includes('generated/') || filename.includes('.d.ts')) {
+        return;
+      }
+      
       console.log(`${colors.blue}📝${colors.reset} ${colors.gray}[${formatTime()}]${colors.reset} ${label}/${filename}`);
       buildAndRegen();
     }

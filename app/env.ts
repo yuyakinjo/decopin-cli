@@ -1,11 +1,6 @@
 import type { EnvHandler } from '../dist/types/index.js';
 import { SCHEMA_TYPE } from '../dist/types/index.js';
 
-// ビルド時に自動生成される型定義をインポート
-// export type { AppEnv } from './generated/env-types.js';
-
-
-// EnvHandlerを返す関数
 export default function createEnv(): EnvHandler {
     return {
     NODE_ENV: {
