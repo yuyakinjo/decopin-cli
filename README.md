@@ -34,6 +34,7 @@ A TypeScript-first CLI builder inspired by Next.js App Router's file-based routi
 - **⚡ Dynamic imports**: Generated CLIs use dynamic imports for instant command loading
 - **🏷️ Command aliases**: Support for command aliases (e.g., `hi` → `hello`, `add` → `user create`)
 - **🔌 Middleware support**: Global middleware for authentication, logging, and cross-cutting concerns
+- **🤖 Auto-generated types**: Environment variable types automatically generated from schema definitions
 
 ## 🚀 Quick Start
 
@@ -731,6 +732,90 @@ All handlers in decopin-cli follow a consistent context-based pattern, providing
 - **CommandContext**: Extends Context with validatedData
 - **ErrorContext**: Extends CommandContext with error property
 - **MiddlewareContext**: Used within middleware execution
+
+### Environment Variables and Type Generation
+
+decopin-cli provides robust environment variable handling with automatic type generation:
+
+#### Defining Environment Variables
+
+Create `app/env.ts` to define your environment schema:
+
+```typescript
+import type { EnvHandler } from '../dist/types/index.js';
+import { SCHEMA_TYPE } from '../dist/types/index.js';
+
+const envSchema = {
+  NODE_ENV: {
+    type: SCHEMA_TYPE.STRING,
+    required: false,
+    default: 'development',
+    errorMessage: 'NODE_ENV must be development, production, or test',
+  },
+  API_KEY: {
+    type: SCHEMA_TYPE.STRING,
+    required: true,
+    minLength: 10,
+    errorMessage: 'API_KEY is required and must be at least 10 characters',
+  },
+  PORT: {
+    type: SCHEMA_TYPE.NUMBER,
+    required: false,
+    default: 3000,
+    min: 1000,
+    max: 65535,
+    errorMessage: 'PORT must be between 1000 and 65535',
+  },
+} as const;
+
+export default function createEnv(): EnvHandler {
+  return envSchema;
+}
+```
+
+#### Automatic Type Generation
+
+Types are automatically generated during build:
+
+```bash
+npm run build              # Types auto-generated to app/generated/env-types.ts
+npm run generate:env-types # Manually generate types
+```
+
+The generated `app/generated/env-types.ts`:
+
+```typescript
+// This file is auto-generated. Do not edit manually.
+export interface AppEnv {
+  NODE_ENV: string;
+  API_KEY: string;
+  PORT: number;
+}
+```
+
+#### Using Environment Variables in Commands
+
+Import the generated type for type-safe environment access:
+
+```typescript
+import type { CommandContext } from '../../../dist/types/index.js';
+import type { AppEnv } from '../../generated/env-types.js';
+
+export default async function createCommand(context: CommandContext<UserData, AppEnv>) {
+  const { API_KEY, NODE_ENV } = context.env;  // Type-safe access
+  
+  console.log(`Environment: ${NODE_ENV}`);
+  // Use API_KEY for authentication...
+}
+```
+
+**Benefits:**
+- **Single source of truth**: Schema defines both validation and types
+- **Type safety**: Full TypeScript support for environment variables
+- **Auto-sync**: Types always match your schema definition
+- **Build-time generation**: No runtime overhead
+
+**Note:** The `app/generated/` directory is automatically excluded from file watching to prevent build loops during development.
 
 ### Middleware Support
 

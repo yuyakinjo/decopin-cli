@@ -34,6 +34,40 @@ node examples/cli.js hello "World"
 node examples/cli.js user create --name "John" --email "john@example.com"
 ```
 
+### Environment Variables Type Generation
+The project automatically generates TypeScript types from your `app/env.ts` file:
+
+```bash
+npm run generate:env-types  # Manually generate types
+npm run build              # Types are auto-generated during build
+```
+
+**How it works:**
+1. Define your environment schema in `app/env.ts`:
+   ```typescript
+   const envSchema = {
+     NODE_ENV: { type: SCHEMA_TYPE.STRING, ... },
+     API_KEY: { type: SCHEMA_TYPE.STRING, ... },
+     // ...
+   } as const;
+   ```
+
+2. Types are auto-generated to `app/generated/env-types.ts`:
+   ```typescript
+   export interface AppEnv {
+     NODE_ENV: string;
+     API_KEY: string;
+     // ...
+   }
+   ```
+
+3. Import and use the generated type:
+   ```typescript
+   import type { AppEnv } from './generated/env-types.js';
+   ```
+
+**Note:** The `app/generated/` directory is ignored by the file watcher to prevent build loops.
+
 ## High-Level Architecture
 
 ### Core Library Structure (`src/`)
