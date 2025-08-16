@@ -503,7 +503,7 @@ async function validateParams(args, paramsConfig) {
 
         // Additional validation
         if (mapping.validation === 'email' && mapping.type === 'string') {
-          const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+          const emailRegex = /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/;
           if (!emailRegex.test(value)) {
             const error = new Error('Validation failed');
             error.issues = [{
@@ -541,7 +541,7 @@ async function validateParams(args, paramsConfig) {
       return parse(paramsConfig.schema, parsedArgs);
     } catch (error) {
       if (error.issues) {
-        const messages = error.issues.map(issue => \`\${issue.path.join('.')}: \${issue.message}\`).join('\n  ');
+        const messages = error.issues.map(issue => \`\${issue.path.join('.')}: \${issue.message}\`).join('\\n  ');
         throw new Error(\`Validation failed:\n  \${messages}\`);
       }
       throw error;
@@ -685,7 +685,7 @@ function showUnifiedCommandHelp(commandPath, helpInfo, paramsConfig) {
 
     // Show params info if available
     if (paramsConfig && paramsConfig.mappings && paramsConfig.mappings.length > 0) {
-      console.log('\nArguments:');
+      console.log('\\nArguments:');
       paramsConfig.mappings.forEach(mapping => {
         const argNum = mapping.argIndex !== undefined ? \`[\${mapping.argIndex + 1}] \` : '';
         const option = mapping.option ? \` (or --\${mapping.option})\` : '';
@@ -698,7 +698,7 @@ function showUnifiedCommandHelp(commandPath, helpInfo, paramsConfig) {
     }
 
     if (helpInfo.examples && helpInfo.examples.length > 0) {
-      console.log('\nExamples:');
+      console.log('\\nExamples:');
       helpInfo.examples.forEach(ex => console.log(\`  cli \${ex}\`));
     }
 
