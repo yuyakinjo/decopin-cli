@@ -1,24 +1,24 @@
 # Performance Benchmark Report
 
-Generated on: 2025-08-11T00:16:55.188Z
+Generated on: 2025-08-18T00:16:50.595Z
 Platform: linux x64
 Runtime: Bun 1.2.20
 
 ## Summary
 
-- **Average startup time**: 3.21ms
-- **Help/Error commands**: 3.45ms
-- **Execution commands**: 3.06ms
+- **Average startup time**: 2.77ms
+- **Help/Error commands**: 2.72ms
+- **Execution commands**: 2.80ms
 
 ## Detailed Results
 
 | Command | Average (ms) | Min (ms) | Max (ms) |
 |---------|-------------|----------|----------|
-| Help display | 3.07 | 2.82 | 5.66 |
-| Simple command | 3.04 | 2.76 | 3.30 |
-| Subcommand help | 3.06 | 2.74 | 3.58 |
-| Command with validation | 3.05 | 2.76 | 3.68 |
-| Error handling | 3.83 | 3.40 | 4.42 |
+| Help display | 2.89 | 2.72 | 5.30 |
+| Simple command | 2.79 | 2.73 | 3.54 |
+| Subcommand help | 2.73 | 2.70 | 3.17 |
+| Command with validation | 2.72 | 2.69 | 3.12 |
+| Error handling | 2.70 | 2.67 | 3.09 |
 
 ## Performance Characteristics
 
@@ -40,10 +40,10 @@ Runtime: Bun 1.2.20
 
 | Version | Date | Average Startup | Help Commands | Exec Commands |
 |---------|------|-----------------|---------------|---------------|
-| Current | 2025-08-11 | 3.21ms | 3.45ms | 3.06ms |
+| Current | 2025-08-18 | 2.77ms | 2.72ms | 2.80ms |
+| ac05fa8 | 2025-08-04 | 2.67ms | 2.64ms | 2.69ms |
 | a4fd58c | 2025-08-04 | 2.75ms | 2.68ms | 2.80ms |
 | c639def | 2025-08-04 | 2.68ms | 2.63ms | 2.71ms |
-| ad76a10 | 2025-08-04 | 2.64ms | 2.62ms | 2.65ms |
 
 ## Environment Details
 
