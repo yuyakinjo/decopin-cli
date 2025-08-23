@@ -99,14 +99,21 @@ export function isValibotSchema(value: unknown): boolean {
  * }
  * ```
  */
-export function isManualSchema(value: unknown): boolean {
-  return (
-    isObject(value) &&
-    hasProperty(value, 'type') &&
-    value.type === 'manual' &&
-    hasProperty(value, 'validate') &&
-    typeof value.validate === 'function'
-  );
+/**
+ * Checks if a value is a manual validation schema
+ * @deprecated Manual schemas are no longer supported. Use valibot schemas instead.
+ * @param value - The value to check
+ * @returns Always returns false as manual schemas are deprecated
+ */
+/**
+ * Checks if a value is a manual validation schema
+ * @deprecated Manual schemas are no longer supported. Use valibot schemas instead.
+ * @param _value - The value to check (unused)
+ * @returns Always returns false as manual schemas are deprecated
+ */
+export function isManualSchema(_value: unknown): boolean {
+  // Manual schemas are no longer supported
+  return false;
 }
 
 /**

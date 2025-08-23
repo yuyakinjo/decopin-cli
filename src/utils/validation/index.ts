@@ -1,6 +1,5 @@
 import type * as v from 'valibot';
 import type {
-  ManualFieldSchema,
   ManualSchema,
   ParamsHandler,
 } from '../../handlers/params/types.js';
@@ -29,29 +28,11 @@ export function isValibotSchema(schema: unknown): schema is v.GenericSchema {
 
 /**
  * スキーマがオブジェクトベースのスキーマかどうかを判別
+ * @deprecated Manual schemas are no longer supported. Use valibot schemas instead.
  */
-export function isManualSchema(schema: unknown): schema is ManualSchema {
-  if (!schema || typeof schema !== 'object') {
-    return false;
-  }
-
-  // valibotスキーマでない場合、オブジェクトベースのスキーマかチェック
-  if (isValibotSchema(schema)) {
-    return false;
-  }
-
-  const obj = schema as Record<string, unknown>;
-
-  // すべてのプロパティがManualFieldSchemaの形式かチェック
-  return Object.values(obj).every(
-    (field) =>
-      field &&
-      typeof field === 'object' &&
-      isString((field as ManualFieldSchema).type) &&
-      ['string', 'number', 'boolean'].includes(
-        (field as ManualFieldSchema).type
-      )
-  );
+export function isManualSchema(_schema: unknown): _schema is ManualSchema {
+  // Manual schemas are no longer supported, always return false
+  return false;
 }
 
 /**
@@ -104,14 +85,13 @@ export function createValidationFunction(
         // Both mappings and schema: use mappings to extract data, then validate with schema
         const data = extractData(args, options, params, paramsDefinition);
 
-        if (isManualSchema(paramsDefinition.schema)) {
-          const { validateWithManualSchema } = await import('./manual.js');
-          return validateWithManualSchema(data, paramsDefinition.schema);
-        } else if (isValibotSchema(paramsDefinition.schema)) {
+        if (isValibotSchema(paramsDefinition.schema)) {
           const { validateWithValibotSchema } = await import('./valibot.js');
           return validateWithValibotSchema(paramsDefinition.schema, data);
         } else {
-          throw new Error('Invalid schema type');
+          throw new Error(
+            'Invalid schema type: Only valibot schemas are supported'
+          );
         }
       } else if (paramsDefinition.mappings) {
         // Mappings-only: create schema from mappings
@@ -134,13 +114,8 @@ export function createValidationFunction(
         if (isValibotSchema(paramsDefinition.schema)) {
           const { validateWithValibotSchema } = await import('./valibot.js');
           return validateWithValibotSchema(paramsDefinition.schema, data);
-        } else if (isManualSchema(paramsDefinition.schema)) {
-          const { validateWithManualSchema } = await import('./manual.js');
-          return validateWithManualSchema(data, paramsDefinition.schema);
         } else {
-          throw new Error(
-            'Invalid schema: Must be either a valibot schema or a manual schema object'
-          );
+          throw new Error('Invalid schema: Must be a valibot schema');
         }
       }
 
@@ -166,7 +141,6 @@ export function createValidationFunction(
 
 // Re-export from sub-modules
 export { createTypeSafeEnv, parseEnvironmentVariables } from './env.js';
-export { validateWithManualSchema } from './manual.js';
 export {
   createSchemaFromMappings,
   validateWithValibotSchema,

@@ -4,7 +4,6 @@ import {
   isValidationFailure,
   hasValidationIssues,
   isValibotSchema,
-  isManualSchema,
   hasRequiredSchemaProperties,
   isValidationIssue,
   isFieldDefinition,
@@ -107,23 +106,6 @@ describe('Schema Guards', () => {
       expect(isValibotSchema({ run: () => {} })).toBe(false);
       expect(isValibotSchema({ _run: 'not a function' })).toBe(false);
       expect(isValibotSchema(null)).toBe(false);
-    });
-  });
-
-  describe('isManualSchema', () => {
-    it('should return true for manual schemas', () => {
-      const schema = {
-        type: 'manual' as const,
-        validate: () => ({ success: true, data: 'test' }),
-      };
-      expect(isManualSchema(schema)).toBe(true);
-    });
-
-    it('should return false for non-manual schemas', () => {
-      expect(isManualSchema({})).toBe(false);
-      expect(isManualSchema({ type: 'auto' })).toBe(false);
-      expect(isManualSchema({ type: 'manual' })).toBe(false);
-      expect(isManualSchema({ type: 'manual', validate: 'not a function' })).toBe(false);
     });
   });
 
