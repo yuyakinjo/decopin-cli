@@ -1,3 +1,4 @@
+import type { ValidationError } from '../../types/validation.js';
 import type {
   EnvContext,
   EnvExecutionOptions,
@@ -19,7 +20,7 @@ import type {
  */
 export async function processEnvHandler<E = typeof process.env>(
   options: EnvExecutionOptions<E>
-): Promise<EnvProcessingResult> {
+): Promise<EnvProcessingResult<Record<string, unknown>>> {
   try {
     const { factory, context } = options;
 
@@ -33,7 +34,7 @@ export async function processEnvHandler<E = typeof process.env>(
     return {
       schema,
       validation,
-      context,
+      context: context as EnvContext,
       success: validation.success,
       error: validation.success ? undefined : validation.error,
     };
@@ -56,7 +57,7 @@ export async function processEnvHandler<E = typeof process.env>(
           ],
         } as ValidationError,
       },
-      context: options.context,
+      context: options.context as EnvContext,
       success: false,
       error,
     };
@@ -89,13 +90,13 @@ export async function executeEnvHandler<E = typeof process.env>(
  */
 export function validateEnvironmentVariables(
   schema: EnvSchema,
-  env: Record<string, string | undefined>
+  env: Record<string, unknown>
 ): EnvValidationResult {
   const errors: EnvValidationError[] = [];
   const data: Record<string, EnvValue> = {};
 
   for (const [fieldName, fieldSchema] of Object.entries(schema)) {
-    const rawValue = env[fieldName];
+    const rawValue = env[fieldName] as string | undefined;
 
     try {
       const validatedValue = validateEnvField(fieldName, rawValue, fieldSchema);
@@ -112,24 +113,27 @@ export function validateEnvironmentVariables(
     }
   }
 
-  return {
-    success: errors.length === 0,
+  const hasErrors = errors.length > 0;
+  const result: EnvValidationResult = {
+    success: !hasErrors,
     data,
-    error:
-      errors.length > 0
-        ? ({
-            name: 'ValidationError',
-            message: 'Environment validation failed',
-            issues: errors.map((err) => ({
-              path: [{ key: err.field, value: err.value }],
-              message: err.message,
-              expected: err.expectedType,
-              received: typeof err.value,
-            })),
-          } as ValidationError)
-        : undefined,
     errors, // 後方互換性のため保持
   };
+
+  if (hasErrors) {
+    result.error = {
+      name: 'ValidationError',
+      message: 'Environment validation failed',
+      issues: errors.map((err) => ({
+        path: [{ key: err.field, value: err.value }],
+        message: err.message,
+        expected: err.expectedType,
+        received: typeof err.value,
+      })),
+    } as ValidationError;
+  }
+
+  return result;
 }
 
 /**
@@ -150,7 +154,7 @@ export function validateEnvField(
     if (schema.required) {
       throw new Error(schema.errorMessage || `${fieldName} is required`);
     }
-    return schema.default;
+    return schema.default as EnvValue;
   }
 
   // 型に応じてバリデーション
@@ -318,4 +322,30 @@ export function formatEnvValidationErrors(
   }
 
   return lines.join('\n').trim();
+}
+/**
+ * 環境変数ハンドラーを作成する
+ *
+ * @param factory - 環境変数ハンドラーファクトリー
+ * @param context - 実行コンテキスト
+ * @returns 環境変数ハンドラー
+ */
+export async function createEnvHandler<E = typeof process.env>(
+  factory: EnvHandlerFactory<E>,
+  context: EnvContext<E>
+): Promise<EnvHandler> {
+  if (typeof factory === 'function') {
+    return await factory(context);
+  }
+  return factory;
+}
+
+/**
+ * 環境変数を検証する（シンプル版）
+ *
+ * @param schema - 環境変数スキーマ
+ * @returns バリデーション結果
+ */
+export function validateEnvironment(schema: EnvSchema): EnvValidationResult {
+  return validateEnvironmentVariables(schema, process.env);
 }

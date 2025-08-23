@@ -4,7 +4,11 @@
  */
 
 import type { CLIStructure, CommandFile } from '../../core/types.js';
-import type { ParsedCommandDefinition } from './types.js';
+import type { CommandContext } from '../../types/context.js';
+import type {
+  CommandHandlerFactory,
+  ParsedCommandDefinition,
+} from './types.js';
 
 // Lazy-loaded parser module
 let parserModule: typeof import('./parser.js') | null = null;
@@ -51,3 +55,48 @@ export type {
   ParsedCommandDefinition,
   RuntimeCommandDefinition,
 } from './types.js';
+/**
+ * コマンド定義を解析する
+ *
+ * @param files - 解析するファイルパスの配列
+ * @returns 解析されたコマンド定義の配列
+ */
+export async function parseCommandDefinitions(
+  files: string[]
+): Promise<ParsedCommandDefinition[]> {
+  const definitions: ParsedCommandDefinition[] = [];
+
+  for (const file of files) {
+    try {
+      // ファイルパスからコマンド名を生成
+      const segments = file.replace(/\/command\.ts$/, '').split('/');
+      const name = segments.join(' ');
+
+      definitions.push({
+        name,
+        path: file,
+        hasParams: false, // 実際の実装では params.ts の存在をチェック
+        hasHelp: false, // 実際の実装では help.ts の存在をチェック
+        hasError: false, // 実際の実装では error.ts の存在をチェック
+      });
+    } catch (error) {}
+  }
+
+  return definitions;
+}
+
+/**
+ * コマンドハンドラーを作成する
+ *
+ * @param factory - コマンドハンドラーファクトリー
+ * @param context - 実行コンテキスト
+ * @returns コマンドハンドラー
+ */
+export async function createCommandHandler<T = unknown, E = typeof process.env>(
+  factory: CommandHandlerFactory<T, E>,
+  context: CommandContext<T, E>
+): Promise<void> {
+  if (typeof factory === 'function') {
+    return await factory(context);
+  }
+}

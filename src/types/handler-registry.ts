@@ -58,7 +58,7 @@ export const HANDLER_REGISTRY: HandlerDefinition[] = [
     name: 'global-error',
     fileName: 'global-error.ts',
     handlerType: 'GlobalErrorHandler',
-    contextType: 'Context', // Uses common Context type
+    contextType: 'GlobalErrorContext',
     executionOrder: EXECUTION_ORDER.GLOBAL_ERROR,
     scope: 'global',
     required: false,
@@ -68,7 +68,7 @@ export const HANDLER_REGISTRY: HandlerDefinition[] = [
     name: 'env',
     fileName: 'env.ts',
     handlerType: 'EnvHandler',
-    contextType: 'Context', // Uses common Context type
+    contextType: 'EnvContext',
     executionOrder: EXECUTION_ORDER.ENV,
     scope: 'global',
     required: false,
@@ -78,7 +78,7 @@ export const HANDLER_REGISTRY: HandlerDefinition[] = [
     name: 'version',
     fileName: 'version.ts',
     handlerType: 'VersionHandler',
-    contextType: 'Context', // Uses common Context type
+    contextType: 'VersionContext',
     executionOrder: EXECUTION_ORDER.VERSION,
     scope: 'global',
     required: false,
@@ -88,7 +88,7 @@ export const HANDLER_REGISTRY: HandlerDefinition[] = [
     name: 'middleware',
     fileName: 'middleware.ts',
     handlerType: 'MiddlewareHandler',
-    contextType: 'Context', // Uses common Context type
+    contextType: 'MiddlewareContext',
     executionOrder: EXECUTION_ORDER.MIDDLEWARE,
     scope: 'global',
     required: false,
@@ -98,7 +98,7 @@ export const HANDLER_REGISTRY: HandlerDefinition[] = [
     name: 'help',
     fileName: 'help.ts',
     handlerType: 'HelpHandler',
-    contextType: 'Context', // Uses common Context type
+    contextType: 'HelpContext',
     executionOrder: EXECUTION_ORDER.HELP,
     scope: 'command',
     required: false,
@@ -108,7 +108,7 @@ export const HANDLER_REGISTRY: HandlerDefinition[] = [
     name: 'params',
     fileName: 'params.ts',
     handlerType: 'ParamsHandler',
-    contextType: 'Context', // Uses common Context type
+    contextType: 'ParamsContext',
     executionOrder: EXECUTION_ORDER.PARAMS,
     scope: 'command',
     required: false,
@@ -130,7 +130,7 @@ export const HANDLER_REGISTRY: HandlerDefinition[] = [
     name: 'error',
     fileName: 'error.ts',
     handlerType: 'ErrorHandler',
-    contextType: 'Context', // Uses common Context type
+    contextType: 'ErrorContext',
     executionOrder: EXECUTION_ORDER.ERROR,
     scope: 'command',
     required: false,

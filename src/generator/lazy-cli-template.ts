@@ -282,9 +282,11 @@ function generateUnifiedGlobalHandlers(options: LazyCliOptions): string {
       code += `// ${handler.description || handler.name}\n`;
       code += `try {\n`;
       const varName = handler.name.replace(/-/g, '_');
-      // Use the path as-is for global handlers
-      const importPath = handlerInfo.path.replace(/\\/g, '/');
-      code += `  const ${varName}Module = await import('${importPath}');\n`;
+      // Convert absolute path to relative path from CLI location
+      const importPath = handlerInfo.path.includes('/app/')
+        ? `../examples/${handlerInfo.path.split('/app/')[1]}`
+        : handlerInfo.path;
+      code += `  const ${varName}Module = await import('${importPath.replace(/\\/g, '/').replace(/\.ts$/, '.js')}');\n`;
       code += `  globalHandlers['${handler.name}'] = ${varName}Module.default;\n`;
       code += `} catch (error) {\n`;
       code += `  // ${handler.name} is optional\n`;
@@ -338,9 +340,9 @@ function generateUnifiedCommandExecution(
       const varName = handler.name.replace(/-/g, '_');
       // Convert absolute path to relative path from CLI location
       const relativePath = path.includes('/app/')
-        ? `./app/${path.split('/app/')[1]}`
+        ? `../examples/${path.split('/app/')[1]}`
         : path;
-      code += `        const ${varName}Module = await import('${relativePath.replace(/\\/g, '/')}');\n`;
+      code += `        const ${varName}Module = await import('${relativePath.replace(/\\/g, '/').replace(/\.ts$/, '.js')}');\n`;
     }
   }
 
@@ -386,8 +388,8 @@ function generateUnifiedCommandExecution(
     // Even without help.ts, we should handle help flags
     code += `        // Check for help flag (no help.ts file)\n`;
     code += `        if (commandArgs.includes('--help') || commandArgs.includes('-h')) {\n`;
-    // Convert to relative path - use .ts extension for source files
-    const relativePath = `../app/${commandPath}/command.ts`;
+    // Convert to relative path - use .js extension for runtime
+    const relativePath = `../examples/${commandPath}/command.js`;
     code += `          await showCommandHelp('${relativePath}');\n`;
     code += `          return;\n`;
     code += `        }\n\n`;
@@ -711,9 +713,9 @@ function showUnifiedCommandHelp(commandPath, helpInfo, paramsConfig) {
 // Show command-specific help
 async function showCommandHelp(modulePath) {
 
-const commandName = modulePath.replace('../app/', '').replace('./app/', '').replace('/command.ts', '').replace('/command.js', '');
-const helpPath = modulePath.replace('/command.ts', '/help.ts').replace('/command.js', '/help.js');
-const paramsPath = modulePath.replace('/command.ts', '/params.ts').replace('/command.js', '/params.js');
+const commandName = modulePath.replace('../examples/', '').replace('./examples/', '').replace('/command.ts', '').replace('/command.js', '');
+const helpPath = modulePath.replace('/command.ts', '/help.js').replace('/command.js', '/help.js');
+const paramsPath = modulePath.replace('/command.ts', '/params.js').replace('/command.js', '/params.js');
 
   let helpDisplayed = false;
 

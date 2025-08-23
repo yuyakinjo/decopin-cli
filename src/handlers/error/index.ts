@@ -84,7 +84,7 @@ export function validateErrorHandler(factory: ErrorHandlerFactory): boolean {
 export function createDefaultErrorHandler(
   commandPath: string
 ): ErrorHandlerFactory {
-  return async (context: ErrorContext) => {
+  return (context: ErrorContext) => {
     const { error } = context;
 
     console.error(`❌ Error in command '${commandPath}':`);
@@ -162,4 +162,29 @@ export function formatErrorOutput(error: unknown, commandPath: string): string {
   }
 
   return lines.join('\n');
+}
+/**
+ * エラーハンドラーを作成する
+ *
+ * @param factory - エラーハンドラーファクトリー
+ * @param context - 実行コンテキスト
+ * @returns Promise<void>
+ */
+export async function createErrorHandler<T = unknown, E = typeof process.env>(
+  factory: ErrorHandlerFactory<T, E>,
+  context: ErrorContext<T, E>
+): Promise<void> {
+  if (typeof factory === 'function') {
+    return await factory(context);
+  }
+}
+
+/**
+ * エラーをフォーマットする（シンプル版）
+ *
+ * @param error - フォーマットするエラー
+ * @returns フォーマットされたエラー文字列
+ */
+export function formatError(error: unknown): string {
+  return formatErrorOutput(error, 'unknown');
 }

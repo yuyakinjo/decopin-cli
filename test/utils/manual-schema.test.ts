@@ -3,8 +3,8 @@ import {
   createValidationFunction,
   isManualSchema,
   isValibotSchema
-} from '../../src/utils/validation.js';
-import type { ParamsHandler, ManualSchema } from '../../src/types/validation.js';
+} from '../../src/utils/validation/index.js';
+import type { ParamsHandler, ManualSchema } from '../../src/types/index.js';
 import * as v from 'valibot';
 
 describe('Manual Schema Validation', () => {

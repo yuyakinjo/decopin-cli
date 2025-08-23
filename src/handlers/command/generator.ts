@@ -39,28 +39,28 @@ export class CommandGeneratorImpl implements CommandGenerator {
     if (structure?.middleware) {
       Object.assign(options, {
         hasMiddleware: true,
-        middlewarePath: './app/middleware.ts',
+        middlewarePath: '../examples/middleware.js',
       });
     }
 
     if (structure?.globalError) {
       Object.assign(options, {
         hasGlobalError: true,
-        globalErrorPath: './app/global-error.ts',
+        globalErrorPath: '../examples/global-error.js',
       });
     }
 
     if (structure?.env) {
       Object.assign(options, {
         hasEnv: true,
-        envPath: './app/env.ts',
+        envPath: '../examples/env.js',
       });
     }
 
     if (structure?.version) {
       Object.assign(options, {
         hasVersion: true,
-        versionPath: './app/version.ts',
+        versionPath: '../examples/version.js',
       });
     }
 
@@ -80,7 +80,7 @@ export class CommandGeneratorImpl implements CommandGenerator {
   private getCommandModulePath(cmd: ParsedCommandDefinition): string {
     // Generate the runtime path for the command module
     const commandDir = cmd.name === 'root' ? '.' : cmd.name;
-    return `./app/${commandDir}/command.js`;
+    return `../examples/${commandDir}/command.js`;
   }
 }
 

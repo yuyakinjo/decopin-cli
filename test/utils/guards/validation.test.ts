@@ -13,7 +13,7 @@ import {
   hasMinValue,
   hasMaxValue,
 } from '../../../src/utils/guards/validation.js';
-import type { ValidationResult, ValidationError } from '../../../src/types/validation.js';
+import type { ValidationResult, ValidationError } from '../../../src/types/index.js';
 
 describe('Validation Result Guards', () => {
   describe('isValidationSuccess', () => {

@@ -130,3 +130,29 @@ export function formatHelpOutput(
 
   return lines.join('\n').trim();
 }
+/**
+ * ヘルプハンドラーを作成する
+ *
+ * @param factory - ヘルプハンドラーファクトリー
+ * @param context - 実行コンテキスト
+ * @returns ヘルプハンドラー
+ */
+export async function createHelpHandler<E = typeof process.env>(
+  factory: HelpHandlerFactory<E>,
+  context: HelpContext<E>
+): Promise<HelpHandler> {
+  if (typeof factory === 'function') {
+    return await factory(context);
+  }
+  return factory;
+}
+
+/**
+ * ヘルプテキストを生成する（シンプル版）
+ *
+ * @param handler - ヘルプハンドラー
+ * @returns 生成されたヘルプテキスト
+ */
+export function generateHelpText(handler: HelpHandler): string {
+  return formatHelpOutput(handler, 'unknown');
+}

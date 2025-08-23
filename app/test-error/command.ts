@@ -1,9 +1,9 @@
-import type { BaseCommandContext, CLIValidationError, ValidationIssue } from '../../dist/types/index.js';
+import type { BaseCommandContext, ValidationError, ValidationIssue } from '../../dist/types/index.js';
 
 // Create a custom ValidationError class that implements our interface
-class CustomValidationError extends Error implements CLIValidationError {
+class CustomValidationError extends Error implements ValidationError {
   issues: ValidationIssue[];
-  
+
   constructor(message: string, issues: ValidationIssue[]) {
     super(message);
     this.name = 'ValidationError';

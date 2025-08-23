@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'bun:test';
 import * as v from 'valibot';
 import { extractData, createValidationFunction, isValibotSchema } from '../../../src/utils/validation/index.js';
-import type { ParamsHandler } from '../../../src/types/validation.js';
+import type { ParamsHandler } from '../../../src/types/index.js';
 
 describe('validation utils', () => {
   describe('extractData', () => {

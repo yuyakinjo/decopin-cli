@@ -22,10 +22,9 @@ export type GlobalErrorContext<E = typeof process.env> = Context<E>;
 /**
  * グローバルエラーハンドラーのファクトリー関数型
  */
-export interface GlobalErrorHandlerFactory<E = typeof process.env> {
-  (context: GlobalErrorContext<E>): GlobalErrorHandler;
-  (): GlobalErrorHandler;
-}
+export type GlobalErrorHandlerFactory<E = typeof process.env> =
+  | ((context: GlobalErrorContext<E>) => GlobalErrorHandler)
+  | (() => GlobalErrorHandler);
 
 /**
  * グローバルエラー処理の結果

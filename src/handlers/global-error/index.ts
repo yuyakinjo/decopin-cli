@@ -2,7 +2,6 @@ import type {
   ErrorDisplayOptions,
   GlobalErrorContext,
   GlobalErrorExecutionOptions,
-  GlobalErrorHandler,
   GlobalErrorHandlerFactory,
   GlobalErrorProcessingResult,
   GlobalErrorTypeGuards,
@@ -33,7 +32,7 @@ export async function processGlobalErrorHandler<E = typeof process.env>(
     return {
       handled: true,
       error,
-      context,
+      context: context as GlobalErrorContext,
       processingTime,
     };
   } catch (handlerError) {
@@ -46,7 +45,7 @@ export async function processGlobalErrorHandler<E = typeof process.env>(
     return {
       handled: false,
       error: options.error,
-      context: options.context,
+      context: options.context as GlobalErrorContext,
       processingTime,
       handlerError,
     };
@@ -90,29 +89,27 @@ export function validateGlobalErrorHandler(
  * @returns デフォルトのグローバルエラーハンドラー
  */
 export function createDefaultGlobalErrorHandler(): GlobalErrorHandlerFactory {
-  return async (context: GlobalErrorContext) => {
-    return async (error: unknown) => {
-      console.error('\n❌ An unexpected error occurred\n');
+  return (context: GlobalErrorContext) => (error: unknown) => {
+    console.error('\n❌ An unexpected error occurred\n');
 
-      if (error instanceof Error) {
-        console.error('Error:', error.message);
+    if (error instanceof Error) {
+      console.error('Error:', error.message);
 
-        // 開発環境ではスタックトレースを表示
-        if (context.env.NODE_ENV === 'development' && error.stack) {
-          console.error('\nStack trace:');
-          console.error(error.stack);
-        }
-      } else {
-        console.error('Error:', String(error));
+      // 開発環境ではスタックトレースを表示
+      if (context.env.NODE_ENV === 'development' && error.stack) {
+        console.error('\nStack trace:');
+        console.error(error.stack);
       }
+    } else {
+      console.error('Error:', String(error));
+    }
 
-      console.error('\n💡 Tips:');
-      console.error('  • Use --help to see available commands');
-      console.error('  • Check your command syntax');
-      console.error('  • Set NODE_ENV=development for detailed errors');
+    console.error('\n💡 Tips:');
+    console.error('  • Use --help to see available commands');
+    console.error('  • Check your command syntax');
+    console.error('  • Set NODE_ENV=development for detailed errors');
 
-      process.exit(1);
-    };
+    process.exit(1);
   };
 }
 
@@ -284,24 +281,22 @@ function getErrorMessage(error: unknown): string {
 export function createAdvancedGlobalErrorHandler(
   options: ErrorDisplayOptions = {}
 ): GlobalErrorHandlerFactory {
-  return async (context: GlobalErrorContext) => {
+  return (context: GlobalErrorContext) => (error: unknown) => {
     const isDevelopment = context.env.NODE_ENV === 'development';
     const isDebug =
       context.env.DEBUG === 'true' || context.env.CLI_DEBUG === 'true';
 
-    return async (error: unknown) => {
-      const displayOptions: ErrorDisplayOptions = {
-        verbose: true,
-        showStackTrace: isDevelopment || isDebug,
-        useColors: !context.env.NO_COLOR,
-        json: context.env.ERROR_FORMAT === 'json',
-        ...options,
-      };
-
-      const formattedError = formatGlobalErrorOutput(error, displayOptions);
-      console.error(formattedError);
-
-      process.exit(1);
+    const displayOptions: ErrorDisplayOptions = {
+      verbose: true,
+      showStackTrace: isDevelopment || isDebug,
+      useColors: !context.env.NO_COLOR,
+      json: context.env.ERROR_FORMAT === 'json',
+      ...options,
     };
+
+    const formattedError = formatGlobalErrorOutput(error, displayOptions);
+    console.error(formattedError);
+
+    process.exit(1);
   };
 }

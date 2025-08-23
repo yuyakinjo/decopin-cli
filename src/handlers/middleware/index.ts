@@ -209,3 +209,47 @@ export function createPerformanceMiddlewareHandler(): MiddlewareHandler {
     }
   };
 }
+/**
+ * ミドルウェアハンドラーを作成する
+ *
+ * @param factory - ミドルウェアファクトリー
+ * @param context - ファクトリーコンテキスト
+ * @returns ミドルウェアハンドラー
+ */
+export async function createMiddlewareHandler<
+  E extends Record<string, string | undefined> = typeof process.env,
+>(
+  factory: MiddlewareFactory<E>,
+  context: MiddlewareFactoryContext<E>
+): Promise<MiddlewareHandler> {
+  if (typeof factory === 'function') {
+    return await factory(context);
+  }
+  return factory;
+}
+
+/**
+ * ミドルウェアチェーンを実行する（シンプル版）
+ *
+ * @param middlewares - ミドルウェアハンドラーの配列
+ * @param context - ミドルウェアコンテキスト
+ * @param finalHandler - 最終的に実行する関数
+ * @returns 実行結果
+ */
+export async function executeMiddleware<T = any>(
+  middlewares: MiddlewareHandler[],
+  context: MiddlewareContext,
+  finalHandler: () => Promise<T> | T
+): Promise<T> {
+  let index = 0;
+
+  const next: NextFunction = async () => {
+    if (index < middlewares.length) {
+      const middleware = middlewares[index++];
+      await middleware(context, next);
+    }
+  };
+
+  await next();
+  return await finalHandler();
+}

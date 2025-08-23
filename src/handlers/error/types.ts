@@ -25,10 +25,9 @@ export type ErrorHandler<T = unknown, E = typeof process.env> =
 /**
  * エラーハンドラーのファクトリー関数型
  */
-export interface ErrorHandlerFactory<T = unknown, E = typeof process.env> {
-  (context: ErrorContext<T, E>): Promise<void> | void;
-  (): Promise<void> | void;
-}
+export type ErrorHandlerFactory<T = unknown, E = typeof process.env> =
+  | ((context: ErrorContext<T, E>) => Promise<void> | void)
+  | (() => Promise<void> | void);
 
 /**
  * エラー処理の結果

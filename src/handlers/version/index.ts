@@ -26,7 +26,7 @@ export async function processVersionHandler<E = typeof process.env>(
 
     return {
       handler,
-      context,
+      context: context as VersionContext,
       success: true,
     };
   } catch (error) {
@@ -35,7 +35,7 @@ export async function processVersionHandler<E = typeof process.env>(
 
     return {
       handler: defaultHandler,
-      context: options.context,
+      context: options.context as VersionContext,
       success: false,
       error,
     };
@@ -266,4 +266,30 @@ export function createVersionFromEnvironment(
       ...(env.NODE_ENV && { environment: env.NODE_ENV }),
     },
   };
+}
+/**
+ * バージョンハンドラーを作成する
+ *
+ * @param factory - バージョンハンドラーファクトリー
+ * @param context - 実行コンテキスト
+ * @returns バージョンハンドラー
+ */
+export async function createVersionHandler<E = typeof process.env>(
+  factory: VersionHandlerFactory<E>,
+  context: VersionContext<E>
+): Promise<VersionHandler> {
+  if (typeof factory === 'function') {
+    return await factory(context);
+  }
+  return factory;
+}
+
+/**
+ * バージョン情報をフォーマットする（シンプル版）
+ *
+ * @param handler - バージョンハンドラー
+ * @returns フォーマットされたバージョン文字列
+ */
+export function formatVersion(handler: VersionHandler): string {
+  return formatVersionOutput(handler, { verbose: true });
 }

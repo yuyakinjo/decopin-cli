@@ -1,20 +1,11 @@
 import type * as v from 'valibot';
 import type {
-  EnvFieldSchema,
-  EnvSchema,
-  EnvValidationResult,
-} from '../../handlers/env/types.js';
-import type {
   ManualFieldSchema,
   ManualSchema,
-  ParamMapping,
   ParamsHandler,
 } from '../../handlers/params/types.js';
 import type { ValidationError } from '../../types/errors.js';
-import type {
-  ValidationFunction,
-  ValidationResult,
-} from '../../types/validation.js';
+import type { ValidationFunction } from '../../types/validation.js';
 import { isBoolean, isFunction, isString } from '../guards/index.js';
 
 /**

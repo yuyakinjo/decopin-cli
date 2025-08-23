@@ -1,8 +1,5 @@
 import type { Context } from '../../types/context.js';
-import type {
-  ValidationError,
-  ValidationResult,
-} from '../../types/validation.js';
+import type { ValidationError } from '../../types/validation.js';
 
 // 環境変数ハンドラー固有の型定義をここに移動
 
