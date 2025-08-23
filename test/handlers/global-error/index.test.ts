@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach, type MockInstance } from 'vitest';
-import type { CLIError, ValidationError, ModuleError } from '../../src/types/errors.js';
+import type { CLIError, ValidationError, ModuleError } from '../../../src/types/errors.js';
 
 describe('Global Error Handler', () => {
   let consoleErrorSpy: MockInstance<typeof console.error>;
@@ -38,7 +38,7 @@ describe('Global Error Handler', () => {
       );
 
       // Import and execute the global error handler
-      const createHandler = (await import('../../app/global-error.js')).default;
+      const createHandler = (await import('../../../app/global-error.js')).default;
       const mockContext = { env: process.env, args: [], command: [], options: {} };
       const handler = createHandler(mockContext);
 
@@ -63,7 +63,7 @@ describe('Global Error Handler', () => {
         }
       );
 
-      const createHandler = (await import('../../app/global-error.js')).default;
+      const createHandler = (await import('../../../app/global-error.js')).default;
       const mockContext = { env: process.env, args: [], command: [], options: {} };
       const handler = createHandler(mockContext);
 
@@ -81,7 +81,7 @@ describe('Global Error Handler', () => {
         }
       );
 
-      const createHandler = (await import('../../app/global-error.js')).default;
+      const createHandler = (await import('../../../app/global-error.js')).default;
       const mockContext = { env: process.env, args: [], command: [], options: {} };
       const handler = createHandler(mockContext);
 
@@ -97,7 +97,7 @@ describe('Global Error Handler', () => {
     it('should handle standard Error instances', async () => {
       const runtimeError = new Error('Something went wrong');
 
-      const createHandler = (await import('../../app/global-error.js')).default;
+      const createHandler = (await import('../../../app/global-error.js')).default;
       const mockContext = { env: process.env, args: [], command: [], options: {} };
       const handler = createHandler(mockContext);
 
@@ -110,7 +110,7 @@ describe('Global Error Handler', () => {
     it('should handle unknown error types', async () => {
       const unknownError: unknown = 'String error';
 
-      const createHandler = (await import('../../app/global-error.js')).default;
+      const createHandler = (await import('../../../app/global-error.js')).default;
       const mockContext = { env: process.env, args: [], command: [], options: {} };
       const handler = createHandler(mockContext);
 
@@ -126,7 +126,7 @@ describe('Global Error Handler', () => {
       process.env.DEBUG = 'true';
       const error = new Error('Test error with stack');
 
-      const createHandler = (await import('../../app/global-error.js')).default;
+      const createHandler = (await import('../../../app/global-error.js')).default;
       const mockContext = { env: process.env, args: [], command: [], options: {} };
       const handler = createHandler(mockContext);
 
@@ -140,7 +140,7 @@ describe('Global Error Handler', () => {
       process.env.CLI_DEBUG = 'true';
       const error = new Error('Test error with stack');
 
-      const createHandler = (await import('../../app/global-error.js')).default;
+      const createHandler = (await import('../../../app/global-error.js')).default;
       const mockContext = { env: process.env, args: [], command: [], options: {} };
       const handler = createHandler(mockContext);
 
@@ -153,7 +153,7 @@ describe('Global Error Handler', () => {
     it('should not show stack trace when debug is not set', async () => {
       const error = new Error('Test error without debug');
 
-      const createHandler = (await import('../../app/global-error.js')).default;
+      const createHandler = (await import('../../../app/global-error.js')).default;
       const mockContext = { env: process.env, args: [], command: [], options: {} };
       const handler = createHandler(mockContext);
 
@@ -172,7 +172,7 @@ describe('Global Error Handler', () => {
         }
       );
 
-      const createHandler = (await import('../../app/global-error.js')).default;
+      const createHandler = (await import('../../../app/global-error.js')).default;
       const mockContext = { env: process.env, args: [], command: [], options: {} };
       const handler = createHandler(mockContext);
 
@@ -190,7 +190,7 @@ describe('Global Error Handler', () => {
         }
       );
 
-      const createHandler = (await import('../../app/global-error.js')).default;
+      const createHandler = (await import('../../../app/global-error.js')).default;
       const mockContext = { env: process.env, args: [], command: [], options: {} };
       const handler = createHandler(mockContext);
 
@@ -203,7 +203,7 @@ describe('Global Error Handler', () => {
     it('should show general tips for other errors', async () => {
       const error = new Error('General error');
 
-      const createHandler = (await import('../../app/global-error.js')).default;
+      const createHandler = (await import('../../../app/global-error.js')).default;
       const mockContext = { env: process.env, args: [], command: [], options: {} };
       const handler = createHandler(mockContext);
 
