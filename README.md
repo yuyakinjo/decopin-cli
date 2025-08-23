@@ -299,14 +299,14 @@ export default function createParams(): ParamsHandler {
 ```
 
 **Features:**
-- **Schema Options**: Manual schema (simple) or Valibot schema (advanced)
+- **Validation Options**: Valibot schema for powerful validation or simple mappings
 - **Argument Mapping**: Flexible mapping between positional and option arguments
 - **Default Values**: Default value configuration within schema
 - **Priority**: Positional arguments → Option arguments → Default values
 - **Type Safety**: Full TypeScript support with both patterns
 
 **When to use each pattern:**
-- **Manual Schema**: Best for simple CLIs, minimal dependencies, straightforward validation
+- **Mappings**: Best for simple CLIs with straightforward argument handling
 - **Valibot Schema**: Best for complex validation, advanced type transformations, nested objects
 
 ### `error.ts` - Custom Error Handling
