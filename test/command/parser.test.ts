@@ -33,7 +33,7 @@ describe('Command Parser - Extended Tests', () => {
     }];
 
     const definitions = await parseFiles(files);
-    
+
     expect(definitions).toHaveLength(1);
     expect(definitions[0].name).toBe('root');
     expect(definitions[0].metadata?.description).toBe('This is a test command that does something useful');
@@ -54,7 +54,7 @@ describe('Command Parser - Extended Tests', () => {
     }];
 
     const definitions = await parseFiles(files);
-    
+
     expect(definitions).toHaveLength(1);
     expect(definitions[0].name).toBe('root');
     expect(definitions[0].metadata).toBeUndefined();
@@ -63,7 +63,7 @@ describe('Command Parser - Extended Tests', () => {
   it('should handle deeply nested command paths', async () => {
     const deepPath = join(testDir, 'app', 'admin', 'users', 'permissions', 'command.ts');
     await mkdir(join(testDir, 'app', 'admin', 'users', 'permissions'), { recursive: true });
-    
+
     await writeFile(
       deepPath,
       `export default async function handler() {
@@ -77,7 +77,7 @@ describe('Command Parser - Extended Tests', () => {
     }];
 
     const definitions = await parseFiles(files);
-    
+
     expect(definitions).toHaveLength(1);
     expect(definitions[0].name).toBe('admin/users/permissions');
   });
@@ -89,7 +89,7 @@ describe('Command Parser - Extended Tests', () => {
       `const handler = async () => {
         console.log('arrow function');
       };
-      
+
       export default handler;`
     );
 
@@ -99,7 +99,7 @@ describe('Command Parser - Extended Tests', () => {
     }];
 
     const definitions = await parseFiles(files);
-    
+
     expect(definitions).toHaveLength(1);
     expect(definitions[0].name).toBe('root');
   });
@@ -111,7 +111,7 @@ describe('Command Parser - Extended Tests', () => {
       `export function helperFunction() {
         return 'helper';
       }
-      
+
       export default async function handler() {
         console.log('main handler');
       }`
@@ -123,14 +123,14 @@ describe('Command Parser - Extended Tests', () => {
     }];
 
     const definitions = await parseFiles(files);
-    
+
     expect(definitions).toHaveLength(1);
     expect(definitions[0].name).toBe('root');
   });
 
   it('should parse multiple files in parallel', async () => {
     const files: CommandFile[] = [];
-    
+
     // Create multiple command files
     for (let i = 0; i < 5; i++) {
       const cmdPath = join(testDir, `command${i}.ts`);
@@ -138,7 +138,7 @@ describe('Command Parser - Extended Tests', () => {
         cmdPath,
         `export default async function handler() { console.log('cmd${i}'); }`
       );
-      
+
       files.push({
         path: cmdPath,
         commandPath: `cmd${i}`
@@ -146,7 +146,7 @@ describe('Command Parser - Extended Tests', () => {
     }
 
     const definitions = await parseFiles(files);
-    
+
     expect(definitions).toHaveLength(5);
     definitions.forEach((def) => {
       expect(def.name).toBe('root');
