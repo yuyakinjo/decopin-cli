@@ -2,46 +2,46 @@
 inclusion: always
 ---
 
-# decopin-cli: TypeScript CLI Builder
+# decopin-cli: File-Based CLI Framework
 
-A Next.js App Router-inspired CLI framework using file-based routing with zero configuration and type-safe command contexts.
+TypeScript CLI framework inspired by Next.js App Router with file-based routing and type-safe command contexts.
 
-## Critical Architecture Rules
+## File-Based Routing
 
-### Factory Pattern (Mandatory)
+Commands map to filesystem paths in `app/`:
 
-ALL handlers MUST export default factory functions - never direct exports:
+- `app/hello/command.ts` → `cli hello`
+- `app/user/create/command.ts` → `cli user create`
+- `app/user/list/command.ts` → `cli user list`
+
+## Command Structure
+
+Each command directory contains:
+
+- `command.ts` - **REQUIRED**: Main handler (factory function)
+- `params.ts` - Optional: valibot validation schema
+- `help.ts` - Optional: Help documentation (factory function)
+- `error.ts` - Optional: Custom error handler (factory function)
+
+## Mandatory Factory Pattern
+
+ALL handlers MUST export default factory functions:
 
 ```typescript
-// ✅ Correct - Factory function
+// ✅ Required pattern
 export default function createHandler(context: CommandContext) {
   return async (params: ValidatedParams) => {
     // Implementation
   };
 }
 
-// ❌ Wrong - Direct export
-export const handler = async () => {}
+// ❌ Never use direct exports
+export const handler = async () => {} // Wrong
 ```
 
-### File-Based Routing Structure
+## Code Templates
 
-Commands map to filesystem paths in `app/` directory:
-
-- `app/hello/command.ts` → `cli hello`
-- `app/user/create/command.ts` → `cli user create`
-- `app/user/list/command.ts` → `cli user list`
-
-### Required Handler Files
-
-- `command.ts` - REQUIRED: Main command handler (factory function)
-- `params.ts` - Optional: valibot schema for parameter validation
-- `help.ts` - Optional: Help documentation (factory function)
-- `error.ts` - Optional: Custom error handler (factory function)
-
-## Code Generation Patterns
-
-### Command Handler Template
+### Command Handler
 
 ```typescript
 import type { CommandContext } from '../../../src/types/context.js';
@@ -54,7 +54,7 @@ export default function createHandler(context: CommandContext) {
 }
 ```
 
-### Parameter Validation Template
+### Parameter Schema
 
 ```typescript
 import { object, string, optional } from 'valibot';
@@ -65,7 +65,7 @@ export const schema = object({
 });
 ```
 
-### Help Documentation Template
+### Help Documentation
 
 ```typescript
 import type { HelpContext } from '../../../src/types/context.js';
@@ -81,40 +81,34 @@ export default function createHelp(context: HelpContext) {
 }
 ```
 
-## Validation & Type Safety Rules
+## Development Rules
 
-- Use **valibot** exclusively for schemas (never zod/joi)
-- All command handlers receive pre-validated contexts
-- No manual parameter validation in command handlers
-- TypeScript strict mode required
+### Validation & Type Safety
+
+- Use valibot exclusively for schemas
+- All handlers receive pre-validated contexts
+- No manual parameter validation in handlers
 - All handlers must be async functions
 
-## Performance Constraints
+### Import Conventions
 
-- Lazy loading: Commands loaded only when executed
-- Startup time: <100ms for simple commands
-- Use dynamic imports for command modules
-- Avoid importing all commands at startup
-
-## File Modification Rules
-
-**NEVER modify these auto-generated directories:**
-
-- `examples/` - Build output from `app/`
-- `dist/` - Compiled library
-- `app/generated/` - Generated types
-
-**Always work in:**
-
-- `src/` - Library source code
-- `app/` - CLI commands
-- `test/` - Test files
-
-## Import Path Conventions
-
-Use relative imports with `.js` extensions for internal modules:
+Use relative imports with `.js` extensions:
 
 ```typescript
 import type { CommandContext } from '../../../src/types/context.js';
 import { validateParams } from '../../utils/validation.js';
 ```
+
+### Performance Requirements
+
+- Commands loaded lazily (only when executed)
+- Use dynamic imports for command modules
+- CLI startup must be <100ms for simple commands
+
+## Command Development Workflow
+
+1. Create command directory in `app/` (e.g., `app/deploy/`)
+2. Add `command.ts` with factory function
+3. Add `params.ts` with valibot schema (if parameters needed)
+4. Add `help.ts` for documentation (optional)
+5. Test with `npm run dev`
