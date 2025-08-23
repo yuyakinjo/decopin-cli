@@ -1,143 +1,129 @@
-# Project Structure
+---
+inclusion: always
+---
 
-## Root Directory Layout
+# Project Structure & File Conventions
 
+## Critical File Placement Rules
+
+**NEVER modify files in these directories:**
+
+- `examples/` - Auto-generated build output, changes will be overwritten
+- `dist/` - Compiled library output
+- `app/generated/` - Auto-generated TypeScript types
+
+**Always work in these directories:**
+
+- `src/` - Library source code
+- `app/` - CLI application commands
+- `test/` - Test files
+
+## App Directory File-Based Routing
+
+Commands follow Next.js-style file-based routing in `app/`:
+
+```text
+app/
+├── command.ts              # Root command (optional)
+├── version.ts              # CLI version (required at root)
+├── env.ts                  # Environment schema (optional at root)
+├── middleware.ts           # Global middleware (optional at root)
+├── global-error.ts         # Global error handler (optional at root)
+├── hello/                  # Simple command → `cli hello`
+│   ├── command.ts          # Required: command handler
+│   ├── params.ts           # Optional: parameter validation
+│   └── help.ts             # Optional: help documentation
+└── user/                   # Command group → `cli user`
+    ├── create/             # Subcommand → `cli user create`
+    │   ├── command.ts      # Required
+    │   ├── params.ts       # Optional
+    │   ├── error.ts        # Optional: custom error handler
+    │   └── help.ts         # Optional
+    └── list/               # Subcommand → `cli user list`
+        ├── command.ts      # Required
+        ├── params.ts       # Optional
+        └── help.ts         # Optional
 ```
-├── src/                    # Library source code
-├── app/                    # Example CLI application
-├── test/                   # Test files
-├── examples/               # Generated CLI examples (build output)
-├── dist/                   # Compiled library output
-├── scripts/                # Build and development scripts
-└── docs/                   # Documentation
+
+## Handler File Patterns
+
+### Required Pattern: Factory Functions
+
+All handlers MUST export a default factory function:
+
+```typescript
+// command.ts
+export default function createHandler(context: CommandContext) {
+  return async (params: ValidatedParams) => {
+    // Command logic
+  };
+}
+
+// params.ts
+import { object, string } from 'valibot';
+export const schema = object({
+  name: string(),
+});
+
+// help.ts
+export default function createHelp(context: HelpContext) {
+  return {
+    description: "Command description",
+    examples: ["cli command --name value"]
+  };
+}
 ```
 
-## Source Code Organization (`src/`)
+### File Naming Conventions
 
-Handler-based folder structure aligned with the 8 core handlers:
+- Directories: kebab-case (`user-management/`, `api-client/`)
+- Handler files: exact names (`command.ts`, `params.ts`, `help.ts`, `error.ts`)
+- Never use index files in command directories
 
-```
+## Source Code Organization
+
+```text
 src/
 ├── cli.ts                  # CLI entry point
-├── index.ts                # Main library exports
-├── handlers/               # Handler implementations
-│   ├── command/            # Command handler
-│   │   ├── generator.ts    # CLI code generation
-│   │   ├── parser.ts       # Command metadata parsing
-│   │   └── types.ts        # Command-specific types
-│   ├── params/             # Parameter handler
-│   │   ├── validator.ts    # Parameter validation logic
-│   │   └── mapper.ts       # Argument mapping
-│   ├── help/               # Help handler
-│   │   ├── formatter.ts    # Help text formatting
-│   │   └── generator.ts    # Help content generation
-│   ├── error/              # Error handler
-│   │   ├── formatter.ts    # Error message formatting
-│   │   └── types.ts        # Error-specific types
-│   ├── env/                # Environment handler
-│   │   ├── validator.ts    # Environment validation
-│   │   └── generator.ts    # Type generation
-│   ├── version/            # Version handler
-│   │   └── formatter.ts    # Version display formatting
-│   ├── middleware/         # Middleware handler
-│   │   ├── executor.ts     # Middleware execution
-│   │   └── template.ts     # Middleware templates
-│   └── global-error/       # Global error handler
-│       └── formatter.ts    # Global error formatting
-├── core/                   # Core functionality
-│   ├── scanner.ts          # File system scanning
-│   ├── handler-executor.ts # Handler execution logic
-│   ├── performance.ts      # Performance monitoring
-│   └── types.ts            # Core types
-├── types/                  # Type definitions
-│   ├── context.ts          # Context types
-│   ├── handlers.ts         # Handler types
-│   ├── validation.ts       # Validation types
-│   ├── handler-registry.ts # Handler registry
-│   └── index.ts            # Type exports
+├── index.ts                # Library exports
+├── handlers/               # 8 core handlers (command, params, help, etc.)
+├── core/                   # Scanner, executor, performance
+├── types/                  # All TypeScript definitions
 ├── generator/              # Code generation utilities
-│   ├── env-types-generator.ts
-│   ├── lazy-cli-template.ts
-│   └── middleware-template.ts
-├── internal/               # Internal utilities
-│   └── guards/             # Type guards
-└── utils/                  # Utility functions
-    └── validation.ts
+├── internal/guards/        # Type guards and validation
+└── utils/                  # Shared utilities
 ```
 
-## App Directory Structure (`app/`)
+## Working with Commands
 
-File-based routing system inspired by Next.js:
+### Adding New Commands
 
-```
-app/
-├── version.ts              # CLI version configuration
-├── env.ts                  # Environment variable schema
-├── middleware.ts           # Global middleware (optional)
-├── global-error.ts         # Global error handler (optional)
-├── generated/              # Auto-generated types
-│   └── env-types.ts        # Generated environment types
-├── hello/                  # Simple command
-│   ├── command.ts          # Command handler
-│   ├── params.ts           # Parameter validation
-│   └── help.ts             # Help documentation
-└── user/                   # Nested command group
-    ├── create/             # user create subcommand
-    │   ├── command.ts
-    │   ├── params.ts
-    │   ├── error.ts        # Custom error handler
-    │   └── help.ts
-    └── list/               # user list subcommand
-        ├── command.ts
-        ├── params.ts
-        └── help.ts
-```
+1. Create directory in `app/` (e.g., `app/deploy/`)
+2. Add required `command.ts` with factory function
+3. Add optional `params.ts` with valibot schema
+4. Add optional `help.ts` for documentation
 
-## File Conventions
+### Modifying Existing Commands
 
-### Required Files
+- Edit files in `app/` directory only
+- Never modify generated files in `examples/`
+- Use `npm run dev` to test changes immediately
 
-- `command.ts`: Main command logic (required for each command)
+### Command Context Rules
 
-### Optional Files
+- Commands receive pre-validated contexts
+- No manual validation needed in command handlers
+- Context includes parsed params, environment, metadata
+- Always use async functions for command handlers
 
-- `params.ts`: Parameter validation and type definitions
-- `help.ts`: Command help and documentation
-- `error.ts`: Custom error handling
-- `version.ts`: CLI version info (root level only)
-- `env.ts`: Environment variable schema (root level only)
-- `middleware.ts`: Global middleware (root level only)
-- `global-error.ts`: Global error handler (root level only)
+## Test Organization
 
-### File Naming Rules
-
-- All handler files use kebab-case for directories
-- Handler files are always named exactly: `command.ts`, `params.ts`, `help.ts`, `error.ts`
-- Factory pattern: All handlers export a default factory function
-
-## Test Organization (`test/`)
-
-```
+```text
 test/
-├── command/                # Command parsing tests
+├── integration/            # End-to-end CLI tests
 ├── core/                   # Core functionality tests
-├── generator/              # Code generation tests
-├── integration/            # End-to-end integration tests
-├── internal/               # Internal utility tests
-├── types/                  # Type system tests
+├── command/                # Command parsing tests
 └── utils/                  # Utility function tests
 ```
 
-## Build Outputs
-
-- `dist/`: Compiled library (TypeScript → JavaScript)
-- `examples/`: Compiled app directory (for testing generated CLIs)
-- `app/generated/`: Auto-generated TypeScript types
-
-## Configuration Files
-
-- `tsconfig.json`: Main TypeScript config for library
-- `tsconfig.prod.json`: Production build config
-- `app/tsconfig.json`: App-specific TypeScript config
-- `biome.jsonc`: Linting and formatting rules
-- `bunfig.toml`: Bun runtime configuration
+When adding tests, match the source structure and use descriptive names.
