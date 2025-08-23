@@ -1,8 +1,8 @@
-import type { ErrorContext } from '../../../dist/types/index.js';
+import type { ErrorContext, ErrorHandler } from '../../../dist/types/index.js';
 import { isValidationError } from '../../../dist/types/index.js';
 import type { CustomErrorTestData } from './params.js';
 
-export default async function createErrorHandler(context: ErrorContext<CustomErrorTestData, typeof process.env>) {
+export default async function createErrorHandler(context: ErrorContext<CustomErrorTestData, typeof process.env>): Promise<ErrorHandler<CustomErrorTestData, typeof process.env>> {
   const { error } = context;
   console.error('❌ Custom error handler triggered');
 
@@ -20,4 +20,4 @@ export default async function createErrorHandler(context: ErrorContext<CustomErr
   }
 
   process.exit(1);
-}
+};

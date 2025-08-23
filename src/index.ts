@@ -14,12 +14,12 @@ import { Scanner } from './core/scanner.js';
 
 // Lazy-loaded modules
 // TODO: Replace with `import defer` when TypeScript 5.9 fully supports it
-// import defer * as commandModule from './command/index.js';
-let commandModule: typeof import('./command/index.js') | null = null;
+// import defer * as commandModule from './handlers/command/index.js';
+let commandModule: typeof import('./handlers/command/index.js') | null = null;
 
 async function getCommandModule() {
   if (!commandModule) {
-    commandModule = await import('./command/index.js');
+    commandModule = await import('./handlers/command/index.js');
   }
   return commandModule;
 }
@@ -252,13 +252,15 @@ export type {
   CLIStructure,
   CommandFile,
 } from './core/types.js';
-
+// Export command-specific types
+export type {
+  CommandMetadata,
+  ParsedCommand,
+} from './handlers/command/types.js';
 // Export from existing types for compatibility
 export type {
   CommandContext,
   CommandHandler,
-  CommandMetadata,
-  ParsedCommand,
   ValidationError,
   ValidationResult,
 } from './types/index.js';
@@ -325,20 +327,20 @@ async function copyValidationUtils(outputDir: string): Promise<void> {
       : __dirname;
 
     // Copy validation.js
-    const validationSource = join(baseDir, 'utils', 'validation.js');
+    const validationSource = join(baseDir, 'utils', 'validation', 'index.js');
     const validationDest = join(outputDir, 'validation.js');
 
     let content = await readFile(validationSource, 'utf-8');
     content = content.replace(
-      "import { isBoolean, isFunction, isString } from '../internal/guards/index.js';",
-      "import { isBoolean, isFunction, isString } from './internal/guards/index.js';"
+      "import { isBoolean, isFunction, isString } from '../utils/guards/index.js';",
+      "import { isBoolean, isFunction, isString } from './utils/guards/index.js';"
     );
     await writeFile(validationDest, content, 'utf-8');
 
-    // Copy internal/guards
-    const guardsSourceDir = join(baseDir, 'internal', 'guards');
-    const guardsDestDir = join(outputDir, 'internal', 'guards');
-    await mkdir(join(outputDir, 'internal'), { recursive: true });
+    // Copy utils/guards
+    const guardsSourceDir = join(baseDir, 'utils', 'guards');
+    const guardsDestDir = join(outputDir, 'utils', 'guards');
+    await mkdir(join(outputDir, 'utils'), { recursive: true });
     await mkdir(guardsDestDir, { recursive: true });
 
     const guardFiles = ['index.js', 'ast.js', 'validation.js'];

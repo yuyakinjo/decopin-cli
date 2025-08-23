@@ -1,8 +1,8 @@
-import type { ErrorContext } from '../../../dist/types/index.js';
+import type { ErrorContext, ErrorHandler } from '../../../dist/types/index.js';
 import { isValidationError } from '../../../dist/types/index.js';
 import type { CreateUserData } from './params.js';
 
-export default async function createErrorHandler(context: ErrorContext<CreateUserData, typeof process.env>) {
+export default async function createErrorHandler(context: ErrorContext<CreateUserData, typeof process.env>): Promise<ErrorHandler<CreateUserData, typeof process.env>> {
     const { error } = context;
     console.error('❌ User creation failed:');
 
@@ -26,4 +26,4 @@ export default async function createErrorHandler(context: ErrorContext<CreateUse
     console.error('  user create "John Doe" "john@example.com"');
 
     process.exit(1);
-}
+};

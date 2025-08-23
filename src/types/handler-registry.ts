@@ -51,6 +51,7 @@ export interface HandlerDefinition {
 
 /**
  * Handler registry array containing all handler definitions
+ * Updated to reflect the new handler-based architecture
  */
 export const HANDLER_REGISTRY: HandlerDefinition[] = [
   {
@@ -118,7 +119,7 @@ export const HANDLER_REGISTRY: HandlerDefinition[] = [
     name: 'command',
     fileName: 'command.ts',
     handlerType: 'CommandHandler',
-    contextType: 'CommandContext',
+    contextType: 'CommandContext', // Uses specific CommandContext
     executionOrder: EXECUTION_ORDER.COMMAND,
     scope: 'command',
     required: true,

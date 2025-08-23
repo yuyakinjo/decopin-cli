@@ -37,67 +37,12 @@ export interface ModuleError extends Error {
  */
 export type CLIError = Error | ValidationError | ModuleError;
 
-/**
- * Type guard for validation errors
- */
-export function isValidationError(error: unknown): error is ValidationError {
-  return (
-    error instanceof Error &&
-    'issues' in error &&
-    Array.isArray((error as ValidationError).issues)
-  );
-}
-
-/**
- * Type guard for module errors
- */
-export function isModuleError(error: unknown): error is ModuleError {
-  return (
-    error instanceof Error &&
-    'code' in error &&
-    typeof (error as ModuleError).code === 'string'
-  );
-}
-
-/**
- * Type guard for errors with stack traces
- */
-export function hasStackTrace(
-  error: unknown
-): error is Error & { stack: string } {
-  return error instanceof Error && typeof error.stack === 'string';
-}
-
-/**
- * Format error for display
- */
-export function formatError(error: CLIError): {
-  type: 'validation' | 'module' | 'runtime';
-  message: string;
-  details?: string[];
-} {
-  if (isValidationError(error)) {
-    return {
-      type: 'validation',
-      message: 'Validation error',
-      details: error.issues.map((issue) => {
-        const path = issue.path?.map((p) => p.key).join('.') || 'value';
-        return `${path}: ${issue.message}`;
-      }),
-    };
-  }
-
-  if (isModuleError(error)) {
-    return {
-      type: 'module',
-      message: 'Module loading error',
-      details: [error.message],
-    };
-  }
-
-  return {
-    type: 'runtime',
-    message: error.message || 'Unknown error',
-    details: [],
-  };
-}
+// Re-export error utilities from utils/errors
+export {
+  createModuleError,
+  createValidationError,
+  formatError,
+  hasStackTrace,
+  isModuleError,
+  isValidationError,
+} from '../utils/errors/index.js';

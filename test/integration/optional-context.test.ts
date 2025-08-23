@@ -10,7 +10,7 @@ describe('Unified Handler Context System', () => {
   let tempDir: string;
   let appDir: string;
   let outputDir: string;
-  
+
   // Helper to convert absolute path to relative path for CLI generation
   const toRelativePath = (absolutePath: string, baseDir: string): string => {
     // Convert absolute path to relative and change extension
@@ -22,7 +22,7 @@ describe('Unified Handler Context System', () => {
     tempDir = mkdtempSync(join(tmpdir(), 'decopin-optional-context-'));
     appDir = join(tempDir, 'app');
     outputDir = join(tempDir, 'dist');
-    
+
     // Create test directories
     execSync(`mkdir -p ${appDir}`);
     execSync(`mkdir -p ${outputDir}`);
@@ -37,13 +37,13 @@ describe('Unified Handler Context System', () => {
       // Create a command without context
       const commandDir = join(appDir, 'no-context');
       execSync(`mkdir -p ${commandDir}`);
-      
+
       writeFileSync(join(commandDir, 'command.ts'), `
 export default async function noContextCommand() {
   console.log('Command executed without context');
 }
       `);
-      
+
       // Add params to trigger the context checking logic
       writeFileSync(join(commandDir, 'params.ts'), `
 export default function createParams() {
@@ -159,7 +159,7 @@ export default async function paramsTestCommand(context: CommandContext<{ name: 
       // Generate and test
       const scanner = new Scanner(appDir);
       const structure = await scanner.scan();
-      
+
       // The generated code should check function length
       const generated = generateLazyCLI({
         commands: structure.commands.map(cmd => ({
@@ -218,7 +218,7 @@ export default async function paramsContextCommand(context: CommandContext<{ nam
       // Generate and test
       const scanner = new Scanner(appDir);
       const structure = await scanner.scan();
-      
+
       const generated = generateLazyCLI({
         commands: structure.commands.map(cmd => ({
           name: cmd.name,
@@ -264,7 +264,7 @@ export default async function errorTestCommand() {
       // Generate and test
       const scanner = new Scanner(appDir);
       const structure = await scanner.scan();
-      
+
       const generated = generateLazyCLI({
         commands: structure.commands.map(cmd => ({
           name: cmd.name,
@@ -311,7 +311,7 @@ export default async function errorContextCommand() {
       // Generate and test
       const scanner = new Scanner(appDir);
       const structure = await scanner.scan();
-      
+
       const generated = generateLazyCLI({
         commands: structure.commands.map(cmd => ({
           name: cmd.name,
@@ -343,7 +343,7 @@ export default async function errorContextCommand() {
       if (existsSync(middlewarePath)) {
         rmSync(middlewarePath);
       }
-      
+
       // Create middleware without context
       writeFileSync(middlewarePath, `
 export default function createMiddleware() {
@@ -357,7 +357,7 @@ export default function createMiddleware() {
       // Generate and test
       const scanner = new Scanner(appDir);
       const structure = await scanner.scan();
-      
+
       const generated = generateLazyCLI({
         commands: structure.commands.map(cmd => ({
           name: cmd.name,
@@ -388,7 +388,7 @@ export default function createMiddleware() {
       if (existsSync(middlewarePath)) {
         rmSync(middlewarePath);
       }
-      
+
       // Create middleware with context
       writeFileSync(middlewarePath, `
 import type { Context } from 'decopin-cli';
@@ -406,7 +406,7 @@ export default function createMiddleware(context: Context) {
       // The test verifies the pattern exists in generated code
       const scanner = new Scanner(appDir);
       const structure = await scanner.scan();
-      
+
       // Even if this specific file isn't picked up, we verify the pattern
       const generated = generateLazyCLI({
         commands: structure.commands.map(cmd => ({
@@ -440,7 +440,7 @@ export default function createMiddleware(context: Context) {
       if (existsSync(globalErrorPath)) {
         rmSync(globalErrorPath);
       }
-      
+
       // Create global error handler without context
       writeFileSync(globalErrorPath, `
 export default function createGlobalErrorHandler() {
@@ -454,7 +454,7 @@ export default function createGlobalErrorHandler() {
       // Generate and test
       const scanner = new Scanner(appDir);
       const structure = await scanner.scan();
-      
+
       const generated = generateLazyCLI({
         commands: structure.commands.map(cmd => ({
           name: cmd.name,
@@ -485,7 +485,7 @@ export default function createGlobalErrorHandler() {
       if (existsSync(globalErrorPath)) {
         rmSync(globalErrorPath);
       }
-      
+
       // Create global error handler with context
       writeFileSync(globalErrorPath, `
 import type { Context } from 'decopin-cli';
@@ -506,7 +506,7 @@ export default function createGlobalErrorHandler(context: Context) {
       // The test verifies the pattern exists in generated code
       const scanner = new Scanner(appDir);
       const structure = await scanner.scan();
-      
+
       const generated = generateLazyCLI({
         commands: structure.commands.map(cmd => ({
           name: cmd.name,
@@ -550,7 +550,7 @@ export default function createVersion() {
       // Generate and test
       const scanner = new Scanner(appDir);
       const structure = await scanner.scan();
-      
+
       const generated = generateLazyCLI({
         commands: structure.commands.map(cmd => ({
           name: cmd.name,
@@ -596,7 +596,7 @@ export default function createVersion(context: Context) {
       // The test verifies the pattern exists in generated code
       const scanner = new Scanner(appDir);
       const structure = await scanner.scan();
-      
+
       const generated = generateLazyCLI({
         commands: structure.commands.map(cmd => ({
           name: cmd.name,
@@ -640,7 +640,7 @@ export default function createEnv() {
       // Generate and test
       const scanner = new Scanner(appDir);
       const structure = await scanner.scan();
-      
+
       const generated = generateLazyCLI({
         commands: structure.commands.map(cmd => ({
           name: cmd.name,
@@ -674,7 +674,7 @@ import type { Context } from 'decopin-cli';
 export default function createEnv(context: Context) {
   // Could use context to determine env requirements
   const isCI = context.env.CI === 'true';
-  
+
   return {
     NODE_ENV: {
       type: 'string',
@@ -688,7 +688,7 @@ export default function createEnv(context: Context) {
       // The test verifies the pattern exists in generated code
       const scanner = new Scanner(appDir);
       const structure = await scanner.scan();
-      
+
       const generated = generateLazyCLI({
         commands: structure.commands.map(cmd => ({
           name: cmd.name,

@@ -1,3 +1,7 @@
+import type { GlobalErrorHandler } from '../handlers/global-error/types.js';
+import type { HelpHandler } from '../handlers/help/types.js';
+import type { ParamsHandler } from '../handlers/params/types.js';
+import type { VersionHandler } from '../handlers/version/types.js';
 import type { Context } from '../types/context.js';
 import {
   createHandlerRegistryMap,
@@ -7,12 +11,6 @@ import {
   type HandlerRegistryMap,
   type HandlerScope,
 } from '../types/handler-registry.js';
-import type {
-  GlobalErrorHandler,
-  HelpHandler,
-  VersionHandler,
-} from '../types/handlers.js';
-import type { ParamsHandler } from '../types/validation.js';
 
 /**
  * Handler information with loaded module

@@ -32,20 +32,20 @@ mkdir -p "$RESULTS_DIR"
 run_benchmark() {
     local label="$1"
     local output_file="$2"
-    
+
     echo "📊 Running benchmark: $label"
-    
+
     if [ ! -f "$DIST_DIR/cli.js" ]; then
         echo "⚠️  CLI not built. Building now..."
         bun run build
     fi
-    
+
     # Run the benchmark
     bunx tsx "$BENCHMARK_SCRIPT" "$output_file" || {
         echo "❌ Benchmark failed for $label"
         return 1
     }
-    
+
     echo "✅ Benchmark completed: $label"
     echo "   Results saved to: $output_file"
 }
@@ -55,14 +55,14 @@ compare_benchmarks() {
     local before_file="$1"
     local after_file="$2"
     local comparison_file="$3"
-    
+
     echo "📈 Comparing benchmarks..."
-    
+
     bunx tsx "$BENCHMARK_SCRIPT" --compare --before "$before_file" --after "$after_file" || {
         echo "❌ Benchmark comparison failed"
         return 1
     }
-    
+
     echo "✅ Comparison completed"
     echo "   Results saved to: $comparison_file"
 }
@@ -73,46 +73,46 @@ case "${1:-help}" in
         echo "Running baseline benchmark (before optimization)..."
         run_benchmark "Before Optimization" "$RESULTS_DIR/benchmark-before.json"
         ;;
-    
+
     "after")
         echo "Running optimized benchmark (after optimization)..."
         run_benchmark "After Optimization" "$RESULTS_DIR/benchmark-after.json"
         ;;
-    
+
     "compare")
         if [ ! -f "$RESULTS_DIR/benchmark-before.json" ] || [ ! -f "$RESULTS_DIR/benchmark-after.json" ]; then
             echo "❌ Both before and after benchmark files are required for comparison."
             echo "   Run './benchmark.sh before' and './benchmark.sh after' first."
             exit 1
         fi
-        
+
         compare_benchmarks \
             "$RESULTS_DIR/benchmark-before.json" \
             "$RESULTS_DIR/benchmark-after.json" \
             "$RESULTS_DIR/benchmark-comparison.json"
         ;;
-    
+
     "full")
         echo "Running full benchmark suite..."
-        
+
         echo "🔄 Step 1: Building current version..."
         bun run build
-        
+
         echo "🔄 Step 2: Running baseline benchmark..."
         run_benchmark "Before Optimization" "$RESULTS_DIR/benchmark-before.json"
-        
+
         echo "🔄 Step 3: Applying optimizations..."
         # Here you would typically switch to optimized code
         echo "   Note: Apply optimizations manually and run './benchmark.sh after'"
-        
+
         ;;
-    
+
     "clean")
         echo "🧹 Cleaning benchmark results..."
         rm -rf "$RESULTS_DIR"
         echo "✅ Benchmark results cleaned"
         ;;
-    
+
     "list")
         echo "📋 Available benchmark results:"
         if [ -d "$RESULTS_DIR" ]; then
@@ -121,7 +121,7 @@ case "${1:-help}" in
             echo "   No results directory found"
         fi
         ;;
-    
+
     "help"|*)
         echo "Usage: $0 [command]"
         echo ""

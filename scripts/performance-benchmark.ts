@@ -84,9 +84,9 @@ class PerformanceBenchmark {
 
     for (let i = 0; i < this.iterations; i++) {
       const startTime = performance.now();
-      
+
       const result = await new Promise<BenchmarkResult>((resolve, reject) => {
-        const args = command === 'root' ? [] : command.split('/');
+        const args = this.getCommandArgs(command);
         const child = spawn('node', [this.cliPath, ...args], {
           stdio: ['pipe', 'pipe', 'pipe'],
           env: { ...process.env, NODE_ENV: 'production' }
@@ -108,7 +108,7 @@ class PerformanceBenchmark {
           const executionTime = endTime - startTime;
 
           // スキップすべきエラーコマンドの判定
-          const isExpectedError = stderr.includes('This is an expected error') || 
+          const isExpectedError = stderr.includes('This is an expected error') ||
                                  stderr.includes('error') ||
                                  command.includes('error');
 
@@ -120,7 +120,7 @@ class PerformanceBenchmark {
           // 実際のメモリ使用量を推定
           const baseMemory = 15; // 基本メモリ使用量(MB)
           const commandComplexity = args.length + (stdout.length / 100); // 複雑度
-          
+
           const memoryUsage = {
             rss: baseMemory + Math.random() * 20 + commandComplexity,
             heapUsed: baseMemory * 0.6 + Math.random() * 15 + commandComplexity * 0.5,
@@ -138,7 +138,7 @@ class PerformanceBenchmark {
         });
 
         child.on('error', reject);
-        
+
         // タイムアウト設定（10秒）
         setTimeout(() => {
           child.kill();
@@ -267,6 +267,35 @@ class PerformanceBenchmark {
       console.log(`  Execution: ${result.executionTime.toFixed(2)}ms`);
       console.log(`  Memory: ${result.memoryUsage.heapUsed.toFixed(2)}MB`);
       console.log(`  Startup: ${result.startupTime.toFixed(2)}ms`);
+    }
+  }
+
+  /**
+   * コマンドに応じて適切な引数を生成
+   */
+  private getCommandArgs(command: string): string[] {
+    const baseArgs = command === 'root' ? [] : command.split('/');
+
+    // 特定のコマンドに必要な引数を追加
+    switch (command) {
+      case 'test/schema-only':
+        return [...baseArgs, 'testtest@example.com', 'Testtest1'];
+      
+      case 'user/create':
+        return [...baseArgs, '--name', 'Test User', '--email', 'test@example.com'];
+      
+      case 'hello':
+        return [...baseArgs, '--name', 'Benchmark'];
+      
+      case 'context-demo':
+        return [...baseArgs, '--name', 'Benchmark User'];
+      
+      case 'test/mappings-only':
+        // このコマンドは引数が複雑なので、デフォルト値で試す
+        return [...baseArgs, 'test@example.com', 'password123', '25'];
+      
+      default:
+        return baseArgs;
     }
   }
 

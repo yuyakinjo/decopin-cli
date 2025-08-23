@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'bun:test';
-import { parseEnvironmentVariables, createTypeSafeEnv } from '../../src/utils/validation.js';
-import type { EnvSchema } from '../../src/types/validation.js';
-import { SCHEMA_TYPE } from '../../src/types/validation.js';
+import { parseEnvironmentVariables, createTypeSafeEnv } from '../../src/utils/validation/index.js';
+import type { EnvSchema } from '../../src/types/index.js';
+import { SCHEMA_TYPE } from '../../src/types/index.js';
 
 describe('Environment Variable Validation', () => {
   describe('parseEnvironmentVariables', () => {

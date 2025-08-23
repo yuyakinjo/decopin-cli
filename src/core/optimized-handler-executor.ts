@@ -39,10 +39,6 @@ export class OptimizedHandlerExecutor {
   private deferredHandlers = new Map<string, DeferredHandler>();
   private loadPromises = new Map<string, Promise<HandlerFunction>>();
 
-  constructor() {
-    // No need to initialize registry here
-  }
-
   /**
    * Register a handler with deferred loading
    */

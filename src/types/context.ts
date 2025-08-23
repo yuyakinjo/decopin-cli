@@ -31,14 +31,7 @@ export interface CommandContext<T = unknown, E = unknown>
   env: E extends unknown ? E : Record<string, unknown>;
 }
 
-// エラーハンドラー用のコンテキスト
-export interface ErrorContext<T = unknown, E = unknown>
-  extends CommandContext<T, E> {
-  /** 発生したエラー */
-  error: unknown;
-}
-
-// 特化された型エイリアス
+// 共通コンテキスト型エイリアス
 export type Context<E = typeof process.env> = BaseCommandContext & {
   env: E;
 };
@@ -49,40 +42,3 @@ export type Context<E = typeof process.env> = BaseCommandContext & {
 export type CommandHandler<T = never, E = never> =
   | ((context: CommandContext<T, E>) => Promise<void> | void)
   | (() => Promise<void> | void);
-
-/**
- * グローバルエラーハンドラー用のコンテキスト
- * ファクトリー関数で使用
- */
-export type GlobalErrorContext<E = typeof process.env> = Context<E>;
-
-/**
- * 環境変数ハンドラー用のコンテキスト
- * ファクトリー関数で使用
- */
-export type EnvContext<E = typeof process.env> = Context<E>;
-
-/**
- * バージョンハンドラー用のコンテキスト
- * ファクトリー関数で使用
- */
-export type VersionContext<E = typeof process.env> = Context<E>;
-
-/**
- * ヘルプハンドラー用のコンテキスト
- * ファクトリー関数で使用
- */
-export type HelpContext<E = typeof process.env> = Context<E>;
-
-/**
- * パラメータハンドラー用のコンテキスト
- * ファクトリー関数で使用
- */
-export type ParamsContext<E = typeof process.env> = Context<E>;
-
-/**
- * ミドルウェア用のコンテキスト
- * 注: 実際のMiddlewareContext型はmiddleware.tsで定義されており、
- * これはファクトリー関数用のContext型エイリアスです
- */
-export type MiddlewareFactoryContext<E = typeof process.env> = Context<E>;
