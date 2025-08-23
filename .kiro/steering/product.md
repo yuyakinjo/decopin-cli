@@ -2,78 +2,119 @@
 inclusion: always
 ---
 
-# Product Overview
+# decopin-cli: TypeScript CLI Builder
 
-**decopin-cli** is a TypeScript-first CLI builder inspired by Next.js App Router's file-based routing system. It enables developers to create powerful command-line interfaces with zero configuration using familiar file-based conventions and pre-validated, type-safe command contexts.
+A Next.js App Router-inspired CLI framework using file-based routing with zero configuration and type-safe command contexts.
 
-## Core Principles
+## Critical Architecture Rules
 
-- **Convention over Configuration**: Follow Next.js-style file-based routing patterns
-- **Type Safety First**: All command contexts must be fully typed and validated
-- **Lazy Loading**: Only load modules when commands are executed
-- **Zero Boilerplate**: Minimize setup code through intelligent defaults
-- **Factory Pattern**: All handlers use factory functions for dependency injection
+### Factory Pattern (Mandatory)
 
-## File-Based Command Structure
-
-Commands follow a strict file-based routing convention in the `app/` directory:
-
-- `command.ts` - Required handler that exports default factory function
-- `params.ts` - Optional parameter validation using valibot schemas
-- `help.ts` - Optional help documentation factory
-- `error.ts` - Optional custom error handling factory
-- Nested folders create command hierarchies (e.g., `user/create/` → `cli user create`)
-
-## Development Patterns
-
-### Command Handler Pattern
+ALL handlers MUST export default factory functions - never direct exports:
 
 ```typescript
-// Always export default factory function
+// ✅ Correct - Factory function
 export default function createHandler(context: CommandContext) {
   return async (params: ValidatedParams) => {
-    // Command logic here
+    // Implementation
+  };
+}
+
+// ❌ Wrong - Direct export
+export const handler = async () => {}
+```
+
+### File-Based Routing Structure
+
+Commands map to filesystem paths in `app/` directory:
+
+- `app/hello/command.ts` → `cli hello`
+- `app/user/create/command.ts` → `cli user create`
+- `app/user/list/command.ts` → `cli user list`
+
+### Required Handler Files
+
+- `command.ts` - REQUIRED: Main command handler (factory function)
+- `params.ts` - Optional: valibot schema for parameter validation
+- `help.ts` - Optional: Help documentation (factory function)
+- `error.ts` - Optional: Custom error handler (factory function)
+
+## Code Generation Patterns
+
+### Command Handler Template
+
+```typescript
+import type { CommandContext } from '../../../src/types/context.js';
+
+export default function createHandler(context: CommandContext) {
+  return async (params: any) => {
+    // Command implementation
+    console.log('Command executed');
   };
 }
 ```
 
-### Parameter Validation Pattern
+### Parameter Validation Template
 
 ```typescript
-// Use valibot for schema validation
-import { object, string } from 'valibot';
+import { object, string, optional } from 'valibot';
 
 export const schema = object({
   name: string(),
-  // ... other params
+  description: optional(string()),
 });
 ```
 
-### Context-First Design
+### Help Documentation Template
 
-- Commands receive pre-validated, type-safe contexts
-- No manual validation needed in command handlers
-- Context includes parsed params, environment, and metadata
+```typescript
+import type { HelpContext } from '../../../src/types/context.js';
 
-## Performance Requirements
+export default function createHelp(context: HelpContext) {
+  return {
+    description: 'Command description',
+    examples: [
+      'cli command --name value',
+      'cli command --name value --description "text"'
+    ]
+  };
+}
+```
 
-- **Startup Time**: CLI must load in <100ms for simple commands
-- **Memory Usage**: Lazy loading prevents loading unused command modules
-- **Build Time**: TypeScript compilation should be incremental and fast
+## Validation & Type Safety Rules
 
-## Code Quality Standards
-
+- Use **valibot** exclusively for schemas (never zod/joi)
+- All command handlers receive pre-validated contexts
+- No manual parameter validation in command handlers
+- TypeScript strict mode required
 - All handlers must be async functions
-- Use TypeScript strict mode with full type coverage
-- Follow factory pattern for all handler exports
-- Prefer composition over inheritance
-- Use valibot for all validation schemas
 
-## Target Developer Experience
+## Performance Constraints
 
-Developers should be able to:
+- Lazy loading: Commands loaded only when executed
+- Startup time: <100ms for simple commands
+- Use dynamic imports for command modules
+- Avoid importing all commands at startup
 
-1. Create new commands by adding files to `app/` directory
-2. Get full TypeScript IntelliSense for command contexts
-3. Run commands immediately without build steps during development
-4. Deploy CLIs as single executable files
+## File Modification Rules
+
+**NEVER modify these auto-generated directories:**
+
+- `examples/` - Build output from `app/`
+- `dist/` - Compiled library
+- `app/generated/` - Generated types
+
+**Always work in:**
+
+- `src/` - Library source code
+- `app/` - CLI commands
+- `test/` - Test files
+
+## Import Path Conventions
+
+Use relative imports with `.js` extensions for internal modules:
+
+```typescript
+import type { CommandContext } from '../../../src/types/context.js';
+import { validateParams } from '../../utils/validation.js';
+```

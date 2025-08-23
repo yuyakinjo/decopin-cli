@@ -4,66 +4,52 @@ inclusion: always
 
 # Technology Stack & Development Guidelines
 
-## Critical Technology Constraints
+## Technology Constraints (Non-Negotiable)
 
 - **Runtime**: Node.js 18+ with ESM modules only
-- **Package Manager**: Bun (never use npm/yarn for installation)
+- **Package Manager**: Bun (never npm/yarn for installation)
 - **Build**: TypeScript compiler (tsc) - no bundlers
-- **Validation**: valibot for all schemas (never use zod/joi)
-- **Code Quality**: Biome for linting/formatting (never use ESLint/Prettier)
+- **Validation**: valibot exclusively (never zod/joi)
+- **Code Quality**: Biome for linting/formatting (never ESLint/Prettier)
 
-## Required Dependencies
+## Dependency Rules
 
-When adding dependencies, prefer:
+- Prefer Node.js built-ins (fs, path, process) over external packages
+- Use valibot for all validation and type inference
+- Minimize external dependencies
 
-- **valibot** for validation and type inference
-- **Node.js built-ins** (fs, path, process) for system operations
-- Avoid external dependencies unless absolutely necessary
-
-## Development Commands
-
-Use these exact commands for development tasks:
+## Essential Commands
 
 ```bash
-# Development with hot reload
-npm run dev
-
-# Build library and examples
-npm run build
-
-# Generate environment types (required after env changes)
-npm run generate:env-types
+# Development
+npm run dev                 # Hot reload development
+npm run build              # Build library and examples
+npm run generate:env-types # Generate env types (required after env changes)
 
 # Testing
-bun test                    # All tests
-npm run test:integration    # Integration only
-bun test --coverage        # With coverage
+bun test                   # All tests
+bun test --coverage       # With coverage
 
-# Code quality
-npm run lint               # Biome linting and formatting
-npm run clean             # Clean build artifacts
-
-# Performance
-npm run benchmark         # Run benchmarks
-npm run benchmark:compare # Compare performance
+# Quality
+npm run lint              # Biome linting and formatting
 ```
 
-## Architecture Requirements
+## Mandatory Architecture Patterns
 
-### Factory Pattern (Mandatory)
+### Factory Functions Only
 
-All handlers MUST export default factory functions:
+ALL handlers MUST export default factory functions:
 
 ```typescript
-// Correct pattern
+// ✅ Required pattern
 export default function createHandler(context: CommandContext) {
   return async (params: ValidatedParams) => {
     // Implementation
   };
 }
 
-// Never export direct functions
-export const handler = async () => {} // ❌ Wrong
+// ❌ Never use direct exports
+export const handler = async () => {} // Wrong
 ```
 
 ### Lazy Loading (Performance Critical)
@@ -72,30 +58,29 @@ export const handler = async () => {} // ❌ Wrong
 - Never import all commands at startup
 - Defer expensive operations until needed
 
-### TypeScript Configuration
+## File System Rules
 
-- Strict mode enabled (never disable)
-- ESNext target with ESM modules
-- Incremental compilation for performance
-- Source maps in development builds
+**NEVER modify auto-generated directories:**
 
-## Build Output Rules
-
-**Never modify these directories:**
-
-- `examples/` - Auto-generated from `app/`
+- `examples/` - Build output from `app/`
 - `dist/` - Compiled library output
 - `app/generated/` - Generated TypeScript types
 
 **Always work in:**
 
 - `src/` - Library source code
-- `app/` - CLI application commands
+- `app/` - CLI commands
 - `test/` - Test files
+
+## TypeScript Requirements
+
+- Strict mode enabled (never disable)
+- ESNext target with ESM modules
+- Use `.js` extensions in imports for ESM compatibility
+- Incremental compilation for performance
 
 ## Performance Standards
 
 - CLI startup: <100ms for simple commands
 - Memory: Lazy load to prevent loading unused modules
-- Build: Use incremental TypeScript compilation
 - Bundle size: Minimize dependencies, prefer Node.js built-ins

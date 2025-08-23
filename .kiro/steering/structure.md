@@ -6,124 +6,85 @@ inclusion: always
 
 ## Critical File Placement Rules
 
-**NEVER modify files in these directories:**
+**NEVER modify auto-generated directories:**
 
-- `examples/` - Auto-generated build output, changes will be overwritten
+- `examples/` - Build output from `app/`, changes overwritten
 - `dist/` - Compiled library output
-- `app/generated/` - Auto-generated TypeScript types
+- `app/generated/` - Generated TypeScript types
 
-**Always work in these directories:**
+**Always work in:**
 
 - `src/` - Library source code
-- `app/` - CLI application commands
+- `app/` - CLI commands (file-based routing)
 - `test/` - Test files
 
-## App Directory File-Based Routing
+## File-Based Routing Structure
 
-Commands follow Next.js-style file-based routing in `app/`:
+Commands map to filesystem paths in `app/`:
 
 ```text
-app/
-├── command.ts              # Root command (optional)
-├── version.ts              # CLI version (required at root)
-├── env.ts                  # Environment schema (optional at root)
-├── middleware.ts           # Global middleware (optional at root)
-├── global-error.ts         # Global error handler (optional at root)
-├── hello/                  # Simple command → `cli hello`
-│   ├── command.ts          # Required: command handler
-│   ├── params.ts           # Optional: parameter validation
-│   └── help.ts             # Optional: help documentation
-└── user/                   # Command group → `cli user`
-    ├── create/             # Subcommand → `cli user create`
-    │   ├── command.ts      # Required
-    │   ├── params.ts       # Optional
-    │   ├── error.ts        # Optional: custom error handler
-    │   └── help.ts         # Optional
-    └── list/               # Subcommand → `cli user list`
-        ├── command.ts      # Required
-        ├── params.ts       # Optional
-        └── help.ts         # Optional
+app/hello/command.ts        → cli hello
+app/user/create/command.ts  → cli user create
+app/user/list/command.ts    → cli user list
 ```
 
-## Handler File Patterns
+### Handler Files (per command directory)
 
-### Required Pattern: Factory Functions
+- `command.ts` - **REQUIRED**: Main handler (factory function)
+- `params.ts` - Optional: valibot validation schema
+- `help.ts` - Optional: Help documentation (factory function)
+- `error.ts` - Optional: Custom error handler (factory function)
 
-All handlers MUST export a default factory function:
+### Root-Level Files (app/)
+
+- `version.ts` - **REQUIRED**: CLI version
+- `env.ts` - Optional: Environment schema
+- `middleware.ts` - Optional: Global middleware
+- `global-error.ts` - Optional: Global error handler
+
+## Mandatory Factory Pattern
+
+ALL handlers MUST export default factory functions:
 
 ```typescript
-// command.ts
+// ✅ Correct - Factory function
 export default function createHandler(context: CommandContext) {
   return async (params: ValidatedParams) => {
-    // Command logic
+    // Implementation
   };
 }
 
-// params.ts
-import { object, string } from 'valibot';
-export const schema = object({
-  name: string(),
-});
-
-// help.ts
-export default function createHelp(context: HelpContext) {
-  return {
-    description: "Command description",
-    examples: ["cli command --name value"]
-  };
-}
+// ❌ Wrong - Direct export
+export const handler = async () => {}
 ```
 
-### File Naming Conventions
+## File Naming Rules
 
-- Directories: kebab-case (`user-management/`, `api-client/`)
+- Command directories: kebab-case (`user-management/`)
 - Handler files: exact names (`command.ts`, `params.ts`, `help.ts`, `error.ts`)
-- Never use index files in command directories
+- Never use `index.ts` files in command directories
+- Use `.js` extensions in imports for ESM compatibility
 
-## Source Code Organization
+## Import Path Conventions
 
-```text
-src/
-├── cli.ts                  # CLI entry point
-├── index.ts                # Library exports
-├── handlers/               # 8 core handlers (command, params, help, etc.)
-├── core/                   # Scanner, executor, performance
-├── types/                  # All TypeScript definitions
-├── generator/              # Code generation utilities
-├── internal/guards/        # Type guards and validation
-└── utils/                  # Shared utilities
+```typescript
+// Relative imports with .js extensions
+import type { CommandContext } from '../../../src/types/context.js';
+import { object, string } from 'valibot';
 ```
 
-## Working with Commands
+## Command Development Workflow
 
-### Adding New Commands
+1. Create command directory in `app/` (e.g., `app/deploy/`)
+2. Add `command.ts` with factory function
+3. Add `params.ts` with valibot schema (if parameters needed)
+4. Add `help.ts` for documentation (optional)
+5. Test with `npm run dev`
 
-1. Create directory in `app/` (e.g., `app/deploy/`)
-2. Add required `command.ts` with factory function
-3. Add optional `params.ts` with valibot schema
-4. Add optional `help.ts` for documentation
+## Key Architecture Rules
 
-### Modifying Existing Commands
-
-- Edit files in `app/` directory only
-- Never modify generated files in `examples/`
-- Use `npm run dev` to test changes immediately
-
-### Command Context Rules
-
-- Commands receive pre-validated contexts
-- No manual validation needed in command handlers
-- Context includes parsed params, environment, metadata
-- Always use async functions for command handlers
-
-## Test Organization
-
-```text
-test/
-├── integration/            # End-to-end CLI tests
-├── core/                   # Core functionality tests
-├── command/                # Command parsing tests
-└── utils/                  # Utility function tests
-```
-
-When adding tests, match the source structure and use descriptive names.
+- Commands receive pre-validated contexts - no manual validation needed
+- All command handlers must be async functions
+- Use valibot exclusively for parameter schemas
+- Lazy loading - commands loaded only when executed
+- TypeScript strict mode required
