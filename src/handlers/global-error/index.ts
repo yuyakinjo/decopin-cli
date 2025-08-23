@@ -122,7 +122,7 @@ export const globalErrorTypeGuards: GlobalErrorTypeGuards = {
       typeof error === 'object' &&
       error !== null &&
       'issues' in error &&
-      Array.isArray((error as any).issues)
+      Array.isArray((error as { issues?: unknown[] }).issues)
     );
   },
 
@@ -130,7 +130,7 @@ export const globalErrorTypeGuards: GlobalErrorTypeGuards = {
     return (
       error instanceof Error &&
       'code' in error &&
-      typeof (error as any).code === 'string'
+      typeof (error as { code?: unknown }).code === 'string'
     );
   },
 
@@ -139,7 +139,8 @@ export const globalErrorTypeGuards: GlobalErrorTypeGuards = {
       error instanceof Error &&
       (error.message.includes('Cannot find module') ||
         error.message.includes('MODULE_NOT_FOUND') ||
-        ('code' in error && (error as any).code === 'MODULE_NOT_FOUND'))
+        ('code' in error &&
+          (error as { code?: unknown }).code === 'MODULE_NOT_FOUND'))
     );
   },
 
@@ -196,11 +197,13 @@ export function formatGlobalErrorOutput(
     const validationIcon = useColors ? '📋' : '[VALIDATION]';
     lines.push(`${validationIcon} Validation Error:`);
 
-    const validationError = error as any;
+    const validationError = error as {
+      issues: Array<{ path?: Array<{ key?: string }>; message: string }>;
+    };
     for (const issue of validationError.issues) {
       const path =
         issue.path && issue.path.length > 0
-          ? issue.path.map((p: any) => p.key).join('.')
+          ? issue.path.map((p: { key?: string }) => p.key).join('.')
           : 'value';
       lines.push(`  • ${path}: ${issue.message}`);
     }

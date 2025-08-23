@@ -27,7 +27,7 @@ export async function processHelpHandler(
       context,
       success: true,
     };
-  } catch (error) {
+  } catch (_error) {
     // エラーが発生した場合はデフォルトのヘルプハンドラーを返す
     const defaultHandler: HelpHandler = {
       name: options.commandPath,

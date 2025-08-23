@@ -111,7 +111,7 @@ export const errorTypeGuards: ErrorTypeGuards = {
       typeof error === 'object' &&
       error !== null &&
       'issues' in error &&
-      Array.isArray((error as any).issues)
+      Array.isArray((error as { issues?: unknown[] }).issues)
     );
   },
 
@@ -119,7 +119,7 @@ export const errorTypeGuards: ErrorTypeGuards = {
     return (
       error instanceof Error &&
       'code' in error &&
-      typeof (error as any).code === 'string'
+      typeof (error as { code?: unknown }).code === 'string'
     );
   },
 
@@ -142,12 +142,14 @@ export function formatErrorOutput(error: unknown, commandPath: string): string {
   lines.push('');
 
   if (errorTypeGuards.isValidationError(error)) {
-    const validationError = error as any;
+    const validationError = error as {
+      issues: Array<{ path?: Array<{ key?: string }>; message: string }>;
+    };
     lines.push('Validation errors:');
     for (const issue of validationError.issues) {
       const field =
         issue.path && issue.path.length > 0
-          ? issue.path.map((p: any) => p.key).join('.')
+          ? issue.path.map((p: { key?: string }) => p.key).join('.')
           : 'unknown';
       lines.push(`  • ${field}: ${issue.message}`);
     }
@@ -213,7 +215,10 @@ export function createErrorHandler(
  */
 export function formatError(error: unknown): string {
   if (errorTypeGuards.isValidationError(error)) {
-    const validationError = error as any;
+    const validationError = error as {
+      message?: string;
+      issues: Array<{ path?: Array<{ key?: string }>; message: string }>;
+    };
     const lines: string[] = [];
 
     lines.push(`❌ Error in command 'unknown':`);
@@ -229,7 +234,7 @@ export function formatError(error: unknown): string {
     for (const issue of validationError.issues) {
       const field =
         issue.path && issue.path.length > 0
-          ? issue.path.map((p: any) => p.key || p).join('.')
+          ? issue.path.map((p: { key?: string }) => p.key || p).join('.')
           : '';
       lines.push(`  • ${field}: ${issue.message}`);
     }

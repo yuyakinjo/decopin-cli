@@ -79,7 +79,7 @@ export async function parseCommandDefinitions(
         hasHelp: false, // 実際の実装では help.ts の存在をチェック
         hasError: false, // 実際の実装では error.ts の存在をチェック
       });
-    } catch (error) {}
+    } catch (_error) {}
   }
 
   return definitions;
@@ -115,12 +115,21 @@ export function createCommandHandler<T = unknown>(
 ): import('./types.js').CommandHandlerInterface {
   return {
     execute: async (context, args, options) => {
-      const commandContext = {
-        ...context,
-        args,
-        options,
-        command: definition.name.split(' '),
-      };
+      // Ensure context is an object with default values for missing properties
+      const baseContext =
+        typeof context === 'object' && context !== null ? context : {};
+      const commandContext = Object.assign(
+        {
+          args,
+          options,
+          params: {},
+          showHelp: () => {},
+          validatedData: {} as T,
+          env: process.env,
+          command: definition.name.split(' '),
+        },
+        baseContext
+      ) as import('../../types/context.js').CommandContext<T, never>;
       await definition.handler(commandContext);
     },
   };

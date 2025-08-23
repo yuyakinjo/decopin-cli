@@ -44,8 +44,7 @@ export function formatErrorForConsole(error: CLIError): string {
   let output = `❌ ${formatted.message}`;
 
   if (formatted.details && formatted.details.length > 0) {
-    output +=
-      '\n' + formatted.details.map((detail) => `  • ${detail}`).join('\n');
+    output += `\n${formatted.details.map((detail) => `  • ${detail}`).join('\n')}`;
   }
 
   return output;

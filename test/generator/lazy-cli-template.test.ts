@@ -185,10 +185,10 @@ describe('Lazy CLI Template - Unified Handlers', () => {
 
     const result = generateLazyCLI(options);
 
-    // Check unified handler imports
-    expect(result).toContain("const commandModule = await import('./app/hello/command.ts');");
-    expect(result).toContain("const paramsModule = await import('./app/hello/params.ts');");
-    expect(result).toContain("const helpModule = await import('./app/hello/help.ts');");
+    // Check unified handler imports - paths are transformed to ../examples/
+    expect(result).toContain("const commandModule = await import('../examples/hello/command.js');");
+    expect(result).toContain("const paramsModule = await import('../examples/hello/params.js');");
+    expect(result).toContain("const helpModule = await import('../examples/hello/help.js');");
 
     // Check context building
     expect(result).toContain("let context = {");
@@ -244,16 +244,16 @@ describe('Lazy CLI Template - Unified Handlers', () => {
     expect(result).toContain("// Global handler initialization");
     expect(result).toContain("const globalHandlers = {};");
     
-    // Check env handler loading
-    expect(result).toContain("const envModule = await import('./app/env.ts');");
+    // Check env handler loading - paths are transformed to ../examples/
+    expect(result).toContain("const envModule = await import('../examples/env.js');");
     expect(result).toContain("globalHandlers['env'] = envModule.default;");
 
-    // Check middleware handler loading
-    expect(result).toContain("const middlewareModule = await import('./app/middleware.ts');");
+    // Check middleware handler loading - paths are transformed to ../examples/
+    expect(result).toContain("const middlewareModule = await import('../examples/middleware.js');");
     expect(result).toContain("globalHandlers['middleware'] = middlewareModule.default;");
 
-    // Check global-error handler loading
-    expect(result).toContain("const global_errorModule = await import('./app/global-error.ts');");
+    // Check global-error handler loading - paths are transformed to ../examples/
+    expect(result).toContain("const global_errorModule = await import('../examples/global-error.js');");
     expect(result).toContain("globalHandlers['global-error'] = global_errorModule.default;");
   });
 
@@ -318,8 +318,8 @@ describe('Lazy CLI Template - Unified Handlers', () => {
 
     const result = generateLazyCLI(options);
 
-    // Check error handler import
-    expect(result).toContain("const errorModule = await import('./app/hello/error.ts');");
+    // Check error handler import - paths are transformed to ../examples/
+    expect(result).toContain("const errorModule = await import('../examples/hello/error.js');");
 
     // Check try-catch wrapper
     expect(result).toContain("try {");

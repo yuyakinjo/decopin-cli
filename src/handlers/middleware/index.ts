@@ -252,7 +252,7 @@ export function createMiddlewareHandler(
  * @param finalHandler - 最終的に実行する関数
  * @returns 実行結果
  */
-export async function executeMiddleware<T = any>(
+export async function executeMiddleware<T = unknown>(
   middlewares: (
     | MiddlewareHandler
     | import('./types.js').MiddlewareHandlerInterface
@@ -262,14 +262,14 @@ export async function executeMiddleware<T = any>(
 ): Promise<T> {
   let index = 0;
 
-  const next: NextFunction = async () => {
+  const _next: NextFunction = async () => {
     if (index < middlewares.length) {
       const middleware = middlewares[index++];
       // Check if it's the interface type or function type
       if (typeof middleware === 'function') {
-        await middleware(context, next);
+        await middleware(context, _next);
       } else if (middleware && typeof middleware.execute === 'function') {
-        await middleware.execute(context, next);
+        await middleware.execute(context, _next);
       }
     } else {
       // All middlewares executed, call final handler

@@ -155,8 +155,11 @@ export function validateEnvField(
       throw new Error(`${fieldName} is required`);
     }
     // Use defaultValue instead of default
-    return (schema as any).defaultValue !== undefined
-      ? (schema as any).defaultValue
+    const schemaWithDefault = schema as EnvFieldSchema & {
+      defaultValue?: EnvValue;
+    };
+    return schemaWithDefault.defaultValue !== undefined
+      ? schemaWithDefault.defaultValue
       : (schema.default as EnvValue);
   }
 
@@ -217,7 +220,7 @@ function validateNumberField(
 ): number {
   const numValue = Number(value);
 
-  if (isNaN(numValue)) {
+  if (Number.isNaN(numValue)) {
     throw new Error(
       schema.errorMessage || `${fieldName} must be a valid number`
     );

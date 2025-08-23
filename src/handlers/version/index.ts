@@ -196,7 +196,7 @@ export function compareVersions(
     }
 
     return { comparison: 0, current, target, valid: true };
-  } catch (error) {
+  } catch (_error) {
     return { comparison: 0, current, target, valid: false };
   }
 }
@@ -212,7 +212,7 @@ function parseVersion(version: string): number[] {
   const cleanVersion = version.split('-')[0]; // プレリリース部分を除去
   const parts = cleanVersion.split('.').map((part) => {
     const num = parseInt(part, 10);
-    if (isNaN(num)) {
+    if (Number.isNaN(num)) {
       throw new Error(`Invalid version part: ${part}`);
     }
     return num;

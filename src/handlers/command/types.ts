@@ -136,5 +136,9 @@ export interface CommandDefinition<T = unknown> {
  */
 export interface CommandHandlerInterface {
   /** コマンドを実行する */
-  execute: (context: any, args: string[], options: any) => Promise<void>;
+  execute: (
+    context: unknown,
+    args: string[],
+    options: Record<string, unknown>
+  ) => Promise<void>;
 }
