@@ -7,15 +7,15 @@ import type { Context } from '../../types/context.js';
  */
 export interface HelpHandler {
   /** コマンド名 */
-  name?: string;
+  name?: string | undefined;
   /** 説明 */
-  description?: string;
+  description?: string | undefined;
   /** 使用例 */
-  examples?: string[];
+  examples?: string[] | undefined;
   /** エイリアス */
-  aliases?: string[];
+  aliases?: string[] | undefined;
   /** 追加のヘルプテキスト */
-  additionalHelp?: string;
+  additionalHelp?: string | undefined;
 }
 
 /**
@@ -57,4 +57,30 @@ export interface HelpExecutionOptions {
   factory: HelpHandlerFactory;
   /** 実行コンテキスト */
   context: HelpContext;
+}
+
+/**
+ * ヘルプ定義（テスト用）
+ */
+export interface HelpDefinition {
+  /** 説明 */
+  description?: string;
+  /** 使用方法 */
+  usage?: string;
+  /** 使用例 */
+  examples?: string[];
+  /** オプション */
+  options?: Array<{
+    name: string;
+    description: string;
+    type: string;
+  }>;
+}
+
+/**
+ * ヘルプハンドラーインターフェース（テスト用）
+ */
+export interface HelpHandlerInterface {
+  /** ヘルプテキストを生成する */
+  generate: () => string;
 }

@@ -66,3 +66,25 @@ export interface ErrorTypeGuards {
   /** システムエラーかどうか */
   isSystemError: (error: unknown) => boolean;
 }
+
+/**
+ * エラー定義（テスト用）
+ */
+export interface ErrorDefinition {
+  /** エラーメッセージ */
+  message: string;
+  /** エラーコード */
+  code: string;
+  /** 終了コード */
+  exitCode: number;
+  /** カスタムフォーマッター */
+  formatter?: (error: Error) => string;
+}
+
+/**
+ * エラーハンドラーインターフェース（テスト用）
+ */
+export interface ErrorHandlerInterface {
+  /** エラーを処理する */
+  handle: (error: Error) => { formatted: string; exitCode: number };
+}

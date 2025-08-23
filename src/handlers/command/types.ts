@@ -116,3 +116,25 @@ export interface CommandHandlerFactory<T = unknown, E = typeof process.env> {
   (context: CommandContext<T, E>): Promise<void> | void;
   (): Promise<void> | void;
 }
+
+/**
+ * コマンド定義（テスト用）
+ */
+export interface CommandDefinition<T = unknown> {
+  /** コマンド名 */
+  name: string;
+  /** コマンドパス */
+  path: string;
+  /** コマンドハンドラー */
+  handler: CommandHandler<T>;
+  /** メタデータ */
+  metadata?: CommandMetadata;
+}
+
+/**
+ * コマンドハンドラーインターフェース（テスト用）
+ */
+export interface CommandHandlerInterface {
+  /** コマンドを実行する */
+  execute: (context: any, args: string[], options: any) => Promise<void>;
+}

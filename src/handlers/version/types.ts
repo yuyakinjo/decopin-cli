@@ -7,13 +7,13 @@ import type { Context } from '../../types/context.js';
  */
 export interface VersionMetadata {
   /** パッケージ名 */
-  name?: string;
+  name?: string | undefined;
   /** バージョン番号 */
   version: string;
   /** 説明 */
-  description?: string;
+  description?: string | undefined;
   /** 作成者 */
-  author?: string;
+  author?: string | undefined;
   /** その他のメタデータ */
   [key: string]: unknown;
 }
@@ -100,4 +100,30 @@ export interface VersionComparisonResult {
   target: string;
   /** バージョンが有効かどうか */
   valid: boolean;
+}
+
+/**
+ * バージョン定義（テスト用）
+ */
+export interface VersionDefinition {
+  /** バージョン番号 */
+  version: string;
+  /** パッケージ名 */
+  name?: string;
+  /** 説明 */
+  description?: string;
+  /** ビルド情報 */
+  buildInfo?: {
+    commit?: string;
+    date?: string;
+    branch?: string;
+  };
+}
+
+/**
+ * バージョンハンドラーインターフェース（テスト用）
+ */
+export interface VersionHandlerInterface {
+  /** バージョン情報を取得する */
+  getVersion: () => string;
 }

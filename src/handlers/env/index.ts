@@ -123,7 +123,7 @@ export function validateEnvironmentVariables(
   if (hasErrors) {
     result.error = {
       name: 'ValidationError',
-      message: 'Environment validation failed',
+      message: `Environment validation failed: ${errors.map((e) => e.field).join(', ')}`,
       issues: errors.map((err) => ({
         path: [{ key: err.field, value: err.value }],
         message: err.message,
@@ -152,9 +152,12 @@ export function validateEnvField(
   // 値が未定義の場合の処理
   if (rawValue === undefined) {
     if (schema.required) {
-      throw new Error(schema.errorMessage || `${fieldName} is required`);
+      throw new Error(`${fieldName} is required`);
     }
-    return schema.default as EnvValue;
+    // Use defaultValue instead of default
+    return (schema as any).defaultValue !== undefined
+      ? (schema as any).defaultValue
+      : (schema.default as EnvValue);
   }
 
   // 型に応じてバリデーション
@@ -324,13 +327,13 @@ export function formatEnvValidationErrors(
   return lines.join('\n').trim();
 }
 /**
- * 環境変数ハンドラーを作成する
+ * 環境変数ハンドラーを作成する（ファクトリー版）
  *
  * @param factory - 環境変数ハンドラーファクトリー
  * @param context - 実行コンテキスト
  * @returns 環境変数ハンドラー
  */
-export async function createEnvHandler<E = typeof process.env>(
+export async function createEnvHandlerFromFactory<E = typeof process.env>(
   factory: EnvHandlerFactory<E>,
   context: EnvContext<E>
 ): Promise<EnvHandler> {
@@ -338,6 +341,22 @@ export async function createEnvHandler<E = typeof process.env>(
     return await factory(context);
   }
   return factory;
+}
+
+/**
+ * 環境変数ハンドラーを作成する（テスト用インターフェース）
+ *
+ * @param definition - 環境変数定義
+ * @returns 環境変数ハンドラーインターフェース
+ */
+export function createEnvHandler(
+  definition: import('./types.js').EnvDefinition
+): import('./types.js').EnvHandlerInterface {
+  return {
+    validate: () => {
+      return validateEnvironment(definition.schema);
+    },
+  };
 }
 
 /**

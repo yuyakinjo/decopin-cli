@@ -137,6 +137,12 @@ export interface CommandInfo {
 
 export function generateLazyCLI(options: LazyCliOptions): string {
   const useUnifiedHandlers = options.structure !== undefined;
+  console.log(
+    'DEBUG: useUnifiedHandlers:',
+    useUnifiedHandlers,
+    'structure:',
+    !!options.structure
+  );
 
   return `#!/usr/bin/env node
 
@@ -260,8 +266,10 @@ function generateCommandCases(
  * Generate unified global handler initialization
  */
 function generateUnifiedGlobalHandlers(options: LazyCliOptions): string {
+  console.log('DEBUG: generateUnifiedGlobalHandlers called');
   if (!options.structure) {
     // Fall back to old approach if no structure provided
+    console.log('DEBUG: No structure, falling back to old approach');
     return '';
   }
 
@@ -269,7 +277,12 @@ function generateUnifiedGlobalHandlers(options: LazyCliOptions): string {
     .filter((h) => h.scope === 'global')
     .filter((h) => options.structure!.handlers.has(h.name));
 
+  console.log(
+    'DEBUG: Found global handlers:',
+    globalHandlers.map((h) => h.name)
+  );
   if (globalHandlers.length === 0) {
+    console.log('DEBUG: No global handlers found');
     return '';
   }
 

@@ -112,3 +112,21 @@ export interface MiddlewareChainOptions<
   /** 最終的に実行する関数 */
   finalHandler: () => Promise<void> | void;
 }
+
+/**
+ * ミドルウェア定義（テスト用）
+ */
+export interface MiddlewareDefinition {
+  /** ミドルウェア名 */
+  name: string;
+  /** ミドルウェアハンドラー */
+  handler: MiddlewareHandler;
+}
+
+/**
+ * ミドルウェアハンドラーインターフェース（テスト用）
+ */
+export interface MiddlewareHandlerInterface {
+  /** ミドルウェアを実行する */
+  execute: (context: MiddlewareContext, next: NextFunction) => Promise<void>;
+}

@@ -210,13 +210,13 @@ export function createPerformanceMiddlewareHandler(): MiddlewareHandler {
   };
 }
 /**
- * ミドルウェアハンドラーを作成する
+ * ミドルウェアハンドラーを作成する（ファクトリー版）
  *
  * @param factory - ミドルウェアファクトリー
  * @param context - ファクトリーコンテキスト
  * @returns ミドルウェアハンドラー
  */
-export async function createMiddlewareHandler<
+export async function createMiddlewareHandlerFromFactory<
   E extends Record<string, string | undefined> = typeof process.env,
 >(
   factory: MiddlewareFactory<E>,
@@ -229,15 +229,34 @@ export async function createMiddlewareHandler<
 }
 
 /**
+ * ミドルウェアハンドラーを作成する（テスト用インターフェース）
+ *
+ * @param definition - ミドルウェア定義
+ * @returns ミドルウェアハンドラーインターフェース
+ */
+export function createMiddlewareHandler(
+  definition: import('./types.js').MiddlewareDefinition
+): import('./types.js').MiddlewareHandlerInterface {
+  return {
+    execute: async (context, next) => {
+      await definition.handler(context, next);
+    },
+  };
+}
+
+/**
  * ミドルウェアチェーンを実行する（シンプル版）
  *
- * @param middlewares - ミドルウェアハンドラーの配列
+ * @param middlewares - ミドルウェアハンドラーの配列またはインターフェースの配列
  * @param context - ミドルウェアコンテキスト
  * @param finalHandler - 最終的に実行する関数
  * @returns 実行結果
  */
 export async function executeMiddleware<T = any>(
-  middlewares: MiddlewareHandler[],
+  middlewares: (
+    | MiddlewareHandler
+    | import('./types.js').MiddlewareHandlerInterface
+  )[],
   context: MiddlewareContext,
   finalHandler: () => Promise<T> | T
 ): Promise<T> {
@@ -246,10 +265,35 @@ export async function executeMiddleware<T = any>(
   const next: NextFunction = async () => {
     if (index < middlewares.length) {
       const middleware = middlewares[index++];
-      await middleware(context, next);
+      // Check if it's the interface type or function type
+      if (typeof middleware === 'function') {
+        await middleware(context, next);
+      } else if (middleware && typeof middleware.execute === 'function') {
+        await middleware.execute(context, next);
+      }
+    } else {
+      // All middlewares executed, call final handler
+      await finalHandler();
     }
   };
 
-  await next();
-  return await finalHandler();
+  let result: T;
+
+  const wrappedNext: NextFunction = async () => {
+    if (index < middlewares.length) {
+      const middleware = middlewares[index++];
+      // Check if it's the interface type or function type
+      if (typeof middleware === 'function') {
+        await middleware(context, wrappedNext);
+      } else if (middleware && typeof middleware.execute === 'function') {
+        await middleware.execute(context, wrappedNext);
+      }
+    } else {
+      // All middlewares executed, call final handler
+      result = await finalHandler();
+    }
+  };
+
+  await wrappedNext();
+  return result!;
 }

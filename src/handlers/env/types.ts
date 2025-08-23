@@ -135,3 +135,19 @@ export interface EnvValidationError {
   /** 期待される型 */
   expectedType: EnvFieldType;
 }
+
+/**
+ * 環境変数定義（テスト用）
+ */
+export interface EnvDefinition {
+  /** 環境変数スキーマ */
+  schema: EnvSchema;
+}
+
+/**
+ * 環境変数ハンドラーインターフェース（テスト用）
+ */
+export interface EnvHandlerInterface {
+  /** 環境変数を検証する */
+  validate: () => EnvValidationResult;
+}

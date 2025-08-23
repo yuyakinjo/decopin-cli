@@ -33,6 +33,13 @@ export class CommandGeneratorImpl implements CommandGenerator {
     // Pass structure if provided
     if (structure) {
       options.structure = structure;
+      console.log(
+        'DEBUG: Structure passed to generator with',
+        structure.handlers.size,
+        'handlers'
+      );
+    } else {
+      console.log('DEBUG: No structure passed to generator');
     }
 
     // Set individual handler flags based on structure

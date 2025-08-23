@@ -268,13 +268,13 @@ export function createVersionFromEnvironment(
   };
 }
 /**
- * バージョンハンドラーを作成する
+ * バージョンハンドラーを作成する（ファクトリー版）
  *
  * @param factory - バージョンハンドラーファクトリー
  * @param context - 実行コンテキスト
  * @returns バージョンハンドラー
  */
-export async function createVersionHandler<E = typeof process.env>(
+export async function createVersionHandlerFromFactory<E = typeof process.env>(
   factory: VersionHandlerFactory<E>,
   context: VersionContext<E>
 ): Promise<VersionHandler> {
@@ -285,11 +285,55 @@ export async function createVersionHandler<E = typeof process.env>(
 }
 
 /**
+ * バージョンハンドラーを作成する（テスト用インターフェース）
+ *
+ * @param definition - バージョン定義
+ * @returns バージョンハンドラーインターフェース
+ */
+export function createVersionHandler(
+  definition: import('./types.js').VersionDefinition
+): import('./types.js').VersionHandlerInterface {
+  return {
+    getVersion: () => {
+      const handler: VersionHandler = {
+        version: definition.version,
+        metadata: {
+          name: definition.name || undefined,
+          version: definition.version,
+          description: definition.description || undefined,
+          ...definition.buildInfo,
+        },
+      };
+      return formatVersionOutput(handler, { verbose: true });
+    },
+  };
+}
+
+/**
  * バージョン情報をフォーマットする（シンプル版）
  *
- * @param handler - バージョンハンドラー
+ * @param definition - バージョン定義またはバージョンハンドラー
  * @returns フォーマットされたバージョン文字列
  */
-export function formatVersion(handler: VersionHandler): string {
-  return formatVersionOutput(handler, { verbose: true });
+export function formatVersion(
+  definition: import('./types.js').VersionDefinition | VersionHandler
+): string {
+  // Check if it's a VersionDefinition or VersionHandler
+  if ('name' in definition && !('metadata' in definition)) {
+    // It's a VersionDefinition
+    const versionDef = definition as import('./types.js').VersionDefinition;
+    const handler: VersionHandler = {
+      version: versionDef.version,
+      metadata: {
+        name: versionDef.name || undefined,
+        version: versionDef.version,
+        description: versionDef.description || undefined,
+        ...versionDef.buildInfo,
+      },
+    };
+    return formatVersionOutput(handler, { verbose: true });
+  } else {
+    // It's a VersionHandler
+    return formatVersionOutput(definition as VersionHandler, { verbose: true });
+  }
 }

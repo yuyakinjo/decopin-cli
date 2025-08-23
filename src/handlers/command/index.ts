@@ -86,17 +86,42 @@ export async function parseCommandDefinitions(
 }
 
 /**
- * コマンドハンドラーを作成する
+ * コマンドハンドラーを作成する（ファクトリー版）
  *
  * @param factory - コマンドハンドラーファクトリー
  * @param context - 実行コンテキスト
  * @returns コマンドハンドラー
  */
-export async function createCommandHandler<T = unknown, E = typeof process.env>(
+export async function createCommandHandlerFromFactory<
+  T = unknown,
+  E = typeof process.env,
+>(
   factory: CommandHandlerFactory<T, E>,
   context: CommandContext<T, E>
 ): Promise<void> {
   if (typeof factory === 'function') {
     return await factory(context);
   }
+}
+
+/**
+ * コマンドハンドラーを作成する（テスト用インターフェース）
+ *
+ * @param definition - コマンド定義
+ * @returns コマンドハンドラーインターフェース
+ */
+export function createCommandHandler<T = unknown>(
+  definition: import('./types.js').CommandDefinition<T>
+): import('./types.js').CommandHandlerInterface {
+  return {
+    execute: async (context, args, options) => {
+      const commandContext = {
+        ...context,
+        args,
+        options,
+        command: definition.name.split(' '),
+      };
+      await definition.handler(commandContext);
+    },
+  };
 }

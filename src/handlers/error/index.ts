@@ -164,13 +164,16 @@ export function formatErrorOutput(error: unknown, commandPath: string): string {
   return lines.join('\n');
 }
 /**
- * エラーハンドラーを作成する
+ * エラーハンドラーを作成する（ファクトリー版）
  *
  * @param factory - エラーハンドラーファクトリー
  * @param context - 実行コンテキスト
  * @returns Promise<void>
  */
-export async function createErrorHandler<T = unknown, E = typeof process.env>(
+export async function createErrorHandlerFromFactory<
+  T = unknown,
+  E = typeof process.env,
+>(
   factory: ErrorHandlerFactory<T, E>,
   context: ErrorContext<T, E>
 ): Promise<void> {
@@ -180,11 +183,59 @@ export async function createErrorHandler<T = unknown, E = typeof process.env>(
 }
 
 /**
+ * エラーハンドラーを作成する（テスト用インターフェース）
+ *
+ * @param definition - エラー定義
+ * @returns エラーハンドラーインターフェース
+ */
+export function createErrorHandler(
+  definition: import('./types.js').ErrorDefinition
+): import('./types.js').ErrorHandlerInterface {
+  return {
+    handle: (error: Error) => {
+      const formatted = definition.formatter
+        ? definition.formatter(error)
+        : formatErrorOutput(error, 'unknown');
+
+      return {
+        formatted,
+        exitCode: definition.exitCode,
+      };
+    },
+  };
+}
+
+/**
  * エラーをフォーマットする（シンプル版）
  *
  * @param error - フォーマットするエラー
  * @returns フォーマットされたエラー文字列
  */
 export function formatError(error: unknown): string {
+  if (errorTypeGuards.isValidationError(error)) {
+    const validationError = error as any;
+    const lines: string[] = [];
+
+    lines.push(`❌ Error in command 'unknown':`);
+    lines.push('');
+
+    // Include the original error message if it exists
+    if (validationError.message) {
+      lines.push(validationError.message);
+    }
+
+    lines.push('Validation errors:');
+
+    for (const issue of validationError.issues) {
+      const field =
+        issue.path && issue.path.length > 0
+          ? issue.path.map((p: any) => p.key || p).join('.')
+          : '';
+      lines.push(`  • ${field}: ${issue.message}`);
+    }
+
+    return lines.join('\n');
+  }
+
   return formatErrorOutput(error, 'unknown');
 }

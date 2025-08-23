@@ -131,13 +131,13 @@ export function formatHelpOutput(
   return lines.join('\n').trim();
 }
 /**
- * ヘルプハンドラーを作成する
+ * ヘルプハンドラーを作成する（ファクトリー版）
  *
  * @param factory - ヘルプハンドラーファクトリー
  * @param context - 実行コンテキスト
  * @returns ヘルプハンドラー
  */
-export async function createHelpHandler<E = typeof process.env>(
+export async function createHelpHandlerFromFactory<E = typeof process.env>(
   factory: HelpHandlerFactory<E>,
   context: HelpContext<E>
 ): Promise<HelpHandler> {
@@ -148,11 +148,77 @@ export async function createHelpHandler<E = typeof process.env>(
 }
 
 /**
- * ヘルプテキストを生成する（シンプル版）
+ * ヘルプハンドラーを作成する（テスト用インターフェース）
  *
- * @param handler - ヘルプハンドラー
+ * @param definition - ヘルプ定義
+ * @returns ヘルプハンドラーインターフェース
+ */
+export function createHelpHandler(
+  definition: import('./types.js').HelpDefinition
+): import('./types.js').HelpHandlerInterface {
+  return {
+    generate: () => {
+      return generateHelpTextFromDefinition(definition);
+    },
+  };
+}
+
+/**
+ * ヘルプ定義からヘルプテキストを生成する
+ *
+ * @param definition - ヘルプ定義
  * @returns 生成されたヘルプテキスト
  */
-export function generateHelpText(handler: HelpHandler): string {
-  return formatHelpOutput(handler, 'unknown');
+function generateHelpTextFromDefinition(
+  definition: import('./types.js').HelpDefinition
+): string {
+  const lines: string[] = [];
+
+  if (definition.description) {
+    lines.push(`unknown - ${definition.description}`);
+    lines.push('');
+  }
+
+  if (definition.usage) {
+    lines.push('Usage:');
+    lines.push(`  ${definition.usage}`);
+    lines.push('');
+  }
+
+  if (definition.examples && definition.examples.length > 0) {
+    lines.push('Examples:');
+    definition.examples.forEach((example) => {
+      lines.push(`  ${example}`);
+    });
+    lines.push('');
+  }
+
+  if (definition.options && definition.options.length > 0) {
+    lines.push('Options:');
+    definition.options.forEach((option) => {
+      lines.push(`  --${option.name}    ${option.description}`);
+    });
+    lines.push('');
+  }
+
+  return lines.join('\n').trim();
+}
+
+/**
+ * ヘルプテキストを生成する（シンプル版）
+ *
+ * @param definition - ヘルプ定義またはヘルプハンドラー
+ * @returns 生成されたヘルプテキスト
+ */
+export function generateHelpText(
+  definition: import('./types.js').HelpDefinition | HelpHandler
+): string {
+  // Check if it's a HelpDefinition or HelpHandler
+  if ('usage' in definition || 'options' in definition) {
+    return generateHelpTextFromDefinition(
+      definition as import('./types.js').HelpDefinition
+    );
+  } else {
+    return formatHelpOutput(definition as HelpHandler, 'unknown');
+  }
 }
