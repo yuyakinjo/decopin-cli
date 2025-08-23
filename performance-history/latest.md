@@ -1,24 +1,24 @@
 # Performance Benchmark Report
 
-Generated on: 2025-08-23T15:02:47.051Z
+Generated on: 2025-08-23T15:03:01.856Z
 Platform: linux x64
 Runtime: Bun 1.2.20
 
 ## Summary
 
-- **Average startup time**: 2.70ms
-- **Help/Error commands**: 2.67ms
-- **Execution commands**: 2.71ms
+- **Average startup time**: 2.72ms
+- **Help/Error commands**: 2.64ms
+- **Execution commands**: 2.77ms
 
 ## Detailed Results
 
 | Command | Average (ms) | Min (ms) | Max (ms) |
 |---------|-------------|----------|----------|
-| Help display | 2.81 | 2.68 | 4.85 |
-| Simple command | 2.67 | 2.60 | 2.99 |
-| Subcommand help | 2.69 | 2.60 | 3.01 |
-| Command with validation | 2.65 | 2.63 | 2.96 |
-| Error handling | 2.65 | 2.59 | 3.00 |
+| Help display | 2.88 | 2.70 | 4.74 |
+| Simple command | 2.76 | 2.63 | 3.23 |
+| Subcommand help | 2.66 | 2.63 | 3.03 |
+| Command with validation | 2.67 | 2.59 | 2.96 |
+| Error handling | 2.62 | 2.57 | 3.16 |
 
 ## Performance Characteristics
 
@@ -40,10 +40,10 @@ Runtime: Bun 1.2.20
 
 | Version | Date | Average Startup | Help Commands | Exec Commands |
 |---------|------|-----------------|---------------|---------------|
-| Current | 2025-08-23 | 2.70ms | 2.67ms | 2.71ms |
+| Current | 2025-08-23 | 2.72ms | 2.64ms | 2.77ms |
+| 7777767 | 2025-08-23 | 2.70ms | 2.67ms | 2.72ms |
 | 5cf7e72 | 2025-08-18 | 2.77ms | 2.72ms | 2.80ms |
 | 1ae8f72 | 2025-08-11 | 3.21ms | 3.45ms | 3.06ms |
-| ac05fa8 | 2025-08-04 | 2.67ms | 2.64ms | 2.69ms |
 
 ## Environment Details
 
