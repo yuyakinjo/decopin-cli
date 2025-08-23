@@ -9,7 +9,7 @@ import {
   isArrowFunctionNode,
   isCallExpressionNode,
   isIdentifierNode,
-} from '../../../src/internal/guards/ast';
+} from '../../../src/utils/guards/ast.js';
 
 function createSourceFile(content: string): ts.SourceFile {
   return ts.createSourceFile('test.ts', content, ts.ScriptTarget.Latest, true);
@@ -20,7 +20,7 @@ function findFirstNode<T extends ts.Node>(
   predicate: (node: ts.Node) => node is T
 ): T | undefined {
   let result: T | undefined;
-  
+
   function visit(node: ts.Node) {
     if (predicate(node)) {
       result = node;
@@ -28,7 +28,7 @@ function findFirstNode<T extends ts.Node>(
     }
     ts.forEachChild(node, visit);
   }
-  
+
   visit(sourceFile);
   return result;
 }

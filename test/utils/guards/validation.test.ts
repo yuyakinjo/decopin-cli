@@ -12,8 +12,8 @@ import {
   hasEnumValues,
   hasMinValue,
   hasMaxValue,
-} from '../../../src/internal/guards/validation';
-import type { ValidationResult, ValidationError } from '../../../src/types/validation';
+} from '../../../src/utils/guards/validation.js';
+import type { ValidationResult, ValidationError } from '../../../src/types/validation.js';
 
 describe('Validation Result Guards', () => {
   describe('isValidationSuccess', () => {

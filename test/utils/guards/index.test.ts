@@ -5,7 +5,7 @@ import {
   isObject,
   isFunction,
   hasProperty,
-} from '../../../src/internal/guards';
+} from '../../../src/utils/guards/index.js';
 
 describe('Basic Type Guards', () => {
   describe('isString', () => {

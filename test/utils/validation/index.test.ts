@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'bun:test';
 import * as v from 'valibot';
-import { extractData, createValidationFunction, isValibotSchema } from '../../src/utils/validation.js';
-import type { ParamsHandler } from '../../src/types/validation.js';
+import { extractData, createValidationFunction, isValibotSchema } from '../../../src/utils/validation/index.js';
+import type { ParamsHandler } from '../../../src/types/validation.js';
 
 describe('validation utils', () => {
   describe('extractData', () => {
@@ -114,7 +114,7 @@ describe('validation utils', () => {
           email: v.pipe(v.string(), v.email())
         })
       };
-      
+
       const validateFn = createValidationFunction(schemaDefinition);
 
       const result = await validateFn(
