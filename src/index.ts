@@ -14,12 +14,12 @@ import { Scanner } from './core/scanner.js';
 
 // Lazy-loaded modules
 // TODO: Replace with `import defer` when TypeScript 5.9 fully supports it
-// import defer * as commandModule from './command/index.js';
-let commandModule: typeof import('./command/index.js') | null = null;
+// import defer * as commandModule from './handlers/command/index.js';
+let commandModule: typeof import('./handlers/command/index.js') | null = null;
 
 async function getCommandModule() {
   if (!commandModule) {
-    commandModule = await import('./command/index.js');
+    commandModule = await import('./handlers/command/index.js');
   }
   return commandModule;
 }

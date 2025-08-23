@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from 'bun:test';
-import { parseFiles } from '../../src/command/parser.js';
+import { parseFiles } from '../../src/handlers/command/parser.js';
 import type { CommandFile } from '../../src/core/types.js';
 import { mkdir, rm, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
