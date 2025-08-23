@@ -3,8 +3,8 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'fs';
 import { tmpdir } from 'os';
 import { join } from 'path';
 import { Scanner } from '../../src/core/scanner.js';
-import { generate } from '../../src/command/generator.js';
-import { parseCommands } from '../../src/command/index.js';
+import { generate } from '../../src/handlers/command/generator.js';
+import { parseCommands } from '../../src/handlers/command/index.js';
 
 describe('Unified Handler System Integration', () => {
   let tempDir: string;
@@ -215,7 +215,7 @@ describe('Unified Handler System Integration', () => {
 
       // Generate with structure - should work
       const generated = await generate(parsedCommands, structure);
-      
+
       // Should contain unified handler code
       expect(generated.content).toContain('let context = {');
       expect(generated.content).toContain('const commandModule = await import');
