@@ -23,22 +23,22 @@
   - エラーフォーマット機能を統合
   - _要件: 2.3, 2.4_
 
-- [ ] 2. コマンドハンドラーの実装
+- [x] 2. コマンドハンドラーの実装
   - 既存のcommandディレクトリの内容をhandlers/commandに移動し、統一されたハンドラー構造を作成する
   - _要件: 1.2, 3.1, 3.2, 3.3, 3.4_
 
-- [ ] 2.1 コマンドハンドラーディレクトリの作成
+- [x] 2.1 コマンドハンドラーディレクトリの作成
   - `src/handlers/command/index.ts`を作成してメインハンドラーロジックを実装
   - 既存の`src/command/index.ts`の内容を移動
   - _要件: 1.2, 3.1, 3.2_
 
-- [ ] 2.2 コマンドパーサーとジェネレーターの移動
+- [x] 2.2 コマンドパーサーとジェネレーターの移動
   - `src/command/parser.ts`を`src/handlers/command/parser.ts`に移動
   - `src/command/generator.ts`を`src/handlers/command/generator.ts`に移動
   - インポートパスを更新
   - _要件: 1.2, 3.4_
 
-- [ ] 2.3 コマンド固有型定義の分離
+- [x] 2.3 コマンド固有型定義の分離
   - `src/command/types.ts`を`src/handlers/command/types.ts`に移動
   - コマンド関連の型を`src/types/`から分離
   - _要件: 1.2, 3.3_
