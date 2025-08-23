@@ -1,85 +1,101 @@
-# Technology Stack
+---
+inclusion: always
+---
 
-## Runtime & Build System
+# Technology Stack & Development Guidelines
 
-- **Runtime**: Node.js 18+ (ESM modules)
-- **Package Manager**: Bun (with bun.lock)
-- **Build System**: TypeScript compiler (tsc)
-- **Bundler**: None (pure TypeScript compilation to ESM)
+## Critical Technology Constraints
 
-## Core Dependencies
+- **Runtime**: Node.js 18+ with ESM modules only
+- **Package Manager**: Bun (never use npm/yarn for installation)
+- **Build**: TypeScript compiler (tsc) - no bundlers
+- **Validation**: valibot for all schemas (never use zod/joi)
+- **Code Quality**: Biome for linting/formatting (never use ESLint/Prettier)
 
-- **valibot**: Schema validation and type inference
-- **TypeScript**: Language and type system
-- **Node.js built-ins**: fs, path, process for CLI operations
+## Required Dependencies
 
-## Development Tools
+When adding dependencies, prefer:
 
-- **Biome**: Linting and formatting (replaces ESLint + Prettier)
-- **Bun**: Test runner and package manager
-- **TypeScript**: Compilation and type checking
+- **valibot** for validation and type inference
+- **Node.js built-ins** (fs, path, process) for system operations
+- Avoid external dependencies unless absolutely necessary
 
-## Common Commands
+## Development Commands
 
-### Development
+Use these exact commands for development tasks:
 
 ```bash
-# Start development mode with file watching
+# Development with hot reload
 npm run dev
 
-# Build library and app
+# Build library and examples
 npm run build
 
-# Generate environment types
+# Generate environment types (required after env changes)
 npm run generate:env-types
 
-# Build production version
-npm run build:prod
+# Testing
+bun test                    # All tests
+npm run test:integration    # Integration only
+bun test --coverage        # With coverage
+
+# Code quality
+npm run lint               # Biome linting and formatting
+npm run clean             # Clean build artifacts
+
+# Performance
+npm run benchmark         # Run benchmarks
+npm run benchmark:compare # Compare performance
 ```
 
-### Testing
+## Architecture Requirements
 
-```bash
-# Run all tests
-bun test
+### Factory Pattern (Mandatory)
 
-# Run integration tests only
-npm run test:integration
+All handlers MUST export default factory functions:
 
-# Run tests with coverage
-bun test --coverage
+```typescript
+// Correct pattern
+export default function createHandler(context: CommandContext) {
+  return async (params: ValidatedParams) => {
+    // Implementation
+  };
+}
+
+// Never export direct functions
+export const handler = async () => {} // ❌ Wrong
 ```
 
-### Code Quality
+### Lazy Loading (Performance Critical)
 
-```bash
-# Lint and format code
-npm run lint
+- Use dynamic imports for command modules
+- Never import all commands at startup
+- Defer expensive operations until needed
 
-# Clean build artifacts
-npm run clean
-```
+### TypeScript Configuration
 
-### Benchmarking
+- Strict mode enabled (never disable)
+- ESNext target with ESM modules
+- Incremental compilation for performance
+- Source maps in development builds
 
-```bash
-# Run performance benchmarks
-npm run benchmark
+## Build Output Rules
 
-# Compare before/after performance
-npm run benchmark:compare
-```
+**Never modify these directories:**
 
-## Build Configuration
+- `examples/` - Auto-generated from `app/`
+- `dist/` - Compiled library output
+- `app/generated/` - Generated TypeScript types
 
-- **TypeScript**: Strict mode enabled, ESNext target, ESM modules
-- **Output**: `dist/` for library, `examples/` for app compilation
-- **Source Maps**: Enabled for development builds
-- **Incremental**: TypeScript incremental compilation enabled
+**Always work in:**
 
-## Architecture Patterns
+- `src/` - Library source code
+- `app/` - CLI application commands
+- `test/` - Test files
 
-- **Lazy Loading**: Dynamic imports for performance optimization
-- **Factory Pattern**: All handlers use factory functions for dependency injection
-- **Context-based**: Consistent context objects across all handler types
-- **AST Parsing**: TypeScript AST analysis for metadata extraction
+## Performance Standards
+
+- CLI startup: <100ms for simple commands
+- Memory: Lazy load to prevent loading unused modules
+- Build: Use incremental TypeScript compilation
+- Bundle size: Minimize dependencies, prefer Node.js built-ins
