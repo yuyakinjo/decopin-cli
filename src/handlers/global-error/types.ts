@@ -1,9 +1,19 @@
-import type { GlobalErrorContext } from '../../types/context.js';
+import type { Context } from '../../types/context.js';
 import type { CLIError } from '../../types/errors.js';
-import type {
-  GlobalErrorHandler,
-  GlobalErrorHandlerFactory,
-} from '../../types/validation.js';
+
+// グローバルエラーハンドラー固有の型定義をここに移動
+
+/**
+ * グローバルエラーハンドラー
+ */
+export type GlobalErrorHandler = (
+  error: CLIError | unknown
+) => Promise<void> | void;
+
+/**
+ * グローバルエラーハンドラー用のコンテキスト
+ */
+export type GlobalErrorContext<E = typeof process.env> = Context<E>;
 
 /**
  * グローバルエラーハンドラー関連の型定義
@@ -12,12 +22,10 @@ import type {
 /**
  * グローバルエラーハンドラーのファクトリー関数型
  */
-export type {
-  GlobalErrorHandlerFactory,
-  GlobalErrorHandler,
-  GlobalErrorContext,
-  CLIError,
-};
+export interface GlobalErrorHandlerFactory<E = typeof process.env> {
+  (context: GlobalErrorContext<E>): GlobalErrorHandler;
+  (): GlobalErrorHandler;
+}
 
 /**
  * グローバルエラー処理の結果

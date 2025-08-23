@@ -5,14 +5,14 @@ import {
   type LazyCliOptions,
 } from '../generator/lazy-cli-template.js';
 import type {
-  CommandDefinition,
   CommandGenerator,
   GeneratedCode,
-} from './types.js';
+  ParsedCommandDefinition,
+} from '../handlers/command/types.js';
 
 export class CommandGeneratorImpl implements CommandGenerator {
   async generate(
-    commands: CommandDefinition[],
+    commands: ParsedCommandDefinition[],
     structure?: CLIStructure
   ): Promise<GeneratedCode> {
     // Convert command definitions to the format expected by lazy CLI template
@@ -72,12 +72,12 @@ export class CommandGeneratorImpl implements CommandGenerator {
     };
   }
 
-  createImports(_commands: CommandDefinition[]): string[] {
+  createImports(_commands: ParsedCommandDefinition[]): string[] {
     // Dynamic imports are generated inline in the lazy CLI template
     return [];
   }
 
-  private getCommandModulePath(cmd: CommandDefinition): string {
+  private getCommandModulePath(cmd: ParsedCommandDefinition): string {
     // Generate the runtime path for the command module
     const commandDir = cmd.name === 'root' ? '.' : cmd.name;
     return `./app/${commandDir}/command.js`;
@@ -85,7 +85,7 @@ export class CommandGeneratorImpl implements CommandGenerator {
 }
 
 export async function generate(
-  commands: CommandDefinition[],
+  commands: ParsedCommandDefinition[],
   structure?: CLIStructure
 ): Promise<GeneratedCode> {
   const generator = new CommandGeneratorImpl();

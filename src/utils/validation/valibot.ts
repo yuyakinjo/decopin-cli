@@ -1,6 +1,7 @@
 import * as v from 'valibot';
-import type { ValidationError, ValidationIssue } from '../../types/errors.js';
-import type { ParamMapping, ValidationResult } from '../../types/validation.js';
+import type { ParamMapping } from '../../handlers/params/types.js';
+import type { ValidationError } from '../../types/errors.js';
+import type { ValidationResult } from '../../types/validation.js';
 
 /**
  * マッピングからValibotスキーマを作成

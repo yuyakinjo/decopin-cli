@@ -5,7 +5,6 @@ import type {
   VersionExecutionOptions,
   VersionHandler,
   VersionHandlerFactory,
-  VersionMetadata,
   VersionProcessingResult,
 } from './types.js';
 

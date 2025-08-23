@@ -34,7 +34,6 @@ export async function processHelpHandler(
       description: 'No description available',
       examples: [],
       aliases: [],
-      additionalHelp: undefined,
     };
 
     return {
@@ -86,7 +85,6 @@ export function createDefaultHelpHandler(commandPath: string): HelpHandler {
     description: 'No description available',
     examples: [],
     aliases: [],
-    additionalHelp: undefined,
   };
 }
 
@@ -112,7 +110,7 @@ export function formatHelpOutput(
   // 使用例
   if (handler.examples && handler.examples.length > 0) {
     lines.push('Examples:');
-    handler.examples.forEach((example) => {
+    handler.examples.forEach((example: string) => {
       lines.push(`  ${example}`);
     });
     lines.push('');

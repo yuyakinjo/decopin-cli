@@ -1,9 +1,9 @@
-import type { ValidationError, ValidationIssue } from '../../types/errors.js';
 import type {
   ManualFieldSchema,
   ManualSchema,
-  ValidationResult,
-} from '../../types/validation.js';
+} from '../../handlers/params/types.js';
+import type { ValidationError, ValidationIssue } from '../../types/errors.js';
+import type { ValidationResult } from '../../types/validation.js';
 import { isBoolean, isString } from '../guards/index.js';
 
 /**

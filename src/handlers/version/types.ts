@@ -1,9 +1,44 @@
-import type { VersionContext } from '../../types/context.js';
-import type {
-  VersionHandler,
-  VersionHandlerFactory,
-  VersionMetadata,
-} from '../../types/validation.js';
+import type { Context } from '../../types/context.js';
+
+// バージョンハンドラー固有の型定義をここに移動
+
+/**
+ * バージョン情報のメタデータ
+ */
+export interface VersionMetadata {
+  /** パッケージ名 */
+  name?: string;
+  /** バージョン番号 */
+  version: string;
+  /** 説明 */
+  description?: string;
+  /** 作成者 */
+  author?: string;
+  /** その他のメタデータ */
+  [key: string]: unknown;
+}
+
+/**
+ * バージョンハンドラー
+ */
+export interface VersionHandler {
+  /** バージョン番号 */
+  version: string;
+  /** バージョンメタデータ */
+  metadata?: VersionMetadata;
+}
+
+/**
+ * バージョンハンドラー用のコンテキスト
+ */
+export type VersionContext<E = typeof process.env> = Context<E>;
+
+/**
+ * バージョン定義関数の型
+ */
+export type VersionDefinitionFunction =
+  | ((context: VersionContext<typeof process.env>) => VersionHandler)
+  | (() => VersionHandler);
 
 /**
  * バージョンハンドラー関連の型定義
@@ -12,12 +47,10 @@ import type {
 /**
  * バージョンハンドラーのファクトリー関数型
  */
-export type {
-  VersionHandlerFactory,
-  VersionHandler,
-  VersionContext,
-  VersionMetadata,
-};
+export interface VersionHandlerFactory<E = typeof process.env> {
+  (context: VersionContext<E>): VersionHandler;
+  (): VersionHandler;
+}
 
 /**
  * バージョン処理の結果

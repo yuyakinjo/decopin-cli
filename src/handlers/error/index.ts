@@ -1,7 +1,6 @@
 import type {
   ErrorContext,
   ErrorExecutionOptions,
-  ErrorHandler,
   ErrorHandlerFactory,
   ErrorProcessingResult,
   ErrorTypeGuards,

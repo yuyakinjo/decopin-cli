@@ -1,8 +1,4 @@
-import type {
-  CLIError,
-  ModuleError,
-  ValidationError,
-} from '../../types/errors.js';
+import type { ModuleError, ValidationError } from '../../types/errors.js';
 
 /**
  * Type guard for validation errors

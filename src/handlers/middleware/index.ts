@@ -15,9 +15,9 @@ import type {
  * @param options - ミドルウェアハンドラーの実行オプション
  * @returns ミドルウェア処理の結果
  */
-export async function processMiddlewareHandler<E = typeof process.env>(
-  options: MiddlewareExecutionOptions<E>
-): Promise<MiddlewareProcessingResult> {
+export async function processMiddlewareHandler<
+  E extends Record<string, string | undefined> = typeof process.env,
+>(options: MiddlewareExecutionOptions<E>): Promise<MiddlewareProcessingResult> {
   const startTime = Date.now();
 
   try {
@@ -74,9 +74,9 @@ export async function executeMiddlewareFactory<E = typeof process.env>(
  * @param options - ミドルウェアチェーンの実行オプション
  * @returns Promise<void>
  */
-export async function executeMiddlewareChain<E = typeof process.env>(
-  options: MiddlewareChainOptions<E>
-): Promise<void> {
+export async function executeMiddlewareChain<
+  E extends Record<string, string | undefined> = typeof process.env,
+>(options: MiddlewareChainOptions<E>): Promise<void> {
   const { factories, factoryContext, middlewareContext, finalHandler } =
     options;
 
@@ -126,7 +126,7 @@ export function validateMiddlewareHandler(factory: MiddlewareFactory): boolean {
  * @returns デフォルトのミドルウェアハンドラー
  */
 export function createDefaultMiddlewareHandler(): MiddlewareHandler {
-  return async (context: MiddlewareContext, next: NextFunction) => {
+  return async (_context: MiddlewareContext, next: NextFunction) => {
     // デフォルトでは何もせずに次の処理に進む
     await next();
   };

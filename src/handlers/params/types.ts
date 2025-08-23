@@ -1,4 +1,5 @@
 import type * as v from 'valibot';
+import type { Context } from '../../types/context.js';
 import type { ValidationError } from '../../types/errors.js';
 
 /**
@@ -119,4 +120,24 @@ export interface ParamExtractionResult {
   data: Record<string, unknown>;
   /** 抽出に使用されたマッピング情報 */
   mappings?: ParamMapping[];
+}
+
+/**
+ * パラメータハンドラー用のコンテキスト
+ */
+export type ParamsContext<E = typeof process.env> = Context<E>;
+
+/**
+ * パラメータ定義関数の型
+ */
+export type ParamsDefinitionFunction<E = typeof process.env> =
+  | ((context: ParamsContext<E>) => ParamsHandler)
+  | (() => ParamsHandler);
+
+/**
+ * パラメータハンドラーファクトリー
+ */
+export interface ParamsHandlerFactory<E = typeof process.env> {
+  (context: ParamsContext<E>): ParamsHandler;
+  (): ParamsHandler;
 }

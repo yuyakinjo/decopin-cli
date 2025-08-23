@@ -1,10 +1,57 @@
-import type { MiddlewareFactoryContext } from '../../types/context.js';
-import type {
-  MiddlewareContext,
-  MiddlewareFactory,
-  MiddlewareHandler,
-  NextFunction,
-} from '../../types/middleware.js';
+import type { Context } from '../../types/context.js';
+
+// ミドルウェアハンドラー固有の型定義をここに移動
+
+/**
+ * ミドルウェアコンテキスト
+ */
+export interface MiddlewareContext<
+  Env extends Record<string, string | undefined> = Record<
+    string,
+    string | undefined
+  >,
+> {
+  /** Command path (e.g., ['user', 'create']) */
+  command: string[];
+  /** Parsed command line arguments */
+  args: string[];
+  /** Parsed command line options */
+  options: Record<string, string | boolean>;
+  /** Environment variables */
+  env: Env;
+}
+
+/**
+ * Function to proceed to the next middleware or command
+ */
+export type NextFunction = () => Promise<void> | void;
+
+/**
+ * Middleware handler function
+ */
+export type MiddlewareHandler = (
+  context: MiddlewareContext,
+  next: NextFunction
+) => Promise<void> | void;
+
+/**
+ * ミドルウェアファクトリー用のコンテキスト
+ */
+export type MiddlewareFactoryContext<E = typeof process.env> = Context<E>;
+
+/**
+ * Middleware factory function (exported from middleware.ts)
+ */
+export type MiddlewareFactory<E = typeof process.env> =
+  | ((context: MiddlewareFactoryContext<E>) => MiddlewareHandler)
+  | (() => MiddlewareHandler);
+
+/**
+ * Middleware export structure
+ */
+export interface MiddlewareExport {
+  default: MiddlewareFactory;
+}
 
 /**
  * ミドルウェアハンドラー関連の型定義
@@ -13,13 +60,10 @@ import type {
 /**
  * ミドルウェアハンドラーのファクトリー関数型
  */
-export type {
-  MiddlewareFactory,
-  MiddlewareHandler,
-  MiddlewareContext,
-  MiddlewareFactoryContext,
-  NextFunction,
-};
+export interface MiddlewareHandlerFactory<E = typeof process.env> {
+  (context: MiddlewareFactoryContext<E>): MiddlewareHandler;
+  (): MiddlewareHandler;
+}
 
 /**
  * ミドルウェア処理の結果
@@ -40,7 +84,9 @@ export interface MiddlewareProcessingResult {
 /**
  * ミドルウェアハンドラーの実行オプション
  */
-export interface MiddlewareExecutionOptions<E = typeof process.env> {
+export interface MiddlewareExecutionOptions<
+  E extends Record<string, string | undefined> = typeof process.env,
+> {
   /** ミドルウェアファクトリー */
   factory: MiddlewareFactory<E>;
   /** ファクトリー実行コンテキスト */
@@ -54,7 +100,9 @@ export interface MiddlewareExecutionOptions<E = typeof process.env> {
 /**
  * ミドルウェアチェーンの実行オプション
  */
-export interface MiddlewareChainOptions<E = typeof process.env> {
+export interface MiddlewareChainOptions<
+  E extends Record<string, string | undefined> = typeof process.env,
+> {
   /** ミドルウェアファクトリーの配列 */
   factories: MiddlewareFactory<E>[];
   /** ファクトリー実行コンテキスト */

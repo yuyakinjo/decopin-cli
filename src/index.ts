@@ -252,13 +252,15 @@ export type {
   CLIStructure,
   CommandFile,
 } from './core/types.js';
-
+// Export command-specific types
+export type {
+  CommandMetadata,
+  ParsedCommand,
+} from './handlers/command/types.js';
 // Export from existing types for compatibility
 export type {
   CommandContext,
   CommandHandler,
-  CommandMetadata,
-  ParsedCommand,
   ValidationError,
   ValidationResult,
 } from './types/index.js';

@@ -1,8 +1,22 @@
-import type { ErrorContext } from '../../types/context.js';
-import type {
-  ErrorHandler,
-  ErrorHandlerFactory,
-} from '../../types/validation.js';
+import type { CommandContext } from '../../types/context.js';
+
+// エラーハンドラー固有の型定義をここに移動
+
+/**
+ * エラーハンドラー用のコンテキスト
+ */
+export interface ErrorContext<T = unknown, E = unknown>
+  extends CommandContext<T, E> {
+  /** 発生したエラー */
+  error: unknown;
+}
+
+/**
+ * エラーハンドラーの型
+ */
+export type ErrorHandler<T = unknown, E = typeof process.env> =
+  | ((context: ErrorContext<T, E>) => Promise<void> | void)
+  | ((error: unknown) => Promise<void> | void);
 
 /**
  * エラーハンドラー関連の型定義
@@ -11,7 +25,10 @@ import type {
 /**
  * エラーハンドラーのファクトリー関数型
  */
-export type { ErrorHandlerFactory, ErrorHandler, ErrorContext };
+export interface ErrorHandlerFactory<T = unknown, E = typeof process.env> {
+  (context: ErrorContext<T, E>): Promise<void> | void;
+  (): Promise<void> | void;
+}
 
 /**
  * エラー処理の結果

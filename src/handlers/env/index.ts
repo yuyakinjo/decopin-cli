@@ -2,7 +2,6 @@ import type {
   EnvContext,
   EnvExecutionOptions,
   EnvFieldSchema,
-  EnvFieldType,
   EnvHandler,
   EnvHandlerFactory,
   EnvProcessingResult,
@@ -36,7 +35,7 @@ export async function processEnvHandler<E = typeof process.env>(
       validation,
       context,
       success: validation.success,
-      error: validation.success ? undefined : validation.errors,
+      error: validation.success ? undefined : validation.error,
     };
   } catch (error) {
     return {
@@ -44,14 +43,18 @@ export async function processEnvHandler<E = typeof process.env>(
       validation: {
         success: false,
         data: {},
-        errors: [
-          {
-            field: 'unknown',
-            message: 'Failed to process environment handler',
-            value: undefined,
-            expectedType: 'string',
-          },
-        ],
+        error: {
+          name: 'ValidationError',
+          message: 'Environment validation failed',
+          issues: [
+            {
+              path: [{ key: 'unknown', value: undefined }],
+              message: 'Failed to process environment handler',
+              expected: 'string',
+              received: 'undefined',
+            },
+          ],
+        } as ValidationError,
       },
       context: options.context,
       success: false,
@@ -103,7 +106,7 @@ export function validateEnvironmentVariables(
           field: fieldName,
           message: error.message,
           value: rawValue,
-          expectedType: fieldSchema.type,
+          expectedType: (fieldSchema as EnvFieldSchema).type,
         });
       }
     }
@@ -112,7 +115,20 @@ export function validateEnvironmentVariables(
   return {
     success: errors.length === 0,
     data,
-    errors,
+    error:
+      errors.length > 0
+        ? ({
+            name: 'ValidationError',
+            message: 'Environment validation failed',
+            issues: errors.map((err) => ({
+              path: [{ key: err.field, value: err.value }],
+              message: err.message,
+              expected: err.expectedType,
+              received: typeof err.value,
+            })),
+          } as ValidationError)
+        : undefined,
+    errors, // 後方互換性のため保持
   };
 }
 

@@ -2,6 +2,11 @@ import { readFileSync } from 'node:fs';
 import { dirname } from 'node:path';
 import * as ts from 'typescript';
 import type { CommandFile } from '../core/types.js';
+import type {
+  CommandParser,
+  ParsedCommandDefinition,
+  ValidationResult,
+} from '../handlers/command/types.js';
 import {
   isArrowFunctionNode,
   isCallExpressionNode,
@@ -11,14 +16,12 @@ import {
   isIdentifierNode,
   isObjectLiteralNode,
 } from '../internal/guards/ast.js';
-import type {
-  CommandDefinition,
-  CommandParser,
-  ValidationResult,
-} from './types.js';
 
 export class CommandParserImpl implements CommandParser {
-  async parse(content: string, filePath: string): Promise<CommandDefinition> {
+  async parse(
+    content: string,
+    filePath: string
+  ): Promise<ParsedCommandDefinition> {
     const sourceFile = ts.createSourceFile(
       filePath,
       content,
@@ -35,7 +38,7 @@ export class CommandParserImpl implements CommandParser {
     }
 
     const description = this.extractDescription(sourceFile);
-    const definition: CommandDefinition = {
+    const definition: ParsedCommandDefinition = {
       name: commandName,
       path: filePath,
       hasParams: false, // Will be updated by scanner
@@ -50,7 +53,7 @@ export class CommandParserImpl implements CommandParser {
     return definition;
   }
 
-  validate(definition: CommandDefinition): ValidationResult {
+  validate(definition: ParsedCommandDefinition): ValidationResult {
     const errors: string[] = [];
 
     if (!definition.name) {
@@ -143,9 +146,9 @@ export class CommandParserImpl implements CommandParser {
 
 export async function parseFiles(
   files: CommandFile[]
-): Promise<CommandDefinition[]> {
+): Promise<ParsedCommandDefinition[]> {
   const parser = new CommandParserImpl();
-  const definitions: CommandDefinition[] = [];
+  const definitions: ParsedCommandDefinition[] = [];
 
   // 並列処理で高速化
   const parsePromises = files.map(async (file) => {

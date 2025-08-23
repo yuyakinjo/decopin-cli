@@ -1,5 +1,4 @@
 import type {
-  CLIError,
   ErrorDisplayOptions,
   GlobalErrorContext,
   GlobalErrorExecutionOptions,

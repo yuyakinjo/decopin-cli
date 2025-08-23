@@ -1,9 +1,9 @@
-import type { ValidationError, ValidationIssue } from '../../types/errors.js';
 import type {
   EnvFieldSchema,
   EnvSchema,
   EnvValidationResult,
-} from '../../types/validation.js';
+} from '../../handlers/env/types.js';
+import type { ValidationError, ValidationIssue } from '../../types/errors.js';
 
 /**
  * 環境変数の値を指定された型に変換

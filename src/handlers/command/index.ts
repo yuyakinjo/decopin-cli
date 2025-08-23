@@ -4,7 +4,7 @@
  */
 
 import type { CLIStructure, CommandFile } from '../../core/types.js';
-import type { CommandDefinition } from './types.js';
+import type { ParsedCommandDefinition } from './types.js';
 
 // Lazy-loaded parser module
 let parserModule: typeof import('./parser.js') | null = null;
@@ -26,14 +26,14 @@ async function getGenerator() {
 
 export async function parseCommands(
   files: CommandFile[]
-): Promise<CommandDefinition[]> {
+): Promise<ParsedCommandDefinition[]> {
   // Parser module is initialized here
   const parser = await getParser();
   return parser.parseFiles(files);
 }
 
 export async function generateCommands(
-  commands: CommandDefinition[],
+  commands: ParsedCommandDefinition[],
   structure?: CLIStructure
 ): Promise<string> {
   // Generator module is initialized here
@@ -44,7 +44,10 @@ export async function generateCommands(
 
 // Re-export types (no runtime cost)
 export type {
-  CommandDefinition,
-  CommandHandler,
+  CommandDefinitionFactory,
   CommandMetadata,
+  DynamicParam,
+  ParsedCommand,
+  ParsedCommandDefinition,
+  RuntimeCommandDefinition,
 } from './types.js';
