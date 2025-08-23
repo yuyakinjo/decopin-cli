@@ -62,36 +62,36 @@
   - パラメータ関連の型定義を集約
   - _要件: 1.3, 3.3_
 
-- [ ] 4. その他のハンドラーの実装
+- [x] 4. その他のハンドラーの実装
   - help、error、middleware、env、version、global-errorハンドラーを実装する
   - _要件: 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 3.1, 3.2, 3.3_
 
-- [ ] 4.1 ヘルプハンドラーの実装
+- [x] 4.1 ヘルプハンドラーの実装
   - `src/handlers/help/index.ts`と`src/handlers/help/types.ts`を作成
   - ヘルプ生成ロジックを実装
   - _要件: 1.4, 3.1, 3.2, 3.3_
 
-- [ ] 4.2 エラーハンドラーの実装
+- [x] 4.2 エラーハンドラーの実装
   - `src/handlers/error/index.ts`と`src/handlers/error/types.ts`を作成
   - エラー処理ロジックを実装
   - _要件: 1.5, 3.1, 3.2, 3.3_
 
-- [ ] 4.3 ミドルウェアハンドラーの実装
+- [x] 4.3 ミドルウェアハンドラーの実装
   - `src/handlers/middleware/index.ts`と`src/handlers/middleware/types.ts`を作成
   - ミドルウェア処理ロジックを実装
   - _要件: 1.6, 3.1, 3.2, 3.3_
 
-- [ ] 4.4 環境変数ハンドラーの実装
+- [x] 4.4 環境変数ハンドラーの実装
   - `src/handlers/env/index.ts`と`src/handlers/env/types.ts`を作成
   - 環境変数処理ロジックを実装
   - _要件: 1.7, 3.1, 3.2, 3.3_
 
-- [ ] 4.5 バージョンハンドラーの実装
+- [x] 4.5 バージョンハンドラーの実装
   - `src/handlers/version/index.ts`と`src/handlers/version/types.ts`を作成
   - バージョン処理ロジックを実装
   - _要件: 1.8, 3.1, 3.2, 3.3_
 
-- [ ] 4.6 グローバルエラーハンドラーの実装
+- [x] 4.6 グローバルエラーハンドラーの実装
   - `src/handlers/global-error/index.ts`と`src/handlers/global-error/types.ts`を作成
   - グローバルエラー処理ロジックを実装
   - _要件: 1.9, 3.1, 3.2, 3.3_
