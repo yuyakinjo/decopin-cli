@@ -540,6 +540,13 @@ npm run build
 npx decopin-cli build --app-dir app --output-dir examples
 ```
 
+### TypeScript Toolchain
+
+Builds use the TypeScript 7 native compiler. Because TypeScript 7.0 does not
+provide a stable programmatic Compiler API, runtime AST parsing uses the
+[official `@typescript/typescript6` compatibility package](https://devblogs.microsoft.com/typescript/announcing-typescript-7-0/#running-side-by-side-with-typescript-6-0)
+side-by-side.
+
 ## 📋 CLI Options
 
 ### Build Command
