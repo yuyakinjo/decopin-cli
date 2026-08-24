@@ -78,7 +78,7 @@ describe('Environment Types Generation Integration', () => {
     if (fs.existsSync(testFile)) {
       // TypeScriptの型チェックを実行
       try {
-        const result = await $`npx tsc --noEmit --skipLibCheck ${testFile}`.quiet();
+        const result = await $`bunx tsc --ignoreConfig --noEmit --skipLibCheck ${testFile}`.quiet();
         expect(result.exitCode).toBe(0);
       } catch (error: any) {
         // 型エラーがある場合、エラーメッセージを確認

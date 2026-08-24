@@ -6,7 +6,7 @@ yarn-error.log*
 lerna-debug.log*
 .pnpm-debug.log*
 
-# Lock files (keep bun.lockb, ignore others)
+# Lock files (keep bun.lock, ignore others)
 package-lock.json
 yarn.lock
 pnpm-lock.yaml

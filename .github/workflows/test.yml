@@ -10,7 +10,7 @@ on:
       - 'test/**/*.ts'
       - 'test/**/*.js'
       - 'package.json'
-      - 'bun.lockb'
+      - 'bun.lock'
       - 'tsconfig*.json'
       - 'vitest.config.*'
       - '.github/workflows/test.yml'

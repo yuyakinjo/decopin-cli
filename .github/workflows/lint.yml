@@ -9,6 +9,8 @@ on:
       - 'app/**/*.js'
       - 'test/**/*.ts'
       - 'test/**/*.js'
+      - 'package.json'
+      - 'bun.lock'
       - 'biome.json'
       - '.github/workflows/lint.yml'
       - '.github/actions/**'

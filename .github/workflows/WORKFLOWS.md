@@ -27,7 +27,7 @@ The main continuous integration workflow that orchestrates all quality checks.
 - Only runs when source code, tests, or configuration files change
 
 **Jobs:**
-- Runs tests with Bun (latest version)
+- Runs tests with Bun 1.4.0
 - Executes lint checks using Biome
 - Builds both the library and example CLI app
 - Generates the CLI and verifies it works
@@ -166,7 +166,7 @@ paths:
   - 'app/**/*.js'
   - 'test/**/*.ts'
   - 'package.json'
-  - 'bun.lockb'
+  - 'bun.lock'
 ```
 
 ### Concurrency Control

@@ -8,7 +8,7 @@ on:
       - 'app/**/*.ts'
       - 'app/**/*.js'
       - 'package.json'
-      - 'bun.lockb'
+      - 'bun.lock'
       - 'tsconfig*.json'
       - '.github/workflows/build.yml'
       - '.github/actions/**'

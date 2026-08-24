@@ -11,7 +11,7 @@ on:
       - 'test/**/*.ts'
       - 'test/**/*.js'
       - 'package.json'
-      - 'bun.lockb'
+      - 'bun.lock'
       - 'tsconfig*.json'
       - 'biome.json'
       - 'vitest.config.*'
@@ -27,7 +27,7 @@ on:
       - 'test/**/*.ts'
       - 'test/**/*.js'
       - 'package.json'
-      - 'bun.lockb'
+      - 'bun.lock'
       - 'tsconfig*.json'
       - 'biome.json'
       - 'vitest.config.*'
@@ -43,10 +43,6 @@ jobs:
       NODE_ENV: test
       PORT: 3000
       DEBUG: false
-
-    strategy:
-      matrix:
-        bun-version: [latest]
 
     steps:
     - name: Checkout code
@@ -76,7 +72,7 @@ jobs:
 
     # テスト結果をGitHub Summaryに追加
     - name: Generate test summary
-      if: always() && matrix.bun-version == 'latest'
+      if: always()
       run: |
         echo "## Test Results 🧪" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY

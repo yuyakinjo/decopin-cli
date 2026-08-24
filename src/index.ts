@@ -13,7 +13,7 @@ import { Scanner } from './core/scanner.js';
 // Core types imported but renamed to avoid conflicts
 
 // Lazy-loaded modules
-// TODO: Replace with `import defer` when TypeScript 5.9 fully supports it
+// TODO: Evaluate `import defer` for this lazy-loading path
 // import defer * as commandModule from './handlers/command/index.js';
 let commandModule: typeof import('./handlers/command/index.js') | null = null;
 
