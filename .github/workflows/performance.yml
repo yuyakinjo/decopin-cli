@@ -215,7 +215,7 @@ jobs:
 
       - name: Comment PR with performance results
         if: github.event_name == 'pull_request' && steps.compare.outputs.performance_change
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         with:
           script: |
             const change = parseFloat('${{ steps.compare.outputs.performance_change }}');
