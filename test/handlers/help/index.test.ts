@@ -1,5 +1,9 @@
 import { describe, it, expect } from 'bun:test';
-import { createHelpHandler, generateHelpText } from '../../../src/handlers/help/index.js';
+
+import {
+  createHelpHandler,
+  generateHelpText,
+} from '../../../src/handlers/help/index.js';
 import type { HelpDefinition } from '../../../src/handlers/help/types.js';
 
 describe('Help Handler', () => {
@@ -8,7 +12,7 @@ describe('Help Handler', () => {
       const definition: HelpDefinition = {
         description: 'Test command',
         usage: 'test [options]',
-        examples: ['test --name value']
+        examples: ['test --name value'],
       };
 
       const handler = createHelpHandler(definition);
@@ -20,7 +24,7 @@ describe('Help Handler', () => {
       const definition: HelpDefinition = {
         description: 'Test command',
         usage: 'test [options]',
-        examples: ['test --name value']
+        examples: ['test --name value'],
       };
 
       const handler = createHelpHandler(definition);
@@ -39,12 +43,16 @@ describe('Help Handler', () => {
         usage: 'test [options] <input>',
         examples: [
           'test --verbose input.txt',
-          'test --output result.txt input.txt'
+          'test --output result.txt input.txt',
         ],
         options: [
-          { name: 'verbose', description: 'Enable verbose output', type: 'boolean' },
-          { name: 'output', description: 'Output file path', type: 'string' }
-        ]
+          {
+            name: 'verbose',
+            description: 'Enable verbose output',
+            type: 'boolean',
+          },
+          { name: 'output', description: 'Output file path', type: 'string' },
+        ],
       };
 
       const helpText = generateHelpText(definition);
@@ -61,7 +69,7 @@ describe('Help Handler', () => {
 
     it('should handle minimal help definition', () => {
       const definition: HelpDefinition = {
-        description: 'Simple command'
+        description: 'Simple command',
       };
 
       const helpText = generateHelpText(definition);

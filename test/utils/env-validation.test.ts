@@ -1,7 +1,11 @@
 import { describe, it, expect } from 'bun:test';
-import { parseEnvironmentVariables, createTypeSafeEnv } from '../../src/utils/validation/index.js';
+
 import type { EnvSchema } from '../../src/types/index.js';
 import { SCHEMA_TYPE } from '../../src/types/index.js';
+import {
+  parseEnvironmentVariables,
+  createTypeSafeEnv,
+} from '../../src/utils/validation/index.js';
 
 describe('Environment Variable Validation', () => {
   describe('parseEnvironmentVariables', () => {
@@ -108,7 +112,9 @@ describe('Environment Variable Validation', () => {
 
       expect(result.success).toBe(false);
       expect(result.error?.issues).toHaveLength(1);
-      expect(result.error?.issues?.[0].message).toBe('PORT must be at least 1000');
+      expect(result.error?.issues?.[0].message).toBe(
+        'PORT must be at least 1000'
+      );
     });
 
     it('should validate enum constraints', () => {
@@ -179,7 +185,9 @@ describe('Environment Variable Validation', () => {
       const result = parseEnvironmentVariables(envSchema, mockEnv);
 
       expect(result.success).toBe(false);
-      expect(result.error?.issues?.[0].message).toBe('Custom API_KEY error message');
+      expect(result.error?.issues?.[0].message).toBe(
+        'Custom API_KEY error message'
+      );
     });
   });
 

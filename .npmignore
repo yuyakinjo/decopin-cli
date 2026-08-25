@@ -17,7 +17,8 @@ tsconfig.json
 tsconfig.*.json
 vitest.config.ts
 mise.toml
-biome.jsonc
+.oxlintrc.json
+.oxfmtrc.json
 
 # Development dependencies and scripts
 .vscode/

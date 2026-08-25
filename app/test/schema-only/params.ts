@@ -1,5 +1,9 @@
 import * as v from 'valibot';
-import type { ParamsHandler, ParamsContext } from '../../../dist/types/index.js';
+
+import type {
+  ParamsHandler,
+  ParamsContext,
+} from '../../../dist/types/index.js';
 
 // schemaだけで詳細なバリデーションを行う例
 const UserSchema = v.object({
@@ -17,18 +21,17 @@ const UserSchema = v.object({
   ),
   // オプション引数
   role: v.optional(
-    v.pipe(
-      v.string(),
-      v.picklist(['admin', 'user', 'guest'], 'Invalid role')
-    ),
+    v.pipe(v.string(), v.picklist(['admin', 'user', 'guest'], 'Invalid role')),
     'user'
-  )
+  ),
 });
 
 export type UserData = v.InferInput<typeof UserSchema>;
 
-export default function createParams(context: ParamsContext<typeof process.env>): ParamsHandler {
+export default function createParams(
+  _context: ParamsContext<typeof process.env>
+): ParamsHandler {
   return {
-    schema: UserSchema
+    schema: UserSchema,
   };
 }

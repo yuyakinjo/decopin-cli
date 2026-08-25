@@ -2,37 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [ main, develop ]
-    paths:
-      - 'src/**/*.ts'
-      - 'src/**/*.js'
-      - 'app/**/*.ts'
-      - 'app/**/*.js'
-      - 'test/**/*.ts'
-      - 'test/**/*.js'
-      - 'package.json'
-      - 'bun.lock'
-      - 'tsconfig*.json'
-      - 'biome.json'
-      - 'vitest.config.*'
-      - '.github/workflows/ci.yml'
-      - '.github/actions/**'
+    branches: [main, develop]
   pull_request:
-    branches: [ main, develop ]
-    paths:
-      - 'src/**/*.ts'
-      - 'src/**/*.js'
-      - 'app/**/*.ts'
-      - 'app/**/*.js'
-      - 'test/**/*.ts'
-      - 'test/**/*.js'
-      - 'package.json'
-      - 'bun.lock'
-      - 'tsconfig*.json'
-      - 'biome.json'
-      - 'vitest.config.*'
-      - '.github/workflows/ci.yml'
-      - '.github/actions/**'
+    branches: [main, develop]
 
 jobs:
   test:
@@ -45,54 +17,59 @@ jobs:
       DEBUG: false
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    - name: Setup Bun Environment
-      uses: ./.github/actions/setup
+      - name: Setup Bun Environment
+        uses: ./.github/actions/setup
 
-    - name: Run linter
-      run: bun run lint
+      - name: Run Oxlint
+        run: bun run lint
 
-    - name: Build project
-      run: bun run build
+      - name: Check formatting with Oxfmt
+        run: bun run format:check
 
-    - name: Build example app
-      run: bun run build:app
+      - name: Build project
+        run: bun run build
 
-    - name: Generate CLI
-      run: bun run dev:regen
+      - name: Build example app
+        run: bun run build:app
 
-    - name: Run tests
-      id: test
-      run: |
-        bun test 2>&1 | tee test-output.log
-        echo "test_exit_code=${PIPESTATUS[0]}" >> $GITHUB_OUTPUT
-      continue-on-error: true
+      - name: Generate CLI
+        run: bun run dev:regen
 
-    # テスト結果をGitHub Summaryに追加
-    - name: Generate test summary
-      if: always()
-      run: |
-        echo "## Test Results 🧪" >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
+      - name: Run tests
+        id: test
+        run: |
+          bun test 2>&1 | tee test-output.log
+          echo "test_exit_code=${PIPESTATUS[0]}" >> "$GITHUB_OUTPUT"
+        continue-on-error: true
 
-        if [ "${{ steps.test.outputs.test_exit_code }}" == "0" ]; then
-          echo "✅ All tests passed!" >> $GITHUB_STEP_SUMMARY
-        else
-          echo "❌ Some tests failed" >> $GITHUB_STEP_SUMMARY
-        fi
+      # テスト結果をGitHub Summaryに追加
+      - name: Generate test summary
+        if: always()
+        run: |
+          {
+            echo "## Test Results 🧪"
+            echo ""
 
-        echo "" >> $GITHUB_STEP_SUMMARY
-        echo "### Test Output" >> $GITHUB_STEP_SUMMARY
-        echo '```' >> $GITHUB_STEP_SUMMARY
-        tail -n 50 test-output.log >> $GITHUB_STEP_SUMMARY
-        echo '```' >> $GITHUB_STEP_SUMMARY
+            if [ "${{ steps.test.outputs.test_exit_code }}" == "0" ]; then
+              echo "✅ All tests passed!"
+            else
+              echo "❌ Some tests failed"
+            fi
 
-        # Fail the job if tests failed
-        if [ "${{ steps.test.outputs.test_exit_code }}" != "0" ]; then
-          exit 1
-        fi
+            echo ""
+            echo "### Test Output"
+            echo '```'
+            tail -n 50 test-output.log
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          # Fail the job if tests failed
+          if [ "${{ steps.test.outputs.test_exit_code }}" != "0" ]; then
+            exit 1
+          fi
 
   # Job to check if all required checks passed
   all-checks:

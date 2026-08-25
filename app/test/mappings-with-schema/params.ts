@@ -1,8 +1,14 @@
 import * as v from 'valibot';
-import type { ParamsHandler, ParamsContext } from '../../../dist/types/index.js';
+
+import type {
+  ParamsHandler,
+  ParamsContext,
+} from '../../../dist/types/index.js';
 
 // mappingsで基本的な構造を定義し、schemaで詳細なバリデーションを追加
-export default function createParams(context: ParamsContext<typeof process.env>): ParamsHandler {
+export default function createParams(
+  _context: ParamsContext<typeof process.env>
+): ParamsHandler {
   return {
     // 詳細なバリデーション用のschema
     schema: v.object({

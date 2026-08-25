@@ -1,5 +1,9 @@
 import { describe, it, expect } from 'bun:test';
-import { createVersionHandler, formatVersion } from '../../../src/handlers/version/index.js';
+
+import {
+  createVersionHandler,
+  formatVersion,
+} from '../../../src/handlers/version/index.js';
 import type { VersionDefinition } from '../../../src/handlers/version/types.js';
 
 describe('Version Handler', () => {
@@ -7,7 +11,7 @@ describe('Version Handler', () => {
     it('should create a version handler', () => {
       const definition: VersionDefinition = {
         version: '1.0.0',
-        name: 'test-cli'
+        name: 'test-cli',
       };
 
       const handler = createVersionHandler(definition);
@@ -19,7 +23,7 @@ describe('Version Handler', () => {
       const definition: VersionDefinition = {
         version: '2.1.0',
         name: 'my-cli',
-        description: 'A test CLI tool'
+        description: 'A test CLI tool',
       };
 
       const handler = createVersionHandler(definition);
@@ -35,7 +39,7 @@ describe('Version Handler', () => {
     it('should format version with name only', () => {
       const definition: VersionDefinition = {
         version: '1.0.0',
-        name: 'simple-cli'
+        name: 'simple-cli',
       };
 
       const formatted = formatVersion(definition);
@@ -47,7 +51,7 @@ describe('Version Handler', () => {
       const definition: VersionDefinition = {
         version: '1.2.3',
         name: 'advanced-cli',
-        description: 'An advanced command line tool'
+        description: 'An advanced command line tool',
       };
 
       const formatted = formatVersion(definition);
@@ -63,8 +67,8 @@ describe('Version Handler', () => {
         buildInfo: {
           commit: 'abc123',
           date: '2024-01-01',
-          branch: 'main'
-        }
+          branch: 'main',
+        },
       };
 
       const formatted = formatVersion(definition);

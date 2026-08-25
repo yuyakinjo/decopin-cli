@@ -26,16 +26,16 @@ import type { ParamsContext, ParamsHandler } from 'decopin-cli';
 export default function createParams(context: ParamsContext): ParamsHandler {
   // Full type safety and IntelliSense for context
   const isDev = context.env.NODE_ENV === 'development';
-  
+
   return {
     mappings: [
       {
         field: 'name',
         type: 'string',
         argIndex: 0,
-        defaultValue: isDev ? 'dev-user' : 'prod-user'
-      }
-    ]
+        defaultValue: isDev ? 'dev-user' : 'prod-user',
+      },
+    ],
   };
 }
 ```
@@ -47,9 +47,7 @@ import type { ParamsHandler } from 'decopin-cli';
 
 export default function createParams(): ParamsHandler {
   return {
-    mappings: [
-      { field: 'name', type: 'string', argIndex: 0 }
-    ]
+    mappings: [{ field: 'name', type: 'string', argIndex: 0 }],
   };
 }
 ```
@@ -69,7 +67,7 @@ export default async function createCommand(
 ) {
   // context.validatedData is typed as UserData
   const { name, email } = context.validatedData;
-  
+
   // context.env has process.env types
   if (context.env.DEBUG) {
     console.log('Debug mode enabled');

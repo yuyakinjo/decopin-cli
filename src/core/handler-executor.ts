@@ -176,7 +176,8 @@ export class HandlerExecutor {
       throw new Error(
         `Failed to execute handler '${definition.name}': ${
           error instanceof Error ? error.message : String(error)
-        }`
+        }`,
+        { cause: error }
       );
     }
   }

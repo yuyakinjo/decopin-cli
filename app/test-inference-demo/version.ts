@@ -7,7 +7,7 @@ export default function createVersion(
   // Can use environment to customize version info
   const buildNumber = context.env.BUILD_NUMBER || 'local';
   const gitCommit = context.env.GIT_COMMIT || 'unknown';
-  
+
   return {
     version: '1.0.0',
     metadata: {
@@ -18,7 +18,7 @@ export default function createVersion(
       build: buildNumber,
       commit: gitCommit,
       environment: context.env.NODE_ENV || 'development',
-      timestamp: new Date().toISOString()
-    }
+      timestamp: new Date().toISOString(),
+    },
   };
 }

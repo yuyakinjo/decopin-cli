@@ -1,6 +1,11 @@
-import type { ParamsHandler, ParamsContext } from '../../../dist/types/index.js';
+import type {
+  ParamsHandler,
+  ParamsContext,
+} from '../../../dist/types/index.js';
 
-export default function createParams(context: ParamsContext<typeof process.env>): ParamsHandler {
+export default function createParams(
+  _context: ParamsContext<typeof process.env>
+): ParamsHandler {
   return {
     schema: {
       name: {

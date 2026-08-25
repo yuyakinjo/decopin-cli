@@ -7,7 +7,9 @@ interface ValidatedData {
   role: 'admin' | 'user' | 'guest';
 }
 
-export default async function manualSchemaCommand(context: CommandContext<ValidatedData>) {
+export default async function manualSchemaCommand(
+  context: CommandContext<ValidatedData>
+) {
   console.log('🧪 Manual Schema Test Command');
   console.log('============================');
 

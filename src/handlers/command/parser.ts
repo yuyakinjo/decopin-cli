@@ -1,6 +1,8 @@
 import { readFileSync } from 'node:fs';
 import { dirname } from 'node:path';
+
 import * as ts from 'typescript';
+
 import type { CommandFile } from '../../core/types.js';
 import {
   isArrowFunctionNode,

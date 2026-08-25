@@ -1,11 +1,15 @@
-import * as v from 'valibot';
 import { describe, expect, it } from 'bun:test';
 
 describe('params.ts files', () => {
   describe('user/create/params.ts', () => {
     it('should export valid params definition', async () => {
       const paramsModule = await import('../../app/user/create/params.js');
-      const baseContext = { args: [], env: process.env, command: [], options: {} };
+      const baseContext = {
+        args: [],
+        env: process.env,
+        command: [],
+        options: {},
+      };
       const paramsDefinition = paramsModule.default(baseContext);
 
       expect(paramsDefinition).toBeDefined();
@@ -16,7 +20,12 @@ describe('params.ts files', () => {
 
     it('should have correct field mappings', async () => {
       const paramsModule = await import('../../app/user/create/params.js');
-      const baseContext = { args: [], env: process.env, command: [], options: {} };
+      const baseContext = {
+        args: [],
+        env: process.env,
+        command: [],
+        options: {},
+      };
       const paramsDefinition = paramsModule.default(baseContext);
 
       const mappings = paramsDefinition.mappings;
@@ -36,7 +45,12 @@ describe('params.ts files', () => {
 
     it('should have valid valibot schema', async () => {
       const paramsModule = await import('../../app/user/create/params.js');
-      const baseContext = { args: [], env: process.env, command: [], options: {} };
+      const baseContext = {
+        args: [],
+        env: process.env,
+        command: [],
+        options: {},
+      };
       const paramsDefinition = paramsModule.default(baseContext);
 
       // Skip direct valibot validation for mappings-only params
@@ -59,7 +73,12 @@ describe('params.ts files', () => {
 
     it('should reject invalid data', async () => {
       const paramsModule = await import('../../app/user/create/params.js');
-      const baseContext = { args: [], env: process.env, command: [], options: {} };
+      const baseContext = {
+        args: [],
+        env: process.env,
+        command: [],
+        options: {},
+      };
       const paramsDefinition = paramsModule.default(baseContext);
 
       // Skip direct valibot validation for mappings-only params
@@ -96,7 +115,12 @@ describe('params.ts files', () => {
   describe('hello/params.ts', () => {
     it('should export valid params definition', async () => {
       const paramsModule = await import('../../app/hello/params.js');
-      const baseContext = { args: [], env: process.env, command: [], options: {} };
+      const baseContext = {
+        args: [],
+        env: process.env,
+        command: [],
+        options: {},
+      };
       const paramsDefinition = paramsModule.default(baseContext);
 
       expect(paramsDefinition).toBeDefined();
@@ -107,7 +131,12 @@ describe('params.ts files', () => {
 
     it('should have correct field mappings with default value', async () => {
       const paramsModule = await import('../../app/hello/params.js');
-      const baseContext = { args: [], env: process.env, command: [], options: {} };
+      const baseContext = {
+        args: [],
+        env: process.env,
+        command: [],
+        options: {},
+      };
       const paramsDefinition = paramsModule.default(baseContext);
 
       const mappings = paramsDefinition.mappings;
@@ -122,7 +151,12 @@ describe('params.ts files', () => {
 
     it('should have valid valibot schema', async () => {
       const paramsModule = await import('../../app/hello/params.js');
-      const baseContext = { args: [], env: process.env, command: [], options: {} };
+      const baseContext = {
+        args: [],
+        env: process.env,
+        command: [],
+        options: {},
+      };
       const paramsDefinition = paramsModule.default(baseContext);
 
       // Skip direct valibot validation for mappings-only params
@@ -142,7 +176,12 @@ describe('params.ts files', () => {
 
     it('should reject invalid data', async () => {
       const paramsModule = await import('../../app/hello/params.js');
-      const baseContext = { args: [], env: process.env, command: [], options: {} };
+      const baseContext = {
+        args: [],
+        env: process.env,
+        command: [],
+        options: {},
+      };
       const paramsDefinition = paramsModule.default(baseContext);
 
       // Skip direct valibot validation for mappings-only params

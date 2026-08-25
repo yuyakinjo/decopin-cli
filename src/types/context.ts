@@ -23,8 +23,10 @@ export interface BaseCommandContext extends BaseContextProperties {
 /**
  * コマンドの実行コンテキスト（関数オーバーロード型定義）
  */
-export interface CommandContext<T = unknown, E = unknown>
-  extends BaseContextProperties {
+export interface CommandContext<
+  T = unknown,
+  E = unknown,
+> extends BaseContextProperties {
   /** バリデーション済みデータ（params.tsがある場合のみ） */
   validatedData: T;
   /** 型安全な環境変数 */

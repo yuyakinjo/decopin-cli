@@ -1,5 +1,9 @@
 import * as v from 'valibot';
-import type { ParamsHandler, ParamsContext } from '../../../dist/types/index.js';
+
+import type {
+  ParamsHandler,
+  ParamsContext,
+} from '../../../dist/types/index.js';
 
 // バリデーションテスト用のスキーマ
 const ValidationTestSchema = v.object({
@@ -9,7 +13,9 @@ const ValidationTestSchema = v.object({
 
 export type ValidationTestData = v.InferInput<typeof ValidationTestSchema>;
 
-export default function createParams(context: ParamsContext<typeof process.env>): ParamsHandler {
+export default function createParams(
+  _context: ParamsContext<typeof process.env>
+): ParamsHandler {
   return {
     mappings: [
       {
@@ -18,7 +24,7 @@ export default function createParams(context: ParamsContext<typeof process.env>)
         option: 'message',
         argIndex: 0,
         required: true,
-        description: 'Message to validate'
+        description: 'Message to validate',
       },
       {
         field: 'count',
@@ -26,8 +32,8 @@ export default function createParams(context: ParamsContext<typeof process.env>)
         option: 'count',
         argIndex: 1,
         defaultValue: 1,
-        description: 'Count value'
-      }
-    ]
+        description: 'Count value',
+      },
+    ],
   };
 }

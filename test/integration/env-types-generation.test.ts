@@ -1,11 +1,17 @@
 import { describe, it, expect, beforeAll, afterAll } from 'bun:test';
-import { $ } from 'bun';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 
+import { $ } from 'bun';
+
 describe('Environment Types Generation Integration', () => {
   const projectRoot = process.cwd();
-  const generatedTypesPath = path.join(projectRoot, 'app', 'generated', 'env-types.ts');
+  const generatedTypesPath = path.join(
+    projectRoot,
+    'app',
+    'generated',
+    'env-types.ts'
+  );
   let originalContent: string | null = null;
 
   beforeAll(async () => {
@@ -29,7 +35,7 @@ describe('Environment Types Generation Integration', () => {
   it('should generate env types during build process', async () => {
     // ビルドコマンドを実行
     const result = await $`npm run build`.quiet();
-    
+
     // ビルドが成功したことを確認
     expect(result.exitCode).toBe(0);
 
@@ -38,7 +44,7 @@ describe('Environment Types Generation Integration', () => {
 
     // 生成されたファイルの内容を確認
     const content = fs.readFileSync(generatedTypesPath, 'utf-8');
-    
+
     // 必要な型定義が含まれていることを確認
     expect(content).toContain('// This file is auto-generated');
     expect(content).toContain('export interface AppEnv');
@@ -56,7 +62,7 @@ describe('Environment Types Generation Integration', () => {
 
     // 型生成コマンドを実行
     const result = await $`npm run generate:env-types`.quiet();
-    
+
     // コマンドが成功したことを確認
     expect(result.exitCode).toBe(0);
 
@@ -73,21 +79,33 @@ describe('Environment Types Generation Integration', () => {
     await $`npm run generate:env-types`.quiet();
 
     // TypeScriptコンパイラでapp/user/create/command.tsをチェック
-    const testFile = path.join(projectRoot, 'app', 'user', 'create', 'command.ts');
-    
+    const testFile = path.join(
+      projectRoot,
+      'app',
+      'user',
+      'create',
+      'command.ts'
+    );
+
     if (fs.existsSync(testFile)) {
       // TypeScriptの型チェックを実行
       try {
-        const result = await $`bunx tsc --ignoreConfig --noEmit --skipLibCheck ${testFile}`.quiet();
+        const result =
+          await $`bunx tsc --ignoreConfig --noEmit --skipLibCheck --types bun,node ${testFile}`.quiet();
         expect(result.exitCode).toBe(0);
-      } catch (error: any) {
+      } catch (error: unknown) {
         // 型エラーがある場合、エラーメッセージを確認
-        const stderr = error.stderr?.toString() || '';
-        
+        const stderr =
+          typeof error === 'object' && error !== null && 'stderr' in error
+            ? String(error.stderr)
+            : '';
+
         // AppEnv関連のエラーがないことを確認
-        expect(stderr).not.toContain("Cannot find module '../../generated/env-types.js'");
+        expect(stderr).not.toContain(
+          "Cannot find module '../../generated/env-types.js'"
+        );
         expect(stderr).not.toContain("Property 'AppEnv' does not exist");
-        
+
         // 他の型エラーは許容（このテストの範囲外）
       }
     }
@@ -98,7 +116,7 @@ describe('Environment Types Generation Integration', () => {
     const originalEnvContent = fs.readFileSync(envPath, 'utf-8');
 
     try {
-      // env.tsを変更（新しい環境変数を追加）  
+      // env.tsを変更（新しい環境変数を追加）
       const modifiedContent = originalEnvContent.replace(
         '  DEBUG: {',
         `  TEST_NEW_VAR: {
@@ -108,7 +126,7 @@ describe('Environment Types Generation Integration', () => {
   },
   DEBUG: {`
       );
-      
+
       fs.writeFileSync(envPath, modifiedContent);
 
       // 型を再生成
@@ -118,11 +136,10 @@ describe('Environment Types Generation Integration', () => {
       // 新しい変数が型定義に含まれていることを確認
       const content = fs.readFileSync(generatedTypesPath, 'utf-8');
       expect(content).toContain('TEST_NEW_VAR: string');
-
     } finally {
       // env.tsを元に戻す
       fs.writeFileSync(envPath, originalEnvContent);
-      
+
       // 型を元に戻す
       await $`npm run generate:env-types`.quiet();
     }
@@ -132,7 +149,7 @@ describe('Environment Types Generation Integration', () => {
     // dev-watch.tsの内容を確認
     const devWatchPath = path.join(projectRoot, 'scripts', 'dev-watch.ts');
     const devWatchContent = fs.readFileSync(devWatchPath, 'utf-8');
-    
+
     // generated/ディレクトリが無視されることを確認
     expect(devWatchContent).toContain("filename.includes('generated/')");
     expect(devWatchContent).toContain("filename.includes('.d.ts')");
@@ -145,7 +162,7 @@ describe('Environment Types Generation Integration', () => {
     // env.tsから実際のスキーマを読み込む
     const envPath = path.join(projectRoot, 'app', 'env.ts');
     const envContent = fs.readFileSync(envPath, 'utf-8');
-    
+
     // スキーマから環境変数名を抽出
     const schemaVarNames: string[] = [];
     const schemaMatches = envContent.matchAll(/^\s*(\w+):\s*\{/gm);
@@ -159,7 +176,9 @@ describe('Environment Types Generation Integration', () => {
     // 生成された型から環境変数名を抽出
     const typesContent = fs.readFileSync(generatedTypesPath, 'utf-8');
     const typeVarNames: string[] = [];
-    const typeMatches = typesContent.matchAll(/^\s*(\w+):\s*(string|number|boolean);/gm);
+    const typeMatches = typesContent.matchAll(
+      /^\s*(\w+):\s*(string|number|boolean);/gm
+    );
     for (const match of typeMatches) {
       typeVarNames.push(match[1]);
     }

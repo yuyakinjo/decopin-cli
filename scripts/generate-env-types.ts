@@ -1,7 +1,8 @@
 #!/usr/bin/env bunx tsx
-import { generateEnvTypes } from '../src/generator/env-types-generator.js';
-import * as path from 'node:path';
 import * as fs from 'node:fs';
+import * as path from 'node:path';
+
+import { generateEnvTypes } from '../src/generator/env-types-generator.js';
 
 const projectRoot = path.resolve(process.cwd());
 const envFilePath = path.join(projectRoot, 'app', 'env.ts');

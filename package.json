@@ -2,13 +2,35 @@
   "name": "decopin-cli",
   "version": "0.4.2",
   "description": "TypeScript-first CLI builder with lazy loading architecture",
-  "type": "module",
-  "packageManager": "bun@1.4.0",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
+  "keywords": [
+    "builder",
+    "cli",
+    "file-based",
+    "nextjs-style",
+    "typescript"
+  ],
+  "homepage": "https://github.com/username/decopin-cli#readme",
+  "bugs": {
+    "url": "https://github.com/username/decopin-cli/issues"
+  },
+  "license": "MIT",
+  "author": "yuyakinjo",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/username/decopin-cli.git"
+  },
   "bin": {
     "decopin": "dist/cli.js"
   },
+  "files": [
+    "dist",
+    "bun.lock",
+    "README.md",
+    "LICENSE"
+  ],
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "scripts": {
     "build": "tsc && bun run generate:env-types && bun run build:app && bun run build:prod",
     "generate:env-types": "bunx tsx scripts/generate-env-types.ts",
@@ -21,7 +43,11 @@
     "test:integration": "bun run build && bun run build:app && bun run dev:regen && bun test test/integration/",
     "test:integration:only": "bun test test/integration/",
     "clean": "rm -rf dist examples",
-    "lint": "biome check --write .",
+    "lint": "oxlint .",
+    "lint:fix": "oxlint --fix .",
+    "format": "oxfmt .",
+    "format:check": "oxfmt --check .",
+    "check": "bun run lint && bun run format:check",
     "benchmark": "scripts/benchmark.sh",
     "benchmark:before": "scripts/benchmark.sh before",
     "benchmark:after": "scripts/benchmark.sh after",
@@ -30,40 +56,19 @@
     "benchmark:clean": "scripts/benchmark.sh clean",
     "prepublishOnly": "bun run clean && bun run build:prod && bun run build:app && bun run dev:regen && bun test --bail"
   },
-  "keywords": [
-    "cli",
-    "builder",
-    "typescript",
-    "file-based",
-    "nextjs-style"
-  ],
-  "author": "yuyakinjo",
-  "license": "MIT",
-  "files": [
-    "dist",
-    "bun.lock",
-    "README.md",
-    "LICENSE"
-  ],
-  "engines": {
-    "node": ">=18.0.0"
-  },
   "dependencies": {
     "typescript": "npm:@typescript/typescript6@^6.0.2",
     "valibot": "^1.1.0"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.2.0",
-    "@typescript/native": "npm:typescript@^7.0.2",
     "@types/bun": "^1.4.0",
-    "@types/node": "^24.3.0"
+    "@types/node": "^24.3.0",
+    "@typescript/native": "npm:typescript@^7.0.2",
+    "oxfmt": "^0.65.0",
+    "oxlint": "^1.80.0"
   },
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/username/decopin-cli.git"
+  "engines": {
+    "node": ">=18.0.0"
   },
-  "bugs": {
-    "url": "https://github.com/username/decopin-cli/issues"
-  },
-  "homepage": "https://github.com/username/decopin-cli#readme"
+  "packageManager": "bun@1.4.0"
 }

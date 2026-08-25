@@ -64,31 +64,31 @@ jobs:
         run: |
           # Restore performance report
           cp /tmp/performance.md performance.md
-          
+
           mkdir -p performance-history
-          
+
           # Get current commit info
           COMMIT_SHA=$(git rev-parse --short HEAD)
           COMMIT_DATE=$(date -u +%Y-%m-%d)
-          
+
           # Extract current metrics
           CURRENT_AVG=$(grep -o 'Average startup time.*[0-9][0-9]*\.[0-9][0-9]*ms' performance.md | grep -o '[0-9][0-9]*\.[0-9][0-9]*' | head -1)
           CURRENT_HELP=$(grep -o 'Help/Error commands.*[0-9][0-9]*\.[0-9][0-9]*ms' performance.md | grep -o '[0-9][0-9]*\.[0-9][0-9]*' | head -1)
           CURRENT_EXEC=$(grep -o 'Execution commands.*[0-9][0-9]*\.[0-9][0-9]*ms' performance.md | grep -o '[0-9][0-9]*\.[0-9][0-9]*' | head -1)
-          
+
           # Create or update version history
           if [ ! -f "performance-history/versions.csv" ]; then
             echo "sha,date,avg,help,exec" > performance-history/versions.csv
           fi
-          
+
           # Add current version AFTER updating the report with previous versions
           # This ensures the current run is shown as "Current" and not in the history
-          
+
           # Update version history in the report with existing versions
           if [ -f "performance-history/versions.csv" ]; then
             cat > update-version-history.ts << 'EOF'
           import { readFileSync, writeFileSync, existsSync } from 'fs';
-          
+
           interface Version {
             sha: string;
             date: string;
@@ -96,7 +96,7 @@ jobs:
             help: string;
             exec: string;
           }
-          
+
           function parseCSV(csvPath: string): Version[] {
             if (!existsSync(csvPath)) {
               return [];
@@ -110,7 +110,7 @@ jobs:
               return { sha, date, avg, help, exec };
             });
           }
-          
+
           function updatePerformanceReport(reportPath: string, versions: Version[]) {
             const content = readFileSync(reportPath, 'utf8');
             const lines = content.split('\n');
@@ -142,11 +142,11 @@ jobs:
             
             writeFileSync(reportPath, newLines.join('\n'));
           }
-          
+
           // Main execution
           const csvPath = 'performance-history/versions.csv';
           const reportPath = 'performance.md';
-          
+
           const versions = parseCSV(csvPath);
           if (versions.length > 0) {
             updatePerformanceReport(reportPath, versions);
@@ -159,20 +159,20 @@ jobs:
             bun run update-version-history.ts
             rm -f update-version-history.ts
           fi
-          
+
           # Now add the current version to CSV for future runs
           echo "${COMMIT_SHA},${COMMIT_DATE},${CURRENT_AVG},${CURRENT_HELP},${CURRENT_EXEC}" >> performance-history/versions.csv
-          
+
           # Keep only last 10 versions
           head -1 performance-history/versions.csv > performance-history/versions.tmp
           tail -n +2 performance-history/versions.csv | tail -10 >> performance-history/versions.tmp
           mv performance-history/versions.tmp performance-history/versions.csv
-          
+
           # Save files
           cp performance.md "performance-history/$(date -u +%Y-%m-%d-%H%M%S).md"
           cp performance.md performance-history/latest.md
           cp performance.md latest.md
-          
+
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add performance-history/ latest.md
@@ -292,7 +292,7 @@ jobs:
             } catch (e) {
               console.log('Could not fetch version history:', e.message);
             }
-            
+
             const comment = [
               `## ${emoji} Performance Benchmark Results`,
               '',

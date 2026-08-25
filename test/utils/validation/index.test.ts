@@ -1,15 +1,27 @@
 import { describe, expect, it } from 'bun:test';
+
 import * as v from 'valibot';
-import { extractData, createValidationFunction, isValibotSchema } from '../../../src/utils/validation/index.js';
+
 import type { ParamsHandler } from '../../../src/types/index.js';
+import {
+  extractData,
+  createValidationFunction,
+  isValibotSchema,
+} from '../../../src/utils/validation/index.js';
 
 describe('validation utils', () => {
   describe('extractData', () => {
     const paramsDefinition: ParamsHandler = {
       mappings: [
         { field: 'name', type: 'string', argIndex: 0, option: 'name' },
-        { field: 'age', type: 'number', argIndex: 1, option: 'age', defaultValue: 25 }
-      ]
+        {
+          field: 'age',
+          type: 'number',
+          argIndex: 1,
+          option: 'age',
+          defaultValue: 25,
+        },
+      ],
     };
 
     it('should extract data from options', () => {
@@ -22,21 +34,16 @@ describe('validation utils', () => {
 
       expect(result).toEqual({
         name: 'John',
-        age: '30'
+        age: '30',
       });
     });
 
     it('should extract data from position arguments', () => {
-      const result = extractData(
-        ['Alice', '25'],
-        {},
-        {},
-        paramsDefinition
-      );
+      const result = extractData(['Alice', '25'], {}, {}, paramsDefinition);
 
       expect(result).toEqual({
         name: 'Alice',
-        age: '25'
+        age: '25',
       });
     });
 
@@ -50,35 +57,25 @@ describe('validation utils', () => {
 
       expect(result).toEqual({
         name: 'Alice', // position引数を優先
-        age: '25'      // position引数から
+        age: '25', // position引数から
       });
     });
 
     it('should use default values when no option or argument provided', () => {
-      const result = extractData(
-        ['John'],
-        {},
-        {},
-        paramsDefinition
-      );
+      const result = extractData(['John'], {}, {}, paramsDefinition);
 
       expect(result).toEqual({
         name: 'John',
-        age: 25 // デフォルト値
+        age: 25, // デフォルト値
       });
     });
 
     it('should handle mixed scenarios correctly', () => {
-      const result = extractData(
-        ['Bob'],
-        { age: '35' },
-        {},
-        paramsDefinition
-      );
+      const result = extractData(['Bob'], { age: '35' }, {}, paramsDefinition);
 
       expect(result).toEqual({
         name: 'Bob',
-        age: '35'
+        age: '35',
       });
     });
   });
@@ -86,24 +83,32 @@ describe('validation utils', () => {
   describe('createValidationFunction', () => {
     const paramsDefinition: ParamsHandler = {
       mappings: [
-        { field: 'name', type: 'string', option: 'name', argIndex: 0, required: true },
-        { field: 'email', type: 'string', option: 'email', argIndex: 1, required: true }
-      ]
+        {
+          field: 'name',
+          type: 'string',
+          option: 'name',
+          argIndex: 0,
+          required: true,
+        },
+        {
+          field: 'email',
+          type: 'string',
+          option: 'email',
+          argIndex: 1,
+          required: true,
+        },
+      ],
     };
 
     it('should create a validation function that validates successfully', async () => {
       const validateFn = createValidationFunction(paramsDefinition);
 
-      const result = await validateFn(
-        ['John', 'john@example.com'],
-        {},
-        {}
-      );
+      const result = await validateFn(['John', 'john@example.com'], {}, {});
 
       expect(result.success).toBe(true);
       expect(result.data).toEqual({
         name: 'John',
-        email: 'john@example.com'
+        email: 'john@example.com',
       });
     });
 
@@ -111,8 +116,8 @@ describe('validation utils', () => {
       const schemaDefinition: ParamsHandler = {
         schema: v.object({
           name: v.pipe(v.string(), v.minLength(1)),
-          email: v.pipe(v.string(), v.email())
-        })
+          email: v.pipe(v.string(), v.email()),
+        }),
       };
 
       const validateFn = createValidationFunction(schemaDefinition);
@@ -131,9 +136,21 @@ describe('validation utils', () => {
     it('should handle validation with default values', async () => {
       const paramsWithDefaults: ParamsHandler = {
         mappings: [
-          { field: 'name', type: 'string', option: 'name', argIndex: 0, required: true },
-          { field: 'count', type: 'number', option: 'count', argIndex: 1, defaultValue: 5 }
-        ]
+          {
+            field: 'name',
+            type: 'string',
+            option: 'name',
+            argIndex: 0,
+            required: true,
+          },
+          {
+            field: 'count',
+            type: 'number',
+            option: 'count',
+            argIndex: 1,
+            defaultValue: 5,
+          },
+        ],
       };
 
       const validateFn = createValidationFunction(paramsWithDefaults);
@@ -143,13 +160,13 @@ describe('validation utils', () => {
       expect(result.success).toBe(true);
       expect(result.data).toEqual({
         name: 'John',
-        count: 5
+        count: 5,
       });
     });
 
     it('should handle validation errors gracefully', async () => {
       const invalidParamsDefinition = {
-        schema: { invalid: 'schema' } // 無効なスキーマ
+        schema: { invalid: 'schema' }, // 無効なスキーマ
       } as ParamsHandler;
 
       const validateFn = createValidationFunction(invalidParamsDefinition);
@@ -175,7 +192,7 @@ describe('validation utils', () => {
     it('should return true for valid valibot object schema', () => {
       const schema = v.object({
         name: v.string(),
-        age: v.number()
+        age: v.number(),
       });
       expect(isValibotSchema(schema)).toBe(true);
     });
@@ -217,7 +234,7 @@ describe('validation utils', () => {
     it('should return false for object missing required properties', () => {
       const invalidSchema = {
         kind: 'string',
-        type: 'string'
+        type: 'string',
         // missing 'async' and '~run' properties
       };
       expect(isValibotSchema(invalidSchema)).toBe(false);
@@ -228,7 +245,7 @@ describe('validation utils', () => {
         kind: 123, // should be string
         type: 'string',
         async: false,
-        '~run': () => {}
+        '~run': () => {},
       };
       expect(isValibotSchema(invalidSchema)).toBe(false);
     });
@@ -238,7 +255,7 @@ describe('validation utils', () => {
         kind: 'string',
         type: 'string',
         async: false,
-        '~run': 'not a function'
+        '~run': 'not a function',
       };
       expect(isValibotSchema(invalidSchema)).toBe(false);
     });

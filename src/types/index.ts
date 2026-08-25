@@ -119,7 +119,4 @@ export {
   validateHandlerDependencies,
 } from './handler-registry.js';
 // バリデーション関連（共通）
-export type {
-  ValidationFunction,
-  ValidationResult,
-} from './validation.js';
+export type { ValidationFunction, ValidationResult } from './validation.js';

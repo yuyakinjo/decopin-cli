@@ -2,6 +2,7 @@ import { describe, expect, it, beforeEach, afterEach } from 'bun:test';
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'fs';
 import { tmpdir } from 'os';
 import { join } from 'path';
+
 import { Scanner } from '../../src/core/scanner';
 
 describe('Scanner', () => {
@@ -24,7 +25,7 @@ describe('Scanner', () => {
         commands: [],
         params: [],
         help: [],
-        errors: []
+        errors: [],
       });
       expect(result.handlers.size).toBe(0);
     });
@@ -32,7 +33,10 @@ describe('Scanner', () => {
     it('should find command.ts files', async () => {
       const appDir = join(tempDir, 'app');
       mkdirSync(appDir, { recursive: true });
-      writeFileSync(join(appDir, 'command.ts'), 'export default async function() {}');
+      writeFileSync(
+        join(appDir, 'command.ts'),
+        'export default async function() {}'
+      );
 
       const scanner = new Scanner(appDir);
       const result = await scanner.scan();
@@ -40,9 +44,9 @@ describe('Scanner', () => {
       expect(result.commands).toHaveLength(1);
       expect(result.commands[0]).toEqual({
         path: join(appDir, 'command.ts'),
-        name: 'root'
+        name: 'root',
       });
-      
+
       // Check new handler management
       expect(result.handlers.has('command')).toBe(true);
       const commandHandler = result.handlers.get('command');
@@ -54,7 +58,10 @@ describe('Scanner', () => {
       const appDir = join(tempDir, 'app');
       const helloDir = join(appDir, 'hello');
       mkdirSync(helloDir, { recursive: true });
-      writeFileSync(join(helloDir, 'command.ts'), 'export default async function() {}');
+      writeFileSync(
+        join(helloDir, 'command.ts'),
+        'export default async function() {}'
+      );
 
       const scanner = new Scanner(appDir);
       const result = await scanner.scan();
@@ -62,9 +69,9 @@ describe('Scanner', () => {
       expect(result.commands).toHaveLength(1);
       expect(result.commands[0]).toEqual({
         path: join(helloDir, 'command.ts'),
-        name: 'hello'
+        name: 'hello',
       });
-      
+
       // Check new handler management
       expect(result.handlers.has('hello/command')).toBe(true);
       const commandHandler = result.handlers.get('hello/command');
@@ -76,7 +83,10 @@ describe('Scanner', () => {
       const appDir = join(tempDir, 'app');
       const helloDir = join(appDir, 'hello');
       mkdirSync(helloDir, { recursive: true });
-      writeFileSync(join(helloDir, 'params.ts'), 'export default function() {}');
+      writeFileSync(
+        join(helloDir, 'params.ts'),
+        'export default function() {}'
+      );
 
       const scanner = new Scanner(appDir);
       const result = await scanner.scan();
@@ -84,9 +94,9 @@ describe('Scanner', () => {
       expect(result.params).toHaveLength(1);
       expect(result.params[0]).toEqual({
         path: join(helloDir, 'params.ts'),
-        commandPath: 'hello'
+        commandPath: 'hello',
       });
-      
+
       // Check new handler management
       expect(result.handlers.has('hello/params')).toBe(true);
       const paramsHandler = result.handlers.get('hello/params');
@@ -105,9 +115,9 @@ describe('Scanner', () => {
       expect(result.help).toHaveLength(1);
       expect(result.help[0]).toEqual({
         path: join(appDir, 'help.ts'),
-        commandPath: ''
+        commandPath: '',
       });
-      
+
       // Check new handler management
       expect(result.handlers.has('help')).toBe(true);
     });
@@ -124,9 +134,9 @@ describe('Scanner', () => {
       expect(result.errors).toHaveLength(1);
       expect(result.errors[0]).toEqual({
         path: join(userDir, 'error.ts'),
-        commandPath: 'user'
+        commandPath: 'user',
       });
-      
+
       // Check new handler management
       expect(result.handlers.has('user/error')).toBe(true);
     });
@@ -134,15 +144,18 @@ describe('Scanner', () => {
     it('should find middleware.ts in root', async () => {
       const appDir = join(tempDir, 'app');
       mkdirSync(appDir, { recursive: true });
-      writeFileSync(join(appDir, 'middleware.ts'), 'export default function() {}');
+      writeFileSync(
+        join(appDir, 'middleware.ts'),
+        'export default function() {}'
+      );
 
       const scanner = new Scanner(appDir);
       const result = await scanner.scan();
 
       expect(result.middleware).toEqual({
-        path: join(appDir, 'middleware.ts')
+        path: join(appDir, 'middleware.ts'),
       });
-      
+
       // Check new handler management
       expect(result.handlers.has('middleware')).toBe(true);
       const middlewareHandler = result.handlers.get('middleware');
@@ -153,15 +166,18 @@ describe('Scanner', () => {
     it('should find global-error.ts in root', async () => {
       const appDir = join(tempDir, 'app');
       mkdirSync(appDir, { recursive: true });
-      writeFileSync(join(appDir, 'global-error.ts'), 'export default function() {}');
+      writeFileSync(
+        join(appDir, 'global-error.ts'),
+        'export default function() {}'
+      );
 
       const scanner = new Scanner(appDir);
       const result = await scanner.scan();
 
       expect(result.globalError).toEqual({
-        path: join(appDir, 'global-error.ts')
+        path: join(appDir, 'global-error.ts'),
       });
-      
+
       // Check new handler management
       expect(result.handlers.has('global-error')).toBe(true);
       const globalErrorHandler = result.handlers.get('global-error');
@@ -178,9 +194,9 @@ describe('Scanner', () => {
       const result = await scanner.scan();
 
       expect(result.env).toEqual({
-        path: join(appDir, 'env.ts')
+        path: join(appDir, 'env.ts'),
       });
-      
+
       // Check new handler management
       expect(result.handlers.has('env')).toBe(true);
     });
@@ -194,9 +210,9 @@ describe('Scanner', () => {
       const result = await scanner.scan();
 
       expect(result.version).toEqual({
-        path: join(appDir, 'version.ts')
+        path: join(appDir, 'version.ts'),
       });
-      
+
       // Check new handler management
       expect(result.handlers.has('version')).toBe(true);
     });
@@ -215,7 +231,10 @@ describe('Scanner', () => {
     it('should return true when command files exist', () => {
       const appDir = join(tempDir, 'app');
       mkdirSync(appDir, { recursive: true });
-      writeFileSync(join(appDir, 'command.ts'), 'export default async function() {}');
+      writeFileSync(
+        join(appDir, 'command.ts'),
+        'export default async function() {}'
+      );
 
       const scanner = new Scanner(appDir);
       expect(scanner.hasCommands()).toBe(true);
@@ -225,7 +244,10 @@ describe('Scanner', () => {
       const appDir = join(tempDir, 'app');
       const helloDir = join(appDir, 'hello');
       mkdirSync(helloDir, { recursive: true });
-      writeFileSync(join(helloDir, 'command.ts'), 'export default async function() {}');
+      writeFileSync(
+        join(helloDir, 'command.ts'),
+        'export default async function() {}'
+      );
 
       const scanner = new Scanner(appDir);
       expect(scanner.hasCommands()).toBe(true);
@@ -244,7 +266,7 @@ describe('Scanner', () => {
         commands: [],
         params: [],
         help: [],
-        errors: []
+        errors: [],
       });
       expect(result.handlers.size).toBe(0);
     });
@@ -263,7 +285,7 @@ describe('Scanner', () => {
         commands: [],
         params: [],
         help: [],
-        errors: []
+        errors: [],
       });
       expect(result.handlers.size).toBe(0);
     });
@@ -273,25 +295,40 @@ describe('Scanner', () => {
       const userDir = join(appDir, 'user');
       const createDir = join(userDir, 'create');
       const updateDir = join(userDir, 'update');
-      
+
       mkdirSync(createDir, { recursive: true });
       mkdirSync(updateDir, { recursive: true });
-      
+
       // Root level files
-      writeFileSync(join(appDir, 'command.ts'), 'export default async function() {}');
+      writeFileSync(
+        join(appDir, 'command.ts'),
+        'export default async function() {}'
+      );
       writeFileSync(join(appDir, 'readme.md'), '# App');
-      
+
       // User directory files
       writeFileSync(join(userDir, 'types.ts'), 'export interface User {}');
-      
+
       // Create command files
-      writeFileSync(join(createDir, 'command.ts'), 'export default async function() {}');
-      writeFileSync(join(createDir, 'params.ts'), 'export default function() {}');
-      
+      writeFileSync(
+        join(createDir, 'command.ts'),
+        'export default async function() {}'
+      );
+      writeFileSync(
+        join(createDir, 'params.ts'),
+        'export default function() {}'
+      );
+
       // Update command files
-      writeFileSync(join(updateDir, 'command.ts'), 'export default async function() {}');
+      writeFileSync(
+        join(updateDir, 'command.ts'),
+        'export default async function() {}'
+      );
       writeFileSync(join(updateDir, 'help.ts'), 'export default function() {}');
-      writeFileSync(join(updateDir, 'error.ts'), 'export default function() {}');
+      writeFileSync(
+        join(updateDir, 'error.ts'),
+        'export default function() {}'
+      );
 
       const scanner = new Scanner(appDir);
       const result = await scanner.scan();
@@ -300,7 +337,7 @@ describe('Scanner', () => {
       expect(result.params).toHaveLength(1);
       expect(result.help).toHaveLength(1);
       expect(result.errors).toHaveLength(1);
-      
+
       // Check handler management
       expect(result.handlers.size).toBe(6); // 3 commands + 1 params + 1 help + 1 error
       expect(result.handlers.has('command')).toBe(true);
@@ -316,12 +353,18 @@ describe('Scanner', () => {
     it('should detect all global handlers when present', async () => {
       const appDir = join(tempDir, 'app');
       mkdirSync(appDir, { recursive: true });
-      
+
       // Create all global handlers
-      writeFileSync(join(appDir, 'global-error.ts'), 'export default function() {}');
+      writeFileSync(
+        join(appDir, 'global-error.ts'),
+        'export default function() {}'
+      );
       writeFileSync(join(appDir, 'env.ts'), 'export default function() {}');
       writeFileSync(join(appDir, 'version.ts'), 'export default function() {}');
-      writeFileSync(join(appDir, 'middleware.ts'), 'export default function() {}');
+      writeFileSync(
+        join(appDir, 'middleware.ts'),
+        'export default function() {}'
+      );
 
       const scanner = new Scanner(appDir);
       const result = await scanner.scan();
@@ -332,7 +375,7 @@ describe('Scanner', () => {
       expect(result.handlers.has('env')).toBe(true);
       expect(result.handlers.has('version')).toBe(true);
       expect(result.handlers.has('middleware')).toBe(true);
-      
+
       // Verify all are global scope
       for (const [_, handler] of result.handlers) {
         expect(handler.definition.scope).toBe('global');
@@ -343,10 +386,16 @@ describe('Scanner', () => {
       const appDir = join(tempDir, 'app');
       const helloDir = join(appDir, 'hello');
       mkdirSync(helloDir, { recursive: true });
-      
+
       // Create all command handlers
-      writeFileSync(join(helloDir, 'command.ts'), 'export default async function() {}');
-      writeFileSync(join(helloDir, 'params.ts'), 'export default function() {}');
+      writeFileSync(
+        join(helloDir, 'command.ts'),
+        'export default async function() {}'
+      );
+      writeFileSync(
+        join(helloDir, 'params.ts'),
+        'export default function() {}'
+      );
       writeFileSync(join(helloDir, 'help.ts'), 'export default function() {}');
       writeFileSync(join(helloDir, 'error.ts'), 'export default function() {}');
 
@@ -359,7 +408,7 @@ describe('Scanner', () => {
       expect(result.handlers.has('hello/params')).toBe(true);
       expect(result.handlers.has('hello/help')).toBe(true);
       expect(result.handlers.has('hello/error')).toBe(true);
-      
+
       // Verify all are command scope
       for (const [_, handler] of result.handlers) {
         expect(handler.definition.scope).toBe('command');

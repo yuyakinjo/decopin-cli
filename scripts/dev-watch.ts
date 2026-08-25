@@ -1,22 +1,24 @@
 #!/usr/bin/env bun
 
-import { $ } from 'bun';
 import { watch } from 'node:fs';
 import { resolve } from 'node:path';
+
+import { $ } from 'bun';
+
 import { scripts } from '../package.json';
 
 const rootDir = resolve(process.cwd());
-const watchDirs =  {
+const watchDirs = {
   src: resolve(rootDir, 'src'),
   app: resolve(rootDir, 'app'),
   scripts: resolve(rootDir, 'scripts'),
-}
+};
 
 const status = {
   isBuilding: false,
   pendingBuild: false,
   buildCount: 0,
-}
+};
 
 const colors = {
   reset: '\x1b[0m',
@@ -50,9 +52,15 @@ async function buildAndRegen() {
   const currentBuild = status.buildCount;
   const startTime = Date.now();
 
-  console.log(`\n${colors.cyan}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${colors.reset}`);
-  console.log(`${colors.bright}🔄 Build #${currentBuild}${colors.reset} ${colors.gray}[${formatTime()}]${colors.reset}`);
-  console.log(`${colors.cyan}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${colors.reset}\n`);
+  console.log(
+    `\n${colors.cyan}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${colors.reset}`
+  );
+  console.log(
+    `${colors.bright}🔄 Build #${currentBuild}${colors.reset} ${colors.gray}[${formatTime()}]${colors.reset}`
+  );
+  console.log(
+    `${colors.cyan}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${colors.reset}\n`
+  );
 
   const steps: string[] = [];
   let currentStep = '';
@@ -60,7 +68,9 @@ async function buildAndRegen() {
   try {
     if (scripts.build) {
       currentStep = 'Building library';
-      process.stdout.write(`${colors.yellow}⏳${colors.reset} ${currentStep}...`);
+      process.stdout.write(
+        `${colors.yellow}⏳${colors.reset} ${currentStep}...`
+      );
       await $`bun run build`.quiet();
       clearLine();
       steps.push(`${colors.green}✓${colors.reset} ${currentStep}`);
@@ -69,7 +79,9 @@ async function buildAndRegen() {
 
     if (scripts['build:app']) {
       currentStep = 'Building app';
-      process.stdout.write(`${colors.yellow}⏳${colors.reset} ${currentStep}...`);
+      process.stdout.write(
+        `${colors.yellow}⏳${colors.reset} ${currentStep}...`
+      );
       await $`bun run build:app`.quiet();
       clearLine();
       steps.push(`${colors.green}✓${colors.reset} ${currentStep}`);
@@ -78,7 +90,9 @@ async function buildAndRegen() {
 
     if (scripts['dev:regen']) {
       currentStep = 'Regenerating CLI';
-      process.stdout.write(`${colors.yellow}⏳${colors.reset} ${currentStep}...`);
+      process.stdout.write(
+        `${colors.yellow}⏳${colors.reset} ${currentStep}...`
+      );
       await $`bun run dev:regen`.quiet();
       clearLine();
       steps.push(`${colors.green}✓${colors.reset} ${currentStep}`);
@@ -86,11 +100,17 @@ async function buildAndRegen() {
     }
 
     const duration = Date.now() - startTime;
-    console.log(`\n${colors.green}${colors.bright}✅ Build complete${colors.reset} ${colors.gray}(${duration}ms)${colors.reset}\n`);
+    console.log(
+      `\n${colors.green}${colors.bright}✅ Build complete${colors.reset} ${colors.gray}(${duration}ms)${colors.reset}\n`
+    );
   } catch (error) {
     clearLine();
-    console.log(`${colors.red}✗${colors.reset} ${currentStep} ${colors.red}failed${colors.reset}`);
-    console.error(`\n${colors.red}${colors.bright}Build failed:${colors.reset}`);
+    console.log(
+      `${colors.red}✗${colors.reset} ${currentStep} ${colors.red}failed${colors.reset}`
+    );
+    console.error(
+      `\n${colors.red}${colors.bright}Build failed:${colors.reset}`
+    );
     console.error(error);
     console.log();
   } finally {
@@ -110,24 +130,36 @@ function watchDirectory(dir: string, label: string) {
       if (filename.includes('generated/') || filename.includes('.d.ts')) {
         return;
       }
-      
-      console.log(`${colors.blue}📝${colors.reset} ${colors.gray}[${formatTime()}]${colors.reset} ${label}/${filename}`);
+
+      console.log(
+        `${colors.blue}📝${colors.reset} ${colors.gray}[${formatTime()}]${colors.reset} ${label}/${filename}`
+      );
       buildAndRegen();
     }
   });
 }
 
 console.clear();
-console.log(`${colors.bright}${colors.cyan}╔════════════════════════════════════════╗${colors.reset}`);
-console.log(`${colors.bright}${colors.cyan}║${colors.reset}       ${colors.bright}decopin-cli dev mode${colors.reset}            ${colors.bright}${colors.cyan}║${colors.reset}`);
-console.log(`${colors.bright}${colors.cyan}╚════════════════════════════════════════╝${colors.reset}\n`);
+console.log(
+  `${colors.bright}${colors.cyan}╔════════════════════════════════════════╗${colors.reset}`
+);
+console.log(
+  `${colors.bright}${colors.cyan}║${colors.reset}       ${colors.bright}decopin-cli dev mode${colors.reset}            ${colors.bright}${colors.cyan}║${colors.reset}`
+);
+console.log(
+  `${colors.bright}${colors.cyan}╚════════════════════════════════════════╝${colors.reset}\n`
+);
 
-console.log(`${colors.gray}Runtime:${colors.reset} Bun ${process.versions.bun || 'unknown'}`);
+console.log(
+  `${colors.gray}Runtime:${colors.reset} Bun ${process.versions.bun || 'unknown'}`
+);
 console.log(`${colors.gray}Directory:${colors.reset} ${rootDir}\n`);
 
 console.log(`${colors.bright}Watching:${colors.reset}`);
 Object.entries(watchDirs).forEach(([label, dir]) => {
-  console.log(`  ${colors.blue}•${colors.reset} ${label.padEnd(8)} ${colors.gray}${dir.replace(rootDir, '.')}${colors.reset}`);
+  console.log(
+    `  ${colors.blue}•${colors.reset} ${label.padEnd(8)} ${colors.gray}${dir.replace(rootDir, '.')}${colors.reset}`
+  );
 });
 
 console.log(`\n${colors.gray}Press Ctrl+C to stop${colors.reset}\n`);

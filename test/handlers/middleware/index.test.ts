@@ -1,5 +1,9 @@
 import { describe, it, expect } from 'bun:test';
-import { createMiddlewareHandler, executeMiddleware } from '../../../src/handlers/middleware/index.js';
+
+import {
+  createMiddlewareHandler,
+  executeMiddleware,
+} from '../../../src/handlers/middleware/index.js';
 import type { MiddlewareDefinition } from '../../../src/handlers/middleware/types.js';
 
 describe('Middleware Handler', () => {
@@ -10,7 +14,7 @@ describe('Middleware Handler', () => {
         handler: async (context, next) => {
           context.middlewareExecuted = true;
           return next();
-        }
+        },
       };
 
       const handler = createMiddlewareHandler(definition);
@@ -28,7 +32,7 @@ describe('Middleware Handler', () => {
           const result = await next();
           executionOrder.push('after-1');
           return result;
-        }
+        },
       };
 
       const middleware2: MiddlewareDefinition = {
@@ -38,7 +42,7 @@ describe('Middleware Handler', () => {
           const result = await next();
           executionOrder.push('after-2');
           return result;
-        }
+        },
       };
 
       const handler1 = createMiddlewareHandler(middleware1);
@@ -57,7 +61,7 @@ describe('Middleware Handler', () => {
         'before-2',
         'final',
         'after-2',
-        'after-1'
+        'after-1',
       ]);
     });
   });
@@ -76,7 +80,7 @@ describe('Middleware Handler', () => {
         name: 'error-middleware',
         handler: async () => {
           throw new Error('Middleware error');
-        }
+        },
       };
 
       const handler = createMiddlewareHandler(errorMiddleware);

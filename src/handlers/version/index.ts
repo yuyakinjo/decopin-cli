@@ -196,7 +196,7 @@ export function compareVersions(
     }
 
     return { comparison: 0, current, target, valid: true };
-  } catch (_error) {
+  } catch {
     return { comparison: 0, current, target, valid: false };
   }
 }

@@ -1,7 +1,9 @@
 import type { CommandContext } from '../../../dist/types/index.js';
 import type { CustomErrorTestData } from './params.js';
 
-export default async function createCommand(context: CommandContext<CustomErrorTestData>) {
+export default async function createCommand(
+  context: CommandContext<CustomErrorTestData>
+) {
   // バリデーション済みのデータを使用
   const { input } = context.validatedData;
 

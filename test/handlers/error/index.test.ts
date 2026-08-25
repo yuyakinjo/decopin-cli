@@ -1,5 +1,9 @@
 import { describe, it, expect } from 'bun:test';
-import { createErrorHandler, formatError } from '../../../src/handlers/error/index.js';
+
+import {
+  createErrorHandler,
+  formatError,
+} from '../../../src/handlers/error/index.js';
 import type { ErrorDefinition } from '../../../src/handlers/error/types.js';
 
 describe('Error Handler', () => {
@@ -8,7 +12,7 @@ describe('Error Handler', () => {
       const definition: ErrorDefinition = {
         message: 'Test error occurred',
         code: 'TEST_ERROR',
-        exitCode: 1
+        exitCode: 1,
       };
 
       const handler = createErrorHandler(definition);
@@ -21,7 +25,7 @@ describe('Error Handler', () => {
         message: 'Custom error',
         code: 'CUSTOM_ERROR',
         exitCode: 2,
-        formatter: (error) => `Custom: ${error.message}`
+        formatter: (error) => `Custom: ${error.message}`,
       };
 
       const handler = createErrorHandler(definition);
@@ -44,8 +48,8 @@ describe('Error Handler', () => {
       const validationError = Object.assign(new Error('Validation failed'), {
         issues: [
           { path: ['name'], message: 'Name is required' },
-          { path: ['email'], message: 'Invalid email' }
-        ]
+          { path: ['email'], message: 'Invalid email' },
+        ],
       });
 
       const formatted = formatError(validationError);

@@ -1,5 +1,9 @@
 import { describe, it, expect, beforeEach, afterEach } from 'bun:test';
-import { createEnvHandler, validateEnvironment } from '../../../src/handlers/env/index.js';
+
+import {
+  createEnvHandler,
+  validateEnvironment,
+} from '../../../src/handlers/env/index.js';
 import type { EnvDefinition } from '../../../src/handlers/env/types.js';
 
 describe('Environment Handler', () => {
@@ -18,8 +22,8 @@ describe('Environment Handler', () => {
       const definition: EnvDefinition = {
         schema: {
           NODE_ENV: { type: 'string', required: true },
-          PORT: { type: 'number', defaultValue: 3000 }
-        }
+          PORT: { type: 'number', defaultValue: 3000 },
+        },
       };
 
       const handler = createEnvHandler(definition);
@@ -34,8 +38,8 @@ describe('Environment Handler', () => {
       const definition: EnvDefinition = {
         schema: {
           NODE_ENV: { type: 'string', required: true },
-          PORT: { type: 'number', required: false }
-        }
+          PORT: { type: 'number', required: false },
+        },
       };
 
       const handler = createEnvHandler(definition);
@@ -52,7 +56,7 @@ describe('Environment Handler', () => {
       process.env.REQUIRED_VAR = 'value';
 
       const schema = {
-        REQUIRED_VAR: { type: 'string' as const, required: true }
+        REQUIRED_VAR: { type: 'string' as const, required: true },
       };
 
       const result = validateEnvironment(schema);
@@ -64,7 +68,7 @@ describe('Environment Handler', () => {
       delete process.env.OPTIONAL_VAR;
 
       const schema = {
-        OPTIONAL_VAR: { type: 'string' as const, defaultValue: 'default' }
+        OPTIONAL_VAR: { type: 'string' as const, defaultValue: 'default' },
       };
 
       const result = validateEnvironment(schema);
@@ -76,7 +80,7 @@ describe('Environment Handler', () => {
       delete process.env.REQUIRED_VAR;
 
       const schema = {
-        REQUIRED_VAR: { type: 'string' as const, required: true }
+        REQUIRED_VAR: { type: 'string' as const, required: true },
       };
 
       const result = validateEnvironment(schema);
@@ -90,7 +94,7 @@ describe('Environment Handler', () => {
 
       const schema = {
         NUMBER_VAR: { type: 'number' as const },
-        BOOLEAN_VAR: { type: 'boolean' as const }
+        BOOLEAN_VAR: { type: 'boolean' as const },
       };
 
       const result = validateEnvironment(schema);

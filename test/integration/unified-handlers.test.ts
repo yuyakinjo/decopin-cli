@@ -2,6 +2,7 @@ import { describe, expect, it, beforeEach, afterEach } from 'bun:test';
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'fs';
 import { tmpdir } from 'os';
 import { join } from 'path';
+
 import { Scanner } from '../../src/core/scanner.js';
 import { generate } from '../../src/handlers/command/generator.js';
 import { parseCommands } from '../../src/handlers/command/index.js';
@@ -135,13 +136,19 @@ describe('Unified Handler System Integration', () => {
       expect(generated.content).toContain("if (commandArgs.includes('--help')");
 
       // Verify params validation
-      expect(generated.content).toContain('const paramsHandler = paramsModule.default');
-      expect(generated.content).toContain('const validatedData = await validateParams');
+      expect(generated.content).toContain(
+        'const paramsHandler = paramsModule.default'
+      );
+      expect(generated.content).toContain(
+        'const validatedData = await validateParams'
+      );
 
       // Verify error handling
       expect(generated.content).toContain('try {');
       expect(generated.content).toContain('} catch (error) {');
-      expect(generated.content).toContain('const errorHandler = errorModule.default');
+      expect(generated.content).toContain(
+        'const errorHandler = errorModule.default'
+      );
     });
 
     it('should handle commands with partial handlers', async () => {
@@ -184,12 +191,20 @@ describe('Unified Handler System Integration', () => {
       expect(generated.content).toContain('const paramsModule = await import');
 
       // Should not have help or error imports in the command execution section
-      const simpleCommandSection = generated.content.split("case 'simple':")[1].split('break;')[0];
-      expect(simpleCommandSection).not.toContain('const helpModule = await import');
-      expect(simpleCommandSection).not.toContain('const errorModule = await import');
+      const simpleCommandSection = generated.content
+        .split("case 'simple':")[1]
+        .split('break;')[0];
+      expect(simpleCommandSection).not.toContain(
+        'const helpModule = await import'
+      );
+      expect(simpleCommandSection).not.toContain(
+        'const errorModule = await import'
+      );
 
       // Should have params validation
-      expect(generated.content).toContain('const validatedData = await validateParams');
+      expect(generated.content).toContain(
+        'const validatedData = await validateParams'
+      );
 
       // Should not have try-catch for error handling
       expect(simpleCommandSection).not.toContain('try {');
@@ -266,8 +281,12 @@ describe('Unified Handler System Integration', () => {
 
       // Verify env is loaded before params
       const envIndex = generated.content.indexOf("globalHandlers['env']");
-      const paramsIndex = generated.content.indexOf('const paramsHandler = paramsModule.default');
-      const commandIndex = generated.content.indexOf('await commandHandler(context)');
+      const paramsIndex = generated.content.indexOf(
+        'const paramsHandler = paramsModule.default'
+      );
+      const commandIndex = generated.content.indexOf(
+        'await commandHandler(context)'
+      );
 
       expect(envIndex).toBeLessThan(paramsIndex);
       expect(paramsIndex).toBeLessThan(commandIndex);

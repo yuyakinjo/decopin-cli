@@ -7,6 +7,7 @@
 
 import { chmod, mkdir, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
+
 import { PerformanceMonitor } from './core/performance.js';
 import { Scanner } from './core/scanner.js';
 
@@ -248,10 +249,7 @@ export const builderInfo = {
 };
 
 // Re-export types
-export type {
-  CLIStructure,
-  CommandFile,
-} from './core/types.js';
+export type { CLIStructure, CommandFile } from './core/types.js';
 // Export command-specific types
 export type {
   CommandMetadata,

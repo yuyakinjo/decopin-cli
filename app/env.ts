@@ -2,7 +2,7 @@ import type { EnvHandler } from '../dist/types/index.js';
 import { SCHEMA_TYPE } from '../dist/types/index.js';
 
 export default function createEnv(): EnvHandler {
-    return {
+  return {
     NODE_ENV: {
       type: SCHEMA_TYPE.STRING,
       required: false,
@@ -28,6 +28,6 @@ export default function createEnv(): EnvHandler {
       required: false,
       default: false,
       errorMessage: 'DEBUG must be true or false',
-    }
+    },
   };
 }

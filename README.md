@@ -12,6 +12,7 @@ A TypeScript-first CLI builder inspired by Next.js App Router's file-based routi
 ## 🎉 What's New
 
 ### v0.5.0 - Major Updates
+
 - **🔄 Simplified ParamsHandler**: No more `type` field needed! The system automatically detects whether you're using `mappings`, `schema`, or both
 - **🎯 Context-based architecture**: All handlers now receive a consistent context object with environment variables, args, and options
 - **💪 Enhanced validation patterns**: Support for three validation approaches:
@@ -47,6 +48,7 @@ npm i -D decopin-cli
 ### Create your first CLI
 
 1. **Initialize project structure**:
+
 ```bash
 mkdir my-cli && cd my-cli
 npm init -y
@@ -54,6 +56,7 @@ npm install decopin-cli
 ```
 
 2. **Create app directory and your first command**:
+
 ```bash
 mkdir -p app/hello
 ```
@@ -64,13 +67,14 @@ mkdir -p app/hello
 import type { CommandContext } from '../../dist/types/index.js';
 import type { HelloData } from './params.js';
 
-export default async function createCommand(context: CommandContext<HelloData>) {
+export default async function createCommand(
+  context: CommandContext<HelloData>
+) {
   const { name } = context.validatedData;
 
   console.log(`Hello, ${name}!!!`);
 }
 ```
-
 
 4. **Create `app/hello/params.ts` for type-safe argument validation**:
 
@@ -90,7 +94,7 @@ export default function createParams(): ParamsHandler {
         option: 'name',
         argIndex: 0,
         defaultValue: 'World',
-        description: 'Name to greet'
+        description: 'Name to greet',
       },
     ],
   };
@@ -145,7 +149,9 @@ decopin-cli uses a simple function pattern where commands are async functions th
 
 ```typescript
 // decopin-cli approach
-export default async function createCommand(context: CommandContext<HelloData>) {
+export default async function createCommand(
+  context: CommandContext<HelloData>
+) {
   const { name } = context.validatedData; // Already validated and typed!
 
   console.log(`Hello, ${name}!!!`);
@@ -153,7 +159,6 @@ export default async function createCommand(context: CommandContext<HelloData>) 
 ```
 
 ## 📁 File Types and Conventions
-
 
 ### `command.ts` - Command Handler
 
@@ -172,6 +177,7 @@ export default async function createCommand(context: CommandContext<UserData>) {
 ```
 
 **Requirements:**
+
 - Provide async function as default export
 - Accept `CommandContext<T>` or `BaseCommandContext`
 - When `params.ts` exists, validated data is available via `context.validatedData`
@@ -189,27 +195,29 @@ Automatically generates valibot schemas from mappings with built-in type coercio
 ```typescript
 import type { ParamsHandler, Context } from 'decopin-cli';
 
-export default function createParams(context: Context<typeof process.env>): ParamsHandler {
+export default function createParams(
+  context: Context<typeof process.env>
+): ParamsHandler {
   return {
     mappings: [
       {
         field: 'name',
         type: 'string',
-        option: 'name',      // --name option
-        argIndex: 0,         // 1st positional argument
+        option: 'name', // --name option
+        argIndex: 0, // 1st positional argument
         required: true,
         description: 'User name',
       },
       {
         field: 'age',
-        type: 'number',      // Automatically converts string to number
-        option: 'age',       // --age option
-        argIndex: 1,         // 2nd positional argument
+        type: 'number', // Automatically converts string to number
+        option: 'age', // --age option
+        argIndex: 1, // 2nd positional argument
         defaultValue: 18,
       },
       {
         field: 'active',
-        type: 'boolean',     // Converts "true", "1", "yes" to true
+        type: 'boolean', // Converts "true", "1", "yes" to true
         option: 'active',
         defaultValue: true,
       },
@@ -219,6 +227,7 @@ export default function createParams(context: Context<typeof process.env>): Para
 ```
 
 **Type coercion rules:**
+
 - `number`: Converts strings to numbers (e.g., "123" → 123)
 - `boolean`: Converts "true", "1", "yes" to true, others to false
 - `array`: Splits comma-separated strings (e.g., "a,b,c" → ["a", "b", "c"])
@@ -247,12 +256,14 @@ const UserSchema = v.object({
   role: v.optional(
     v.picklist(['admin', 'user', 'guest'], 'Invalid role'),
     'user'
-  )
+  ),
 });
 
 export type UserData = v.InferInput<typeof UserSchema>;
 
-export default function createParams(context: Context<typeof process.env>): ParamsHandler {
+export default function createParams(
+  context: Context<typeof process.env>
+): ParamsHandler {
   return {
     schema: UserSchema,
   };
@@ -299,6 +310,7 @@ export default function createParams(): ParamsHandler {
 ```
 
 **Features:**
+
 - **Validation Options**: Valibot schema for powerful validation or simple mappings
 - **Argument Mapping**: Flexible mapping between positional and option arguments
 - **Default Values**: Default value configuration within schema
@@ -306,6 +318,7 @@ export default function createParams(): ParamsHandler {
 - **Type Safety**: Full TypeScript support with both patterns
 
 **When to use each pattern:**
+
 - **Mappings**: Best for simple CLIs with straightforward argument handling
 - **Valibot Schema**: Best for complex validation, advanced type transformations, nested objects
 
@@ -332,6 +345,7 @@ export default function createErrorHandler() {
 ```
 
 **Use Cases:**
+
 - Customize validation error display
 - User-friendly error messages
 - Provide additional help information
@@ -347,13 +361,13 @@ import { isValidationError, isModuleError, hasStackTrace } from 'decopin-cli';
 export default function createGlobalErrorHandler(): GlobalErrorHandler {
   return async (error: CLIError) => {
     console.error('\n❌ An error occurred\n');
-    
+
     // Type-safe error handling
     if (isValidationError(error)) {
       // Valibot validation error
       console.error('📋 Validation Error:');
       error.issues.forEach((issue) => {
-        const path = issue.path?.map(p => p.key).join('.') || 'value';
+        const path = issue.path?.map((p) => p.key).join('.') || 'value';
         console.error(`  • ${path}: ${issue.message}`);
       });
     } else if (isModuleError(error)) {
@@ -365,25 +379,27 @@ export default function createGlobalErrorHandler(): GlobalErrorHandler {
       console.error('💥 Error Details:');
       console.error(`  ${error.message}`);
     }
-    
+
     // Show stack trace in debug mode
     if (process.env.DEBUG && hasStackTrace(error)) {
       console.error('\n📍 Stack Trace:');
       console.error(error.stack);
     }
-    
+
     process.exit(1);
   };
 }
 ```
 
 **Features:**
+
 - Catches unhandled errors from any command
 - Fallback when no command-specific error.ts exists
 - Supports debug mode with stack traces
 - Type-safe error handling with proper TypeScript types
 
 **Error Types:**
+
 - `ValidationError` - Valibot validation errors with `issues` array
 - `ModuleError` - Node.js module loading errors with error `code`
 - `Error` - Standard JavaScript/runtime errors
@@ -403,18 +419,19 @@ export default function createHelp(): HelpHandler {
     examples: [
       'user create "John Doe" "john@example.com"',
       'user create --name "Alice" --email "alice@example.com"',
-      'user create "Bob" --email "bob@test.com" --age 30'
+      'user create "Bob" --email "bob@test.com" --age 30',
     ],
     aliases: ['add-user', 'new-user'],
     additionalHelp: `
 This command creates a new user.
 Name and email address are required. Age is optional with a default value of 25.
-    `.trim()
+    `.trim(),
   };
 }
 ```
 
 **Provided Information:**
+
 - Command description
 - List of usage examples
 - Command aliases
@@ -429,20 +446,21 @@ import type { VersionHandler } from '../dist/index.js';
 
 export default function createVersion(): VersionHandler {
   return {
-    version: "1.2.0",
+    version: '1.2.0',
     metadata: {
-      name: "my-awesome-cli",
-      version: "1.2.0",
-      description: "My awesome CLI tool",
-      author: "Developer Name <dev@example.com>",
-      homepage: "https://github.com/username/my-cli",
-      license: "MIT"
-    }
+      name: 'my-awesome-cli',
+      version: '1.2.0',
+      description: 'My awesome CLI tool',
+      author: 'Developer Name <dev@example.com>',
+      homepage: 'https://github.com/username/my-cli',
+      license: 'MIT',
+    },
   };
 }
 ```
 
 **Configuration Items:**
+
 - **version**: Version string
 - **metadata**: CLI-wide metadata
   - **name**: CLI name
@@ -455,12 +473,14 @@ export default function createVersion(): VersionHandler {
 ### File Combination Patterns
 
 **Minimal Configuration:**
+
 ```
 app/simple/
 └── command.ts          # Basic command
 ```
 
 **Complete Configuration:**
+
 ```
 app/complex/
 ├── command.ts          # Main logic
@@ -470,6 +490,7 @@ app/complex/
 ```
 
 **With Middleware:**
+
 ```
 app/
 ├── middleware.ts       # Global middleware (optional)
@@ -480,6 +501,7 @@ app/
 ```
 
 **With Global Error Handler:**
+
 ```
 app/
 ├── global-error.ts     # Global error handler (optional)
@@ -504,16 +526,19 @@ app/hello/
 decopin-cli automatically handles argument validation and type conversion based on your `params.ts` configuration:
 
 #### Positional Arguments
+
 ```bash
 my-cli user create "John Doe" "john@example.com"
 ```
 
 #### Named Options
+
 ```bash
 my-cli user create --name "John Doe" --email "john@example.com"
 ```
 
 #### Mixed Arguments (positional takes precedence)
+
 ```bash
 my-cli user create "Jane" --email "jane@example.com"
 # name will be "Jane" (from position 0), not from --name option
@@ -546,6 +571,17 @@ Builds use the TypeScript 7 native compiler. Because TypeScript 7.0 does not
 provide a stable programmatic Compiler API, runtime AST parsing uses the
 [official `@typescript/typescript6` compatibility package](https://devblogs.microsoft.com/typescript/announcing-typescript-7-0/#running-side-by-side-with-typescript-6-0)
 side-by-side.
+
+### Code Quality Toolchain
+
+Linting and formatting use [Oxlint and Oxfmt](https://oxc.rs/). Run the
+non-mutating checks before pushing, or use the dedicated fix commands locally:
+
+```bash
+bun run check         # lint and formatting checks
+bun run lint:fix      # apply safe lint fixes
+bun run format        # format supported files
+```
 
 ## 📋 CLI Options
 
@@ -594,11 +630,11 @@ export default function createGlobalErrorHandler(): GlobalErrorHandler {
     // Log errors to file for debugging
     const errorLog = `[${new Date().toISOString()}] ${error.message}\n`;
     await fs.appendFile('cli-errors.log', errorLog).catch(() => {});
-    
+
     // User-friendly error display
     if (isValidationError(error)) {
       console.error('❌ Invalid input provided:');
-      error.issues.forEach(issue => {
+      error.issues.forEach((issue) => {
         console.error(`   - ${issue.message}`);
       });
       console.error('\nRun with --help for usage information.');
@@ -608,7 +644,7 @@ export default function createGlobalErrorHandler(): GlobalErrorHandler {
         console.error(error);
       }
     }
-    
+
     process.exit(1);
   };
 }
@@ -622,11 +658,11 @@ Commands with parameters receive a `CommandContext<T>` with pre-validated data:
 
 ```typescript
 interface CommandContext<T> {
-  validatedData: T;         // Pre-validated typed data from params.ts
-  args: string[];           // Positional arguments
+  validatedData: T; // Pre-validated typed data from params.ts
+  args: string[]; // Positional arguments
   options: Record<string, string | boolean>; // Named options
   params: Record<string, string>; // Dynamic route parameters
-  showHelp: () => void;     // Function to show command help
+  showHelp: () => void; // Function to show command help
 }
 ```
 
@@ -655,13 +691,10 @@ export default function createHelp(): HelpHandler {
   return {
     name: 'hello',
     description: 'Say hello to someone',
-    examples: [
-      'hello Alice',
-      'hello --name Bob',
-      'hello "Alice Smith"'
-    ],
+    examples: ['hello Alice', 'hello --name Bob', 'hello "Alice Smith"'],
     aliases: ['hi', 'greet'],
-    additionalHelp: 'This command greets a person with a friendly hello message.'
+    additionalHelp:
+      'This command greets a person with a friendly hello message.',
   };
 }
 ```
@@ -689,6 +722,7 @@ All handlers in decopin-cli follow a consistent context-based pattern, providing
 #### Handler Patterns
 
 1. **Command Handler** (`command.ts`)
+
    ```typescript
    export default async function createCommand(context: CommandContext<T, E>) {
      const { validatedData, args, env, options } = context;
@@ -697,6 +731,7 @@ All handlers in decopin-cli follow a consistent context-based pattern, providing
    ```
 
 2. **Params Handler** (`params.ts`)
+
    ```typescript
    export default function createParams(context: Context<E>): ParamsHandler {
      // Can access environment during initialization
@@ -708,17 +743,24 @@ All handlers in decopin-cli follow a consistent context-based pattern, providing
    ```
 
 3. **Error Handler** (`error.ts`)
+
    ```typescript
-   export default async function createErrorHandler(context: ErrorContext<T, E>) {
+   export default async function createErrorHandler(
+     context: ErrorContext<T, E>
+   ) {
      const { error, validatedData, args, env } = context;
      // Custom error handling with full context
    }
    ```
 
 4. **Middleware Factory** (`middleware.ts`)
+
    ```typescript
    export default function createMiddleware(context: Context<E>) {
-     return async (middlewareContext: MiddlewareContext, next: NextFunction) => {
+     return async (
+       middlewareContext: MiddlewareContext,
+       next: NextFunction
+     ) => {
        // Middleware logic with access to factory context
      };
    }
@@ -808,15 +850,18 @@ Import the generated type for type-safe environment access:
 import type { CommandContext } from '../../../dist/types/index.js';
 import type { AppEnv } from '../../generated/env-types.js';
 
-export default async function createCommand(context: CommandContext<UserData, AppEnv>) {
-  const { API_KEY, NODE_ENV } = context.env;  // Type-safe access
-  
+export default async function createCommand(
+  context: CommandContext<UserData, AppEnv>
+) {
+  const { API_KEY, NODE_ENV } = context.env; // Type-safe access
+
   console.log(`Environment: ${NODE_ENV}`);
   // Use API_KEY for authentication...
 }
 ```
 
 **Benefits:**
+
 - **Single source of truth**: Schema defines both validation and types
 - **Type safety**: Full TypeScript support for environment variables
 - **Auto-sync**: Types always match your schema definition
@@ -830,10 +875,17 @@ decopin-cli supports global middleware for cross-cutting concerns like authentic
 
 ```typescript
 // app/middleware.ts
-import type { MiddlewareFactory, MiddlewareContext, NextFunction } from '../dist/types/middleware.js';
+import type {
+  MiddlewareFactory,
+  MiddlewareContext,
+  NextFunction,
+} from '../dist/types/middleware.js';
 
 const createMiddleware: MiddlewareFactory = () => {
-  return async (context: MiddlewareContext<typeof process.env>, next: NextFunction) => {
+  return async (
+    context: MiddlewareContext<typeof process.env>,
+    next: NextFunction
+  ) => {
     // Pre-execution logic
     console.log(`Executing command: ${context.command}`);
     const startTime = Date.now();
@@ -857,16 +909,18 @@ export default createMiddleware;
 ```
 
 **Middleware Context:**
+
 ```typescript
 interface MiddlewareContext<Env> {
-  command: string;           // Command path (e.g., 'user/create')
-  args: string[];           // Positional arguments
+  command: string; // Command path (e.g., 'user/create')
+  args: string[]; // Positional arguments
   options: Record<string, string | boolean>; // CLI options
-  env: Env;                 // Environment variables
+  env: Env; // Environment variables
 }
 ```
 
 **Common Middleware Use Cases:**
+
 - **Authentication**: Check auth tokens before command execution
 - **Logging**: Log command execution for debugging
 - **Performance Monitoring**: Measure command execution time
@@ -874,6 +928,7 @@ interface MiddlewareContext<Env> {
 - **Environment Setup**: Initialize services or configurations
 
 **Example: Authentication Middleware**
+
 ```typescript
 export default function createMiddleware(): MiddlewareFactory {
   return async (context, next) => {
@@ -881,7 +936,9 @@ export default function createMiddleware(): MiddlewareFactory {
     if (context.options.auth) {
       const token = context.env.AUTH_TOKEN;
       if (!token) {
-        console.error('❌ Authentication required. Set AUTH_TOKEN environment variable.');
+        console.error(
+          '❌ Authentication required. Set AUTH_TOKEN environment variable.'
+        );
         process.exit(1);
       }
       console.log('✅ Authenticated');
@@ -897,6 +954,7 @@ export default function createMiddleware(): MiddlewareFactory {
 ### Planned Features
 
 #### 🔄 Lifecycle Hooks
+
 - **Pre/Post action hooks**: Execute logic before and after command execution
 - **Global and command-specific hooks**: Support both CLI-wide and per-command hooks
 - **Error handling hooks**: Custom error processing hooks
@@ -922,6 +980,7 @@ export default {
 ```
 
 #### 🏁 Shell Autocompletion
+
 - **Multi-shell support**: Generate completion scripts for bash, zsh, fish, PowerShell
 - **Dynamic completion**: Context-aware completion based on current command state
 - **Custom completion functions**: User-defined completion logic
@@ -937,18 +996,22 @@ decopin-cli build --install-completion=bash
 ```
 
 #### 🔧 Advanced Option Features
+
 - **Option choices**: Restrict option values to predefined sets
 - **Option conflicts/implies**: Define option dependencies and conflicts
 - **Variadic options**: Support for multiple values per option
 - **Option groups**: Group related options in help output
 
 ### Implementation Priority
+
 1. **Shell Autocompletion** - High priority, essential for production CLIs
 2. **Lifecycle Hooks** - Medium priority, useful for complex workflows
 3. **Advanced Option Features** - Lower priority, nice-to-have features
 
 ### Contributing
+
 We welcome contributions! If you'd like to work on any of these features, please:
+
 1. Open an issue to discuss the implementation approach
 2. Check existing issues to avoid duplicate work
 3. Follow our coding standards and testing practices

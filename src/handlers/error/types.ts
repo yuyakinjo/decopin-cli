@@ -5,8 +5,10 @@ import type { CommandContext } from '../../types/context.js';
 /**
  * エラーハンドラー用のコンテキスト
  */
-export interface ErrorContext<T = unknown, E = unknown>
-  extends CommandContext<T, E> {
+export interface ErrorContext<T = unknown, E = unknown> extends CommandContext<
+  T,
+  E
+> {
   /** 発生したエラー */
   error: unknown;
 }

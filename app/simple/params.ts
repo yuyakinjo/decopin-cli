@@ -10,8 +10,8 @@ export default function createParams(): ParamsHandler {
         argIndex: 0,
         required: false,
         defaultValue: 'Hello from simple command!',
-        description: 'Message to display'
-      }
-    ]
+        description: 'Message to display',
+      },
+    ],
   };
 }

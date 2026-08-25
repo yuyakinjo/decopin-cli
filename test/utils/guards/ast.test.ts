@@ -1,5 +1,7 @@
 import { describe, it, expect } from 'bun:test';
+
 import ts from 'typescript';
+
 import {
   isExportedNode,
   hasModifier,
@@ -52,7 +54,9 @@ describe('AST Guards', () => {
 
   describe('hasModifier', () => {
     it('should check for specific modifiers', () => {
-      const sourceFile = createSourceFile('export default async function test() {}');
+      const sourceFile = createSourceFile(
+        'export default async function test() {}'
+      );
       const funcNode = findFirstNode(sourceFile, ts.isFunctionDeclaration);
       expect(funcNode).toBeDefined();
       expect(hasModifier(funcNode!, ts.SyntaxKind.ExportKeyword)).toBe(true);

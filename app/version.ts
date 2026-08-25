@@ -5,12 +5,12 @@ import type { VersionHandler } from '../dist/types/index.js';
  */
 export default function createVersion(): VersionHandler {
   return {
-    version: "2.1.3",
+    version: '2.1.3',
     metadata: {
-      name: "super-cli",
-      version: "2.1.3",
-      description: "The ultimate command line interface for developers",
-      author: "TypeScript Ninja"
-    }
+      name: 'super-cli',
+      version: '2.1.3',
+      description: 'The ultimate command line interface for developers',
+      author: 'TypeScript Ninja',
+    },
   };
 }

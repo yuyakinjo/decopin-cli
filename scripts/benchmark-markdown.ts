@@ -1,11 +1,11 @@
 #!/usr/bin/env node
 
 import { execSync } from 'child_process';
-import { performance } from 'perf_hooks';
-import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
 import { writeFileSync } from 'fs';
 import os from 'os';
+import { dirname, join } from 'path';
+import { performance } from 'perf_hooks';
+import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -48,9 +48,9 @@ function measureCommand(command: string, description: string): Measurement {
     try {
       execSync(`bun run ${CLI_PATH} ${command}`, {
         stdio: 'pipe',
-        env: { ...process.env, NODE_ENV: 'production' }
+        env: { ...process.env, NODE_ENV: 'production' },
       });
-    } catch (e) {
+    } catch {
       // Ignore errors for now, we're measuring performance
     }
     const end = performance.now();
@@ -68,7 +68,7 @@ function measureCommand(command: string, description: string): Measurement {
     average: avg,
     min: Math.min(...measurements),
     max: Math.max(...measurements),
-    measurements
+    measurements,
   };
 }
 
@@ -77,21 +77,31 @@ const scenarios: Scenario[] = [
   { command: '--help', description: 'Help display' },
   { command: 'hello "World"', description: 'Simple command' },
   { command: 'user --help', description: 'Subcommand help' },
-  { command: 'user create --name "John" --email "john@example.com"', description: 'Command with validation' },
+  {
+    command: 'user create --name "John" --email "john@example.com"',
+    description: 'Command with validation',
+  },
   { command: 'nonexistent', description: 'Error handling' },
 ];
 
 // Run benchmarks
-const results: Measurement[] = scenarios.map(scenario =>
+const results: Measurement[] = scenarios.map((scenario) =>
   measureCommand(scenario.command, scenario.description)
 );
 
 // Calculate statistics
-const avgStartup = results.reduce((sum, r) => sum + r.average, 0) / results.length;
-const helpCommands = results.filter(r => r.description.includes('help') || r.description.includes('Error'));
-const execCommands = results.filter(r => !r.description.includes('help') && !r.description.includes('Error'));
-const avgHelp = helpCommands.reduce((sum, r) => sum + r.average, 0) / helpCommands.length;
-const avgExec = execCommands.reduce((sum, r) => sum + r.average, 0) / execCommands.length;
+const avgStartup =
+  results.reduce((sum, r) => sum + r.average, 0) / results.length;
+const helpCommands = results.filter(
+  (r) => r.description.includes('help') || r.description.includes('Error')
+);
+const execCommands = results.filter(
+  (r) => !r.description.includes('help') && !r.description.includes('Error')
+);
+const avgHelp =
+  helpCommands.reduce((sum, r) => sum + r.average, 0) / helpCommands.length;
+const avgExec =
+  execCommands.reduce((sum, r) => sum + r.average, 0) / execCommands.length;
 
 // Generate markdown report
 const markdown = `# Performance Benchmark Report
@@ -110,7 +120,7 @@ Runtime: Bun ${process.versions.bun || 'unknown'}
 
 | Command | Average (ms) | Min (ms) | Max (ms) |
 |---------|-------------|----------|----------|
-${results.map(r => `| ${r.description} | ${r.average.toFixed(2)} | ${r.min.toFixed(2)} | ${r.max.toFixed(2)} |`).join('\n')}
+${results.map((r) => `| ${r.description} | ${r.average.toFixed(2)} | ${r.min.toFixed(2)} | ${r.max.toFixed(2)} |`).join('\n')}
 
 ## Performance Characteristics
 
@@ -160,12 +170,12 @@ const jsonOutput: JsonOutput = {
   averageStartup: avgStartup,
   averageHelp: avgHelp,
   averageExec: avgExec,
-  results: results.map(r => ({
+  results: results.map((r) => ({
     description: r.description,
     average: r.average,
     min: r.min,
-    max: r.max
-  }))
+    max: r.max,
+  })),
 };
 
 console.log('::performance-data::' + JSON.stringify(jsonOutput));

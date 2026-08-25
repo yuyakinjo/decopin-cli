@@ -15,10 +15,6 @@
     "sourceMap": false,
     "outDir": "../examples"
   },
-  "include": [
-    "**/*.ts"
-  ],
-  "exclude": [
-    "**/*.js"
-  ]
+  "include": ["**/*.ts"],
+  "exclude": ["**/*.js"]
 }

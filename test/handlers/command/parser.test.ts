@@ -1,8 +1,9 @@
 import { describe, it, expect, beforeEach, afterEach } from 'bun:test';
-import { parseFiles } from '../../../src/handlers/command/parser.js';
-import type { CommandFile } from '../../../src/core/types.js';
 import { mkdir, rm, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
+
+import type { CommandFile } from '../../../src/core/types.js';
+import { parseFiles } from '../../../src/handlers/command/parser.js';
 
 describe('Command Parser - Extended Tests', () => {
   const testDir = join(process.cwd(), 'test-parser-extended');
@@ -27,16 +28,20 @@ describe('Command Parser - Extended Tests', () => {
       }`
     );
 
-    const files: CommandFile[] = [{
-      path: commandPath,
-      commandPath: 'test'
-    }];
+    const files: CommandFile[] = [
+      {
+        path: commandPath,
+        commandPath: 'test',
+      },
+    ];
 
     const definitions = await parseFiles(files);
 
     expect(definitions).toHaveLength(1);
     expect(definitions[0].name).toBe('root');
-    expect(definitions[0].metadata?.description).toBe('This is a test command that does something useful');
+    expect(definitions[0].metadata?.description).toBe(
+      'This is a test command that does something useful'
+    );
   });
 
   it('should handle command without metadata', async () => {
@@ -48,10 +53,12 @@ describe('Command Parser - Extended Tests', () => {
       }`
     );
 
-    const files: CommandFile[] = [{
-      path: commandPath,
-      commandPath: 'test'
-    }];
+    const files: CommandFile[] = [
+      {
+        path: commandPath,
+        commandPath: 'test',
+      },
+    ];
 
     const definitions = await parseFiles(files);
 
@@ -61,8 +68,17 @@ describe('Command Parser - Extended Tests', () => {
   });
 
   it('should handle deeply nested command paths', async () => {
-    const deepPath = join(testDir, 'app', 'admin', 'users', 'permissions', 'command.ts');
-    await mkdir(join(testDir, 'app', 'admin', 'users', 'permissions'), { recursive: true });
+    const deepPath = join(
+      testDir,
+      'app',
+      'admin',
+      'users',
+      'permissions',
+      'command.ts'
+    );
+    await mkdir(join(testDir, 'app', 'admin', 'users', 'permissions'), {
+      recursive: true,
+    });
 
     await writeFile(
       deepPath,
@@ -71,10 +87,12 @@ describe('Command Parser - Extended Tests', () => {
       }`
     );
 
-    const files: CommandFile[] = [{
-      path: deepPath,
-      commandPath: 'admin/users/permissions'
-    }];
+    const files: CommandFile[] = [
+      {
+        path: deepPath,
+        commandPath: 'admin/users/permissions',
+      },
+    ];
 
     const definitions = await parseFiles(files);
 
@@ -93,10 +111,12 @@ describe('Command Parser - Extended Tests', () => {
       export default handler;`
     );
 
-    const files: CommandFile[] = [{
-      path: commandPath,
-      commandPath: 'arrow'
-    }];
+    const files: CommandFile[] = [
+      {
+        path: commandPath,
+        commandPath: 'arrow',
+      },
+    ];
 
     const definitions = await parseFiles(files);
 
@@ -117,10 +137,12 @@ describe('Command Parser - Extended Tests', () => {
       }`
     );
 
-    const files: CommandFile[] = [{
-      path: commandPath,
-      commandPath: 'multi'
-    }];
+    const files: CommandFile[] = [
+      {
+        path: commandPath,
+        commandPath: 'multi',
+      },
+    ];
 
     const definitions = await parseFiles(files);
 
@@ -141,7 +163,7 @@ describe('Command Parser - Extended Tests', () => {
 
       files.push({
         path: cmdPath,
-        commandPath: `cmd${i}`
+        commandPath: `cmd${i}`,
       });
     }
 

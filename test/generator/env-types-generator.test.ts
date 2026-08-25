@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach } from 'bun:test';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+
 import { generateEnvTypes } from '../../src/generator/env-types-generator';
 
 describe('EnvTypesGenerator', () => {
@@ -65,7 +66,7 @@ export default function createEnv(): EnvHandler {
     expect(fs.existsSync(outputPath)).toBe(true);
 
     const generatedContent = fs.readFileSync(outputPath, 'utf-8');
-    
+
     // 生成された型定義を検証
     expect(generatedContent).toContain('export interface AppEnv');
     expect(generatedContent).toContain('NODE_ENV: string;');
@@ -107,7 +108,7 @@ export default function createEnv() {
 
     // 生成されたファイルを確認
     const generatedContent = fs.readFileSync(outputPath, 'utf-8');
-    
+
     expect(generatedContent).toContain('LOG_LEVEL: string;');
     expect(generatedContent).toContain('MAX_RETRIES: number;');
     expect(generatedContent).toContain('ENABLE_CACHE: boolean;');
@@ -139,7 +140,7 @@ export default function createEnv() {
 
     // 生成されたファイルを確認
     const generatedContent = fs.readFileSync(outputPath, 'utf-8');
-    
+
     expect(generatedContent).toContain('DATABASE_URL: string;');
     expect(generatedContent).toContain('POOL_SIZE: number;');
   });
@@ -250,12 +251,12 @@ export default function createEnv() {
 
     // 生成されたファイルを確認
     const generatedContent = fs.readFileSync(outputPath, 'utf-8');
-    
+
     // 追加のフィールドは無視され、型のみが生成されることを確認
     expect(generatedContent).toContain('APP_NAME: string;');
     expect(generatedContent).toContain('TIMEOUT_MS: number;');
     expect(generatedContent).toContain('FEATURE_FLAGS: string;');
-    
+
     // エラーメッセージや制約は型定義に含まれないことを確認
     expect(generatedContent).not.toContain('minLength');
     expect(generatedContent).not.toContain('errorMessage');

@@ -79,7 +79,7 @@ export async function parseCommandDefinitions(
         hasHelp: false, // 実際の実装では help.ts の存在をチェック
         hasError: false, // 実際の実装では error.ts の存在をチェック
       });
-    } catch (_error) {}
+    } catch {}
   }
 
   return definitions;

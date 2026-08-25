@@ -1,6 +1,11 @@
 import { describe, it, expect } from 'bun:test';
-import { generateLazyCLI, type LazyCliOptions, type CommandInfo } from '../../src/generator/lazy-cli-template.js';
+
 import type { CLIStructure } from '../../src/core/types.js';
+import {
+  generateLazyCLI,
+  type LazyCliOptions,
+  type CommandInfo,
+} from '../../src/generator/lazy-cli-template.js';
 import { HANDLER_REGISTRY } from '../../src/types/handler-registry.js';
 
 describe('Lazy CLI Template - Aliases', () => {
@@ -10,14 +15,14 @@ describe('Lazy CLI Template - Aliases', () => {
         name: 'user/create',
         path: './app/user/create/command.js',
         hasParams: true,
-        aliases: ['new', 'add']
+        aliases: ['new', 'add'],
       },
       {
         name: 'deploy',
         path: './app/deploy/command.js',
         hasParams: false,
-        aliases: ['d', 'publish']
-      }
+        aliases: ['d', 'publish'],
+      },
     ];
 
     // Create a minimal structure for the test
@@ -27,16 +32,22 @@ describe('Lazy CLI Template - Aliases', () => {
       help: [],
       errors: [],
       handlers: new Map([
-        ['user/create/command', {
-          path: './app/user/create/command.ts',
-          definition: HANDLER_REGISTRY.find(h => h.name === 'command')!,
-          commandPath: 'user/create',
-        }],
-        ['deploy/command', {
-          path: './app/deploy/command.ts',
-          definition: HANDLER_REGISTRY.find(h => h.name === 'command')!,
-          commandPath: 'deploy',
-        }],
+        [
+          'user/create/command',
+          {
+            path: './app/user/create/command.ts',
+            definition: HANDLER_REGISTRY.find((h) => h.name === 'command')!,
+            commandPath: 'user/create',
+          },
+        ],
+        [
+          'deploy/command',
+          {
+            path: './app/deploy/command.ts',
+            definition: HANDLER_REGISTRY.find((h) => h.name === 'command')!,
+            commandPath: 'deploy',
+          },
+        ],
       ]),
     };
 
@@ -55,7 +66,7 @@ describe('Lazy CLI Template - Aliases', () => {
     expect(result).toContain("case 'user/add':");
     expect(result).toContain("case 'd':");
     expect(result).toContain("case 'publish':");
-    
+
     // Check alias command list generation
     expect(result).toContain("commandList.push('user/new');");
     expect(result).toContain("commandList.push('user/add');");
@@ -68,8 +79,8 @@ describe('Lazy CLI Template - Aliases', () => {
       {
         name: 'test',
         path: './app/test/command.js',
-        hasParams: false
-      }
+        hasParams: false,
+      },
     ];
 
     const structure: CLIStructure = {
@@ -78,11 +89,14 @@ describe('Lazy CLI Template - Aliases', () => {
       help: [],
       errors: [],
       handlers: new Map([
-        ['test/command', {
-          path: './app/test/command.ts',
-          definition: HANDLER_REGISTRY.find(h => h.name === 'command')!,
-          commandPath: 'test',
-        }],
+        [
+          'test/command',
+          {
+            path: './app/test/command.ts',
+            definition: HANDLER_REGISTRY.find((h) => h.name === 'command')!,
+            commandPath: 'test',
+          },
+        ],
       ]),
     };
 
@@ -107,8 +121,8 @@ describe('Lazy CLI Template - Aliases', () => {
         name: 'root',
         path: './app/command.js',
         hasParams: true,
-        aliases: ['main']
-      }
+        aliases: ['main'],
+      },
     ];
 
     const structure: CLIStructure = {
@@ -117,11 +131,14 @@ describe('Lazy CLI Template - Aliases', () => {
       help: [],
       errors: [],
       handlers: new Map([
-        ['command', {
-          path: './app/command.ts',
-          definition: HANDLER_REGISTRY.find(h => h.name === 'command')!,
-          commandPath: '',
-        }],
+        [
+          'command',
+          {
+            path: './app/command.ts',
+            definition: HANDLER_REGISTRY.find((h) => h.name === 'command')!,
+            commandPath: '',
+          },
+        ],
       ]),
     };
 
@@ -149,21 +166,30 @@ describe('Lazy CLI Template - Unified Handlers', () => {
       help: [],
       errors: [],
       handlers: new Map([
-        ['hello/command', {
-          path: './app/hello/command.ts',
-          definition: HANDLER_REGISTRY.find(h => h.name === 'command')!,
-          commandPath: 'hello',
-        }],
-        ['hello/params', {
-          path: './app/hello/params.ts',
-          definition: HANDLER_REGISTRY.find(h => h.name === 'params')!,
-          commandPath: 'hello',
-        }],
-        ['hello/help', {
-          path: './app/hello/help.ts',
-          definition: HANDLER_REGISTRY.find(h => h.name === 'help')!,
-          commandPath: 'hello',
-        }],
+        [
+          'hello/command',
+          {
+            path: './app/hello/command.ts',
+            definition: HANDLER_REGISTRY.find((h) => h.name === 'command')!,
+            commandPath: 'hello',
+          },
+        ],
+        [
+          'hello/params',
+          {
+            path: './app/hello/params.ts',
+            definition: HANDLER_REGISTRY.find((h) => h.name === 'params')!,
+            commandPath: 'hello',
+          },
+        ],
+        [
+          'hello/help',
+          {
+            path: './app/hello/help.ts',
+            definition: HANDLER_REGISTRY.find((h) => h.name === 'help')!,
+            commandPath: 'hello',
+          },
+        ],
       ]),
     };
 
@@ -172,7 +198,7 @@ describe('Lazy CLI Template - Unified Handlers', () => {
         name: 'hello',
         path: './app/hello/command.js',
         hasParams: true,
-      }
+      },
     ];
 
     const options: LazyCliOptions = {
@@ -186,26 +212,34 @@ describe('Lazy CLI Template - Unified Handlers', () => {
     const result = generateLazyCLI(options);
 
     // Check unified handler imports - paths are transformed to ../examples/
-    expect(result).toContain("const commandModule = await import('../examples/hello/command.js');");
-    expect(result).toContain("const paramsModule = await import('../examples/hello/params.js');");
-    expect(result).toContain("const helpModule = await import('../examples/hello/help.js');");
+    expect(result).toContain(
+      "const commandModule = await import('../examples/hello/command.js');"
+    );
+    expect(result).toContain(
+      "const paramsModule = await import('../examples/hello/params.js');"
+    );
+    expect(result).toContain(
+      "const helpModule = await import('../examples/hello/help.js');"
+    );
 
     // Check context building
-    expect(result).toContain("let context = {");
-    expect(result).toContain("args: commandArgs,");
-    expect(result).toContain("options: parsedOptions,");
-    expect(result).toContain("env: env || process.env,");
+    expect(result).toContain('let context = {');
+    expect(result).toContain('args: commandArgs,');
+    expect(result).toContain('options: parsedOptions,');
+    expect(result).toContain('env: env || process.env,');
 
     // Check help handling
-    expect(result).toContain("if (commandArgs.includes('--help') || commandArgs.includes('-h'))");
+    expect(result).toContain(
+      "if (commandArgs.includes('--help') || commandArgs.includes('-h'))"
+    );
 
     // Check params validation
-    expect(result).toContain("const paramsHandler = paramsModule.default;");
-    expect(result).toContain("const validatedData = await validateParams");
+    expect(result).toContain('const paramsHandler = paramsModule.default;');
+    expect(result).toContain('const validatedData = await validateParams');
 
     // Check command execution
-    expect(result).toContain("const commandHandler = commandModule.default;");
-    expect(result).toContain("await commandHandler(context);");
+    expect(result).toContain('const commandHandler = commandModule.default;');
+    expect(result).toContain('await commandHandler(context);');
   });
 
   it('should generate global handler initialization when global handlers exist', () => {
@@ -215,18 +249,29 @@ describe('Lazy CLI Template - Unified Handlers', () => {
       help: [],
       errors: [],
       handlers: new Map([
-        ['env', {
-          path: './app/env.ts',
-          definition: HANDLER_REGISTRY.find(h => h.name === 'env')!,
-        }],
-        ['middleware', {
-          path: './app/middleware.ts',
-          definition: HANDLER_REGISTRY.find(h => h.name === 'middleware')!,
-        }],
-        ['global-error', {
-          path: './app/global-error.ts',
-          definition: HANDLER_REGISTRY.find(h => h.name === 'global-error')!,
-        }],
+        [
+          'env',
+          {
+            path: './app/env.ts',
+            definition: HANDLER_REGISTRY.find((h) => h.name === 'env')!,
+          },
+        ],
+        [
+          'middleware',
+          {
+            path: './app/middleware.ts',
+            definition: HANDLER_REGISTRY.find((h) => h.name === 'middleware')!,
+          },
+        ],
+        [
+          'global-error',
+          {
+            path: './app/global-error.ts',
+            definition: HANDLER_REGISTRY.find(
+              (h) => h.name === 'global-error'
+            )!,
+          },
+        ],
       ]),
     };
 
@@ -241,20 +286,30 @@ describe('Lazy CLI Template - Unified Handlers', () => {
     const result = generateLazyCLI(options);
 
     // Check global handler initialization
-    expect(result).toContain("// Global handler initialization");
-    expect(result).toContain("const globalHandlers = {};");
-    
+    expect(result).toContain('// Global handler initialization');
+    expect(result).toContain('const globalHandlers = {};');
+
     // Check env handler loading - paths are transformed to ../examples/
-    expect(result).toContain("const envModule = await import('../examples/env.js');");
+    expect(result).toContain(
+      "const envModule = await import('../examples/env.js');"
+    );
     expect(result).toContain("globalHandlers['env'] = envModule.default;");
 
     // Check middleware handler loading - paths are transformed to ../examples/
-    expect(result).toContain("const middlewareModule = await import('../examples/middleware.js');");
-    expect(result).toContain("globalHandlers['middleware'] = middlewareModule.default;");
+    expect(result).toContain(
+      "const middlewareModule = await import('../examples/middleware.js');"
+    );
+    expect(result).toContain(
+      "globalHandlers['middleware'] = middlewareModule.default;"
+    );
 
     // Check global-error handler loading - paths are transformed to ../examples/
-    expect(result).toContain("const global_errorModule = await import('../examples/global-error.js');");
-    expect(result).toContain("globalHandlers['global-error'] = global_errorModule.default;");
+    expect(result).toContain(
+      "const global_errorModule = await import('../examples/global-error.js');"
+    );
+    expect(result).toContain(
+      "globalHandlers['global-error'] = global_errorModule.default;"
+    );
   });
 
   it('should generate fallback CLI when structure is not provided', () => {
@@ -263,7 +318,7 @@ describe('Lazy CLI Template - Unified Handlers', () => {
         name: 'test',
         path: './app/test/command.js',
         hasParams: false,
-      }
+      },
     ];
 
     const options: LazyCliOptions = {
@@ -276,7 +331,9 @@ describe('Lazy CLI Template - Unified Handlers', () => {
 
     // Should generate a fallback CLI using executeCommand
     const result = generateLazyCLI(options);
-    expect(result).toContain("await executeCommand('./app/test/command.js', commandArgs);");
+    expect(result).toContain(
+      "await executeCommand('./app/test/command.js', commandArgs);"
+    );
     expect(result).not.toContain('// Global handler initialization');
   });
 
@@ -287,16 +344,22 @@ describe('Lazy CLI Template - Unified Handlers', () => {
       help: [],
       errors: [],
       handlers: new Map([
-        ['hello/command', {
-          path: './app/hello/command.ts',
-          definition: HANDLER_REGISTRY.find(h => h.name === 'command')!,
-          commandPath: 'hello',
-        }],
-        ['hello/error', {
-          path: './app/hello/error.ts',
-          definition: HANDLER_REGISTRY.find(h => h.name === 'error')!,
-          commandPath: 'hello',
-        }],
+        [
+          'hello/command',
+          {
+            path: './app/hello/command.ts',
+            definition: HANDLER_REGISTRY.find((h) => h.name === 'command')!,
+            commandPath: 'hello',
+          },
+        ],
+        [
+          'hello/error',
+          {
+            path: './app/hello/error.ts',
+            definition: HANDLER_REGISTRY.find((h) => h.name === 'error')!,
+            commandPath: 'hello',
+          },
+        ],
       ]),
     };
 
@@ -305,7 +368,7 @@ describe('Lazy CLI Template - Unified Handlers', () => {
         name: 'hello',
         path: './app/hello/command.js',
         hasParams: false,
-      }
+      },
     ];
 
     const options: LazyCliOptions = {
@@ -319,12 +382,14 @@ describe('Lazy CLI Template - Unified Handlers', () => {
     const result = generateLazyCLI(options);
 
     // Check error handler import - paths are transformed to ../examples/
-    expect(result).toContain("const errorModule = await import('../examples/hello/error.js');");
+    expect(result).toContain(
+      "const errorModule = await import('../examples/hello/error.js');"
+    );
 
     // Check try-catch wrapper
-    expect(result).toContain("try {");
-    expect(result).toContain("} catch (error) {");
-    expect(result).toContain("const errorHandler = errorModule.default;");
-    expect(result).toContain("await errorHandler({ ...context, error });");
+    expect(result).toContain('try {');
+    expect(result).toContain('} catch (error) {');
+    expect(result).toContain('const errorHandler = errorModule.default;');
+    expect(result).toContain('await errorHandler({ ...context, error });');
   });
 });

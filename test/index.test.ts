@@ -1,6 +1,7 @@
+import { afterEach, beforeEach, describe, expect, it } from 'bun:test';
 import { mkdir, rm, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import { afterEach, beforeEach, describe, expect, it } from 'bun:test';
+
 import { buildCLI, listCommands } from '../src/index.js';
 
 describe('CLI Builder Integration', () => {

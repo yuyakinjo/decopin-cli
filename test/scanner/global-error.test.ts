@@ -1,8 +1,10 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { Scanner } from '../../src/core/scanner.js';
 import { mkdir, writeFile, rm } from 'fs/promises';
-import { join } from 'path';
 import { tmpdir } from 'os';
+import { join } from 'path';
+
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+
+import { Scanner } from '../../src/core/scanner.js';
 
 describe('Scanner - Global Error', () => {
   let testDir: string;

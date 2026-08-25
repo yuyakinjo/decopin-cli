@@ -1,8 +1,8 @@
-name: "Setup Bun Environment"
-description: "Setup Bun and install dependencies"
+name: 'Setup Bun Environment'
+description: 'Setup Bun and install dependencies'
 
 runs:
-  using: "composite"
+  using: 'composite'
   steps:
     - name: Setup Bun
       uses: oven-sh/setup-bun@v2

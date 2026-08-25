@@ -8,10 +8,7 @@ export type {
   ParsedCommand,
   RuntimeCommandDefinition,
 } from '../handlers/command/types.js';
-export type {
-  CommandContext,
-  CommandHandler,
-} from './context.js';
+export type { CommandContext, CommandHandler } from './context.js';
 
 export type {
   ValidationError,

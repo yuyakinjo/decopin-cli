@@ -1,6 +1,6 @@
+import { describe, it, expect, beforeAll } from 'bun:test';
 import { spawn } from 'node:child_process';
 import { join } from 'node:path';
-import { describe, it, expect, beforeAll } from 'bun:test';
 
 const CLI_PATH = join(process.cwd(), 'examples', 'cli.js');
 
@@ -21,8 +21,8 @@ async function runCLI(args: string[]): Promise<{
         NODE_ENV: 'test',
         PORT: '3000',
         DEBUG: 'false',
-        NODE_NO_WARNINGS: '1'
-      }
+        NODE_NO_WARNINGS: '1',
+      },
     });
 
     let stdout = '';
@@ -51,7 +51,9 @@ describe('Generated CLI Integration Tests', () => {
     // Ensure CLI is built and available
     const { existsSync } = await import('node:fs');
     if (!existsSync(CLI_PATH)) {
-      throw new Error(`CLI not found at ${CLI_PATH}. Run 'npm run dev:regen' first.`);
+      throw new Error(
+        `CLI not found at ${CLI_PATH}. Run 'npm run dev:regen' first.`
+      );
     }
   });
 
@@ -91,28 +93,52 @@ describe('Generated CLI Integration Tests', () => {
 
   describe('User Create Command', () => {
     it('should create user with positional arguments', async () => {
-      const result = await runCLI(['user', 'create', 'John Doe', 'john@example.com']);
+      const result = await runCLI([
+        'user',
+        'create',
+        'John Doe',
+        'john@example.com',
+      ]);
 
       expect(result.exitCode).toBe(0);
-      expect(result.stdout).toContain('🔄 Creating user: John Doe (john@example.com)');
+      expect(result.stdout).toContain(
+        '🔄 Creating user: John Doe (john@example.com)'
+      );
       expect(result.stdout).toContain('✅ User created successfully!');
       expect(result.stderr).toBe('');
     });
 
     it('should create user with named options', async () => {
-      const result = await runCLI(['user', 'create', '--name', 'Jane Smith', '--email', 'jane@example.com']);
+      const result = await runCLI([
+        'user',
+        'create',
+        '--name',
+        'Jane Smith',
+        '--email',
+        'jane@example.com',
+      ]);
 
       expect(result.exitCode).toBe(0);
-      expect(result.stdout).toContain('🔄 Creating user: Jane Smith (jane@example.com)');
+      expect(result.stdout).toContain(
+        '🔄 Creating user: Jane Smith (jane@example.com)'
+      );
       expect(result.stdout).toContain('✅ User created successfully!');
       expect(result.stderr).toBe('');
     });
 
     it('should create user with mixed arguments', async () => {
-      const result = await runCLI(['user', 'create', 'Bob', '--email', 'bob@example.com']);
+      const result = await runCLI([
+        'user',
+        'create',
+        'Bob',
+        '--email',
+        'bob@example.com',
+      ]);
 
       expect(result.exitCode).toBe(0);
-      expect(result.stdout).toContain('🔄 Creating user: Bob (bob@example.com)');
+      expect(result.stdout).toContain(
+        '🔄 Creating user: Bob (bob@example.com)'
+      );
       expect(result.stdout).toContain('✅ User created successfully!');
       expect(result.stderr).toBe('');
     });
@@ -122,7 +148,9 @@ describe('Generated CLI Integration Tests', () => {
 
       expect(result.exitCode).toBe(1); // バリデーションエラーでexit code 1
       expect(result.stderr).toContain('❌ User creation failed:');
-      expect(result.stderr).toContain('email: Invalid key: Expected "email" but received undefined');
+      expect(result.stderr).toContain(
+        'email: Invalid key: Expected "email" but received undefined'
+      );
       expect(result.stderr).toContain('💡 Usage examples:');
     });
   });
@@ -168,7 +196,9 @@ describe('Generated CLI Integration Tests', () => {
 
       expect(result.exitCode).toBe(0);
       expect(result.stdout).toContain('super-cli 2.1.3');
-      expect(result.stdout).toContain('The ultimate command line interface for developers');
+      expect(result.stdout).toContain(
+        'The ultimate command line interface for developers'
+      );
       expect(result.stdout).toContain('Usage:');
       expect(result.stdout).toContain('cli <command> [options]');
       expect(result.stdout).toContain('Available commands:');
@@ -227,7 +257,9 @@ describe('Generated CLI Integration Tests', () => {
       expect(result.stdout).toContain('cli hello --name Bob');
       expect(result.stdout).toContain('cli hello "Alice Smith"');
       expect(result.stdout).toContain('Aliases: hi, greet');
-      expect(result.stdout).toContain('This command greets a person with a friendly hello message.');
+      expect(result.stdout).toContain(
+        'This command greets a person with a friendly hello message.'
+      );
       expect(result.stderr).toBe('');
     });
 
@@ -239,7 +271,9 @@ describe('Generated CLI Integration Tests', () => {
       expect(result.stdout).toContain('Say hello to someone');
       expect(result.stdout).toContain('Examples:');
       expect(result.stdout).toContain('Aliases: hi, greet');
-      expect(result.stdout).toContain('This command greets a person with a friendly hello message.');
+      expect(result.stdout).toContain(
+        'This command greets a person with a friendly hello message.'
+      );
       expect(result.stderr).toBe('');
     });
 
@@ -272,7 +306,9 @@ describe('Generated CLI Integration Tests', () => {
       expect(result.exitCode).toBe(0);
       // Should show general help since command doesn't exist
       expect(result.stdout).toContain('super-cli 2.1.3');
-      expect(result.stdout).toContain('The ultimate command line interface for developers');
+      expect(result.stdout).toContain(
+        'The ultimate command line interface for developers'
+      );
       expect(result.stdout).toContain('Available commands:');
       expect(result.stdout).toContain('hello');
       expect(result.stdout).toContain('user/create');
@@ -303,7 +339,9 @@ describe('Generated CLI Integration Tests', () => {
       expect(result.stdout).toContain('Examples:');
       expect(result.stdout).toContain('cli hello Alice');
       expect(result.stdout).toContain('Aliases: hi, greet, hey');
-      expect(result.stdout).toContain('This command greets a person with a friendly hello message.');
+      expect(result.stdout).toContain(
+        'This command greets a person with a friendly hello message.'
+      );
       // params.ts content
       expect(result.stdout).toContain('Arguments:');
       expect(result.stdout).toContain('[1] name (or --name)');
@@ -357,7 +395,9 @@ describe('Generated CLI Integration Tests', () => {
       const helpOutput = helpResult.stdout;
 
       // Extract command names from help output
-      const commandMatches = helpOutput.match(/Available commands:\s*([\s\S]*?)\s*Options:/);
+      const commandMatches = helpOutput.match(
+        /Available commands:\s*([\s\S]*?)\s*Options:/
+      );
       expect(commandMatches).toBeTruthy();
 
       if (commandMatches) {
@@ -372,7 +412,7 @@ describe('Generated CLI Integration Tests', () => {
       const commands = [
         ['hello'],
         ['user', 'create', 'Test', 'test@example.com'],
-        ['user', 'list', '--limit', '1']
+        ['user', 'list', '--limit', '1'],
       ];
 
       for (const command of commands) {
@@ -410,28 +450,51 @@ describe('Generated CLI Integration Tests', () => {
     });
 
     it('should execute user create command using "add" alias', async () => {
-      const result = await runCLI(['user', 'add', 'John Doe', 'john@example.com']);
+      const result = await runCLI([
+        'user',
+        'add',
+        'John Doe',
+        'john@example.com',
+      ]);
 
       expect(result.exitCode).toBe(0);
-      expect(result.stdout).toContain('🔄 Creating user: John Doe (john@example.com)');
+      expect(result.stdout).toContain(
+        '🔄 Creating user: John Doe (john@example.com)'
+      );
       expect(result.stdout).toContain('✅ User created successfully!');
       expect(result.stderr).toBe('');
     });
 
     it('should execute user create command using "new" alias', async () => {
-      const result = await runCLI(['user', 'new', 'Jane Smith', 'jane@example.com']);
+      const result = await runCLI([
+        'user',
+        'new',
+        'Jane Smith',
+        'jane@example.com',
+      ]);
 
       expect(result.exitCode).toBe(0);
-      expect(result.stdout).toContain('🔄 Creating user: Jane Smith (jane@example.com)');
+      expect(result.stdout).toContain(
+        '🔄 Creating user: Jane Smith (jane@example.com)'
+      );
       expect(result.stdout).toContain('✅ User created successfully!');
       expect(result.stderr).toBe('');
     });
 
     it('should execute user create command using alias with options', async () => {
-      const result = await runCLI(['user', 'add', '--name', 'Alice', '--email', 'alice@example.com']);
+      const result = await runCLI([
+        'user',
+        'add',
+        '--name',
+        'Alice',
+        '--email',
+        'alice@example.com',
+      ]);
 
       expect(result.exitCode).toBe(0);
-      expect(result.stdout).toContain('🔄 Creating user: Alice (alice@example.com)');
+      expect(result.stdout).toContain(
+        '🔄 Creating user: Alice (alice@example.com)'
+      );
       expect(result.stdout).toContain('✅ User created successfully!');
       expect(result.stderr).toBe('');
     });
@@ -461,7 +524,9 @@ describe('Generated CLI Integration Tests', () => {
 
       expect(result.exitCode).toBe(1);
       expect(result.stderr).toContain('❌ User creation failed:');
-      expect(result.stderr).toContain('email: Invalid key: Expected "email" but received undefined');
+      expect(result.stderr).toContain(
+        'email: Invalid key: Expected "email" but received undefined'
+      );
       expect(result.stderr).toContain('💡 Usage examples:');
     });
 

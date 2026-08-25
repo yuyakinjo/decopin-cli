@@ -1,5 +1,17 @@
-import { describe, it, expect, vi, beforeEach, afterEach, type MockInstance } from 'vitest';
-import type { CLIError, ValidationError, ModuleError } from '../../../src/types/errors.js';
+import {
+  describe,
+  it,
+  expect,
+  vi,
+  beforeEach,
+  afterEach,
+  type MockInstance,
+} from 'vitest';
+
+import type {
+  ValidationError,
+  ModuleError,
+} from '../../../src/types/errors.js';
 
 describe('Global Error Handler', () => {
   let consoleErrorSpy: MockInstance<typeof console.error>;
@@ -27,27 +39,39 @@ describe('Global Error Handler', () => {
           issues: [
             {
               path: [{ key: 'name' }],
-              message: 'Name is required'
+              message: 'Name is required',
             },
             {
               path: [{ key: 'email' }, { key: 'format' }],
-              message: 'Invalid email format'
-            }
-          ]
+              message: 'Invalid email format',
+            },
+          ],
         }
       );
 
       // Import and execute the global error handler
-      const createHandler = (await import('../../../app/global-error.js')).default;
-      const mockContext = { env: process.env, args: [], command: [], options: {} };
+      const createHandler = (await import('../../../app/global-error.js'))
+        .default;
+      const mockContext = {
+        env: process.env,
+        args: [],
+        command: [],
+        options: {},
+      };
       const handler = createHandler(mockContext);
 
-      await expect(handler(validationError)).rejects.toThrow('process.exit called');
+      await expect(handler(validationError)).rejects.toThrow(
+        'process.exit called'
+      );
 
       expect(consoleErrorSpy).toHaveBeenCalledWith('\n❌ An error occurred\n');
       expect(consoleErrorSpy).toHaveBeenCalledWith('📋 Validation Error:');
-      expect(consoleErrorSpy).toHaveBeenCalledWith('  • name: Name is required');
-      expect(consoleErrorSpy).toHaveBeenCalledWith('  • email.format: Invalid email format');
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        '  • name: Name is required'
+      );
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        '  • email.format: Invalid email format'
+      );
       expect(processExitSpy).toHaveBeenCalledWith(1);
     });
 
@@ -57,39 +81,59 @@ describe('Global Error Handler', () => {
         {
           issues: [
             {
-              message: 'General validation error'
-            }
-          ]
+              message: 'General validation error',
+            },
+          ],
         }
       );
 
-      const createHandler = (await import('../../../app/global-error.js')).default;
-      const mockContext = { env: process.env, args: [], command: [], options: {} };
+      const createHandler = (await import('../../../app/global-error.js'))
+        .default;
+      const mockContext = {
+        env: process.env,
+        args: [],
+        command: [],
+        options: {},
+      };
       const handler = createHandler(mockContext);
 
-      await expect(handler(validationError)).rejects.toThrow('process.exit called');
-      expect(consoleErrorSpy).toHaveBeenCalledWith('  • value: General validation error');
+      await expect(handler(validationError)).rejects.toThrow(
+        'process.exit called'
+      );
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        '  • value: General validation error'
+      );
     });
   });
 
   describe('Module Errors', () => {
     it('should handle module not found errors', async () => {
       const moduleError: ModuleError = Object.assign(
-        new Error('Cannot find module \'missing-module\''),
+        new Error("Cannot find module 'missing-module'"),
         {
-          code: 'ERR_MODULE_NOT_FOUND'
+          code: 'ERR_MODULE_NOT_FOUND',
         }
       );
 
-      const createHandler = (await import('../../../app/global-error.js')).default;
-      const mockContext = { env: process.env, args: [], command: [], options: {} };
+      const createHandler = (await import('../../../app/global-error.js'))
+        .default;
+      const mockContext = {
+        env: process.env,
+        args: [],
+        command: [],
+        options: {},
+      };
       const handler = createHandler(mockContext);
 
       await expect(handler(moduleError)).rejects.toThrow('process.exit called');
 
       expect(consoleErrorSpy).toHaveBeenCalledWith('📦 Module Error:');
-      expect(consoleErrorSpy).toHaveBeenCalledWith('  The required module could not be found.');
-      expect(consoleErrorSpy).toHaveBeenCalledWith('  Cannot find module \'missing-module\'');
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        '  The required module could not be found.'
+      );
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        "  Cannot find module 'missing-module'"
+      );
     });
   });
 
@@ -97,11 +141,19 @@ describe('Global Error Handler', () => {
     it('should handle standard Error instances', async () => {
       const runtimeError = new Error('Something went wrong');
 
-      const createHandler = (await import('../../../app/global-error.js')).default;
-      const mockContext = { env: process.env, args: [], command: [], options: {} };
+      const createHandler = (await import('../../../app/global-error.js'))
+        .default;
+      const mockContext = {
+        env: process.env,
+        args: [],
+        command: [],
+        options: {},
+      };
       const handler = createHandler(mockContext);
 
-      await expect(handler(runtimeError)).rejects.toThrow('process.exit called');
+      await expect(handler(runtimeError)).rejects.toThrow(
+        'process.exit called'
+      );
 
       expect(consoleErrorSpy).toHaveBeenCalledWith('💥 Error Details:');
       expect(consoleErrorSpy).toHaveBeenCalledWith('  Something went wrong');
@@ -110,11 +162,19 @@ describe('Global Error Handler', () => {
     it('should handle unknown error types', async () => {
       const unknownError: unknown = 'String error';
 
-      const createHandler = (await import('../../../app/global-error.js')).default;
-      const mockContext = { env: process.env, args: [], command: [], options: {} };
+      const createHandler = (await import('../../../app/global-error.js'))
+        .default;
+      const mockContext = {
+        env: process.env,
+        args: [],
+        command: [],
+        options: {},
+      };
       const handler = createHandler(mockContext);
 
-      await expect(handler(unknownError)).rejects.toThrow('process.exit called');
+      await expect(handler(unknownError)).rejects.toThrow(
+        'process.exit called'
+      );
 
       expect(consoleErrorSpy).toHaveBeenCalledWith('🔥 Unknown Error:');
       expect(consoleErrorSpy).toHaveBeenCalledWith('String error');
@@ -126,8 +186,14 @@ describe('Global Error Handler', () => {
       process.env.DEBUG = 'true';
       const error = new Error('Test error with stack');
 
-      const createHandler = (await import('../../../app/global-error.js')).default;
-      const mockContext = { env: process.env, args: [], command: [], options: {} };
+      const createHandler = (await import('../../../app/global-error.js'))
+        .default;
+      const mockContext = {
+        env: process.env,
+        args: [],
+        command: [],
+        options: {},
+      };
       const handler = createHandler(mockContext);
 
       await expect(handler(error)).rejects.toThrow('process.exit called');
@@ -140,8 +206,14 @@ describe('Global Error Handler', () => {
       process.env.CLI_DEBUG = 'true';
       const error = new Error('Test error with stack');
 
-      const createHandler = (await import('../../../app/global-error.js')).default;
-      const mockContext = { env: process.env, args: [], command: [], options: {} };
+      const createHandler = (await import('../../../app/global-error.js'))
+        .default;
+      const mockContext = {
+        env: process.env,
+        args: [],
+        command: [],
+        options: {},
+      };
       const handler = createHandler(mockContext);
 
       await expect(handler(error)).rejects.toThrow('process.exit called');
@@ -153,8 +225,14 @@ describe('Global Error Handler', () => {
     it('should not show stack trace when debug is not set', async () => {
       const error = new Error('Test error without debug');
 
-      const createHandler = (await import('../../../app/global-error.js')).default;
-      const mockContext = { env: process.env, args: [], command: [], options: {} };
+      const createHandler = (await import('../../../app/global-error.js'))
+        .default;
+      const mockContext = {
+        env: process.env,
+        args: [],
+        command: [],
+        options: {},
+      };
       const handler = createHandler(mockContext);
 
       await expect(handler(error)).rejects.toThrow('process.exit called');
@@ -168,49 +246,81 @@ describe('Global Error Handler', () => {
       const validationError: ValidationError = Object.assign(
         new Error('Validation failed'),
         {
-          issues: [{ message: 'Test' }]
+          issues: [{ message: 'Test' }],
         }
       );
 
-      const createHandler = (await import('../../../app/global-error.js')).default;
-      const mockContext = { env: process.env, args: [], command: [], options: {} };
+      const createHandler = (await import('../../../app/global-error.js'))
+        .default;
+      const mockContext = {
+        env: process.env,
+        args: [],
+        command: [],
+        options: {},
+      };
       const handler = createHandler(mockContext);
 
-      await expect(handler(validationError)).rejects.toThrow('process.exit called');
+      await expect(handler(validationError)).rejects.toThrow(
+        'process.exit called'
+      );
 
-      expect(consoleErrorSpy).toHaveBeenCalledWith('  • Check your input values against the required format');
-      expect(consoleErrorSpy).toHaveBeenCalledWith('  • Use --help to see parameter details');
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        '  • Check your input values against the required format'
+      );
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        '  • Use --help to see parameter details'
+      );
     });
 
     it('should show module-specific tips', async () => {
       const moduleError: ModuleError = Object.assign(
         new Error('Module error'),
         {
-          code: 'ERR_MODULE_NOT_FOUND'
+          code: 'ERR_MODULE_NOT_FOUND',
         }
       );
 
-      const createHandler = (await import('../../../app/global-error.js')).default;
-      const mockContext = { env: process.env, args: [], command: [], options: {} };
+      const createHandler = (await import('../../../app/global-error.js'))
+        .default;
+      const mockContext = {
+        env: process.env,
+        args: [],
+        command: [],
+        options: {},
+      };
       const handler = createHandler(mockContext);
 
       await expect(handler(moduleError)).rejects.toThrow('process.exit called');
 
-      expect(consoleErrorSpy).toHaveBeenCalledWith('  • Ensure all required files are present');
-      expect(consoleErrorSpy).toHaveBeenCalledWith('  • Check your project structure');
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        '  • Ensure all required files are present'
+      );
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        '  • Check your project structure'
+      );
     });
 
     it('should show general tips for other errors', async () => {
       const error = new Error('General error');
 
-      const createHandler = (await import('../../../app/global-error.js')).default;
-      const mockContext = { env: process.env, args: [], command: [], options: {} };
+      const createHandler = (await import('../../../app/global-error.js'))
+        .default;
+      const mockContext = {
+        env: process.env,
+        args: [],
+        command: [],
+        options: {},
+      };
       const handler = createHandler(mockContext);
 
       await expect(handler(error)).rejects.toThrow('process.exit called');
 
-      expect(consoleErrorSpy).toHaveBeenCalledWith('  • Check your command syntax');
-      expect(consoleErrorSpy).toHaveBeenCalledWith('  • Use --help to see available options');
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        '  • Check your command syntax'
+      );
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        '  • Use --help to see available options'
+      );
     });
   });
 });

@@ -7,18 +7,20 @@ interface UserData {
 }
 
 // Error handler with full context
-export default async function createErrorHandler(context: ErrorContext<UserData, typeof process.env>): Promise<ErrorHandler<UserData, typeof process.env>> {
+export default async function createErrorHandler(
+  context: ErrorContext<UserData, typeof process.env>
+): Promise<ErrorHandler<UserData, typeof process.env>> {
   const { error, validatedData, env } = context;
-  
+
   // Show detailed errors in development
   const showDetails = env.NODE_ENV === 'development' || env.DEBUG;
-  
+
   console.error('❌ Command failed');
-  
+
   // Use type guards for better error handling
   if (isValidationError(error)) {
     console.error('\nValidation errors:');
-    error.issues?.forEach(issue => {
+    error.issues?.forEach((issue) => {
       const path = issue.path ? issue.path.join('.') : 'field';
       console.error(`  • ${path}: ${issue.message}`);
     });
@@ -34,13 +36,13 @@ export default async function createErrorHandler(context: ErrorContext<UserData,
   } else {
     console.error('\nUnknown error:', error);
   }
-  
+
   // Access to original context data
   if (validatedData && showDetails) {
     console.error('\nContext data:', validatedData);
   }
-  
+
   console.error('\n💡 Use --help for usage information');
-  
+
   process.exit(1);
-};
+}

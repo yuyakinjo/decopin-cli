@@ -1,7 +1,16 @@
-import { describe, it, expect, beforeEach, afterEach, spyOn, mock } from 'bun:test';
-import { buildCLI, buildWithDefaults } from '../src/index.js';
+import {
+  describe,
+  it,
+  expect,
+  beforeEach,
+  afterEach,
+  spyOn,
+  mock,
+} from 'bun:test';
 import { mkdir, rm, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
+
+import { buildCLI, buildWithDefaults } from '../src/index.js';
 
 describe('Build CLI - Verbose and Error Handling', () => {
   const testDir = join(process.cwd(), 'test-build-verbose');
@@ -31,13 +40,19 @@ describe('Build CLI - Verbose and Error Handling', () => {
       appDir,
       outputDir,
       cliName: 'test',
-      verbose: true
+      verbose: true,
     });
 
     expect(result.success).toBe(true);
-    expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('🔍 Scanning app directory:'));
-    expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('📁 Found 1 command files'));
-    expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('✅ Generated'));
+    expect(consoleSpy).toHaveBeenCalledWith(
+      expect.stringContaining('🔍 Scanning app directory:')
+    );
+    expect(consoleSpy).toHaveBeenCalledWith(
+      expect.stringContaining('📁 Found 1 command files')
+    );
+    expect(consoleSpy).toHaveBeenCalledWith(
+      expect.stringContaining('✅ Generated')
+    );
 
     consoleSpy.mockRestore();
   });
@@ -46,16 +61,18 @@ describe('Build CLI - Verbose and Error Handling', () => {
     // Empty app directory
     const emptyDir = join(testDir, 'empty');
     await mkdir(emptyDir, { recursive: true });
-    
+
     const result = await buildCLI({
       appDir: emptyDir,
       outputDir,
       cliName: 'test',
-      verbose: false
+      verbose: false,
     });
 
     expect(result.success).toBe(true);
-    expect(result.warnings).toContain('No command files found in app directory');
+    expect(result.warnings).toContain(
+      'No command files found in app directory'
+    );
     expect(result.stats.commandCount).toBe(0);
   });
 
@@ -64,9 +81,9 @@ describe('Build CLI - Verbose and Error Handling', () => {
     const testDefaultDir = join(testDir, 'defaults');
     const testAppDir = join(testDefaultDir, 'app');
     const testOutputDir = join(testDefaultDir, 'dist');
-    
+
     await mkdir(testAppDir, { recursive: true });
-    
+
     await writeFile(
       join(testAppDir, 'command.ts'),
       `export default async function handler() { console.log('default'); }`
@@ -74,7 +91,7 @@ describe('Build CLI - Verbose and Error Handling', () => {
 
     // buildWithDefaults uses current working directory, so we test the function signature
     const result = await buildWithDefaults(testAppDir, testOutputDir, 'cli');
-    
+
     expect(result.success).toBe(true);
     expect(result.stats.commandCount).toBe(1);
   });
@@ -107,12 +124,14 @@ describe('Build CLI - Verbose and Error Handling', () => {
       appDir,
       outputDir,
       cliName: 'test',
-      verbose: true
+      verbose: true,
     });
 
     expect(result.success).toBe(true);
-    expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('Checking aliases for user:'));
-    
+    expect(consoleSpy).toHaveBeenCalledWith(
+      expect.stringContaining('Checking aliases for user:')
+    );
+
     consoleSpy.mockRestore();
   });
 
@@ -142,7 +161,7 @@ describe('Build CLI - Verbose and Error Handling', () => {
       appDir,
       outputDir,
       cliName: 'test',
-      verbose: true
+      verbose: true,
     });
 
     // Should still succeed despite help parsing error

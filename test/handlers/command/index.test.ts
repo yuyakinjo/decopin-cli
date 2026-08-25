@@ -1,5 +1,9 @@
 import { describe, it, expect } from 'bun:test';
-import { createCommandHandler, parseCommandDefinitions } from '../../../src/handlers/command/index.js';
+
+import {
+  createCommandHandler,
+  parseCommandDefinitions,
+} from '../../../src/handlers/command/index.js';
 import type { CommandDefinition } from '../../../src/handlers/command/types.js';
 
 describe('Command Handler', () => {
@@ -10,8 +14,8 @@ describe('Command Handler', () => {
         path: '/test/path',
         handler: async () => {},
         metadata: {
-          description: 'Test command'
-        }
+          description: 'Test command',
+        },
       };
 
       const handler = createCommandHandler(definition);
@@ -26,7 +30,7 @@ describe('Command Handler', () => {
         path: '/test/path',
         handler: async () => {
           executed = true;
-        }
+        },
       };
 
       const handler = createCommandHandler(definition);
@@ -40,8 +44,8 @@ describe('Command Handler', () => {
       const mockFiles = [
         {
           path: '/test/command.ts',
-          commandPath: 'test'
-        }
+          commandPath: 'test',
+        },
       ];
 
       // This would normally parse actual files, but for testing we'll mock the behavior

@@ -33,23 +33,23 @@ jobs:
       DEBUG: false
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    - name: Setup Bun Environment
-      uses: ./.github/actions/setup
+      - name: Setup Bun Environment
+        uses: ./.github/actions/setup
 
-    - name: Build project
-      run: bun run build
+      - name: Build project
+        run: bun run build
 
-    - name: Build app examples
-      run: bun run build:app
+      - name: Build app examples
+        run: bun run build:app
 
-    - name: Generate CLI
-      run: bun run dev:regen
+      - name: Generate CLI
+        run: bun run dev:regen
 
-    - name: Run unit tests
-      run: bun run test
+      - name: Run unit tests
+        run: bun run test
 
-    - name: Run integration tests
-      run: bun run test:integration:only
+      - name: Run integration tests
+        run: bun run test:integration:only

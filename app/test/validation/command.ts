@@ -1,7 +1,9 @@
 import type { CommandContext } from '../../../dist/types/index.js';
 import type { ValidationTestData } from './params.js';
 
-export default async function validationCommand(context: CommandContext<ValidationTestData>) {
+export default async function validationCommand(
+  context: CommandContext<ValidationTestData>
+) {
   // バリデーション済みのデータを使用
   const { message, count } = context.validatedData;
 

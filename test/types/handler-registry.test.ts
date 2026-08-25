@@ -1,4 +1,5 @@
 import { describe, expect, test } from 'bun:test';
+
 import {
   HANDLER_REGISTRY,
   EXECUTION_ORDER,
@@ -6,12 +7,11 @@ import {
   getHandlersByScope,
   getHandlersByExecutionOrder,
   validateHandlerDependencies,
-  type HandlerDefinition,
 } from '../../src/types/handler-registry.js';
 
 describe('Handler Registry', () => {
   test('should contain all expected handlers', () => {
-    const handlerNames = HANDLER_REGISTRY.map(h => h.name);
+    const handlerNames = HANDLER_REGISTRY.map((h) => h.name);
     const expectedHandlers = [
       'global-error',
       'env',
@@ -22,24 +22,24 @@ describe('Handler Registry', () => {
       'command',
       'error',
     ];
-    
+
     expect(handlerNames).toEqual(expectedHandlers);
   });
 
   test('should have unique handler names', () => {
-    const names = HANDLER_REGISTRY.map(h => h.name);
+    const names = HANDLER_REGISTRY.map((h) => h.name);
     const uniqueNames = new Set(names);
     expect(names.length).toBe(uniqueNames.size);
   });
 
   test('should have unique file names', () => {
-    const fileNames = HANDLER_REGISTRY.map(h => h.fileName);
+    const fileNames = HANDLER_REGISTRY.map((h) => h.fileName);
     const uniqueFileNames = new Set(fileNames);
     expect(fileNames.length).toBe(uniqueFileNames.size);
   });
 
   test('should have exactly one required handler', () => {
-    const requiredHandlers = HANDLER_REGISTRY.filter(h => h.required);
+    const requiredHandlers = HANDLER_REGISTRY.filter((h) => h.required);
     expect(requiredHandlers.length).toBe(1);
     expect(requiredHandlers[0].name).toBe('command');
   });
@@ -65,15 +65,15 @@ describe('Execution Order', () => {
 
   test('should sort handlers by execution order', () => {
     const sorted = getHandlersByExecutionOrder();
-    const executionOrders = sorted.map(h => h.executionOrder);
-    
+    const executionOrders = sorted.map((h) => h.executionOrder);
+
     // Check that the array is sorted
     for (let i = 1; i < executionOrders.length; i++) {
       expect(executionOrders[i]).toBeGreaterThanOrEqual(executionOrders[i - 1]);
     }
-    
+
     // Check specific order
-    const nameOrder = sorted.map(h => h.name);
+    const nameOrder = sorted.map((h) => h.name);
     expect(nameOrder).toEqual([
       'global-error',
       'env',
@@ -110,8 +110,8 @@ describe('Handler Scopes', () => {
     expect(globalHandlers.length).toBe(4);
     expect(commandHandlers.length).toBe(4);
 
-    expect(globalHandlers.every(h => h.scope === 'global')).toBe(true);
-    expect(commandHandlers.every(h => h.scope === 'command')).toBe(true);
+    expect(globalHandlers.every((h) => h.scope === 'global')).toBe(true);
+    expect(commandHandlers.every((h) => h.scope === 'command')).toBe(true);
   });
 });
 
@@ -123,12 +123,12 @@ describe('Dependencies', () => {
   });
 
   test('params should depend on env', () => {
-    const paramsHandler = HANDLER_REGISTRY.find(h => h.name === 'params');
+    const paramsHandler = HANDLER_REGISTRY.find((h) => h.name === 'params');
     expect(paramsHandler?.dependencies).toContain('env');
   });
 
   test('command should depend on params', () => {
-    const commandHandler = HANDLER_REGISTRY.find(h => h.name === 'command');
+    const commandHandler = HANDLER_REGISTRY.find((h) => h.name === 'command');
     expect(commandHandler?.dependencies).toContain('params');
   });
 
@@ -137,7 +137,7 @@ describe('Dependencies', () => {
     for (const handler of HANDLER_REGISTRY) {
       if (handler.dependencies) {
         for (const dep of handler.dependencies) {
-          const depHandler = HANDLER_REGISTRY.find(h => h.name === dep);
+          const depHandler = HANDLER_REGISTRY.find((h) => h.name === dep);
           if (depHandler?.dependencies) {
             expect(depHandler.dependencies.includes(handler.name)).toBe(false);
           }
@@ -150,9 +150,11 @@ describe('Dependencies', () => {
     for (const handler of HANDLER_REGISTRY) {
       if (handler.dependencies) {
         for (const dep of handler.dependencies) {
-          const depHandler = HANDLER_REGISTRY.find(h => h.name === dep);
+          const depHandler = HANDLER_REGISTRY.find((h) => h.name === dep);
           if (depHandler) {
-            expect(depHandler.executionOrder).toBeLessThan(handler.executionOrder);
+            expect(depHandler.executionOrder).toBeLessThan(
+              handler.executionOrder
+            );
           }
         }
       }
@@ -163,9 +165,9 @@ describe('Dependencies', () => {
 describe('Handler Registry Map', () => {
   test('should create a map for efficient lookup', () => {
     const map = createHandlerRegistryMap();
-    
+
     expect(map.size).toBe(HANDLER_REGISTRY.length);
-    
+
     for (const handler of HANDLER_REGISTRY) {
       expect(map.get(handler.name)).toBe(handler);
     }
@@ -173,12 +175,12 @@ describe('Handler Registry Map', () => {
 
   test('should allow quick handler lookup by name', () => {
     const map = createHandlerRegistryMap();
-    
+
     const envHandler = map.get('env');
     expect(envHandler).toBeDefined();
     expect(envHandler?.fileName).toBe('env.ts');
     expect(envHandler?.handlerType).toBe('EnvHandler');
-    
+
     const commandHandler = map.get('command');
     expect(commandHandler).toBeDefined();
     expect(commandHandler?.required).toBe(true);
@@ -189,11 +191,12 @@ describe('Handler Type and Context Names', () => {
   test('should have consistent handler type naming', () => {
     for (const handler of HANDLER_REGISTRY) {
       // Handler type should be PascalCase version of name + 'Handler'
-      const expectedHandlerType = handler.name
-        .split('-')
-        .map(part => part.charAt(0).toUpperCase() + part.slice(1))
-        .join('') + 'Handler';
-      
+      const expectedHandlerType =
+        handler.name
+          .split('-')
+          .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+          .join('') + 'Handler';
+
       expect(handler.handlerType).toBe(expectedHandlerType);
     }
   });
@@ -201,11 +204,12 @@ describe('Handler Type and Context Names', () => {
   test('should have consistent context type naming', () => {
     for (const handler of HANDLER_REGISTRY) {
       // Context type should be PascalCase version of name + 'Context'
-      const expectedContextType = handler.name
-        .split('-')
-        .map(part => part.charAt(0).toUpperCase() + part.slice(1))
-        .join('') + 'Context';
-      
+      const expectedContextType =
+        handler.name
+          .split('-')
+          .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+          .join('') + 'Context';
+
       expect(handler.contextType).toBe(expectedContextType);
     }
   });

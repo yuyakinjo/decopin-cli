@@ -1,15 +1,15 @@
 # Handler Files
 
-| 実行順序 | ファイル名 | 必須/オプション | 説明 | Handler名 | Context名 |
-|:---:|:---|:---:|:---|:---|:---|
-| all | `global-error.ts` | optional | すべてのエラーをキャッチ | `GlobalErrorHandler` | `GlobalErrorContext` |
-| 1 | `env.ts` | optional | 環境変数を型安全 & Contextに注入 | `EnvHandler` | `EnvContext` |
-| 2 | `version.ts` | optional | バージョン情報 & Contextに注入 | `VersionHandler` | `VersionContext` |
-| 3 | `middleware.ts` | optional | ミドルウェア処理 & Contextに注入 | `MiddlewareHandler` | `MiddlewareContext` |
-| 4 | `help.ts` | optional | ヘルプメッセージ & Contextに注入 | `HelpHandler` | `HelpContext` |
-| 5 | `params.ts` | optional | パラメータ定義 & Contextに注入 | `ParamsHandler` | `ParamsContext` |
-| 6 | `command.ts` | **required** | コマンド実装 & Contextに注入 | `CommandHandler` | `CommandContext` |
-| 7 | `error.ts` | optional | エラー処理 & Contextに注入 | `ErrorHandler` | `ErrorContext` |
+| 実行順序 | ファイル名        | 必須/オプション | 説明                             | Handler名            | Context名            |
+| :------: | :---------------- | :-------------: | :------------------------------- | :------------------- | :------------------- |
+|   all    | `global-error.ts` |    optional     | すべてのエラーをキャッチ         | `GlobalErrorHandler` | `GlobalErrorContext` |
+|    1     | `env.ts`          |    optional     | 環境変数を型安全 & Contextに注入 | `EnvHandler`         | `EnvContext`         |
+|    2     | `version.ts`      |    optional     | バージョン情報 & Contextに注入   | `VersionHandler`     | `VersionContext`     |
+|    3     | `middleware.ts`   |    optional     | ミドルウェア処理 & Contextに注入 | `MiddlewareHandler`  | `MiddlewareContext`  |
+|    4     | `help.ts`         |    optional     | ヘルプメッセージ & Contextに注入 | `HelpHandler`        | `HelpContext`        |
+|    5     | `params.ts`       |    optional     | パラメータ定義 & Contextに注入   | `ParamsHandler`      | `ParamsContext`      |
+|    6     | `command.ts`      |  **required**   | コマンド実装 & Contextに注入     | `CommandHandler`     | `CommandContext`     |
+|    7     | `error.ts`        |    optional     | エラー処理 & Contextに注入       | `ErrorHandler`       | `ErrorContext`       |
 
 # 調査結果
 
@@ -19,16 +19,16 @@
 
 コードベースを調査した結果、以下のハンドラーが実際にサポートされています：
 
-| ファイル名 | 実装状況 | スキャナーサポート | 型定義 | 備考 |
-|:---|:---:|:---:|:---:|:---|
-| `global-error.ts` | ✅ 実装済み | ✅ あり | ✅ `GlobalErrorHandler` | `src/core/scanner.ts`で検出、ルートディレクトリのみ |
-| `middleware.ts` | ✅ 実装済み | ✅ あり | ✅ `MiddlewareHandler` | `src/core/scanner.ts`で検出、ルートディレクトリのみ |
-| `command.ts` | ✅ 実装済み | ✅ あり | ✅ `CommandHandler` | 各コマンドディレクトリで検出 |
-| `params.ts` | ✅ 実装済み | ✅ あり | ✅ `ParamsHandler` | 各コマンドディレクトリで検出 |
-| `help.ts` | ✅ 実装済み | ✅ あり | ✅ `HelpHandler` | 各コマンドディレクトリで検出 |
-| `error.ts` | ✅ 実装済み | ✅ あり | ✅ `ErrorHandler` | 各コマンドディレクトリで検出 |
-| `env.ts` | ✅ 実装済み | ✅ あり | ✅ `EnvHandler` | スキャナーサポート追加済み、検証は未実装 |
-| `version.ts` | ✅ 実装済み | ✅ あり | ✅ `VersionHandler` | `--version`オプションで動作確認済み |
+| ファイル名        |  実装状況   | スキャナーサポート |         型定義          | 備考                                                |
+| :---------------- | :---------: | :----------------: | :---------------------: | :-------------------------------------------------- |
+| `global-error.ts` | ✅ 実装済み |      ✅ あり       | ✅ `GlobalErrorHandler` | `src/core/scanner.ts`で検出、ルートディレクトリのみ |
+| `middleware.ts`   | ✅ 実装済み |      ✅ あり       | ✅ `MiddlewareHandler`  | `src/core/scanner.ts`で検出、ルートディレクトリのみ |
+| `command.ts`      | ✅ 実装済み |      ✅ あり       |   ✅ `CommandHandler`   | 各コマンドディレクトリで検出                        |
+| `params.ts`       | ✅ 実装済み |      ✅ あり       |   ✅ `ParamsHandler`    | 各コマンドディレクトリで検出                        |
+| `help.ts`         | ✅ 実装済み |      ✅ あり       |    ✅ `HelpHandler`     | 各コマンドディレクトリで検出                        |
+| `error.ts`        | ✅ 実装済み |      ✅ あり       |    ✅ `ErrorHandler`    | 各コマンドディレクトリで検出                        |
+| `env.ts`          | ✅ 実装済み |      ✅ あり       |     ✅ `EnvHandler`     | スキャナーサポート追加済み、検証は未実装            |
+| `version.ts`      | ✅ 実装済み |      ✅ あり       |   ✅ `VersionHandler`   | `--version`オプションで動作確認済み                 |
 
 ### 詳細な調査結果
 

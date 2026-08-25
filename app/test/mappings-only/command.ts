@@ -6,9 +6,11 @@ interface MappingsOnlyData {
   active: boolean;
 }
 
-export default async function createCommand(context: CommandContext<MappingsOnlyData>) {
+export default async function createCommand(
+  context: CommandContext<MappingsOnlyData>
+) {
   const { name, age, active } = context.validatedData;
-  
+
   console.log('Mappings-only validation test:');
   console.log(`- Name: ${name} (type: ${typeof name})`);
   console.log(`- Age: ${age} (type: ${typeof age})`);

@@ -1,5 +1,9 @@
 import * as v from 'valibot';
-import type { ParamsHandler, ParamsContext } from '../../../dist/types/index.js';
+
+import type {
+  ParamsHandler,
+  ParamsContext,
+} from '../../../dist/types/index.js';
 
 const ListSchema = v.object({
   limit: v.pipe(
@@ -13,7 +17,9 @@ const ListSchema = v.object({
 
 export type ListData = v.InferOutput<typeof ListSchema>;
 
-export default function createParams(context: ParamsContext<typeof process.env>): ParamsHandler {
+export default function createParams(
+  _context: ParamsContext<typeof process.env>
+): ParamsHandler {
   return {
     mappings: [
       {
@@ -21,8 +27,8 @@ export default function createParams(context: ParamsContext<typeof process.env>)
         type: 'number',
         option: 'limit',
         defaultValue: 10,
-        description: 'Number of users to list (1-100)'
-      }
-    ]
+        description: 'Number of users to list (1-100)',
+      },
+    ],
   };
 }

@@ -124,7 +124,7 @@ pids
 .env*
 
 # VS Code settings
-.vscode/
+.vscode/*
 # ただし、プロジェクト設定は共有
 !.vscode/settings.json
 !.vscode/extensions.json
@@ -166,6 +166,3 @@ test-app-version/
 # Temporary files
 *.tmp
 *.temp
-
-# serena generated files
-document_symbols_cache*

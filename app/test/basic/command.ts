@@ -1,6 +1,8 @@
 import type { CommandContext } from '../../../dist/types/index.js';
 
-export default async function basicCommand(context: CommandContext<never, typeof process.env>) {
+export default async function basicCommand(
+  context: CommandContext<never, typeof process.env>
+) {
   console.log('📋 Basic command executed!');
   console.log('📁 This command uses only command.ts');
   console.log('✅ No validation or custom error handling');

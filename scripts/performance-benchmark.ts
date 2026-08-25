@@ -1,10 +1,10 @@
 #!/usr/bin/env tsx
 
+import { spawn } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { readdir } from 'node:fs/promises';
-import { join, relative } from 'node:path';
+import { join } from 'node:path';
 import { performance } from 'node:perf_hooks';
-import { spawn } from 'node:child_process';
 
 interface BenchmarkResult {
   command: string;
@@ -51,13 +51,18 @@ class PerformanceBenchmark {
   async scanCommands(): Promise<string[]> {
     const commands: string[] = [];
 
-    const scanDirectory = async (dir: string, currentPath = ''): Promise<void> => {
+    const scanDirectory = async (
+      dir: string,
+      currentPath = ''
+    ): Promise<void> => {
       try {
         const entries = await readdir(dir, { withFileTypes: true });
 
         for (const entry of entries) {
           if (entry.isDirectory()) {
-            const newPath = currentPath ? `${currentPath}/${entry.name}` : entry.name;
+            const newPath = currentPath
+              ? `${currentPath}/${entry.name}`
+              : entry.name;
             const commandFile = join(dir, entry.name, 'command.ts');
 
             if (existsSync(commandFile)) {
@@ -89,7 +94,7 @@ class PerformanceBenchmark {
         const args = this.getCommandArgs(command);
         const child = spawn('node', [this.cliPath, ...args], {
           stdio: ['pipe', 'pipe', 'pipe'],
-          env: { ...process.env, NODE_ENV: 'production' }
+          env: { ...process.env, NODE_ENV: 'production' },
         });
 
         let stdout = '';
@@ -108,9 +113,10 @@ class PerformanceBenchmark {
           const executionTime = endTime - startTime;
 
           // スキップすべきエラーコマンドの判定
-          const isExpectedError = stderr.includes('This is an expected error') ||
-                                 stderr.includes('error') ||
-                                 command.includes('error');
+          const isExpectedError =
+            stderr.includes('This is an expected error') ||
+            stderr.includes('error') ||
+            command.includes('error');
 
           if (code !== 0 && !isExpectedError) {
             reject(new Error(`Command failed with code ${code}: ${stderr}`));
@@ -119,13 +125,15 @@ class PerformanceBenchmark {
 
           // 実際のメモリ使用量を推定
           const baseMemory = 15; // 基本メモリ使用量(MB)
-          const commandComplexity = args.length + (stdout.length / 100); // 複雑度
+          const commandComplexity = args.length + stdout.length / 100; // 複雑度
 
           const memoryUsage = {
             rss: baseMemory + Math.random() * 20 + commandComplexity,
-            heapUsed: baseMemory * 0.6 + Math.random() * 15 + commandComplexity * 0.5,
-            heapTotal: baseMemory * 0.8 + Math.random() * 25 + commandComplexity * 0.7,
-            external: 5 + Math.random() * 8 + commandComplexity * 0.2
+            heapUsed:
+              baseMemory * 0.6 + Math.random() * 15 + commandComplexity * 0.5,
+            heapTotal:
+              baseMemory * 0.8 + Math.random() * 25 + commandComplexity * 0.7,
+            external: 5 + Math.random() * 8 + commandComplexity * 0.2,
           };
 
           resolve({
@@ -133,7 +141,7 @@ class PerformanceBenchmark {
             executionTime,
             memoryUsage,
             startupTime: Math.random() * 50 + 30, // 30-80ms
-            moduleLoadTime: Math.random() * 100 + 50 // 50-150ms
+            moduleLoadTime: Math.random() * 100 + 50, // 50-150ms
           });
         });
 
@@ -152,19 +160,30 @@ class PerformanceBenchmark {
     // 平均値を計算
     const avgResult: BenchmarkResult = {
       command,
-      executionTime: results.reduce((sum, r) => sum + r.executionTime, 0) / results.length,
+      executionTime:
+        results.reduce((sum, r) => sum + r.executionTime, 0) / results.length,
       memoryUsage: {
-        rss: results.reduce((sum, r) => sum + r.memoryUsage.rss, 0) / results.length,
-        heapUsed: results.reduce((sum, r) => sum + r.memoryUsage.heapUsed, 0) / results.length,
-        heapTotal: results.reduce((sum, r) => sum + r.memoryUsage.heapTotal, 0) / results.length,
-        external: results.reduce((sum, r) => sum + r.memoryUsage.external, 0) / results.length,
+        rss:
+          results.reduce((sum, r) => sum + r.memoryUsage.rss, 0) /
+          results.length,
+        heapUsed:
+          results.reduce((sum, r) => sum + r.memoryUsage.heapUsed, 0) /
+          results.length,
+        heapTotal:
+          results.reduce((sum, r) => sum + r.memoryUsage.heapTotal, 0) /
+          results.length,
+        external:
+          results.reduce((sum, r) => sum + r.memoryUsage.external, 0) /
+          results.length,
       },
-      startupTime: results.reduce((sum, r) => sum + r.startupTime, 0) / results.length,
-      moduleLoadTime: results.reduce((sum, r) => sum + r.moduleLoadTime, 0) / results.length,
+      startupTime:
+        results.reduce((sum, r) => sum + r.startupTime, 0) / results.length,
+      moduleLoadTime:
+        results.reduce((sum, r) => sum + r.moduleLoadTime, 0) / results.length,
     };
 
     return avgResult;
-  }  /**
+  } /**
    * 全コマンドのベンチマークを実行
    */
   async runBenchmark(): Promise<BenchmarkReport> {
@@ -190,10 +209,14 @@ class PerformanceBenchmark {
       timestamp: new Date().toISOString(),
       version: this.getVersion(),
       totalCommands: results.length,
-      averageExecutionTime: results.reduce((sum, r) => sum + r.executionTime, 0) / results.length,
-      averageMemoryUsage: results.reduce((sum, r) => sum + r.memoryUsage.heapUsed, 0) / results.length,
-      averageStartupTime: results.reduce((sum, r) => sum + r.startupTime, 0) / results.length,
-      results
+      averageExecutionTime:
+        results.reduce((sum, r) => sum + r.executionTime, 0) / results.length,
+      averageMemoryUsage:
+        results.reduce((sum, r) => sum + r.memoryUsage.heapUsed, 0) /
+        results.length,
+      averageStartupTime:
+        results.reduce((sum, r) => sum + r.startupTime, 0) / results.length,
+      results,
     };
 
     return report;
@@ -202,18 +225,30 @@ class PerformanceBenchmark {
   /**
    * レポートの比較（改善前後の比較用）
    */
-  compareReports(beforeReport: BenchmarkReport, afterReport: BenchmarkReport): BenchmarkReport {
-    const improvement = ((beforeReport.averageExecutionTime - afterReport.averageExecutionTime) / beforeReport.averageExecutionTime) * 100;
-    const memoryReduction = ((beforeReport.averageMemoryUsage - afterReport.averageMemoryUsage) / beforeReport.averageMemoryUsage) * 100;
-    const startupImprovement = ((beforeReport.averageStartupTime - afterReport.averageStartupTime) / beforeReport.averageStartupTime) * 100;
+  compareReports(
+    beforeReport: BenchmarkReport,
+    afterReport: BenchmarkReport
+  ): BenchmarkReport {
+    const improvement =
+      ((beforeReport.averageExecutionTime - afterReport.averageExecutionTime) /
+        beforeReport.averageExecutionTime) *
+      100;
+    const memoryReduction =
+      ((beforeReport.averageMemoryUsage - afterReport.averageMemoryUsage) /
+        beforeReport.averageMemoryUsage) *
+      100;
+    const startupImprovement =
+      ((beforeReport.averageStartupTime - afterReport.averageStartupTime) /
+        beforeReport.averageStartupTime) *
+      100;
 
     return {
       ...afterReport,
       comparison: {
         improvement,
         memoryReduction,
-        startupImprovement
-      }
+        startupImprovement,
+      },
     };
   }
 
@@ -244,23 +279,37 @@ class PerformanceBenchmark {
     console.log(`Timestamp: ${report.timestamp}`);
     console.log(`Version: ${report.version}`);
     console.log(`Total Commands: ${report.totalCommands}`);
-    console.log(`Average Execution Time: ${report.averageExecutionTime.toFixed(2)}ms`);
-    console.log(`Average Memory Usage: ${report.averageMemoryUsage.toFixed(2)}MB`);
-    console.log(`Average Startup Time: ${report.averageStartupTime.toFixed(2)}ms`);
+    console.log(
+      `Average Execution Time: ${report.averageExecutionTime.toFixed(2)}ms`
+    );
+    console.log(
+      `Average Memory Usage: ${report.averageMemoryUsage.toFixed(2)}MB`
+    );
+    console.log(
+      `Average Startup Time: ${report.averageStartupTime.toFixed(2)}ms`
+    );
 
     if (report.comparison) {
       console.log('\n📈 Performance Improvements');
       console.log('===========================');
-      console.log(`Execution Time Improvement: ${report.comparison.improvement.toFixed(2)}%`);
-      console.log(`Memory Usage Reduction: ${report.comparison.memoryReduction.toFixed(2)}%`);
-      console.log(`Startup Time Improvement: ${report.comparison.startupImprovement.toFixed(2)}%`);
+      console.log(
+        `Execution Time Improvement: ${report.comparison.improvement.toFixed(2)}%`
+      );
+      console.log(
+        `Memory Usage Reduction: ${report.comparison.memoryReduction.toFixed(2)}%`
+      );
+      console.log(
+        `Startup Time Improvement: ${report.comparison.startupImprovement.toFixed(2)}%`
+      );
     }
 
     console.log('\n📋 Detailed Results');
     console.log('===================');
 
     // 実行時間でソート
-    const sortedResults = [...report.results].sort((a, b) => b.executionTime - a.executionTime);
+    const sortedResults = [...report.results].sort(
+      (a, b) => b.executionTime - a.executionTime
+    );
 
     for (const result of sortedResults) {
       console.log(`${result.command}:`);
@@ -280,20 +329,26 @@ class PerformanceBenchmark {
     switch (command) {
       case 'test/schema-only':
         return [...baseArgs, 'testtest@example.com', 'Testtest1'];
-      
+
       case 'user/create':
-        return [...baseArgs, '--name', 'Test User', '--email', 'test@example.com'];
-      
+        return [
+          ...baseArgs,
+          '--name',
+          'Test User',
+          '--email',
+          'test@example.com',
+        ];
+
       case 'hello':
         return [...baseArgs, '--name', 'Benchmark'];
-      
+
       case 'context-demo':
         return [...baseArgs, '--name', 'Benchmark User'];
-      
+
       case 'test/mappings-only':
         // このコマンドは引数が複雑なので、デフォルト値で試す
         return [...baseArgs, 'test@example.com', 'password123', '25'];
-      
+
       default:
         return baseArgs;
     }
@@ -302,7 +357,9 @@ class PerformanceBenchmark {
   private getVersion(): string {
     try {
       const fs = require('node:fs');
-      const packageJson = JSON.parse(fs.readFileSync('./package.json', 'utf-8'));
+      const packageJson = JSON.parse(
+        fs.readFileSync('./package.json', 'utf-8')
+      );
       return packageJson.version || 'unknown';
     } catch {
       return 'unknown';
@@ -317,12 +374,17 @@ async function main() {
 
   try {
     if (args.includes('--compare')) {
-      const beforeFile = args[args.indexOf('--before') + 1] || 'benchmark-before.json';
-      const afterFile = args[args.indexOf('--after') + 1] || 'benchmark-after.json';
+      const beforeFile =
+        args[args.indexOf('--before') + 1] || 'benchmark-before.json';
+      const afterFile =
+        args[args.indexOf('--after') + 1] || 'benchmark-after.json';
 
       const beforeReport = await benchmark.loadReport(beforeFile);
       const afterReport = await benchmark.loadReport(afterFile);
-      const comparisonReport = benchmark.compareReports(beforeReport, afterReport);
+      const comparisonReport = benchmark.compareReports(
+        beforeReport,
+        afterReport
+      );
 
       benchmark.printReport(comparisonReport);
       await benchmark.saveReport(comparisonReport, 'benchmark-comparison.json');

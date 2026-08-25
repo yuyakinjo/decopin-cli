@@ -1,6 +1,15 @@
-import { describe, expect, it, mock, beforeEach, afterEach, spyOn } from 'bun:test';
-import type { CommandContext, CommandDefinition } from '../../dist/types/command.js';
+import {
+  describe,
+  expect,
+  it,
+  mock,
+  beforeEach,
+  afterEach,
+  spyOn,
+} from 'bun:test';
+
 import type { AppEnv } from '../../app/env.js';
+import type { CommandContext } from '../../dist/types/command.js';
 
 describe('command.ts files', () => {
   let consoleSpy: ReturnType<typeof spyOn>;
@@ -36,7 +45,7 @@ describe('command.ts files', () => {
         args: ['World'],
         options: {},
         params: {},
-        showHelp: mock()
+        showHelp: mock(),
       };
 
       // コマンドハンドラーを直接実行
@@ -53,7 +62,7 @@ describe('command.ts files', () => {
         args: ['TypeScript'],
         options: {},
         params: {},
-        showHelp: mock()
+        showHelp: mock(),
       };
 
       await commandModule.default(mockContext);
@@ -68,14 +77,6 @@ describe('command.ts files', () => {
 
       expect(commandModule.default).toBeDefined();
       expect(typeof commandModule.default).toBe('function');
-
-      const mockContext: CommandContext<{ name: string; email: string }> = {
-        validatedData: { name: 'TestUser', email: 'test@example.com' },
-        args: ['TestUser', 'test@example.com'],
-        options: {},
-        params: {},
-        showHelp: mock()
-      };
 
       // コマンドハンドラーは直接関数として呼び出し可能
       const commandHandler = commandModule.default;
@@ -95,21 +96,26 @@ describe('command.ts files', () => {
           API_KEY: 'test-api-key-123456',
           NODE_ENV: 'test',
           PORT: 3000,
-          DEBUG: false
+          DEBUG: false,
         },
-        showHelp: mock()
+        showHelp: mock(),
       };
 
       await commandModule.default(mockContext);
 
-      expect(consoleSpy).toHaveBeenCalledWith('🔄 Creating user: John Doe (john@example.com)');
+      expect(consoleSpy).toHaveBeenCalledWith(
+        '🔄 Creating user: John Doe (john@example.com)'
+      );
       expect(consoleSpy).toHaveBeenCalledWith('✅ User created successfully!');
     });
 
     it('should handle different user data correctly', async () => {
       const commandModule = await import('../../app/user/create/command.js');
 
-      const mockContext: CommandContext<{ name: string; email: string }, AppEnv> = {
+      const mockContext: CommandContext<
+        { name: string; email: string },
+        AppEnv
+      > = {
         validatedData: { name: 'Jane Smith', email: 'jane.smith@company.com' },
         args: ['Jane Smith', 'jane.smith@company.com'],
         options: {},
@@ -118,14 +124,16 @@ describe('command.ts files', () => {
           API_KEY: 'test-api-key-123456',
           NODE_ENV: 'test',
           PORT: 3000,
-          DEBUG: false
+          DEBUG: false,
         },
-        showHelp: mock()
+        showHelp: mock(),
       };
 
       await commandModule.default(mockContext);
 
-      expect(consoleSpy).toHaveBeenCalledWith('🔄 Creating user: Jane Smith (jane.smith@company.com)');
+      expect(consoleSpy).toHaveBeenCalledWith(
+        '🔄 Creating user: Jane Smith (jane.smith@company.com)'
+      );
       expect(consoleSpy).toHaveBeenCalledWith('✅ User created successfully!');
     });
   });
@@ -136,14 +144,6 @@ describe('command.ts files', () => {
 
       expect(commandModule.default).toBeDefined();
       expect(typeof commandModule.default).toBe('function');
-
-      const mockContext: CommandContext = {
-        validatedData: null,
-        args: [],
-        options: {},
-        params: {},
-        showHelp: mock()
-      };
 
       // コマンドハンドラーは直接関数として呼び出し可能
       const commandHandler = commandModule.default;
@@ -159,17 +159,19 @@ describe('command.ts files', () => {
         args: [],
         options: {},
         params: {},
-        showHelp: mock()
+        showHelp: mock(),
       };
 
       await commandModule.default(mockContext);
 
-            // デフォルトのlimit = 10でリストが表示される
+      // デフォルトのlimit = 10でリストが表示される
       expect(consoleSpy).toHaveBeenCalledWith('📋 User List:');
 
       // 10ユーザーが表示される
       for (let i = 1; i <= 10; i++) {
-        expect(consoleSpy).toHaveBeenCalledWith(`  ${i}. User ${i} (user${i}@example.com)`);
+        expect(consoleSpy).toHaveBeenCalledWith(
+          `  ${i}. User ${i} (user${i}@example.com)`
+        );
       }
 
       // 最後にサマリーが表示される
@@ -184,20 +186,24 @@ describe('command.ts files', () => {
         args: [],
         options: { limit: '5' },
         params: {},
-        showHelp: mock()
+        showHelp: mock(),
       };
 
       await commandModule.default(mockContext);
 
-            expect(consoleSpy).toHaveBeenCalledWith('📋 User List:');
+      expect(consoleSpy).toHaveBeenCalledWith('📋 User List:');
 
       // 5ユーザーのみが表示される
       for (let i = 1; i <= 5; i++) {
-        expect(consoleSpy).toHaveBeenCalledWith(`  ${i}. User ${i} (user${i}@example.com)`);
+        expect(consoleSpy).toHaveBeenCalledWith(
+          `  ${i}. User ${i} (user${i}@example.com)`
+        );
       }
 
       // 6番目以降は表示されない
-      expect(consoleSpy).not.toHaveBeenCalledWith('  6. User 6 (user6@example.com)');
+      expect(consoleSpy).not.toHaveBeenCalledWith(
+        '  6. User 6 (user6@example.com)'
+      );
 
       // 最後にサマリーが表示される
       expect(consoleSpy).toHaveBeenCalledWith('\n📊 Showing 5 users');
@@ -211,7 +217,7 @@ describe('command.ts files', () => {
         args: [],
         options: { limit: 'invalid' },
         params: {},
-        showHelp: mock()
+        showHelp: mock(),
       };
 
       await commandModule.default(mockContext);
@@ -230,7 +236,7 @@ describe('command.ts files', () => {
         args: [],
         options: { limit: '0' },
         params: {},
-        showHelp: mock()
+        showHelp: mock(),
       };
 
       await commandModule.default(mockContext);

@@ -1,6 +1,6 @@
+import { describe, expect, it } from 'bun:test';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
-import { describe, expect, it } from 'bun:test';
 
 const execFileAsync = promisify(execFile);
 
@@ -14,13 +14,17 @@ async function runCLI(args: string[]) {
         cwd: process.cwd(),
         env: {
           ...process.env,
-          NODE_NO_WARNINGS: '1'
-        }
+          NODE_NO_WARNINGS: '1',
+        },
       }
     );
     return { stdout, stderr, exitCode: 0 };
   } catch (error: unknown) {
-    const execError = error as { stdout?: string; stderr?: string; code?: number };
+    const execError = error as {
+      stdout?: string;
+      stderr?: string;
+      code?: number;
+    };
     return {
       stdout: execError.stdout || '',
       stderr: execError.stderr || '',
@@ -32,7 +36,7 @@ async function runCLI(args: string[]) {
 describe('Version Function Pattern Integration Tests', () => {
   it('should show version from function pattern', async () => {
     const result = await runCLI(['--version']);
-    
+
     expect(result.exitCode).toBe(0);
     expect(result.stdout).toContain('2.1.3');
     expect(result.stderr).toBe('');
@@ -40,7 +44,7 @@ describe('Version Function Pattern Integration Tests', () => {
 
   it('should show version with -v flag', async () => {
     const result = await runCLI(['-v']);
-    
+
     expect(result.exitCode).toBe(0);
     expect(result.stdout).toContain('2.1.3');
     expect(result.stderr).toBe('');
@@ -48,26 +52,30 @@ describe('Version Function Pattern Integration Tests', () => {
 
   it('should show version metadata in help', async () => {
     const result = await runCLI(['--help']);
-    
+
     expect(result.exitCode).toBe(0);
     expect(result.stdout).toContain('super-cli 2.1.3');
-    expect(result.stdout).toContain('The ultimate command line interface for developers');
+    expect(result.stdout).toContain(
+      'The ultimate command line interface for developers'
+    );
     expect(result.stdout).toContain('Author: TypeScript Ninja');
   });
 
   it('should show version metadata when no arguments provided', async () => {
     const result = await runCLI([]);
-    
+
     expect(result.exitCode).toBe(0);
     expect(result.stdout).toContain('super-cli 2.1.3');
-    expect(result.stdout).toContain('The ultimate command line interface for developers');
+    expect(result.stdout).toContain(
+      'The ultimate command line interface for developers'
+    );
   });
 
   it('should prioritize version.ts over package.json', async () => {
     // This test verifies that the version from version.ts (2.1.3) is used
     // instead of the version in package.json (0.2.0)
     const result = await runCLI(['--version']);
-    
+
     expect(result.exitCode).toBe(0);
     expect(result.stdout).toContain('2.1.3');
     expect(result.stdout).not.toContain('0.2.0');

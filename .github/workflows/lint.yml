@@ -2,18 +2,9 @@ name: Lint and Format
 
 on:
   push:
-    paths:
-      - 'src/**/*.ts'
-      - 'src/**/*.js'
-      - 'app/**/*.ts'
-      - 'app/**/*.js'
-      - 'test/**/*.ts'
-      - 'test/**/*.js'
-      - 'package.json'
-      - 'bun.lock'
-      - 'biome.json'
-      - '.github/workflows/lint.yml'
-      - '.github/actions/**'
+    branches-ignore:
+      - performance-history
+  pull_request:
 
 # 重複実行を防ぐconcurrency設定
 concurrency:
@@ -32,14 +23,17 @@ jobs:
       DEBUG: false
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    - name: Setup Bun Environment
-      uses: ./.github/actions/setup
+      - name: Setup Bun Environment
+        uses: ./.github/actions/setup
 
-    - name: Build project
-      run: bun run build
+      - name: Build project
+        run: bun run build
 
-    - name: Run lint check
-      run: bun run lint
+      - name: Run Oxlint
+        run: bun run lint
+
+      - name: Check formatting with Oxfmt
+        run: bun run format:check

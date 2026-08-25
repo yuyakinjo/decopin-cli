@@ -1,5 +1,6 @@
 import { existsSync, readdirSync, statSync } from 'node:fs';
 import { dirname, join, relative } from 'node:path';
+
 import {
   HANDLER_REGISTRY,
   type HandlerDefinition,

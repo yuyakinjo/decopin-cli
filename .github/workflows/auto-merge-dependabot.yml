@@ -14,7 +14,7 @@ on:
     types:
       - completed
   workflow_run:
-    workflows: ["CI"]
+    workflows: ['CI']
     types:
       - completed
 
@@ -35,7 +35,7 @@ jobs:
         id: metadata
         uses: dependabot/fetch-metadata@v2
         with:
-          github-token: "${{ secrets.GITHUB_TOKEN }}"
+          github-token: '${{ secrets.GITHUB_TOKEN }}'
 
       - name: Wait for CI to complete
         uses: lewagon/wait-on-check-action@v1.3.4

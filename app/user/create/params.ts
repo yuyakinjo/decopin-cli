@@ -1,5 +1,9 @@
 import * as v from 'valibot';
-import type { ParamsHandler, ParamsContext } from '../../../dist/types/index.js';
+
+import type {
+  ParamsHandler,
+  ParamsContext,
+} from '../../../dist/types/index.js';
 
 // ユーザー作成データのスキーマ
 const CreateUserSchema = v.object({
@@ -9,7 +13,9 @@ const CreateUserSchema = v.object({
 
 export type CreateUserData = v.InferInput<typeof CreateUserSchema>;
 
-export default function createParams(context: ParamsContext<typeof process.env>): ParamsHandler {
+export default function createParams(
+  _context: ParamsContext<typeof process.env>
+): ParamsHandler {
   return {
     mappings: [
       {
@@ -18,7 +24,7 @@ export default function createParams(context: ParamsContext<typeof process.env>)
         option: 'name',
         argIndex: 0,
         required: true,
-        description: 'User name'
+        description: 'User name',
       },
       {
         field: 'email',
@@ -27,8 +33,8 @@ export default function createParams(context: ParamsContext<typeof process.env>)
         argIndex: 1,
         required: true,
         description: 'User email address',
-        validation: 'email'
-      }
-    ]
+        validation: 'email',
+      },
+    ],
   };
 }

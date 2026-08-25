@@ -30,26 +30,26 @@ jobs:
       DEBUG: false
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    - name: Setup Bun Environment
-      uses: ./.github/actions/setup
+      - name: Setup Bun Environment
+        uses: ./.github/actions/setup
 
-    - name: Build main project
-      run: bun run build
+      - name: Build main project
+        run: bun run build
 
-    - name: Build app directory
-      run: bun run build:app
+      - name: Build app directory
+        run: bun run build:app
 
-    - name: Check build artifacts
-      run: |
-        if [ ! -d "dist" ]; then
-          echo "❌ Main build failed - dist directory not found"
-          exit 1
-        fi
-        if [ ! -f "dist/index.js" ]; then
-          echo "❌ Main build failed - dist/index.js not found"
-          exit 1
-        fi
-        echo "✅ Build artifacts verified successfully"
+      - name: Check build artifacts
+        run: |
+          if [ ! -d "dist" ]; then
+            echo "❌ Main build failed - dist directory not found"
+            exit 1
+          fi
+          if [ ! -f "dist/index.js" ]; then
+            echo "❌ Main build failed - dist/index.js not found"
+            exit 1
+          fi
+          echo "✅ Build artifacts verified successfully"
