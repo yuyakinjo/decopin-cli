@@ -17,5 +17,5 @@
     "jsx": "react-jsx",
     "jsxImportSource": "decopin-cli/jsx"
   },
-  "include": ["src/**/*", "test/**/*"]
+  "include": ["src/**/*", "test/**/*", "app/**/*", "scripts/**/*"]
 }

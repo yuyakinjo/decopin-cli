@@ -5,7 +5,12 @@
  * ここではレイアウトも装飾の解決も行わない。木の形を確定させるだけ。
  */
 import { isElement, isHost } from '../jsx/types.ts';
-import type { AnyComponent, Renderable, Style } from '../jsx/types.ts';
+import type {
+  AnyComponent,
+  Renderable,
+  RenderInput,
+  Style,
+} from '../jsx/types.ts';
 import { RenderError } from './errors.ts';
 import type { RenderNode } from './node.ts';
 
@@ -28,13 +33,21 @@ function pickStyle(props: Record<string, unknown>): Style {
   return style as Style;
 }
 
+function isThenable(value: unknown): value is PromiseLike<unknown> {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    typeof (value as { then?: unknown }).then === 'function'
+  );
+}
+
 async function evaluateChildren(children: Renderable): Promise<RenderNode[]> {
   const node = await evaluate(children);
   return node.kind === 'group' ? node.children : [node];
 }
 
 /** JSX ツリーを中間ノード木にする */
-export async function evaluate(node: Renderable): Promise<RenderNode> {
+export async function evaluate(node: RenderInput): Promise<RenderNode> {
   // 何も描かないもの
   if (node === null || node === undefined || typeof node === 'boolean') {
     return { kind: 'group', children: [] };
@@ -46,6 +59,13 @@ export async function evaluate(node: Renderable): Promise<RenderNode> {
 
   if (typeof node === 'number') {
     return { kind: 'chars', value: String(node) };
+  }
+
+  // Promise は await する (async コンポーネントの戻り値や、直接埋め込まれた Promise)
+  if (isThenable(node)) {
+    // await の推論が自己参照するため、いったん unknown を経由する
+    const resolved = (await node) as Renderable;
+    return evaluate(resolved);
   }
 
   if (Array.isArray(node)) {

@@ -3,11 +3,15 @@
   "version": "0.1.0",
   "description": "Next.js-like rule-based CLI builder for TypeScript / Bun",
   "license": "MIT",
+  "bin": {
+    "decopin": "./src/cli/bin.ts"
+  },
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
     "./jsx/jsx-runtime": "./src/jsx/jsx-runtime.ts",
-    "./jsx/jsx-dev-runtime": "./src/jsx/jsx-dev-runtime.ts"
+    "./jsx/jsx-dev-runtime": "./src/jsx/jsx-dev-runtime.ts",
+    "./build": "./src/build/index.ts"
   },
   "scripts": {
     "test": "bun test",

@@ -85,6 +85,13 @@ export type Renderable =
   | undefined
   | Renderable[];
 
+/**
+ * レンダラーの入口が受け取れるもの。コンポーネントの戻り値をそのまま渡せる
+ * ように Promise を許す。`Renderable` 自体に Promise を含めると型が自己参照して
+ * 解決できなくなるため (TS1062)、入口の型としてだけ広げている。
+ */
+export type RenderInput = Renderable | PromiseLike<unknown>;
+
 export function isElement(value: unknown): value is Element {
   return (
     typeof value === 'object' &&

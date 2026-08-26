@@ -145,7 +145,7 @@ Desktop.ini
 
 # Build outputs
 dist/
-build/
+/build/
 out/
 examples/
 
@@ -166,3 +166,7 @@ test-app-version/
 # Temporary files
 *.tmp
 *.temp
+
+# decopin build の生成物
+.decopin/
+.decopin-test-*/

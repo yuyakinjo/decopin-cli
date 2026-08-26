@@ -745,26 +745,62 @@ $ bun run decopin build
 
 ---
 
+### 8.1 Phase 2 で確定した細部
+
+**`.tsx` と `.ts` の両方を規約ファイルとして認める**
+
+JSX を使わないコマンド (計算して数値を返すだけ、など) のために `.ts` も許す。両方あれば `.tsx` を優先する。
+
+**`_` と `.` で始まるディレクトリはルーティングの対象外**
+
+`_shared/` のような共有コード置き場に加え、`.git` などが混ざっても走査が壊れないようにする。
+
+**ルートコマンド (`app/command.tsx`) は名前を空文字として扱う**
+
+存在する場合、コマンド名に一致しなかった argv はすべてルートコマンドに渡る (単一コマンドの CLI が書ける)。存在しない場合は未知のコマンドとして exit 2。
+
+**未知のコマンドには候補を出す**
+
+編集距離が「入力したコマンド名の長さの半分」以内なら `もしかして: hello` を出す。候補がなければ利用できるコマンドを列挙する。遠すぎる候補は混乱させるだけなので出さない。
+
+**`--no-color` はフレームワークが argv から取り除く**
+
+コマンドには渡さない。装飾の有無は出力の見た目の話であって、コマンドの引数ではないため。
+
+**`run()` は終了コードを返し、`process.exit` は呼ばない**
+
+`process.exit` を呼ぶのは生成された `entry.ts` だけ。ライフサイクル全体をテストから呼べるようにするためで、書き出し先も差し替えられる。
+
+**decopin 自身の CLI は argv の解析を手で書く**
+
+`decopin build` が `argv.tsx` に依存すると、ビルドする側がビルドされる側の仕組みを必要とする鶏と卵になる。ここだけは手書きのままにする。
+
+---
+
 ## 9. `src/` 内部構成
 
 ```
 src/
-  jsx/           jsx-runtime.ts, jsx-dev-runtime.ts, 型定義 (IntrinsicElements)
-  components/    Text, Line, Br, Indent, Box, Columns, Stdout, Stderr, Exit,
-                 Success, Warn, Info, Danger, List, Table, KeyValue, Json, Link
+  jsx/           jsx-runtime.ts, jsx-dev-runtime.ts, types.ts (要素と装飾の型)
+  components/    host.ts (組み込みコンポーネントの標識), index.ts
+                 Phase 1: Text, Line, Br, Stdout, Stderr, Exit
+                 Phase 7: Indent, Box, Columns, Success, Warn, Info, Danger,
+                          List, Table, KeyValue, Json, Link
   components/input/  Argv, Arg, Option, Stdin, Env, Var, Version (宣言専用ノード)
   components/type/   Type.String / Number / Boolean / Enum / Date / Array /
                      Object / Field / OneOf / Custom (型宣言ノード)
   renderer/      evaluate.ts (1)  layout.ts (2)  ansi.ts (3)  writer.ts (4)
-                 width.ts, color.ts, capabilities.ts (TTY/NO_COLOR 判定)
-  runtime/       router.ts, lifecycle.ts, stdin-reader.ts, exit.ts, errors.ts
-  define/        props 型定義 (CommandProps, ErrorProps, LayoutProps,
-                 MiddlewareProps, HelpProps) と推論ヘルパ
+                 render.ts (入口), node.ts (中間ノード), color.ts,
+                 capabilities.ts (TTY/NO_COLOR 判定), errors.ts
+                 Phase 7: width.ts (東アジア文字の幅計算)
+  runtime/       router.ts (ルート解決と候補提示), run.tsx (ライフサイクル),
+                 exit.ts (終了コード規約), messages.tsx (既定のエラー表示)
+                 Phase 6: stdin-reader.ts
   validation/    type-node → valibot 変換 (§4.8 の対応表), argv パーサ, help 自動生成
                  ※ valibot への依存はこのディレクトリに閉じ込める
-  build/         scanner.ts, evaluator.ts, checker.ts,
-                 type-emitter.ts (types.d.ts 生成), codegen.ts, bundler.ts
-  cli/           decopin build / dev のエントリ
+  build/         scanner.ts, codegen.ts, bundler.ts, index.ts (scan→emit→bundle)
+                 Phase 3.5: evaluator.ts, checker.ts, type-emitter.ts
+  cli/           bin.ts (decopin build / dev のエントリ)
 ```
 
 ---
@@ -848,7 +884,9 @@ exit=2
 | 7     | 装飾コンポーネント (`Box` `Table` `List` `Columns`) + 幅計算    | 端末幅 40/80/120 でのスナップショット                           |
 | 8     | `env.tsx` / `version.tsx` / 起動時間ベンチ                      | 起動 10ms 未満                                                  |
 
-**Phase 1 は完了** (2026-08-27): `src/jsx/` `src/components/` `src/renderer/` と 52 件のテスト。`Text` / `Line` / `Br` / `Stdout` / `Stderr` / `Exit` が動き、`scripts/demo-render.tsx` で実機確認済み。
+**Phase 1-2 は完了** (2026-08-27): `src/jsx/` `src/components/` `src/renderer/` と 52 件のテスト。`Text` / `Line` / `Br` / `Stdout` / `Stderr` / `Exit` が動き、`scripts/demo-render.tsx` で実機確認済み。
+Phase 2 で `src/build/` `src/runtime/` `src/cli/` を追加し、`bun src/cli/bin.ts build` →
+`./dist/index.js hello` が動作 (起動 10ms 未満)。テストは 94 件。
 
 **Phase 1-2 が最小の垂直スライス** — ここが通れば設計の骨格が正しいと確認できる。
 

@@ -1,4 +1,4 @@
-import type { Renderable } from '../jsx/types.ts';
+import type { RenderInput } from '../jsx/types.ts';
 import { serialize } from './ansi.ts';
 import { resolveColorDepth } from './capabilities.ts';
 import type { ColorDepth } from './color.ts';
@@ -38,7 +38,7 @@ function endWithNewline(value: string): string {
 }
 
 export async function render(
-  node: Renderable,
+  node: RenderInput,
   options: RenderOptions = {}
 ): Promise<RenderResult> {
   const tree = await evaluate(node);
