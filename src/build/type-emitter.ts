@@ -4,7 +4,12 @@
  * `command.tsx` は `CommandProps<'hello'>` でこの型を引く。
  * JSX 式は型引数を運べない (ADR 9) ので、型はここを通してしか届かない。
  */
-import type { ArgSpec, ArgvSpec, OptionSpec } from '../declaration/spec.ts';
+import type {
+  ArgSpec,
+  ArgvSpec,
+  OptionSpec,
+  StdinSpec,
+} from '../declaration/spec.ts';
 import type { TypeNode } from '../declaration/type-node.ts';
 import type { EvaluatedRoute } from './evaluator.ts';
 
@@ -79,7 +84,22 @@ function optionMember(option: OptionSpec): string {
   );
 }
 
-function shape(spec: ArgvSpec): string {
+/** stdin.tsx の宣言から、command が受け取る値の型を決める (§4.2) */
+export function stdinTypeText(stdin: StdinSpec | undefined): string {
+  if (stdin === undefined) return 'never';
+  const base =
+    stdin.mode === 'text'
+      ? 'string'
+      : stdin.mode === 'lines'
+        ? 'string[]'
+        : stdin.type === undefined
+          ? 'unknown'
+          : toTypeText(stdin.type);
+  // required でなければ、端末実行時に undefined が渡る
+  return stdin.required ? base : `${base} | undefined`;
+}
+
+function shape(spec: ArgvSpec, stdin: StdinSpec | undefined): string {
   const args =
     spec.args.length === 0
       ? '{}'
@@ -88,13 +108,17 @@ function shape(spec: ArgvSpec): string {
     spec.options.length === 0
       ? '{}'
       : `{ ${spec.options.map(optionMember).join('; ')} }`;
-  // stdin は Phase 6 で埋まる
-  return `{ args: ${args}; options: ${options}; stdin: never }`;
+  return `{ args: ${args}; options: ${options}; stdin: ${stdinTypeText(
+    stdin
+  )} }`;
 }
 
 export function generateTypes(evaluated: EvaluatedRoute[]): string {
   const entries = evaluated
-    .map(({ route, spec }) => `    ${quoteName(route.name)}: ${shape(spec)};`)
+    .map(
+      ({ route, spec, stdin }) =>
+        `    ${quoteName(route.name)}: ${shape(spec, stdin)};`
+    )
     .join('\n');
 
   return `${HEADER}

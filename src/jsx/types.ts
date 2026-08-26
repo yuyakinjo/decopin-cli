@@ -56,6 +56,7 @@ export type DeclarationHostKind =
   | 'argv'
   | 'arg'
   | 'option'
+  | 'stdin'
   | 'type.string'
   | 'type.number'
   | 'type.boolean'

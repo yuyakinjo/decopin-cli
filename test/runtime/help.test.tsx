@@ -2,7 +2,7 @@ import { describe, expect, test } from 'bun:test';
 
 import { render } from 'decopin-cli';
 
-import type { ArgvSpec } from '../../src/declaration/spec.ts';
+import type { ArgvSpec, StdinSpec } from '../../src/declaration/spec.ts';
 import { CommandList, Help } from '../../src/runtime/help.tsx';
 
 const plain = { color: { stdout: 0 as const, stderr: 0 as const } };
@@ -45,9 +45,9 @@ const spec: ArgvSpec = {
   ],
 };
 
-async function help(argv: ArgvSpec, command = 'hello') {
+async function help(argv: ArgvSpec, command = 'hello', stdin?: StdinSpec) {
   const result = await render(
-    <Help program="cli" command={command} spec={argv} />,
+    <Help program="cli" command={command} spec={argv} stdin={stdin} />,
     plain
   );
   return result.stdout;
@@ -110,6 +110,32 @@ describe('Help', () => {
     const loud = lines.find((line) => line.includes('--loud')) ?? '';
     const times = lines.find((line) => line.includes('--times')) ?? '';
     expect(loud.indexOf('shout it')).toBe(times.indexOf('repeat count'));
+  });
+});
+
+describe('Help — stdin の宣言', () => {
+  test('宣言が無ければ Stdin の節を出さない', async () => {
+    expect(await help(spec)).not.toContain('Stdin:');
+  });
+
+  test('required なら「パイプしてください」と伝える', async () => {
+    const text = await help(spec, 'count', {
+      mode: 'lines',
+      required: true,
+      trim: false,
+    });
+    expect(text).toContain('Stdin:');
+    expect(text).toContain('lines');
+    expect(text).toContain('required (pipe something in)');
+  });
+
+  test('required でなければ端末では undefined になると伝える', async () => {
+    const text = await help(spec, 'upper', {
+      mode: 'text',
+      required: false,
+      trim: true,
+    });
+    expect(text).toContain('optional (undefined when run in a terminal)');
   });
 });
 

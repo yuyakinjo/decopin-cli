@@ -1,7 +1,11 @@
 import { describe, expect, test } from 'bun:test';
 
 import type { EvaluatedRoute } from '../../src/build/evaluator.ts';
-import { generateTypes, toTypeText } from '../../src/build/type-emitter.ts';
+import {
+  generateTypes,
+  stdinTypeText,
+  toTypeText,
+} from '../../src/build/type-emitter.ts';
 import type { ArgvSpec } from '../../src/declaration/spec.ts';
 
 describe('toTypeText', () => {
@@ -79,6 +83,41 @@ describe('toTypeText', () => {
 function evaluated(name: string, spec: ArgvSpec): EvaluatedRoute {
   return { route: { name, dir: name, files: {} }, spec };
 }
+
+describe('stdinTypeText', () => {
+  test('stdin.tsx が無ければ never', () => {
+    expect(stdinTypeText(undefined)).toBe('never');
+  });
+
+  test('required なら undefined が付かない', () => {
+    expect(stdinTypeText({ mode: 'text', required: true, trim: false })).toBe(
+      'string'
+    );
+    expect(stdinTypeText({ mode: 'lines', required: true, trim: false })).toBe(
+      'string[]'
+    );
+  });
+
+  test('required でなければ undefined が付く (端末実行時に渡らない)', () => {
+    expect(stdinTypeText({ mode: 'text', required: false, trim: false })).toBe(
+      'string | undefined'
+    );
+  });
+
+  test('mode="json" は構造の宣言があればその型、無ければ unknown', () => {
+    expect(stdinTypeText({ mode: 'json', required: true, trim: false })).toBe(
+      'unknown'
+    );
+    expect(
+      stdinTypeText({
+        mode: 'json',
+        required: true,
+        trim: false,
+        type: { kind: 'array', item: { kind: 'string' } },
+      })
+    ).toBe('string[]');
+  });
+});
 
 describe('generateTypes', () => {
   test('Routes を module augmentation で埋める', () => {
@@ -165,6 +204,17 @@ describe('generateTypes', () => {
   test('宣言がなければ空のオブジェクトになる', () => {
     const code = generateTypes([evaluated('x', { args: [], options: [] })]);
     expect(code).toContain('"x": { args: {}; options: {}; stdin: never };');
+  });
+
+  test('stdin.tsx の宣言を型に反映する', () => {
+    const code = generateTypes([
+      {
+        route: { name: 'count', dir: 'count', files: {} },
+        spec: { args: [], options: [] },
+        stdin: { mode: 'lines', required: true, trim: false },
+      },
+    ]);
+    expect(code).toContain('stdin: string[] };');
   });
 
   test('ルートコマンドは空文字のキーになる', () => {

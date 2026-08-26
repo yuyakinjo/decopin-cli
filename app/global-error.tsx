@@ -1,4 +1,7 @@
-import { Line, Text, type ErrorProps } from 'decopin-cli';
+import { Line, Text, type ErrorKind, type ErrorProps } from 'decopin-cli';
+
+/** 使い方の誤り (exit 2) にあたる kind */
+const USAGE_KINDS: ErrorKind[] = ['validation', 'stdin', 'env'];
 
 /** どの error.tsx でも捕まらなかったエラーの最後の受け皿 (§4.4) */
 export default function GlobalError({ error, exitCode }: ErrorProps) {
@@ -6,7 +9,9 @@ export default function GlobalError({ error, exitCode }: ErrorProps) {
     <>
       <Line>
         <Text bold color="red">
-          {error.kind === 'validation' ? 'Invalid usage' : 'Unexpected error'}
+          {USAGE_KINDS.includes(error.kind)
+            ? 'Invalid usage'
+            : 'Unexpected error'}
         </Text>
         {': '}
         {error.issues[0] ?? error.message}

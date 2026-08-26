@@ -47,3 +47,17 @@ export const Arg = host<ArgProps>('arg', 'Arg');
 
 /** 名前付きオプション (`--name` / `-a`) */
 export const Option = host<OptionProps>('option', 'Option');
+
+export interface StdinProps {
+  /** 'text' = 全文, 'lines' = 改行で分割, 'json' = JSON.parse */
+  mode: 'text' | 'lines' | 'json';
+  /** 真なら、パイプされていない (端末) 場合にエラーにする */
+  required?: boolean;
+  /** 末尾の空白と改行を落とす (mode="text" のときだけ) */
+  trim?: boolean;
+  /** mode="json" のときだけ、構造を Type.* で宣言できる */
+  children?: Renderable;
+}
+
+/** 標準入力の読み方 (`stdin.tsx`) */
+export const Stdin = host<StdinProps>('stdin', 'Stdin');

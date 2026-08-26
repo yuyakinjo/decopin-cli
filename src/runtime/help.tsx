@@ -3,7 +3,12 @@
  * 宣言を唯一の情報源にすることで、スキーマと help の二重管理が起きない。
  */
 import { Br, Line, Text } from '../components/index.ts';
-import type { ArgSpec, ArgvSpec, OptionSpec } from '../declaration/spec.ts';
+import type {
+  ArgSpec,
+  ArgvSpec,
+  OptionSpec,
+  StdinSpec,
+} from '../declaration/spec.ts';
 import { typeLabel } from '../declaration/type-node.ts';
 import type { Renderable } from '../jsx/types.ts';
 
@@ -47,10 +52,12 @@ interface HelpProps {
   /** コマンド名 (`user create`)。ルートコマンドなら空文字 */
   command: string;
   spec: ArgvSpec;
+  /** stdin.tsx があれば、その宣言 (§4.2) */
+  stdin?: StdinSpec;
 }
 
 /** 1 コマンドの使い方 */
-export function Help({ program, command, spec }: HelpProps): Renderable {
+export function Help({ program, command, spec, stdin }: HelpProps): Renderable {
   const visibleOptions = spec.options.filter((option) => !option.hidden);
   const usage = [
     program,
@@ -78,6 +85,21 @@ export function Help({ program, command, spec }: HelpProps): Renderable {
         <>
           <Br />
           <Line>{spec.description}</Line>
+        </>
+      )}
+      {stdin === undefined ? null : (
+        <>
+          <Br />
+          <Line>
+            <Text bold>Stdin:</Text>
+          </Line>
+          <Line>
+            {'  '}
+            <Text color="cyan">{pad(stdin.mode, width)}</Text>
+            {stdin.required
+              ? 'required (pipe something in)'
+              : 'optional (undefined when run in a terminal)'}
+          </Line>
         </>
       )}
       {spec.args.length === 0 ? null : (

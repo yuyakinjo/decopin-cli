@@ -7,7 +7,7 @@ import { isReservedAlias, isReservedName } from '../runtime/reserved.ts';
  */
 import { DeclarationError } from './errors.ts';
 import type { HostNode } from './resolve.ts';
-import type { ArgSpec, ArgvSpec, OptionSpec } from './spec.ts';
+import type { ArgSpec, ArgvSpec, OptionSpec, StdinSpec } from './spec.ts';
 import type { ObjectField, TypeNode } from './type-node.ts';
 
 type Shorthand = 'string' | 'number' | 'boolean';
@@ -225,6 +225,36 @@ function presence(node: HostNode, name: string) {
     );
   }
   return { required, defaultValue: node.props.default };
+}
+
+/** `stdin.tsx` の宣言を読む (§4.2) */
+export function parseStdinSpec(hosts: HostNode[]): StdinSpec {
+  if (hosts.length !== 1 || hosts[0]?.kind !== 'stdin') {
+    throw new DeclarationError(
+      'stdin.tsx must return a single <Stdin> element'
+    );
+  }
+  const node = hosts[0];
+  const mode = readString(node, 'mode');
+  if (mode !== 'text' && mode !== 'lines' && mode !== 'json') {
+    throw new DeclarationError(
+      '<Stdin mode> must be "text", "lines", or "json"'
+    );
+  }
+
+  const hasChildren = node.children.length > 0;
+  if (hasChildren && mode !== 'json') {
+    throw new DeclarationError(
+      `<Stdin mode="${mode}"> takes no children. Only mode="json" can declare a structure`
+    );
+  }
+
+  return {
+    mode,
+    required: readBoolean(node, 'required') ?? false,
+    trim: readBoolean(node, 'trim') ?? false,
+    type: hasChildren ? onlyType(node) : undefined,
+  };
 }
 
 export function parseArgvSpec(hosts: HostNode[]): ArgvSpec {

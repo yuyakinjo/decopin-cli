@@ -201,12 +201,15 @@ export default function DefineStdin() {
   return (
     // mode: 'text' | 'lines' | 'json'
     // required: true なら パイプされていなければ終了コード 2 のエラー
-    <Stdin mode="json" required={false}>
+    <Stdin mode="json" required>
       {/* mode="json" のときだけ children で構造を宣言できる (任意) */}
-      <Type.Array>
+      <Type.Array minItems={1}>
         <Type.Object>
-          <Type.Field name="id">
-            <Type.Number integer />
+          <Type.Field name="name" required>
+            <Type.String minLength={1} />
+          </Type.Field>
+          <Type.Field name="admin" defaultValue={false}>
+            <Type.Boolean />
           </Type.Field>
         </Type.Object>
       </Type.Array>
@@ -215,21 +218,36 @@ export default function DefineStdin() {
 }
 ```
 
-| mode    | `command.tsx` が受け取る型                                            |
-| ------- | --------------------------------------------------------------------- |
-| `text`  | `string` (全文)                                                       |
-| `lines` | `string[]` (改行分割、末尾の空行は除去)                               |
-| `json`  | `JSON.parse` 結果 (children があれば検証済みの型、無ければ `unknown`) |
+| mode    | `command.tsx` が受け取る型                                   |
+| ------- | ------------------------------------------------------------ |
+| `text`  | `string` (全文)。`trim` を付けると末尾の空白と改行を落とす   |
+| `lines` | `string[]` (改行で分割。末尾の空行は落とす。CRLF も分割する) |
+| `json`  | children があれば検証済みの型、無ければ `unknown`            |
 
-`mode="text"` / `mode="lines"` の場合は children を取らない (self-closing)。複数置いても stdin は 1 本しかないため、2 つ以上の `<Stdin>` はビルド時エラーとする。
+`required` が偽なら型に `| undefined` が付く (端末で実行すると値が来ないため)。
+
+`mode="text"` / `mode="lines"` は children を取らない (self-closing)。複数置いても stdin は 1 本しかないため、2 つ以上の `<Stdin>` はビルド時エラーとする。
 
 **安全規則 (重要)**
 
 - `stdin.tsx` が存在しないコマンドは、フレームワークが stdin を**一切読まない** → 端末直叩きでフリーズしない
-- `required={false}` で、かつ stdin が端末 (TTY) の場合は読まずに `undefined` を渡す
+- `required` が偽で、かつ stdin が端末 (TTY) の場合は**読まずに** `undefined` を渡す
+- `required` が真で端末の場合は読まずにエラー (`kind: 'stdin'`, exit 2)。「パイプしてください」と例を添える
 - 判定は `process.stdin.isTTY` を使う。パイプ (`echo x | cli`) とリダイレクト (`cli < f.txt`) はどちらも非 TTY として扱う
+- **空の入力は「入力がある」と見なす** (`cli < /dev/null` は `required` でも通り、`lines` なら空配列)。`required` が問うのは「パイプされているか」であって中身の有無ではない
 
-生成される型は `mode` と children から導出され、`required` が `false` なら `| undefined` が付く (§4.8)。
+**読むタイミング**
+
+middleware の内側 (§7 の 6)。middleware が `next()` を呼ばずに打ち切れば標準入力を消費しない。`--help` / `--version` のときも読まない。
+
+**`--help` に出る**
+
+宣言があると使い方に `Stdin:` の節が出る。パイプが必要なことに気づけるようにするため。
+
+```
+Stdin:
+  lines            required (pipe something in)
+```
 
 ### 4.3 `command.tsx` — 本体 (stdout)
 
@@ -1007,6 +1025,26 @@ props ではなくモジュールの静的な性質なので、`export` で宣�
 
 ---
 
+### 8.6 Phase 6 で確定した細部
+
+**「入力がある」と「中身がある」を分ける**
+
+`required` は「パイプ・リダイレクトされているか」だけを問う。`cli count < /dev/null` は入力があると見なし、`lines` なら空配列を渡す。中身の検証は `Type.*` の仕事 (`minItems` など)。
+
+**`mode="text"` の `trim`**
+
+`echo hello | cli` は `"hello\n"` を渡す。末尾の改行が邪魔になる場面が多いので `trim` を用意したが、既定は付けない (入力を勝手に変えない)。行単位で欲しい場合は `mode="lines"` を使う。
+
+**`stdin.tsx` の評価はビルド時と実行時の両方で行う**
+
+ビルド時は型を出すため (§4.8)、実行時は実際に読むため。どちらも同じ `parseStdinSpec` を通るので食い違わない。
+
+**middleware の props に `stdin` は無い**
+
+読み取りが middleware の内側で起きるので、middleware から見える時点ではまだ読まれていない。
+
+---
+
 ## 9. `src/` 内部構成
 
 ```
@@ -1027,8 +1065,8 @@ src/
                  exit.ts (終了コード規約), errors.ts (CliError), reserved.ts,
                  handle-error.tsx (§4.4 の連鎖), help.tsx (--help の生成),
                  layout.tsx (§4.5), middleware.ts (§4.6),
-                 messages.tsx (組み込みの既定表示)
-                 Phase 6: stdin-reader.ts
+                 messages.tsx (組み込みの既定表示),
+                 stdin-reader.ts (§4.2)
   validation/    type-node → valibot 変換 (§4.8 の対応表), argv パーサ, help 自動生成
                  ※ valibot への依存はこのディレクトリに閉じ込める
   build/         scanner.ts, evaluator.ts (argv.tsx を評価), codegen.ts,
@@ -1119,14 +1157,15 @@ exit=2
 | 7     | 装飾コンポーネント (`Box` `Table` `List` `Columns`) + 幅計算    | 端末幅 40/80/120 でのスナップショット                           |
 | 8     | `env.tsx` / `version.tsx` / 起動時間ベンチ                      | 起動 10ms 未満                                                  |
 
-**Phase 1-5 は完了** (2026-08-27): `src/jsx/` `src/components/` `src/renderer/` と 52 件のテスト。`Text` / `Line` / `Br` / `Stdout` / `Stderr` / `Exit` が動き、`scripts/demo-render.tsx` で実機確認済み。
+**Phase 1-6 は完了** (2026-08-27): `src/jsx/` `src/components/` `src/renderer/` と 52 件のテスト。`Text` / `Line` / `Br` / `Stdout` / `Stderr` / `Exit` が動き、`scripts/demo-render.tsx` で実機確認済み。
 Phase 2 で `src/build/` `src/runtime/` `src/cli/` を追加し、`bun src/cli/bin.ts build` →
 `./dist/index.js hello` が動作 (起動 10ms 未満)。
 Phase 3 で `Type.*` / `argv.tsx` / valibot 変換 / `--help` 自動生成を追加。
 Phase 3.5 で `.decopin/types.d.ts` の生成と `decopin dev` の watch を追加し、
 `CommandProps<'hello'>` から `args.name: string` が引けることを実際の tsc で検証。
 Phase 4 で `error.tsx` / `global-error.tsx` のフォールバックと終了コードの上書きを追加。
-Phase 5 で `layout.tsx` の入れ子適用と `middleware.tsx` (`next` 方式) を追加。テストは 231 件。
+Phase 5 で `layout.tsx` の入れ子適用と `middleware.tsx` (`next` 方式) を追加。
+Phase 6 で `stdin.tsx` を追加し、POSIX の 4 つの口 (argv / stdin / stdout / stderr) が揃った。テストは 277 件。
 
 **Phase 1-2 が最小の垂直スライス** — ここが通れば設計の骨格が正しいと確認できる。
 
@@ -1136,7 +1175,7 @@ Phase 5 で `layout.tsx` の入れ子適用と `middleware.tsx` (`next` 方式) 
 
 - 型が**古い** (生成済みだが宣言と食い違う) 場合は素直に型エラーになる。未生成のときのフォールバックは実装した (§4.8) が、「古い」と「未生成」は区別できていない。`decopin dev` を回す運用でしのぐ
 - 未知のコマンドを `global-error.tsx` で受けられない (§4.4)。ルート未決定の時点では表示係も決まらないため今はこうしているが、「コマンド一覧の見た目を変えたい」という要望が来たら `app/not-found.tsx` のような別の規約を足す形が素直
-- `<Type.Object>` / `<Type.Field>` は `stdin.tsx` の JSON 構造宣言のためだけに存在する。ネストが深い JSON では JSX が冗長になるので、`mode="json"` の場合だけ `schema` prop (valibot 直渡し) を推奨する運用にするか要検討
+- `<Type.Object>` / `<Type.Field>` は `stdin.tsx` の JSON 構造宣言のためだけに存在する。実際に書いてみると 3 階層で 9 行になるので、深い JSON では `schema` prop (valibot 直渡し) を勧める運用にするか要検討
 - `<Arg variadic>` (可変長位置引数) と `<Type.Array>` の関係。`variadic` は「位置引数を何個も取る」、`Type.Array` は「1 つの値が配列」なので別物だが、生成される型は両方 `string[]` になり混同しやすい
 - ADR 11 の代償 (env / argv 検証エラーが middleware を通らない) が実用上問題になるなら、計測・ロギングの責務を `app/global-error.tsx` 側に寄せる形を Phase 5 で検討する
 - ADR 12 の起動時間は**未実測の見込み**。Phase 8 のベンチで単一ファイルのまま 10ms を割れるか確認し、割れない場合は `--splitting` へ切り替える

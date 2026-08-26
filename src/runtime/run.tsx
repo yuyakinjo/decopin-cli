@@ -7,9 +7,10 @@
  */
 import { Stderr } from '../components/index.ts';
 import { parseArgvSpec } from '../declaration/parse.ts';
+import { parseStdinSpec } from '../declaration/parse.ts';
 import { resolveHosts } from '../declaration/resolve.ts';
 import { EMPTY_ARGV_SPEC } from '../declaration/spec.ts';
-import type { ArgvSpec } from '../declaration/spec.ts';
+import type { ArgvSpec, StdinSpec } from '../declaration/spec.ts';
 import type { Renderable, RenderInput } from '../jsx/types.ts';
 import { render } from '../renderer/render.ts';
 import { write } from '../renderer/writer.ts';
@@ -25,6 +26,8 @@ import { runMiddleware } from './middleware.ts';
 import { HELP_FLAGS, NO_COLOR_FLAG, VERSION_FLAG } from './reserved.ts';
 import { resolveRoute, suggest } from './router.ts';
 import type { RouteTable } from './router.ts';
+import { processStdin, readStdin } from './stdin-reader.ts';
+import type { StdinSource } from './stdin-reader.ts';
 
 /** Phase 3 で command.tsx が受け取るもの。型は Phase 3.5 の codegen で配る */
 export interface CommandContext {
@@ -32,6 +35,8 @@ export interface CommandContext {
   args: Record<string, unknown>;
   /** 検証済みのオプション */
   options: Record<string, unknown>;
+  /** stdin.tsx があれば読み取った値。無ければ undefined */
+  stdin: unknown;
   /** コマンド名として消費されなかった生の argv */
   argv: readonly string[];
   cwd: string;
@@ -46,6 +51,8 @@ export interface RunOptions {
   env?: Record<string, string | undefined>;
   /** `app/global-error.tsx` (§4.4 の最後の受け皿) */
   globalError?: () => Promise<unknown>;
+  /** 標準入力の口 (テストから差し替えるため) */
+  stdin?: StdinSource;
   /** 書き出し先 (テストから差し替えるため) */
   targets?: WriteTargets;
 }
@@ -99,6 +106,24 @@ async function loadArgvSpec(
     (declare as () => Renderable)() as Renderable
   );
   return parseArgvSpec(hosts);
+}
+
+/** stdin.tsx を読んで宣言を組み立てる。無ければ undefined */
+async function loadStdinSpec(
+  loader: (() => Promise<unknown>) | undefined
+): Promise<StdinSpec | undefined> {
+  if (loader === undefined) return undefined;
+  const loaded = (await loader()) as { default?: unknown };
+  const declare = loaded.default;
+  if (typeof declare !== 'function') {
+    throw new CliError(
+      'stdin.tsx must default-export a function that returns <Stdin>'
+    );
+  }
+  const hosts = await resolveHosts(
+    (declare as () => Renderable)() as Renderable
+  );
+  return parseStdinSpec(hosts);
 }
 
 /**
@@ -182,7 +207,13 @@ export async function run(
 
     if (helpRequested) {
       await emit(
-        <Help program={program} command={resolved.name} spec={spec} />,
+        <Help
+          program={program}
+          command={resolved.name}
+          spec={spec}
+          // stdin の宣言も使い方に出す (パイプが必要だと気づけるように)
+          stdin={await loadStdinSpec(route.stdin)}
+        />,
         options,
         noColorFlag
       );
@@ -219,9 +250,17 @@ export async function run(
           );
         }
         skipLayout = loaded.skipLayout === true;
+        // stdin の読み取りは middleware の内側 (§7)。middleware が next() を
+        // 呼ばずに打ち切れば、標準入力を消費せずに終われる
+        const stdinSpec = await loadStdinSpec(route.stdin);
+        const stdinValue =
+          stdinSpec === undefined
+            ? undefined
+            : await readStdin(stdinSpec, options.stdin ?? processStdin());
         const context: CommandContext = {
           args,
           options: commandOptions,
+          stdin: stdinValue,
           argv: rest,
           cwd,
         };

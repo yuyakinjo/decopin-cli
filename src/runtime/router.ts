@@ -9,6 +9,7 @@
 export interface RouteLoaders {
   command: () => Promise<unknown>;
   argv?: () => Promise<unknown>;
+  stdin?: () => Promise<unknown>;
   /** error.tsx の並び。**近い順** (自分のディレクトリ → 親 → ...) */
   errors?: Array<() => Promise<unknown>>;
   /** layout.tsx の並び。**外側から順** (ルート → ... → 自分のディレクトリ) */

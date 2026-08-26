@@ -7,16 +7,18 @@
  */
 import { resolve } from 'node:path';
 
-import { parseArgvSpec } from '../declaration/parse.ts';
+import { parseArgvSpec, parseStdinSpec } from '../declaration/parse.ts';
 import { resolveHosts } from '../declaration/resolve.ts';
 import { EMPTY_ARGV_SPEC } from '../declaration/spec.ts';
-import type { ArgvSpec } from '../declaration/spec.ts';
+import type { ArgvSpec, StdinSpec } from '../declaration/spec.ts';
 import type { Renderable } from '../jsx/types.ts';
 import type { Route } from './scanner.ts';
 
 export interface EvaluatedRoute {
   route: Route;
   spec: ArgvSpec;
+  /** stdin.tsx があれば、その宣言 */
+  stdin?: StdinSpec;
 }
 
 export interface EvaluationProblem {
@@ -30,15 +32,21 @@ export interface EvaluateResult {
   problems: EvaluationProblem[];
 }
 
-async function loadSpec(file: string): Promise<ArgvSpec> {
+/** 宣言ファイルを import して呼び、組み込みノードの並びにする */
+async function loadHosts(file: string, expected: string) {
   // 絶対パスにしないと、呼び出し元の位置によって解決が変わる
   const loaded = (await import(resolve(file))) as { default?: unknown };
   const declare = loaded.default;
   if (typeof declare !== 'function') {
-    throw new Error('must default-export a function that returns <Argv>');
+    throw new Error(
+      `must default-export a function that returns <${expected}>`
+    );
   }
-  const hosts = await resolveHosts((declare as () => Renderable)());
-  return parseArgvSpec(hosts);
+  return resolveHosts((declare as () => Renderable)());
+}
+
+function messageOf(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
 }
 
 /**
@@ -50,19 +58,31 @@ export async function evaluateRoutes(routes: Route[]): Promise<EvaluateResult> {
   const problems: EvaluationProblem[] = [];
 
   for (const route of routes) {
-    const file = route.files.argv;
-    if (file === undefined) {
-      evaluated.push({ route, spec: EMPTY_ARGV_SPEC });
-      continue;
+    const argvFile = route.files.argv;
+    const stdinFile = route.files.stdin;
+    let failed = false;
+
+    let spec = EMPTY_ARGV_SPEC;
+    if (argvFile !== undefined) {
+      try {
+        spec = parseArgvSpec(await loadHosts(argvFile, 'Argv'));
+      } catch (error) {
+        problems.push({ file: argvFile, message: messageOf(error) });
+        failed = true;
+      }
     }
-    try {
-      evaluated.push({ route, spec: await loadSpec(file) });
-    } catch (error) {
-      problems.push({
-        file,
-        message: error instanceof Error ? error.message : String(error),
-      });
+
+    let stdin: StdinSpec | undefined;
+    if (stdinFile !== undefined) {
+      try {
+        stdin = parseStdinSpec(await loadHosts(stdinFile, 'Stdin'));
+      } catch (error) {
+        problems.push({ file: stdinFile, message: messageOf(error) });
+        failed = true;
+      }
     }
+
+    if (!failed) evaluated.push({ route, spec, stdin });
   }
 
   return { evaluated, problems };

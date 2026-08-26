@@ -1,11 +1,12 @@
 /** decopin-cli の公開 API (Phase 1) */
 export { Text, Line, Br, Stdout, Stderr, Exit } from './components/index.ts';
-export { Argv, Arg, Option } from './components/input/index.ts';
+export { Argv, Arg, Option, Stdin } from './components/input/index.ts';
 export type {
   ArgProps,
   ArgvProps,
   OptionProps,
   ShorthandType,
+  StdinProps,
 } from './components/input/index.ts';
 export { Type } from './components/type/index.ts';
 export { CliError } from './runtime/errors.ts';
@@ -45,6 +46,8 @@ export type {
   MiddlewareContext,
   MiddlewareProps,
 } from './runtime/middleware.ts';
+export { processStdin, readStdin } from './runtime/stdin-reader.ts';
+export type { StdinSource } from './runtime/stdin-reader.ts';
 export { resolveRoute, suggest } from './runtime/router.ts';
 export type { Resolved, RouteLoaders, RouteTable } from './runtime/router.ts';
 

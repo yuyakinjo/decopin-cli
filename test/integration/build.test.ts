@@ -35,8 +35,10 @@ afterAll(async () => {
 });
 
 /** ビルド済みの CLI を別プロセスで実行する */
-async function cli(args: string[]) {
+async function cli(args: string[], input?: string) {
   const proc = Bun.spawn(['bun', outPath, ...args], {
+    // input を渡さない場合は空の入力 (端末ではないので TTY 判定は false)
+    stdin: new Blob([input ?? '']),
     stdout: 'pipe',
     stderr: 'pipe',
     env: { ...process.env, NO_COLOR: '1' },
@@ -64,8 +66,11 @@ describe('build', () => {
       outDir: join(workspace, 'dist'),
     });
     expect(result.routes.map((route) => route.name)).toEqual([
+      'count',
       'crash',
       'hello',
+      'upper',
+      'user/import',
       'user/list',
     ]);
   });
@@ -165,6 +170,51 @@ describe('生成された CLI', () => {
     expect(result.stderr).toContain('USERS');
     expect(result.stderr).toContain('user: --limit:');
     expect(result.stderr).toContain('Try: user list --help');
+    expect(result.code).toBe(2);
+  });
+
+  test('--help に stdin の宣言が出る', async () => {
+    const result = await cli(['count', '--help']);
+    expect(result.stdout).toContain('Stdin:');
+    expect(result.stdout).toContain('required (pipe something in)');
+    expect(result.code).toBe(0);
+  });
+
+  test('パイプした行を数える (mode="lines")', async () => {
+    const result = await cli(['count'], 'a\nb\n\nc\n');
+    expect(result.stdout).toBe('4\n');
+    expect(result.code).toBe(0);
+  });
+
+  test('オプションと組み合わせられる', async () => {
+    const result = await cli(['count', '--non-empty'], 'a\n\nb\n');
+    expect(result.stdout).toBe('2\n');
+  });
+
+  test('mode="text" の trim が効く', async () => {
+    const result = await cli(['upper'], 'hello\n');
+    expect(result.stdout).toBe('HELLO\n');
+  });
+
+  test('JSON の構造を宣言どおりに検証する', async () => {
+    const result = await cli(
+      ['user', 'import'],
+      '[{"name":"alice","admin":true},{"name":"bob"}]'
+    );
+    expect(result.stdout).toBe('USERS\nalice (admin)\nbob\nimported 2\n');
+    expect(result.code).toBe(0);
+  });
+
+  test('JSON が構造に合わなければ exit 2', async () => {
+    const result = await cli(['user', 'import'], '[{"admin":true}]');
+    expect(result.stdout).toBe('');
+    expect(result.stderr).toContain('does not match the declared structure');
+    expect(result.code).toBe(2);
+  });
+
+  test('壊れた JSON も exit 2', async () => {
+    const result = await cli(['user', 'import'], 'not json');
+    expect(result.stderr).toContain('stdin is not valid JSON');
     expect(result.code).toBe(2);
   });
 
