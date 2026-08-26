@@ -1,27 +1,39 @@
-/** scan → check → emit → bundle をつなぐ (§8) */
+/** scan → evaluate → check → emit → bundle をつなぐ (§8) */
 import { mkdir } from 'node:fs/promises';
 import { join } from 'node:path';
 
 import { bundle } from './bundler.ts';
 import { generateEntry, generateRoutes } from './codegen.ts';
+import { evaluateRoutes } from './evaluator.ts';
+import type { EvaluatedRoute } from './evaluator.ts';
 import { scan } from './scanner.ts';
 import type { Route } from './scanner.ts';
+import { generateTypes } from './type-emitter.ts';
 
-export interface BuildOptions {
+export interface GenerateOptions {
   /** `app/` の位置 */
   appDir?: string;
   /** 生成物の置き場 */
   workDir?: string;
-  /** バンドルの出力先 */
-  outDir?: string;
-  outFile?: string;
-  minify?: boolean;
   /** help に出す実行ファイル名。省略時は package.json の name */
   program?: string;
 }
 
-export interface BuildResult {
+export interface BuildOptions extends GenerateOptions {
+  /** バンドルの出力先 */
+  outDir?: string;
+  outFile?: string;
+  minify?: boolean;
+}
+
+export interface GenerateResult {
   routes: Route[];
+  evaluated: EvaluatedRoute[];
+  /** 生成したファイル */
+  files: { routes: string; entry: string; types: string };
+}
+
+export interface BuildResult extends GenerateResult {
   outPath: string;
   bytes: number;
 }
@@ -29,18 +41,21 @@ export interface BuildResult {
 /** help に出す名前は、既定でプロジェクトの package.json から取る */
 async function readProgramName(): Promise<string> {
   try {
-    const file = Bun.file('package.json');
-    const json = (await file.json()) as { name?: unknown };
+    const json = (await Bun.file('package.json').json()) as { name?: unknown };
     return typeof json.name === 'string' ? json.name : 'cli';
   } catch {
     return 'cli';
   }
 }
 
-export async function build(options: BuildOptions = {}): Promise<BuildResult> {
+/**
+ * `.decopin/` を作る。バンドルはしないので `decopin dev` から何度でも呼べる。
+ */
+export async function generate(
+  options: GenerateOptions = {}
+): Promise<GenerateResult> {
   const appDir = options.appDir ?? 'app';
   const workDir = options.workDir ?? '.decopin';
-  const outDir = options.outDir ?? 'dist';
 
   const { routes } = await scan(appDir);
   if (routes.length === 0) {
@@ -49,19 +64,37 @@ export async function build(options: BuildOptions = {}): Promise<BuildResult> {
     );
   }
 
+  // argv.tsx の誤りは 1 件目で止めず、全部まとめて報告する
+  const { evaluated, problems } = await evaluateRoutes(routes);
+  if (problems.length > 0) {
+    const detail = problems
+      .map((problem) => `  ${problem.file}: ${problem.message}`)
+      .join('\n');
+    throw new Error(`Invalid declarations:\n${detail}`);
+  }
+
   const program = options.program ?? (await readProgramName());
+  const files = {
+    routes: join(workDir, 'routes.ts'),
+    entry: join(workDir, 'entry.ts'),
+    types: join(workDir, 'types.d.ts'),
+  };
 
   await mkdir(workDir, { recursive: true });
-  await Bun.write(join(workDir, 'routes.ts'), generateRoutes(routes, workDir));
-  const entry = join(workDir, 'entry.ts');
-  await Bun.write(entry, generateEntry(program));
+  await Bun.write(files.routes, generateRoutes(routes, workDir));
+  await Bun.write(files.entry, generateEntry(program));
+  await Bun.write(files.types, generateTypes(evaluated));
 
+  return { routes, evaluated, files };
+}
+
+export async function build(options: BuildOptions = {}): Promise<BuildResult> {
+  const generated = await generate(options);
   const bundled = await bundle({
-    entry,
-    outDir,
+    entry: generated.files.entry,
+    outDir: options.outDir ?? 'dist',
     outFile: options.outFile,
     minify: options.minify,
   });
-
-  return { routes, outPath: bundled.outPath, bytes: bundled.bytes };
+  return { ...generated, outPath: bundled.outPath, bytes: bundled.bytes };
 }

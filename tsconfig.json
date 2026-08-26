@@ -17,5 +17,13 @@
     "jsx": "react-jsx",
     "jsxImportSource": "decopin-cli/jsx"
   },
-  "include": ["src/**/*", "test/**/*", "app/**/*", "scripts/**/*"]
+  "include": [
+    "src/**/*",
+    "test/**/*",
+    "app/**/*",
+    "scripts/**/*",
+    ".decopin/types.d.ts"
+  ],
+  // 型が未生成の状態を再現する当て木。専用の tsconfig から検査する
+  "exclude": ["test/fixtures/untyped"]
 }

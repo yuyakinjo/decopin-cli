@@ -170,3 +170,6 @@ test-app-version/
 # decopin build の生成物
 .decopin/
 .decopin-test-*/
+
+# watch のテストが一時的に作るコマンド
+test/fixtures/watch-app/added/

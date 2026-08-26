@@ -24,6 +24,16 @@ export type {
   ExitProps,
 } from './components/index.ts';
 
+export type {
+  CommandBase,
+  CommandProps,
+  Env,
+  RouteName,
+  Routes,
+  RouteShape,
+  UntypedCommandProps,
+} from './types/routes.ts';
+
 export { run } from './runtime/run.tsx';
 export type { CommandContext, RunOptions } from './runtime/run.tsx';
 export { EXIT_CODE } from './runtime/exit.ts';

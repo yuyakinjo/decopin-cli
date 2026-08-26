@@ -441,34 +441,54 @@ build
 
 ```ts
 // .decopin/types.d.ts (生成物・コミットしない)
-declare module 'decopin-cli/generated' {
+import 'decopin-cli';
+
+declare module 'decopin-cli' {
   interface Routes {
     hello: {
       args: { name: string };
       options: {
         loud: boolean;
-        count: number;
-        format: 'json' | 'yaml' | 'table';
-        tag?: string[];
+        times: number;
+        style: 'plain' | 'bold' | 'rainbow';
       };
       stdin: never;
     };
-    'user/create': {
-      args: { email: string };
-      options: { admin: boolean };
-      stdin: { id: number }[];
+    'user/list': {
+      args: {};
+      options: { limit: number; tag?: string[] };
+      stdin: never;
     };
-  }
-  interface Env {
-    API_TOKEN: string;
-    LOG_LEVEL: 'debug' | 'info' | 'warn' | 'error';
   }
 }
 ```
 
-- `decopin dev` は `app/` を watch して `types.d.ts` を再生成するので、エディタ上の体験はほぼ即時
-- `.decopin/` は `.gitignore` に入れる。CI では build が先に走るので型チェックは通る
-- **型が古い状態で `command.tsx` を書くと型エラーになる**のが最大の弱点。`decopin dev` を回すことを推奨フローとして文書化する
+`decopin-cli` 側は空の `interface Routes {}` を持っていて、生成物が **module augmentation** でそれを埋める。`command.tsx` は `CommandProps<'hello'>` でこの型を引く。
+
+```tsx
+export default function Command({ args, options }: CommandProps<'hello'>) {
+  // args.name    → string
+  // options.loud → boolean
+}
+```
+
+**キーが省略可能になる条件**
+
+| 宣言          | 生成される型                             |
+| ------------- | ---------------------------------------- |
+| `required`    | `name: T` (必ず存在する)                 |
+| `default={x}` | `name: T` (既定値が入るので必ず存在する) |
+| どちらも無い  | `name?: T`                               |
+| `variadic`    | `name: T[]`                              |
+
+**型が未生成のときのフォールバック**
+
+`Routes` が空 (= まだ `build` / `dev` を通していない) 場合、`CommandProps<R>` は任意のコマンド名を受け付け、`args` / `options` を `Record<string, unknown>` にする。型検査が「コマンド名が存在しない」で真っ赤になるより、緩く通したうえで `decopin dev` を促す方が親切だという判断。
+
+生成済みなら、コマンド名の綴り間違い (`CommandProps<'helo'>`) も型エラーになる。
+
+- `decopin dev` は `app/` を watch して `.decopin/` を作り直す。エディタは 1 回の保存で複数のイベントを出すので、50ms でまとめる
+- `.decopin/types.d.ts` を `tsconfig.json` の `include` に入れる必要がある
 
 **`Type.*` から valibot への対応表 (内部実装)**
 
@@ -861,6 +881,34 @@ argv は必ず文字列で届くので、まず宣言された型に変換し、
 
 ---
 
+### 8.3 Phase 3.5 で確定した細部
+
+**`decopin build` は 3 つのファイルを生成する**
+
+| 生成物                | 用途                                   |
+| --------------------- | -------------------------------------- |
+| `.decopin/types.d.ts` | `Routes` の module augmentation (§4.8) |
+| `.decopin/routes.ts`  | ルート表 (動的 import)                 |
+| `.decopin/entry.ts`   | エントリポイント                       |
+
+**`decopin dev` は型と routes だけを作り、バンドルはしない**
+
+型の更新が目的なので、バンドルの時間を払わない。実行して確かめたいときは `decopin build` を使う。
+
+**宣言の誤りは 1 件目で止めずに全部集める**
+
+`argv.tsx` を評価する段で失敗したルートだけを落とし、残りは通す。報告は `Invalid declarations:` に続けてファイルごとに 1 行。ビルドし直すたびに 1 つずつ直す手間を避けるため (§8.2 と同じ考え方)。
+
+**`argv.tsx` は絶対パスで import する**
+
+呼び出し元の位置によって解決先が変わらないようにするため。
+
+**型検査には `.decopin/types.d.ts` を含める必要がある**
+
+`tsconfig.json` の `include` に加える。CI では build → typecheck → test の順に流す。
+
+---
+
 ## 9. `src/` 内部構成
 
 ```
@@ -882,8 +930,10 @@ src/
                  Phase 6: stdin-reader.ts
   validation/    type-node → valibot 変換 (§4.8 の対応表), argv パーサ, help 自動生成
                  ※ valibot への依存はこのディレクトリに閉じ込める
-  build/         scanner.ts, codegen.ts, bundler.ts, index.ts (scan→emit→bundle)
-                 Phase 3.5: evaluator.ts, checker.ts, type-emitter.ts
+  build/         scanner.ts, evaluator.ts (argv.tsx を評価), codegen.ts,
+                 type-emitter.ts (types.d.ts), bundler.ts, watch.ts (dev),
+                 index.ts (generate / build)
+  types/         routes.ts (生成された型の受け皿。Routes / CommandProps)
   cli/           bin.ts (decopin build / dev のエントリ)
 ```
 
@@ -968,10 +1018,12 @@ exit=2
 | 7     | 装飾コンポーネント (`Box` `Table` `List` `Columns`) + 幅計算    | 端末幅 40/80/120 でのスナップショット                           |
 | 8     | `env.tsx` / `version.tsx` / 起動時間ベンチ                      | 起動 10ms 未満                                                  |
 
-**Phase 1-3 は完了** (2026-08-27): `src/jsx/` `src/components/` `src/renderer/` と 52 件のテスト。`Text` / `Line` / `Br` / `Stdout` / `Stderr` / `Exit` が動き、`scripts/demo-render.tsx` で実機確認済み。
+**Phase 1-3.5 は完了** (2026-08-27): `src/jsx/` `src/components/` `src/renderer/` と 52 件のテスト。`Text` / `Line` / `Br` / `Stdout` / `Stderr` / `Exit` が動き、`scripts/demo-render.tsx` で実機確認済み。
 Phase 2 で `src/build/` `src/runtime/` `src/cli/` を追加し、`bun src/cli/bin.ts build` →
 `./dist/index.js hello` が動作 (起動 10ms 未満)。
-Phase 3 で `Type.*` / `argv.tsx` / valibot 変換 / `--help` 自動生成を追加。テストは 157 件。
+Phase 3 で `Type.*` / `argv.tsx` / valibot 変換 / `--help` 自動生成を追加。
+Phase 3.5 で `.decopin/types.d.ts` の生成と `decopin dev` の watch を追加し、
+`CommandProps<'hello'>` から `args.name: string` が引けることを実際の tsc で検証。テストは 180 件。
 
 **Phase 1-2 が最小の垂直スライス** — ここが通れば設計の骨格が正しいと確認できる。
 
@@ -979,7 +1031,7 @@ Phase 3 で `Type.*` / `argv.tsx` / valibot 変換 / `--help` 自動生成を追
 
 ## 12. 未決 / 要検討
 
-- **型生成が古いと型エラーになる問題** (§4.8)。`decopin dev` を回さずに `command.tsx` を編集した場合の体験をどう救うか。案: `Routes` が未生成のときは `Record<string, unknown>` にフォールバックし「build してください」という型エラーメッセージを出す
+- 型が**古い** (生成済みだが宣言と食い違う) 場合は素直に型エラーになる。未生成のときのフォールバックは実装した (§4.8) が、「古い」と「未生成」は区別できていない。`decopin dev` を回す運用でしのぐ
 - `<Type.Object>` / `<Type.Field>` は `stdin.tsx` の JSON 構造宣言のためだけに存在する。ネストが深い JSON では JSX が冗長になるので、`mode="json"` の場合だけ `schema` prop (valibot 直渡し) を推奨する運用にするか要検討
 - `<Arg variadic>` (可変長位置引数) と `<Type.Array>` の関係。`variadic` は「位置引数を何個も取る」、`Type.Array` は「1 つの値が配列」なので別物だが、生成される型は両方 `string[]` になり混同しやすい
 - ADR 11 の代償 (env / argv 検証エラーが middleware を通らない) が実用上問題になるなら、計測・ロギングの責務を `app/global-error.tsx` 側に寄せる形を Phase 5 で検討する
