@@ -9,7 +9,7 @@ export type {
 } from './components/input/index.ts';
 export { Type } from './components/type/index.ts';
 export { CliError } from './runtime/errors.ts';
-export type { ErrorKind } from './runtime/errors.ts';
+export type { ErrorKind, ErrorProps } from './runtime/errors.ts';
 export { DeclarationError } from './declaration/errors.ts';
 export type { ArgSpec, ArgvSpec, OptionSpec } from './declaration/spec.ts';
 export type { TypeNode } from './declaration/type-node.ts';

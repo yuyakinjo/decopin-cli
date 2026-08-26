@@ -64,6 +64,7 @@ describe('build', () => {
       outDir: join(workspace, 'dist'),
     });
     expect(result.routes.map((route) => route.name)).toEqual([
+      'crash',
       'hello',
       'user/list',
     ]);
@@ -134,13 +135,33 @@ describe('生成された CLI', () => {
     const result = await cli(['hello', '--times', '9']);
     expect(result.stdout).toBe('');
     expect(result.stderr).toContain('--times:');
-    expect(result.stderr).toContain('Run with --help to see the usage');
     expect(result.code).toBe(2);
   });
 
   test('未知のオプションも exit 2', async () => {
     const result = await cli(['hello', '--nope']);
     expect(result.stderr).toContain('Unknown option: --nope');
+    expect(result.code).toBe(2);
+  });
+
+  test('自分の error.tsx が使われ、<Exit> で終了コードを上書きできる', async () => {
+    const result = await cli(['crash']);
+    expect(result.stdout).toBe('');
+    expect(result.stderr).toBe('crash: the command exploded\n');
+    expect(result.code).toBe(42);
+  });
+
+  test('上位ディレクトリの error.tsx を継承する', async () => {
+    const result = await cli(['user', 'list', '-n', '0']);
+    expect(result.stderr).toContain('user: --limit:');
+    expect(result.stderr).toContain('Try: user list --help');
+    expect(result.code).toBe(2);
+  });
+
+  test('error.tsx が無いコマンドは global-error.tsx に落ちる', async () => {
+    const result = await cli(['hello', '--times', '99']);
+    expect(result.stderr).toContain('Invalid usage: --times:');
+    expect(result.stderr).toContain('exit code 2');
     expect(result.code).toBe(2);
   });
 });

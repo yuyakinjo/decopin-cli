@@ -16,6 +16,7 @@ import type { WriteTargets } from '../renderer/writer.ts';
 import { validateArgv } from '../validation/validate.ts';
 import { CliError, validationError } from './errors.ts';
 import { EXIT_CODE } from './exit.ts';
+import { handleError, toCliError } from './handle-error.tsx';
 import { CommandList, Help } from './help.tsx';
 import { ErrorMessage } from './messages.tsx';
 import { HELP_FLAGS, NO_COLOR_FLAG, VERSION_FLAG } from './reserved.ts';
@@ -40,6 +41,8 @@ export interface RunOptions {
   program?: string;
   cwd?: string;
   env?: Record<string, string | undefined>;
+  /** `app/global-error.tsx` (§4.4 の最後の受け皿) */
+  globalError?: () => Promise<unknown>;
   /** 書き出し先 (テストから差し替えるため) */
   targets?: WriteTargets;
 }
@@ -202,26 +205,20 @@ export async function run(
     );
     return declared ?? EXIT_CODE.success;
   } catch (error) {
-    const cliError =
-      error instanceof CliError
-        ? error
-        : new CliError(error instanceof Error ? error.message : String(error), {
-            cause: error,
-          });
-    const hints =
-      cliError.issues.length > 1 ? cliError.issues.slice(1) : undefined;
-    await emit(
-      <ErrorMessage
-        message={cliError.issues[0] ?? cliError.message}
-        hints={
-          cliError.kind === 'validation'
-            ? [...(hints ?? []), `Run with --help to see the usage`]
-            : hints
-        }
-      />,
-      options,
-      noColorFlag
-    );
-    return cliError.exitCode;
+    const cliError = toCliError(error);
+    const route = table[resolved.name];
+    // 近い error.tsx → 親の error.tsx → global-error.tsx → 組み込み (§4.4)
+    const handlers = [
+      ...(route?.errors ?? []),
+      ...(options.globalError === undefined ? [] : [options.globalError]),
+    ];
+    const handled = await handleError({
+      error: cliError,
+      handlers,
+      argv: resolved.rest,
+      cwd,
+      emit: (node) => emit(node, options, noColorFlag),
+    });
+    return handled.exitCode;
   }
 }

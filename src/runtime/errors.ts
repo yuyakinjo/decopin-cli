@@ -28,6 +28,16 @@ export class CliError extends Error {
   }
 }
 
+/** `error.tsx` / `global-error.tsx` が受け取る props (§4.4) */
+export interface ErrorProps {
+  /** `kind` で場合分けできる */
+  error: CliError;
+  /** 既定の終了コード。`<Exit code={n} />` で上書きできる */
+  exitCode: number;
+  argv: readonly string[];
+  cwd: string;
+}
+
 /** 引数の検証に失敗した。使い方の誤りなので exit 2 (§7) */
 export function validationError(issues: string[]): CliError {
   return new CliError(issues[0] ?? 'Invalid arguments', {

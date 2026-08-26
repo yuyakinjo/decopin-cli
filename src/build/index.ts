@@ -6,7 +6,7 @@ import { bundle } from './bundler.ts';
 import { generateEntry, generateRoutes } from './codegen.ts';
 import { evaluateRoutes } from './evaluator.ts';
 import type { EvaluatedRoute } from './evaluator.ts';
-import { scan } from './scanner.ts';
+import { inheritedChain, scan } from './scanner.ts';
 import type { Route } from './scanner.ts';
 import { generateTypes } from './type-emitter.ts';
 
@@ -57,7 +57,7 @@ export async function generate(
   const appDir = options.appDir ?? 'app';
   const workDir = options.workDir ?? '.decopin';
 
-  const { routes } = await scan(appDir);
+  const { routes, rootFiles, inherited } = await scan(appDir);
   if (routes.length === 0) {
     throw new Error(
       `No commands found in ${appDir}/. Create ${appDir}/<name>/command.tsx`
@@ -80,8 +80,22 @@ export async function generate(
     types: join(workDir, 'types.d.ts'),
   };
 
+  // error.tsx は上位ディレクトリから継承される (§4.4)
+  const errorChains = new Map<string, string[]>(
+    routes.map((route) => [
+      route.name,
+      inheritedChain(inherited, route.dir, 'error'),
+    ])
+  );
+
   await mkdir(workDir, { recursive: true });
-  await Bun.write(files.routes, generateRoutes(routes, workDir));
+  await Bun.write(
+    files.routes,
+    generateRoutes(
+      { routes, errorChains, globalError: rootFiles['global-error'] },
+      workDir
+    )
+  );
   await Bun.write(files.entry, generateEntry(program));
   await Bun.write(files.types, generateTypes(evaluated));
 

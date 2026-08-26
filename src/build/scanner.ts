@@ -34,10 +34,20 @@ export interface Route {
   files: Partial<Record<ConventionFile, string>>;
 }
 
+/** 上位ディレクトリから子コマンドに継承されるファイル (§4.4 / §4.5 / §4.6) */
+export const INHERITED_FILES = ['error', 'layout', 'middleware'] as const;
+
+export type InheritedFile = (typeof INHERITED_FILES)[number];
+
 export interface ScanResult {
   routes: Route[];
   /** ルート直下にだけ置けるファイル */
   rootFiles: Partial<Record<RootOnlyFile, string>>;
+  /**
+   * `app/` からの相対ディレクトリ (ルートは空文字) → 継承されるファイル。
+   * command.tsx を持たないディレクトリも含む (error.tsx だけ置ける)
+   */
+  inherited: Map<string, Partial<Record<InheritedFile, string>>>;
 }
 
 /** `.tsx` を優先する。JSX を使わないコマンドのために `.ts` も許す */
@@ -68,6 +78,7 @@ function findFile(
 export async function scan(appDir: string): Promise<ScanResult> {
   const routes: Route[] = [];
   const rootFiles: Partial<Record<RootOnlyFile, string>> = {};
+  const inherited = new Map<string, Partial<Record<InheritedFile, string>>>();
 
   const walk = async (dir: string, name: string): Promise<void> => {
     const absolute = join(appDir, dir);
@@ -91,6 +102,13 @@ export async function scan(appDir: string): Promise<ScanResult> {
       }
     }
 
+    // 継承されるファイルは、コマンドでないディレクトリにも置ける
+    const inheritable: Partial<Record<InheritedFile, string>> = {};
+    for (const kind of INHERITED_FILES) {
+      if (files[kind] !== undefined) inheritable[kind] = files[kind];
+    }
+    if (Object.keys(inheritable).length > 0) inherited.set(dir, inheritable);
+
     // command.tsx を持つディレクトリだけがコマンドになる (§3)
     if (files.command !== undefined) {
       routes.push({ name, dir, files });
@@ -107,5 +125,24 @@ export async function scan(appDir: string): Promise<ScanResult> {
 
   await walk('', '');
   routes.sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0));
-  return { routes, rootFiles };
+  return { routes, rootFiles, inherited };
+}
+
+/**
+ * あるディレクトリから見た、継承ファイルの並び。**近い順** (自分 → 親 → ...)。
+ *
+ * `error.tsx` はこの順に試す (§4.4)。`layout.tsx` は逆順に包む (§4.5)。
+ */
+export function inheritedChain(
+  inherited: ScanResult['inherited'],
+  dir: string,
+  kind: InheritedFile
+): string[] {
+  const chain: string[] = [];
+  const segments = dir === '' ? [] : dir.split('/');
+  for (let depth = segments.length; depth >= 0; depth -= 1) {
+    const file = inherited.get(segments.slice(0, depth).join('/'))?.[kind];
+    if (file !== undefined) chain.push(file);
+  }
+  return chain;
 }

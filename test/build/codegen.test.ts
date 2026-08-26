@@ -18,7 +18,7 @@ const routes: Route[] = [
 
 describe('generateRoutes', () => {
   test('ルートごとに動的 import を並べる', () => {
-    const code = generateRoutes(routes, '.decopin');
+    const code = generateRoutes({ routes }, '.decopin');
     expect(code).toContain(
       'command: () => import("../app/hello/command.tsx"),'
     );
@@ -29,36 +29,81 @@ describe('generateRoutes', () => {
 
   test('argv.tsx があれば一緒に配線する', () => {
     const code = generateRoutes(
-      [
-        {
-          name: 'hello',
-          dir: 'hello',
-          files: {
-            command: 'app/hello/command.tsx',
-            argv: 'app/hello/argv.tsx',
+      {
+        routes: [
+          {
+            name: 'hello',
+            dir: 'hello',
+            files: {
+              command: 'app/hello/command.tsx',
+              argv: 'app/hello/argv.tsx',
+            },
           },
-        },
-      ],
+        ],
+      },
       '.decopin'
     );
     expect(code).toContain('argv: () => import("../app/hello/argv.tsx"),');
   });
 
   test('argv.tsx がなければ command だけを書く', () => {
-    const code = generateRoutes(routes, '.decopin');
+    const code = generateRoutes({ routes }, '.decopin');
     expect(code).not.toContain('argv:');
   });
 
   test('生成物であることを先頭に書く', () => {
-    expect(generateRoutes(routes, '.decopin')).toContain(
+    expect(generateRoutes({ routes }, '.decopin')).toContain(
       'decopin build が生成します'
     );
   });
 
   test('command のないルートは作れない', () => {
     expect(() =>
-      generateRoutes([{ name: 'x', dir: 'x', files: {} }], '.decopin')
+      generateRoutes(
+        { routes: [{ name: 'x', dir: 'x', files: {} }] },
+        '.decopin'
+      )
     ).toThrow(/has no command file/);
+  });
+});
+
+describe('generateRoutes — error.tsx の連鎖', () => {
+  test('近い順に error.tsx を並べる', () => {
+    const code = generateRoutes(
+      {
+        routes,
+        errorChains: new Map([
+          ['user/create', ['app/user/create/error.tsx', 'app/user/error.tsx']],
+        ]),
+      },
+      '.decopin'
+    );
+    const errors = code.slice(code.indexOf('errors: ['));
+    expect(errors.indexOf('user/create/error.tsx')).toBeLessThan(
+      errors.indexOf('user/error.tsx')
+    );
+  });
+
+  test('error.tsx が無いルートには errors を書かない', () => {
+    const code = generateRoutes({ routes }, '.decopin');
+    expect(code).not.toContain('errors:');
+  });
+
+  test('global-error.tsx を別に export する', () => {
+    expect(
+      generateRoutes(
+        { routes, globalError: 'app/global-error.tsx' },
+        '.decopin'
+      )
+    ).toContain(
+      'export const globalError = () => import("../app/global-error.tsx");'
+    );
+  });
+
+  test('global-error.tsx が無ければ undefined', () => {
+    expect(generateRoutes({ routes }, '.decopin')).toContain(
+      'export const globalError = undefined;'
+    );
   });
 });
 
@@ -66,8 +111,6 @@ describe('generateEntry', () => {
   test('routes を run に渡し、終了コードで exit する', () => {
     const code = generateEntry('mycli');
     expect(code).toContain("import { run } from 'decopin-cli';");
-    expect(code).toContain(
-      'process.exit(await run(routes, { program: "mycli" }));'
-    );
+    expect(code).toContain('program: "mycli", globalError');
   });
 });

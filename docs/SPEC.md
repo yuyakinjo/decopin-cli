@@ -276,15 +276,20 @@ type CommandProps<R extends keyof Routes> = {
 ### 4.4 `error.tsx` — エラー表示 (stderr)
 
 ```tsx
-import { Danger, Line, type ErrorProps } from 'decopin-cli';
+import { Line, Text, type ErrorProps } from 'decopin-cli';
 
 export default function Error({ error, exitCode }: ErrorProps) {
   return (
     <>
-      <Danger>{error.message}</Danger>
-      {error.kind === 'validation' && (
-        <Line dim>ヒント: --help で使い方を確認できます</Line>
-      )}
+      <Line>
+        <Text color="red">✖ </Text>
+        {error.issues[0] ?? error.message}
+      </Line>
+      {error.kind === 'validation' ? (
+        <Line>
+          <Text dim>Run with --help to see the usage</Text>
+        </Line>
+      ) : null}
     </>
   );
 }
@@ -292,17 +297,41 @@ export default function Error({ error, exitCode }: ErrorProps) {
 
 ```ts
 type ErrorProps = {
-  error: CliError; // kind で絞り込める判別共用体
+  error: CliError; // kind で場合分けできる
   exitCode: number; // 既定の終了コード
   argv: readonly string[];
   cwd: string;
 };
+
+class CliError extends Error {
+  kind: 'validation' | 'runtime' | 'stdin' | 'env' | 'unknown';
+  exitCode: number;
+  /** 検証の失敗など、理由が複数ある場合 (1 件目が主メッセージ) */
+  issues: string[];
+}
 ```
 
-- 出力は**既定で stderr** に行く (`command.tsx` の既定は stdout)
-- `error.kind`: `'validation' | 'runtime' | 'stdin' | 'env' | 'unknown'`
+- 出力は**既定で stderr** に行く (`command.tsx` の既定は stdout)。中で `<Stdout>` を使えば上書きできる
 - 終了コードは `exitCode` の既定値を使うか、`<Exit code={n} />` で上書き
-- `error.tsx` が無い場合は、直近の上位ディレクトリの `error.tsx` → `app/global-error.tsx` → 組み込みの既定表示 の順にフォールバック
+- `async` な `error.tsx` も書ける (レンダラーが待つ)
+
+**フォールバック順**
+
+```
+app/user/create/error.tsx   ← 自分のディレクトリ (最優先)
+app/user/error.tsx          ← 親を順にさかのぼる
+app/error.tsx
+app/global-error.tsx        ← 最後の受け皿
+組み込みの既定表示           ← どれも無い / どれも失敗した
+```
+
+- **表示係が自分で失敗したら、次の候補に進む**。エラーを出そうとして落ちるのが一番困る事故なので、必ず何かが出る
+- 全部失敗した場合は、組み込みの表示が元のエラーに加えて「表示係も失敗した」ことを伝える
+- `default export` がコンポーネントでない `error.tsx` は飛ばす
+
+**error.tsx を通らないもの**
+
+未知のコマンド (`Unknown command: helo`) とコマンド一覧は、フレームワークのルーターが出すので `error.tsx` / `global-error.tsx` を通らない。ルートが決まっていない時点では「どの `error.tsx` を使うべきか」も決まらないため。
 
 ### 4.5 `layout.tsx` — 共通装飾
 
@@ -909,6 +938,22 @@ argv は必ず文字列で届くので、まず宣言された型に変換し、
 
 ---
 
+### 8.4 Phase 4 で確定した細部
+
+**`error.tsx` は上位ディレクトリから継承される**
+
+そのため scanner は「`command.tsx` を持たないディレクトリ」の規約ファイルも拾う。`app/user/error.tsx` だけを置いて `app/user/` 以下の全コマンドで共有する、という書き方ができる。継承の対象は `error.tsx` / `layout.tsx` / `middleware.tsx` の 3 つ。
+
+**エラー表示の連鎖はビルド時に確定する**
+
+`.decopin/routes.ts` に、ルートごとの `errors: [...]` (近い順) と `export const globalError` を書き出す。実行時にディレクトリを遡らないので、探索のコストは 0。
+
+**組み込みの既定表示だけがヒントを足す**
+
+`Run with --help to see the usage` のような案内は組み込みの表示にだけ付く。`error.tsx` を置いた時点で表示の責任は利用者側に移るので、フレームワークが勝手に行を足さない。
+
+---
+
 ## 9. `src/` 内部構成
 
 ```
@@ -1018,12 +1063,13 @@ exit=2
 | 7     | 装飾コンポーネント (`Box` `Table` `List` `Columns`) + 幅計算    | 端末幅 40/80/120 でのスナップショット                           |
 | 8     | `env.tsx` / `version.tsx` / 起動時間ベンチ                      | 起動 10ms 未満                                                  |
 
-**Phase 1-3.5 は完了** (2026-08-27): `src/jsx/` `src/components/` `src/renderer/` と 52 件のテスト。`Text` / `Line` / `Br` / `Stdout` / `Stderr` / `Exit` が動き、`scripts/demo-render.tsx` で実機確認済み。
+**Phase 1-4 は完了** (2026-08-27): `src/jsx/` `src/components/` `src/renderer/` と 52 件のテスト。`Text` / `Line` / `Br` / `Stdout` / `Stderr` / `Exit` が動き、`scripts/demo-render.tsx` で実機確認済み。
 Phase 2 で `src/build/` `src/runtime/` `src/cli/` を追加し、`bun src/cli/bin.ts build` →
 `./dist/index.js hello` が動作 (起動 10ms 未満)。
 Phase 3 で `Type.*` / `argv.tsx` / valibot 変換 / `--help` 自動生成を追加。
 Phase 3.5 で `.decopin/types.d.ts` の生成と `decopin dev` の watch を追加し、
-`CommandProps<'hello'>` から `args.name: string` が引けることを実際の tsc で検証。テストは 180 件。
+`CommandProps<'hello'>` から `args.name: string` が引けることを実際の tsc で検証。
+Phase 4 で `error.tsx` / `global-error.tsx` のフォールバックと終了コードの上書きを追加。テストは 207 件。
 
 **Phase 1-2 が最小の垂直スライス** — ここが通れば設計の骨格が正しいと確認できる。
 
@@ -1032,6 +1078,7 @@ Phase 3.5 で `.decopin/types.d.ts` の生成と `decopin dev` の watch を追�
 ## 12. 未決 / 要検討
 
 - 型が**古い** (生成済みだが宣言と食い違う) 場合は素直に型エラーになる。未生成のときのフォールバックは実装した (§4.8) が、「古い」と「未生成」は区別できていない。`decopin dev` を回す運用でしのぐ
+- 未知のコマンドを `global-error.tsx` で受けられない (§4.4)。ルート未決定の時点では表示係も決まらないため今はこうしているが、「コマンド一覧の見た目を変えたい」という要望が来たら `app/not-found.tsx` のような別の規約を足す形が素直
 - `<Type.Object>` / `<Type.Field>` は `stdin.tsx` の JSON 構造宣言のためだけに存在する。ネストが深い JSON では JSX が冗長になるので、`mode="json"` の場合だけ `schema` prop (valibot 直渡し) を推奨する運用にするか要検討
 - `<Arg variadic>` (可変長位置引数) と `<Type.Array>` の関係。`variadic` は「位置引数を何個も取る」、`Type.Array` は「1 つの値が配列」なので別物だが、生成される型は両方 `string[]` になり混同しやすい
 - ADR 11 の代償 (env / argv 検証エラーが middleware を通らない) が実用上問題になるなら、計測・ロギングの責務を `app/global-error.tsx` 側に寄せる形を Phase 5 で検討する

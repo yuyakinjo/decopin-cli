@@ -21,22 +21,44 @@ function toSpecifier(outDir: string, file: string): string {
 /** ルートに書き出す規約ファイル。Phase が進むごとに増える */
 const WIRED_FILES = ['command', 'argv'] as const;
 
-export function generateRoutes(routes: Route[], outDir: string): string {
-  const entries = routes.map((route) => {
+function importer(outDir: string, file: string): string {
+  return `() => import(${JSON.stringify(toSpecifier(outDir, file))})`;
+}
+
+export interface RoutesInput {
+  routes: Route[];
+  /** ルート名 → error.tsx の並び (近い順)。§4.4 のフォールバック順 */
+  errorChains?: Map<string, string[]>;
+  /** app/global-error.tsx */
+  globalError?: string;
+}
+
+export function generateRoutes(input: RoutesInput, outDir: string): string {
+  const entries = input.routes.map((route) => {
     if (route.files.command === undefined) {
       throw new Error(`Route "${route.name}" has no command file`);
     }
     const loaders = WIRED_FILES.flatMap((kind) => {
       const file = route.files[kind];
       if (file === undefined) return [];
-      return [
-        `    ${kind}: () => import(${JSON.stringify(
-          toSpecifier(outDir, file)
-        )}),`,
-      ];
+      return [`    ${kind}: ${importer(outDir, file)},`];
     });
+
+    const errors = input.errorChains?.get(route.name) ?? [];
+    if (errors.length > 0) {
+      const list = errors
+        .map((file) => `      ${importer(outDir, file)},`)
+        .join('\n');
+      loaders.push(`    errors: [\n${list}\n    ],`);
+    }
+
     return `  ${JSON.stringify(route.name)}: {\n${loaders.join('\n')}\n  },`;
   });
+
+  const globalError =
+    input.globalError === undefined
+      ? 'export const globalError = undefined;'
+      : `export const globalError = ${importer(outDir, input.globalError)};`;
 
   return `${HEADER}
 import type { RouteTable } from 'decopin-cli';
@@ -44,14 +66,18 @@ import type { RouteTable } from 'decopin-cli';
 export const routes = {
 ${entries.join('\n')}
 } satisfies RouteTable;
+
+${globalError}
 `;
 }
 
 export function generateEntry(program: string): string {
   return `${HEADER}
 import { run } from 'decopin-cli';
-import { routes } from './routes.ts';
+import { globalError, routes } from './routes.ts';
 
-process.exit(await run(routes, { program: ${JSON.stringify(program)} }));
+process.exit(
+  await run(routes, { program: ${JSON.stringify(program)}, globalError })
+);
 `;
 }

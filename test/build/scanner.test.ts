@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 
-import { scan } from '../../src/build/scanner.ts';
+import { inheritedChain, scan } from '../../src/build/scanner.ts';
 
 const FIXTURE = 'test/fixtures/scan-app';
 
@@ -64,5 +64,41 @@ describe('scan', () => {
   test('argv.tsx だけのディレクトリはコマンドにならない', async () => {
     const { routes } = await scan(FIXTURE);
     expect(routes.map((route) => route.name)).not.toContain('no-command');
+  });
+
+  test('継承されるファイルはコマンドでないディレクトリからも拾う', async () => {
+    const { inherited } = await scan(FIXTURE);
+    expect(inherited.get('cmd-a')).toEqual({
+      error: 'test/fixtures/scan-app/cmd-a/error.tsx',
+    });
+  });
+});
+
+describe('inheritedChain', () => {
+  test('近い順 (自分 → 親 → ルート) に並べる', async () => {
+    const { inherited } = await scan(FIXTURE);
+    inherited.set('', { error: 'root/error.tsx' });
+    inherited.set('a', { error: 'a/error.tsx' });
+    inherited.set('a/b', { error: 'a/b/error.tsx' });
+    expect(inheritedChain(inherited, 'a/b/c', 'error')).toEqual([
+      'a/b/error.tsx',
+      'a/error.tsx',
+      'root/error.tsx',
+    ]);
+  });
+
+  test('無い階層は飛ばす', async () => {
+    const { inherited } = await scan(FIXTURE);
+    inherited.clear();
+    inherited.set('', { error: 'root/error.tsx' });
+    expect(inheritedChain(inherited, 'a/b', 'error')).toEqual([
+      'root/error.tsx',
+    ]);
+  });
+
+  test('該当が無ければ空', async () => {
+    const { inherited } = await scan(FIXTURE);
+    inherited.clear();
+    expect(inheritedChain(inherited, 'a/b', 'layout')).toEqual([]);
   });
 });
