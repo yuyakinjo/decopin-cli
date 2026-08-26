@@ -1,8 +1,6 @@
 {
   "recommendations": [
     "oxc.oxc-vscode",
-    "bradlc.vscode-tailwindcss",
-    "ms-vscode.vscode-typescript-next"
   ],
   "unwantedRecommendations": [
     "biomejs.biome",
