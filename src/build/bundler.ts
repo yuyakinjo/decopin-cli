@@ -26,12 +26,12 @@ export async function bundle(options: BundleOptions): Promise<BundleResult> {
 
   if (!built.success) {
     const messages = built.logs.map((log) => String(log)).join('\n');
-    throw new Error(`バンドルに失敗しました:\n${messages}`);
+    throw new Error(`Bundling failed:\n${messages}`);
   }
 
   const artifact = built.outputs[0];
   if (artifact === undefined) {
-    throw new Error('バンドルの出力がありません');
+    throw new Error('Bundling produced no output');
   }
 
   const outPath = join(options.outDir, outFile);

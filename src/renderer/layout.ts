@@ -53,7 +53,7 @@ export function layout(root: RenderNode): LayoutResult {
       case 'line': {
         if (ctx.inLine) {
           throw new RenderError(
-            '<Line> を <Line> の中に置けません。行の入れ子はできません'
+            '<Line> cannot be nested inside another <Line>'
           );
         }
         for (const child of node.children) {
@@ -66,7 +66,7 @@ export function layout(root: RenderNode): LayoutResult {
 
       case 'br':
         if (ctx.inLine) {
-          throw new RenderError('<Br /> を <Line> の中に置けません');
+          throw new RenderError('<Br /> cannot appear inside a <Line>');
         }
         segments.push({ fd: ctx.fd, text: '\n', style: {} });
         return;
@@ -74,7 +74,7 @@ export function layout(root: RenderNode): LayoutResult {
       case 'fd': {
         if (ctx.inLine) {
           throw new RenderError(
-            '<Stdout> / <Stderr> を <Line> の中で切り替えられません。1 行は 1 つの出力先に属します'
+            '<Stdout> / <Stderr> cannot switch inside a <Line>. A line belongs to a single output'
           );
         }
         for (const child of node.children) {

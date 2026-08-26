@@ -13,7 +13,9 @@ describe('構造の誤りを分かるエラーにする', () => {
       options
     );
     await expect(promise).rejects.toThrow(RenderError);
-    await expect(promise).rejects.toThrow(/行の入れ子はできません/);
+    await expect(promise).rejects.toThrow(
+      /cannot be nested inside another <Line>/
+    );
   });
 
   test('<Line> の中の <Br />', async () => {
@@ -24,7 +26,9 @@ describe('構造の誤りを分かるエラーにする', () => {
       </Line>,
       options
     );
-    await expect(promise).rejects.toThrow(/<Br \/> を <Line> の中に置けません/);
+    await expect(promise).rejects.toThrow(
+      /<Br \/> cannot appear inside a <Line>/
+    );
   });
 
   test('<Line> の中での出力先の切り替え', async () => {
@@ -34,7 +38,7 @@ describe('構造の誤りを分かるエラーにする', () => {
       </Line>,
       options
     );
-    await expect(promise).rejects.toThrow(/1 行は 1 つの出力先に属します/);
+    await expect(promise).rejects.toThrow(/A line belongs to a single output/);
   });
 
   test('<Text> の中に <Line> は置ける (Text は装飾だけを担う)', async () => {

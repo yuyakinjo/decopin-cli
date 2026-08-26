@@ -42,8 +42,33 @@ export interface Style {
   inverse?: boolean;
 }
 
-/** レンダラーが解釈する組み込みコンポーネントの種類 */
-export type HostKind = 'text' | 'line' | 'br' | 'stdout' | 'stderr' | 'exit';
+/** 出力を描く組み込みコンポーネント (レンダラーが解釈する) */
+export type OutputHostKind =
+  | 'text'
+  | 'line'
+  | 'br'
+  | 'stdout'
+  | 'stderr'
+  | 'exit';
+
+/** 入力を宣言する組み込みコンポーネント (argv.tsx などで使う) */
+export type DeclarationHostKind =
+  | 'argv'
+  | 'arg'
+  | 'option'
+  | 'type.string'
+  | 'type.number'
+  | 'type.boolean'
+  | 'type.enum'
+  | 'type.date'
+  | 'type.array'
+  | 'type.object'
+  | 'type.field'
+  | 'type.oneOf'
+  | 'type.custom';
+
+/** レンダラー / 宣言の評価器が解釈する組み込みコンポーネントの種類 */
+export type HostKind = OutputHostKind | DeclarationHostKind;
 
 /** ユーザーが書く関数コンポーネント。async でもよい */
 export type Component<P> = (props: P) => Renderable | Promise<Renderable>;

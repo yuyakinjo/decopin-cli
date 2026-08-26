@@ -76,7 +76,7 @@ describe('build', () => {
         workDir: join(workDir, 'empty'),
         outDir: join(workspace, 'dist-empty'),
       })
-    ).rejects.toThrow(/コマンドが見つかりません/);
+    ).rejects.toThrow(/No commands found/);
   });
 });
 
@@ -97,12 +97,50 @@ describe('生成された CLI', () => {
   test('未知のコマンドは exit 2', async () => {
     const result = await cli(['helo']);
     expect(result.stdout).toBe('');
-    expect(result.stderr).toContain('未知のコマンド: helo');
+    expect(result.stderr).toContain('Unknown command: helo');
     expect(result.code).toBe(2);
   });
 
   test('パイプ経由では装飾を落とす', async () => {
     const result = await cli(['hello']);
     expect(result.stdout).not.toContain('\x1b[');
+  });
+
+  test('argv.tsx の宣言どおりに引数とオプションを受け取る', async () => {
+    const result = await cli(['hello', 'Alice', '--loud']);
+    expect(result.stdout).toBe('HELLO, ALICE!\n');
+    expect(result.code).toBe(0);
+  });
+
+  test('短縮形と既定値', async () => {
+    const result = await cli(['hello', 'Bob', '-t', '2']);
+    expect(result.stdout).toBe('hello, Bob\nhello, Bob\n');
+  });
+
+  test('繰り返し指定は配列になる', async () => {
+    const result = await cli(['user', 'list', '-n', '1', '--tag', 'x']);
+    expect(result.stdout).toBe('alice\nfiltered by: x\n');
+  });
+
+  test('--help は宣言から使い方を出して exit 0', async () => {
+    const result = await cli(['hello', '--help']);
+    expect(result.stdout).toContain('Usage: decopin-cli hello [name]');
+    expect(result.stdout).toContain('-l, --loud');
+    expect(result.stdout).toContain('-h, --help');
+    expect(result.code).toBe(0);
+  });
+
+  test('検証に失敗すると exit 2 で stderr に理由が出る', async () => {
+    const result = await cli(['hello', '--times', '9']);
+    expect(result.stdout).toBe('');
+    expect(result.stderr).toContain('--times:');
+    expect(result.stderr).toContain('Run with --help to see the usage');
+    expect(result.code).toBe(2);
+  });
+
+  test('未知のオプションも exit 2', async () => {
+    const result = await cli(['hello', '--nope']);
+    expect(result.stderr).toContain('Unknown option: --nope');
+    expect(result.code).toBe(2);
   });
 });

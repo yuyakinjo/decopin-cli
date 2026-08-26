@@ -20,11 +20,33 @@ describe('generateRoutes', () => {
   test('ルートごとに動的 import を並べる', () => {
     const code = generateRoutes(routes, '.decopin');
     expect(code).toContain(
-      '"hello": () => import("../app/hello/command.tsx"),'
+      'command: () => import("../app/hello/command.tsx"),'
     );
     expect(code).toContain(
-      '"user/create": () => import("../app/user/create/command.tsx"),'
+      'command: () => import("../app/user/create/command.tsx"),'
     );
+  });
+
+  test('argv.tsx があれば一緒に配線する', () => {
+    const code = generateRoutes(
+      [
+        {
+          name: 'hello',
+          dir: 'hello',
+          files: {
+            command: 'app/hello/command.tsx',
+            argv: 'app/hello/argv.tsx',
+          },
+        },
+      ],
+      '.decopin'
+    );
+    expect(code).toContain('argv: () => import("../app/hello/argv.tsx"),');
+  });
+
+  test('argv.tsx がなければ command だけを書く', () => {
+    const code = generateRoutes(routes, '.decopin');
+    expect(code).not.toContain('argv:');
   });
 
   test('生成物であることを先頭に書く', () => {
@@ -36,14 +58,16 @@ describe('generateRoutes', () => {
   test('command のないルートは作れない', () => {
     expect(() =>
       generateRoutes([{ name: 'x', dir: 'x', files: {} }], '.decopin')
-    ).toThrow(/command ファイルのないルート/);
+    ).toThrow(/has no command file/);
   });
 });
 
 describe('generateEntry', () => {
   test('routes を run に渡し、終了コードで exit する', () => {
-    const code = generateEntry();
+    const code = generateEntry('mycli');
     expect(code).toContain("import { run } from 'decopin-cli';");
-    expect(code).toContain('process.exit(await run(routes));');
+    expect(code).toContain(
+      'process.exit(await run(routes, { program: "mycli" }));'
+    );
   });
 });

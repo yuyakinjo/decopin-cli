@@ -8,16 +8,16 @@
 import { build } from '../build/index.ts';
 import { EXIT_CODE } from '../runtime/exit.ts';
 
-const USAGE = `使い方: decopin <command> [options]
+const USAGE = `Usage: decopin <command> [options]
 
-コマンド:
-  build          app/ を走査して dist/index.js を作る
+Commands:
+  build          scan app/ and produce dist/index.js
 
-オプション:
-  --app <dir>    app ディレクトリ (既定: app)
-  --out <dir>    出力先 (既定: dist)
-  --minify       出力を圧縮する
-  -h, --help     この使い方を表示する
+Options:
+  --app <dir>    app directory (default: app)
+  --out <dir>    output directory (default: dist)
+  --minify       minify the output
+  -h, --help     show this help
 `;
 
 function optionValue(argv: string[], name: string): string | undefined {
@@ -34,7 +34,7 @@ async function main(argv: string[]): Promise<number> {
 
   const [command] = argv;
   if (command !== 'build') {
-    process.stderr.write(`未知のコマンド: ${command}\n\n${USAGE}`);
+    process.stderr.write(`Unknown command: ${command}\n\n${USAGE}`);
     return EXIT_CODE.usage;
   }
 
@@ -48,8 +48,8 @@ async function main(argv: string[]): Promise<number> {
 
   const names = result.routes.map((route) => route.name || '(root)');
   process.stdout.write(
-    `${result.routes.length} 個のコマンドを検出: ${names.join(', ')}\n` +
-      `${result.outPath} (${(result.bytes / 1024).toFixed(1)} KB) を ${elapsed}ms で生成しました\n`
+    `Found ${result.routes.length} command(s): ${names.join(', ')}\n` +
+      `Wrote ${result.outPath} (${(result.bytes / 1024).toFixed(1)} KB) in ${elapsed}ms\n`
   );
   return EXIT_CODE.success;
 }

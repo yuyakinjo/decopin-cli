@@ -18,29 +18,40 @@ function toSpecifier(outDir: string, file: string): string {
   return path.startsWith('.') ? path : `./${path}`;
 }
 
+/** ルートに書き出す規約ファイル。Phase が進むごとに増える */
+const WIRED_FILES = ['command', 'argv'] as const;
+
 export function generateRoutes(routes: Route[], outDir: string): string {
   const entries = routes.map((route) => {
-    const command = route.files.command;
-    if (command === undefined) {
-      throw new Error(`command ファイルのないルートです: ${route.name}`);
+    if (route.files.command === undefined) {
+      throw new Error(`Route "${route.name}" has no command file`);
     }
-    return `  ${JSON.stringify(route.name)}: () => import(${JSON.stringify(
-      toSpecifier(outDir, command)
-    )}),`;
+    const loaders = WIRED_FILES.flatMap((kind) => {
+      const file = route.files[kind];
+      if (file === undefined) return [];
+      return [
+        `    ${kind}: () => import(${JSON.stringify(
+          toSpecifier(outDir, file)
+        )}),`,
+      ];
+    });
+    return `  ${JSON.stringify(route.name)}: {\n${loaders.join('\n')}\n  },`;
   });
 
   return `${HEADER}
+import type { RouteTable } from 'decopin-cli';
+
 export const routes = {
 ${entries.join('\n')}
-} satisfies Record<string, () => Promise<unknown>>;
+} satisfies RouteTable;
 `;
 }
 
-export function generateEntry(): string {
+export function generateEntry(program: string): string {
   return `${HEADER}
 import { run } from 'decopin-cli';
 import { routes } from './routes.ts';
 
-process.exit(await run(routes));
+process.exit(await run(routes, { program: ${JSON.stringify(program)} }));
 `;
 }

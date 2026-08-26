@@ -5,8 +5,14 @@
  * 語が続く場合は「最も長く一致するもの」を選ぶ。
  */
 
-/** コマンド名 → command モジュールを読み込む関数 */
-export type RouteTable = Record<string, () => Promise<unknown>>;
+/** 1 コマンド分の読み込み関数。ファイルが無い規約は undefined */
+export interface RouteLoaders {
+  command: () => Promise<unknown>;
+  argv?: () => Promise<unknown>;
+}
+
+/** コマンド名 → 読み込み関数 */
+export type RouteTable = Record<string, RouteLoaders>;
 
 export interface Resolved {
   /** 一致したコマンド名。ルートコマンドは空文字 */

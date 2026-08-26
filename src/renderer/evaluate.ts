@@ -81,7 +81,7 @@ export async function evaluate(node: RenderInput): Promise<RenderNode> {
 
   if (!isElement(node)) {
     throw new RenderError(
-      `レンダリングできない値です: ${Object.prototype.toString.call(node)}`
+      `Cannot render value: ${Object.prototype.toString.call(node)}`
     );
   }
 
@@ -112,9 +112,14 @@ export async function evaluate(node: RenderInput): Promise<RenderNode> {
     case 'exit': {
       const code = props.code;
       if (typeof code !== 'number' || !Number.isInteger(code)) {
-        throw new RenderError('<Exit code> には整数を渡してください');
+        throw new RenderError('<Exit code> requires an integer');
       }
       return { kind: 'exit', code };
     }
+    default:
+      // 入力宣言のコンポーネントは出力ツリーには置けない
+      throw new RenderError(
+        `<${type.name}> cannot be rendered as output. Declaration components belong in argv.tsx / stdin.tsx / env.tsx`
+      );
   }
 }

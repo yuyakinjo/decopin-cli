@@ -8,7 +8,7 @@ import { RenderError } from '../renderer/errors.ts';
 export function host<P>(kind: HostKind, name: string): HostComponent<P> {
   const component = (): never => {
     throw new RenderError(
-      `<${name}> はレンダラーが解釈する組み込みコンポーネントです。関数として直接呼び出せません`
+      `<${name}> is a built-in interpreted by decopin-cli and cannot be called as a function`
     );
   };
   Object.defineProperty(component, 'name', { value: name });

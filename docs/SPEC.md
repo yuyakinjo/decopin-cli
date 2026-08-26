@@ -391,6 +391,22 @@ export default function Help({ auto }: HelpProps) {
 
 ---
 
+### 4.7.1 予約されたオプション
+
+以下はフレームワークが自分で処理する。`argv.tsx` で同じ名前・同じ短縮形を宣言すると `DeclarationError` になる。
+
+| 予約            | 意味                                                   |
+| --------------- | ------------------------------------------------------ |
+| `--help` / `-h` | 使い方を表示して exit 0                                |
+| `--version`     | バージョンを表示して exit 0 (`app/version.tsx` が必要) |
+| `--no-color`    | 装飾を落とす                                           |
+
+- **予約はこの 4 つだけ**。`-v` / `-V` は予約しない (大文字小文字の違いだけで意味が変わるのは誤操作を誘うため、フレームワークは使わない)
+- 予約オプションはコマンドには渡らない。`argv` にも現れない
+- `--` より後ろに現れた場合は位置引数として扱う (`cli grep -- --help` は `--help` を検索語として渡せる)
+
+---
+
 ### 4.8 型はどう生成されるか (codegen)
 
 **前提となる実測結果**: JSX 式の型は `JSX.Element` (宣言時) か `any` (未宣言時) に固定され、**コンポーネントの型引数は必ず消える**。自作 jsx-runtime で `jsx()` factory の戻り値をジェネリックにしても変わらない。TypeScript 7.0.2 で以下を確認済み:
@@ -717,15 +733,38 @@ argv の先頭から `command.tsx` を持つディレクトリへ**最長一致*
 
 ```
 $ bun run decopin build
-  scan      app/ を走査し、command.tsx を持つディレクトリを列挙
-  evaluate  argv.tsx / stdin.tsx / env.tsx を import して宣言ノード木を得る
-  check     required と default の同時指定、Type.* の重複、
-            argv.tsx の非純粋性 (§4.1)、alias の衝突、
-            予約フラグ (--help / -h / --version / --no-color) との衝突などを検出
-  emit      .decopin/types.d.ts   (Routes / Env の型。§4.8)
-            .decopin/routes.ts    (ルート表 + 動的 import)
-            .decopin/entry.ts     (エントリポイント)
-  bundle    bun build → dist/index.js  (単一ファイル、shebang 付き)
+Found 2 command(s): hello, user/list
+Wrote dist/index.js (69.6 KB) in 5ms
+
+$ ./dist/index.js hello
+hello, world
+
+$ ./dist/index.js hello Alice --loud
+HELLO, ALICE!
+
+$ ./dist/index.js hello --help
+Usage: decopin-cli hello [name] [options]
+
+Greet someone.
+
+Arguments:
+  name                              who to greet (default: "world")
+
+Options:
+  -l, --loud                        shout it (default: false)
+  -t, --times <number>              repeat count (default: 1)
+      --style <plain|bold|rainbow>  how to decorate (default: "plain")
+  -h, --help                        show this help
+
+$ ./dist/index.js hello --times 9; echo "exit=$?"
+✖ --times: Invalid value: Expected <=5 but received 9
+Run with --help to see the usage
+exit=2
+
+$ ./dist/index.js hello --nope; echo "exit=$?"
+✖ Unknown option: --nope
+Run with --help to see the usage
+exit=2
 ```
 
 **遅延の正確な意味** (ADR 12)
@@ -774,6 +813,51 @@ JSX を使わないコマンド (計算して数値を返すだけ、など) の
 **decopin 自身の CLI は argv の解析を手で書く**
 
 `decopin build` が `argv.tsx` に依存すると、ビルドする側がビルドされる側の仕組みを必要とする鶏と卵になる。ここだけは手書きのままにする。
+
+---
+
+### 8.2 Phase 3 で確定した細部
+
+**フレームワークが出すメッセージはすべて英語**
+
+`--help` の見出し、エラー文、`decopin build` の出力を英語で統一する。CLI として公開したときにそのまま使えるようにするため。コード内のコメントと本仕様書は日本語のまま。
+
+**argv の書き方**
+
+| 書き方                          | 扱い                                                 |
+| ------------------------------- | ---------------------------------------------------- |
+| `--name value` / `--name=value` | 値を取るオプション                                   |
+| `-a value` / `-a=value`         | 短縮形も同じ                                         |
+| `--flag`                        | boolean は値を取らない (次のトークンを食わない)      |
+| `--no-flag`                     | boolean を false にする                              |
+| `--tag x --tag y`               | 配列型は繰り返しで集める                             |
+| `-t 2 -t 4`                     | 配列でない型は**最後の指定が勝つ**                   |
+| `--` 以降                       | すべて位置引数                                       |
+| `-` 単独                        | 位置引数 (標準入力を指す慣習のため)                  |
+| `-abc`                          | **v1 では解釈しない**。未知のオプションとして exit 2 |
+
+**`argv.tsx` が無いコマンドは検証しない**
+
+宣言が無ければ検証も起きず、生の argv が `argv` としてそのまま渡る。「ファイルの有無が機能の有無」という規約 (§3) をそのまま適用したもの。未知のオプションで落ちないので、引数を自分で解釈したいコマンドも書ける。
+
+**検証の誤りは全部集めてから一度に出す**
+
+1 つ直すたびに実行し直す手間を避けるため。1 行目を主メッセージ、残りをヒントとして出し、最後に `Run with --help to see the usage` を添える。
+
+**型変換の失敗と検証の失敗を分ける**
+
+argv は必ず文字列で届くので、まず宣言された型に変換し、その後に valibot で検証する。変換に失敗した場合は valibot に渡さず、`--times: expected a number, received "abc"` のように**何を渡すべきか**を伝える。valibot の `Expected <=5 but received 9` のようなメッセージは、変換が成功した後の制約違反にだけ現れる。
+
+**位置引数の順序**
+
+「必須 → 省略可能」の順でしか宣言できない。省略可能の後ろに必須があると、どの位置に何が来るのか一意に決まらないため。`variadic` は最後の `<Arg>` にだけ付けられる。
+
+**help の細部**
+
+- 表示するオプションが 1 つ以上あるときだけ usage に `[options]` を出す
+- `hidden` なオプションは出さない
+- 必須の位置引数は `<name>`、省略可能は `[name]`、`variadic` は `<name...>`
+- 実行ファイル名は `package.json` の `name` からビルド時に埋め込む (実行時に `process.argv[1]` を推測しない)
 
 ---
 
@@ -884,9 +968,10 @@ exit=2
 | 7     | 装飾コンポーネント (`Box` `Table` `List` `Columns`) + 幅計算    | 端末幅 40/80/120 でのスナップショット                           |
 | 8     | `env.tsx` / `version.tsx` / 起動時間ベンチ                      | 起動 10ms 未満                                                  |
 
-**Phase 1-2 は完了** (2026-08-27): `src/jsx/` `src/components/` `src/renderer/` と 52 件のテスト。`Text` / `Line` / `Br` / `Stdout` / `Stderr` / `Exit` が動き、`scripts/demo-render.tsx` で実機確認済み。
+**Phase 1-3 は完了** (2026-08-27): `src/jsx/` `src/components/` `src/renderer/` と 52 件のテスト。`Text` / `Line` / `Br` / `Stdout` / `Stderr` / `Exit` が動き、`scripts/demo-render.tsx` で実機確認済み。
 Phase 2 で `src/build/` `src/runtime/` `src/cli/` を追加し、`bun src/cli/bin.ts build` →
-`./dist/index.js hello` が動作 (起動 10ms 未満)。テストは 94 件。
+`./dist/index.js hello` が動作 (起動 10ms 未満)。
+Phase 3 で `Type.*` / `argv.tsx` / valibot 変換 / `--help` 自動生成を追加。テストは 157 件。
 
 **Phase 1-2 が最小の垂直スライス** — ここが通れば設計の骨格が正しいと確認できる。
 

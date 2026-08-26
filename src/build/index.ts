@@ -16,12 +16,25 @@ export interface BuildOptions {
   outDir?: string;
   outFile?: string;
   minify?: boolean;
+  /** help に出す実行ファイル名。省略時は package.json の name */
+  program?: string;
 }
 
 export interface BuildResult {
   routes: Route[];
   outPath: string;
   bytes: number;
+}
+
+/** help に出す名前は、既定でプロジェクトの package.json から取る */
+async function readProgramName(): Promise<string> {
+  try {
+    const file = Bun.file('package.json');
+    const json = (await file.json()) as { name?: unknown };
+    return typeof json.name === 'string' ? json.name : 'cli';
+  } catch {
+    return 'cli';
+  }
 }
 
 export async function build(options: BuildOptions = {}): Promise<BuildResult> {
@@ -32,14 +45,16 @@ export async function build(options: BuildOptions = {}): Promise<BuildResult> {
   const { routes } = await scan(appDir);
   if (routes.length === 0) {
     throw new Error(
-      `${appDir}/ にコマンドが見つかりません。app/<name>/command.tsx を作ってください`
+      `No commands found in ${appDir}/. Create ${appDir}/<name>/command.tsx`
     );
   }
+
+  const program = options.program ?? (await readProgramName());
 
   await mkdir(workDir, { recursive: true });
   await Bun.write(join(workDir, 'routes.ts'), generateRoutes(routes, workDir));
   const entry = join(workDir, 'entry.ts');
-  await Bun.write(entry, generateEntry());
+  await Bun.write(entry, generateEntry(program));
 
   const bundled = await bundle({
     entry,

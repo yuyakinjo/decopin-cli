@@ -3,7 +3,7 @@ import { describe, expect, test } from 'bun:test';
 import { resolveRoute, suggest } from '../../src/runtime/router.ts';
 import type { RouteTable } from '../../src/runtime/router.ts';
 
-const load = async () => ({ default: () => null });
+const load = { command: async () => ({ default: () => null }) };
 
 const table: RouteTable = {
   hello: load,

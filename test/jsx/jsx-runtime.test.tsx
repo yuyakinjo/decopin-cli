@@ -23,7 +23,7 @@ describe('jsx-runtime', () => {
 
   test('組み込みコンポーネントを直接呼ぶと分かるエラーになる', () => {
     expect(() => (Line as unknown as () => never)()).toThrow(
-      /組み込みコンポーネント/
+      /is a built-in interpreted by decopin-cli/
     );
   });
 });
