@@ -1,8 +1,3 @@
-import { parseArgvSpec } from '../declaration/parse.ts';
-import { resolveHosts } from '../declaration/resolve.ts';
-import { EMPTY_ARGV_SPEC } from '../declaration/spec.ts';
-import type { ArgvSpec } from '../declaration/spec.ts';
-import type { Renderable, RenderInput } from '../jsx/types.ts';
 /**
  * 実行ライフサイクル (§7) の Phase 3 時点の実装。
  *
@@ -10,6 +5,12 @@ import type { Renderable, RenderInput } from '../jsx/types.ts';
  * → 7 (command 実行) → 9 (書き出し) → 10 (終了コード)。
  * env (3)、middleware (5)、stdin (6)、error.tsx は後続フェーズで足す。
  */
+import { Stderr } from '../components/index.ts';
+import { parseArgvSpec } from '../declaration/parse.ts';
+import { resolveHosts } from '../declaration/resolve.ts';
+import { EMPTY_ARGV_SPEC } from '../declaration/spec.ts';
+import type { ArgvSpec } from '../declaration/spec.ts';
+import type { Renderable, RenderInput } from '../jsx/types.ts';
 import { render } from '../renderer/render.ts';
 import { write } from '../renderer/writer.ts';
 import type { WriteTargets } from '../renderer/writer.ts';
@@ -18,7 +19,9 @@ import { CliError, validationError } from './errors.ts';
 import { EXIT_CODE } from './exit.ts';
 import { handleError, toCliError } from './handle-error.tsx';
 import { CommandList, Help } from './help.tsx';
+import { applyLayouts } from './layout.tsx';
 import { ErrorMessage } from './messages.tsx';
+import { runMiddleware } from './middleware.ts';
 import { HELP_FLAGS, NO_COLOR_FLAG, VERSION_FLAG } from './reserved.ts';
 import { resolveRoute, suggest } from './router.ts';
 import type { RouteTable } from './router.ts';
@@ -161,6 +164,20 @@ export async function run(
     const route = table[resolved.name];
     if (route === undefined) throw new CliError('Route not found');
 
+    const layouts = route.layouts ?? [];
+    /** layout.tsx で包んでから描画する。skipLayout なら包まない (§4.5) */
+    const present = async (
+      node: RenderInput,
+      skipLayout: boolean
+    ): Promise<number | undefined> => {
+      const resolvedNode = (await node) as Renderable;
+      const wrapped =
+        skipLayout || layouts.length === 0
+          ? resolvedNode
+          : await applyLayouts(layouts, resolvedNode);
+      return emit(wrapped, options, noColorFlag);
+    };
+
     const spec = await loadArgvSpec(route.argv);
 
     if (helpRequested) {
@@ -184,25 +201,38 @@ export async function run(
       commandOptions = validated.value.options;
     }
 
-    const loaded = (await route.command()) as { default?: unknown };
-    const command = loaded.default;
-    if (typeof command !== 'function') {
-      throw new CliError(
-        `Command "${resolved.name}" must default-export a component`
-      );
-    }
+    // command.tsx が layout を外したいと宣言している場合に使う
+    let skipLayout = false;
 
-    const context: CommandContext = {
-      args,
-      options: commandOptions,
-      argv: rest,
-      cwd,
-    };
-    const declared = await emit(
-      (command as (props: CommandContext) => RenderInput)(context),
-      options,
-      noColorFlag
+    // middleware は検証済みの入力を受け取り、コマンドの実行を包む (ADR 11)
+    const output = await runMiddleware(
+      route.middlewares ?? [],
+      async () => {
+        const loaded = (await route.command()) as {
+          default?: unknown;
+          skipLayout?: unknown;
+        };
+        const command = loaded.default;
+        if (typeof command !== 'function') {
+          throw new CliError(
+            `Command "${resolved.name}" must default-export a component`
+          );
+        }
+        skipLayout = loaded.skipLayout === true;
+        const context: CommandContext = {
+          args,
+          options: commandOptions,
+          argv: rest,
+          cwd,
+        };
+        return (await (command as (props: CommandContext) => RenderInput)(
+          context
+        )) as Renderable;
+      },
+      { args, options: commandOptions, argv: rest, cwd }
     );
+
+    const declared = await present(output, skipLayout);
     return declared ?? EXIT_CODE.success;
   } catch (error) {
     const cliError = toCliError(error);
@@ -217,7 +247,18 @@ export async function run(
       handlers,
       argv: resolved.rest,
       cwd,
-      emit: (node) => emit(node, options, noColorFlag),
+      // error.tsx の出力も layout に包まれる (skipLayout で外せる)。
+      // <Stderr> は layout の外側に付ける。失敗したときに layout の見出しが
+      // stdout に出てしまうと、パイプ先が「成功した」と誤解するため
+      emit: async (node, skipLayout) => {
+        const resolvedNode = (await node) as Renderable;
+        const layouts = route?.layouts ?? [];
+        const wrapped =
+          skipLayout || layouts.length === 0
+            ? resolvedNode
+            : await applyLayouts(layouts, resolvedNode);
+        return emit(<Stderr>{wrapped}</Stderr>, options, noColorFlag);
+      },
     });
     return handled.exitCode;
   }

@@ -38,6 +38,13 @@ export { run } from './runtime/run.tsx';
 export type { CommandContext, RunOptions } from './runtime/run.tsx';
 export { EXIT_CODE } from './runtime/exit.ts';
 export type { ExitCode } from './runtime/exit.ts';
+export { applyLayouts } from './runtime/layout.tsx';
+export type { LayoutProps } from './runtime/layout.tsx';
+export { runMiddleware } from './runtime/middleware.ts';
+export type {
+  MiddlewareContext,
+  MiddlewareProps,
+} from './runtime/middleware.ts';
 export { resolveRoute, suggest } from './runtime/router.ts';
 export type { Resolved, RouteLoaders, RouteTable } from './runtime/router.ts';
 

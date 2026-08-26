@@ -5,7 +5,6 @@
  * 組み込みの既定表示。**表示係が自分で失敗しても、次の候補に進む** —
  * エラーを出そうとして落ちる、が一番困る事故なので。
  */
-import { Stderr } from '../components/index.ts';
 import type { Renderable, RenderInput } from '../jsx/types.ts';
 import { CliError } from './errors.ts';
 import type { ErrorProps } from './errors.ts';
@@ -19,8 +18,11 @@ export interface HandleErrorInput {
   handlers: ErrorHandlerLoader[];
   argv: readonly string[];
   cwd: string;
-  /** 描画して書き出す。戻り値は <Exit> で宣言された終了コード */
-  emit: (node: RenderInput) => Promise<number | undefined>;
+  /**
+   * 描画して書き出す。戻り値は `<Exit>` で宣言された終了コード。
+   * `skipLayout` は表示係が `export const skipLayout = true` を持つ場合に真
+   */
+  emit: (node: RenderInput, skipLayout: boolean) => Promise<number | undefined>;
 }
 
 export interface HandledError {
@@ -53,7 +55,10 @@ export async function handleError({
 
   for (const loader of handlers) {
     try {
-      const loaded = (await loader()) as { default?: unknown };
+      const loaded = (await loader()) as {
+        default?: unknown;
+        skipLayout?: unknown;
+      };
       const handler = loaded.default;
       if (typeof handler !== 'function') {
         failures.push('An error handler does not default-export a component');
@@ -69,8 +74,9 @@ export async function handleError({
       const produced = (await (handler as (props: ErrorProps) => RenderInput)(
         props
       )) as Renderable;
-      // 既定の出力先は stderr。中で <Stdout> を使えば上書きできる
-      const declared = await emit(<Stderr>{produced}</Stderr>);
+      // stderr で包むのは呼び出し側 (layout の外側に付ける必要があるため)。
+      // 表示係が <Stdout> を使えばそこだけ stdout に出せる
+      const declared = await emit(produced, loaded.skipLayout === true);
       return { exitCode: declared ?? error.exitCode };
     } catch (handlerError) {
       const message =
@@ -81,7 +87,8 @@ export async function handleError({
     }
   }
 
-  const declared = await emit(builtinView(error, failures));
+  // 組み込みの表示は layout に包まない (利用者の見た目に紛れ込ませない)
+  const declared = await emit(builtinView(error, failures), true);
   return { exitCode: declared ?? error.exitCode };
 }
 

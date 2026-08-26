@@ -29,6 +29,10 @@ export interface RoutesInput {
   routes: Route[];
   /** ルート名 → error.tsx の並び (近い順)。§4.4 のフォールバック順 */
   errorChains?: Map<string, string[]>;
+  /** ルート名 → layout.tsx の並び (外側から順)。§4.5 */
+  layoutChains?: Map<string, string[]>;
+  /** ルート名 → middleware.tsx の並び (外側から順)。§4.6 */
+  middlewareChains?: Map<string, string[]>;
   /** app/global-error.tsx */
   globalError?: string;
 }
@@ -44,12 +48,17 @@ export function generateRoutes(input: RoutesInput, outDir: string): string {
       return [`    ${kind}: ${importer(outDir, file)},`];
     });
 
-    const errors = input.errorChains?.get(route.name) ?? [];
-    if (errors.length > 0) {
-      const list = errors
+    const chains: [string, string[]][] = [
+      ['errors', input.errorChains?.get(route.name) ?? []],
+      ['layouts', input.layoutChains?.get(route.name) ?? []],
+      ['middlewares', input.middlewareChains?.get(route.name) ?? []],
+    ];
+    for (const [key, files] of chains) {
+      if (files.length === 0) continue;
+      const list = files
         .map((file) => `      ${importer(outDir, file)},`)
         .join('\n');
-      loaders.push(`    errors: [\n${list}\n    ],`);
+      loaders.push(`    ${key}: [\n${list}\n    ],`);
     }
 
     return `  ${JSON.stringify(route.name)}: {\n${loaders.join('\n')}\n  },`;

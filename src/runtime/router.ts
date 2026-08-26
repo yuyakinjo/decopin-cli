@@ -11,6 +11,10 @@ export interface RouteLoaders {
   argv?: () => Promise<unknown>;
   /** error.tsx の並び。**近い順** (自分のディレクトリ → 親 → ...) */
   errors?: Array<() => Promise<unknown>>;
+  /** layout.tsx の並び。**外側から順** (ルート → ... → 自分のディレクトリ) */
+  layouts?: Array<() => Promise<unknown>>;
+  /** middleware.tsx の並び。**外側から順** */
+  middlewares?: Array<() => Promise<unknown>>;
 }
 
 /** コマンド名 → 読み込み関数 */

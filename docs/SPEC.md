@@ -348,31 +348,59 @@ export default function Layout({ children }: LayoutProps) {
 ```
 
 - 適用順は**外側 = 上位ディレクトリ**。`app/layout.tsx` → `app/user/layout.tsx` → `command.tsx` の出力
-- `error.tsx` の出力も layout に包まれる (`export const skipLayout = true` で除外可)
+- `children` は React と同じ**値**。置かなければコマンドの出力は捨てられる (評価もされない)
+- `async` な layout も書ける
+- middleware が返した出力を layout が包む (middleware の方が内側)
+- `error.tsx` の出力も layout に包まれる。`command.tsx` / `error.tsx` に `export const skipLayout = true` を書くと外せる
+- **失敗したときは layout ごと stderr に出る**。layout の見出しだけが stdout に出ると、パイプ先が「成功した」と誤解するため
 
 ### 4.6 `middleware.tsx` — 前後処理
 
 ```tsx
-import { type MiddlewareProps } from 'decopin-cli';
+import { Line, Stderr, Text, type MiddlewareProps } from 'decopin-cli';
 
-export default async function Middleware({
-  children,
-  options,
-}: MiddlewareProps) {
+export default async function Middleware({ next, options }: MiddlewareProps) {
   const started = performance.now();
-  const result = await children();
-  if (options.verbose)
-    process.stderr.write(`took ${performance.now() - started}ms\n`);
-  return result;
+  const output = await next();
+  const elapsed = Math.round(performance.now() - started);
+
+  if (options.verbose !== true) return output;
+  return (
+    <>
+      {output}
+      <Stderr>
+        <Line>
+          <Text dim>took {elapsed}ms</Text>
+        </Line>
+      </Stderr>
+    </>
+  );
 }
 ```
 
+```ts
+type MiddlewareProps = {
+  /** 内側の処理を走らせて、その出力を返す。呼ばなければコマンドは実行されない */
+  next: () => Promise<Renderable>;
+  args: Record<string, unknown>; // 検証済み
+  options: Record<string, unknown>; // 検証済み
+  argv: readonly string[];
+  cwd: string;
+};
+```
+
 - 上位から順に入れ子で実行される (Koa/Hono 型の onion モデル)
-- **`args` / `options` / `env` は検証済み**。argv の検証は middleware より前に完了している (§7 / ADR 11)
-- **`stdin` は持たない**。stdin の読み取りは middleware の内側 (`children()` の中) で起きるため、middleware 呼び出し時点ではまだ読まれていない。これにより middleware が `children()` を呼ばずに打ち切れば stdin を消費せずに済む
-- **`children` は React と違い遅延評価の関数** (`() => Promise<JsxNode>`、従来の `next()` 相当)。呼ぶ前後に処理を挿めるための意図的な例外
-- 戻り値を差し替えれば出力を上書きできるが、v1 では非推奨
-- `process.stdout.write` を直接呼ぶのも非推奨 (レンダラーの書き出し順と混ざる)
+- **`args` / `options` は検証済み**。argv の検証は middleware より前に完了している (§7 / ADR 11)
+- **`stdin` は持たない**。stdin の読み取りは middleware の内側 (`next()` の中) で起きるため、middleware 呼び出し時点ではまだ読まれていない。`next()` を呼ばずに打ち切れば stdin を消費せずに済む
+- `next()` を `try` で囲めば、コマンドの例外を middleware で捕まえて別の出力に差し替えられる
+- 戻り値で出力に足すことはできる (上の例) が、**見た目の調整は `layout.tsx` の仕事**。middleware でやるのは非推奨
+- `process.stdout.write` を直接呼ぶのは非推奨 (レンダラーの書き出し順と混ざる)
+
+**なぜ `children` ではなく `next` なのか**
+
+`layout.tsx` の `children` は React と同じ「値」で、置くだけで済む。対して middleware は「コマンドの実行を包んで、終わったあとに何かする」ためのものなので、**呼ぶまで走らない関数**でなければ成立しない (時間を測る・後片付けをする・例外を捕まえる、が全て `next()` を呼び終えた後にしかできない)。
+
+同じ `children` という名前で「値」と「関数」の 2 種類を使い分けさせると覚えることが増えるだけなので、middleware は React の語彙を借りず `next` を使う。Koa / Hono / Express と同じ語なので、意味も伝わりやすい。
 
 ### 4.7 `env.tsx` / `version.tsx` / `help.tsx`
 
@@ -738,7 +766,7 @@ fd ごとの出力が空でなく、末尾が改行でない場合は改行を 1
 5. middleware を上位から入れ子で開始
 6. stdin.tsx があれば読む (TTY 判定)           → 失敗: kind:'stdin', exit 2
 7. command.tsx を実行 → JSX ツリー             → throw: kind:'runtime', exit 1
-8. layout.tsx で外側から包む
+8. layout.tsx で外側から包む (middleware がすべて戻ってから)
 9. レンダリングして fd へ書き出す
 10. 終了コードを決めて exit
 ```
@@ -954,6 +982,31 @@ argv は必ず文字列で届くので、まず宣言された型に変換し、
 
 ---
 
+### 8.5 Phase 5 で確定した細部
+
+**layout は middleware の外側**
+
+middleware の onion がすべて戻ってから、その結果を layout で包む。こうすると middleware が出力を差し替えた場合でも layout は必ず効く。
+
+**失敗したときの `<Stderr>` は layout の外側に付ける**
+
+`<Stderr>{layout(error)}</Stderr>` の順にする。逆にすると layout の見出しが stdout に出てしまい、パイプ先が「成功した」と誤解する。`error.tsx` の中で `<Stdout>` を使えば、その部分だけ stdout に出せる (内側が勝つ)。
+
+**組み込みの既定表示は layout に包まない**
+
+利用者が用意した見た目に、フレームワークのメッセージを紛れ込ませないため。
+
+**`skipLayout` は名前付き export**
+
+```tsx
+export const skipLayout = true;
+export default function Command() { ... }
+```
+
+props ではなくモジュールの静的な性質なので、`export` で宣言する。`command.tsx` と `error.tsx` の両方で使える。
+
+---
+
 ## 9. `src/` 内部構成
 
 ```
@@ -971,7 +1024,10 @@ src/
                  capabilities.ts (TTY/NO_COLOR 判定), errors.ts
                  Phase 7: width.ts (東アジア文字の幅計算)
   runtime/       router.ts (ルート解決と候補提示), run.tsx (ライフサイクル),
-                 exit.ts (終了コード規約), messages.tsx (既定のエラー表示)
+                 exit.ts (終了コード規約), errors.ts (CliError), reserved.ts,
+                 handle-error.tsx (§4.4 の連鎖), help.tsx (--help の生成),
+                 layout.tsx (§4.5), middleware.ts (§4.6),
+                 messages.tsx (組み込みの既定表示)
                  Phase 6: stdin-reader.ts
   validation/    type-node → valibot 変換 (§4.8 の対応表), argv パーサ, help 自動生成
                  ※ valibot への依存はこのディレクトリに閉じ込める
@@ -1063,13 +1119,14 @@ exit=2
 | 7     | 装飾コンポーネント (`Box` `Table` `List` `Columns`) + 幅計算    | 端末幅 40/80/120 でのスナップショット                           |
 | 8     | `env.tsx` / `version.tsx` / 起動時間ベンチ                      | 起動 10ms 未満                                                  |
 
-**Phase 1-4 は完了** (2026-08-27): `src/jsx/` `src/components/` `src/renderer/` と 52 件のテスト。`Text` / `Line` / `Br` / `Stdout` / `Stderr` / `Exit` が動き、`scripts/demo-render.tsx` で実機確認済み。
+**Phase 1-5 は完了** (2026-08-27): `src/jsx/` `src/components/` `src/renderer/` と 52 件のテスト。`Text` / `Line` / `Br` / `Stdout` / `Stderr` / `Exit` が動き、`scripts/demo-render.tsx` で実機確認済み。
 Phase 2 で `src/build/` `src/runtime/` `src/cli/` を追加し、`bun src/cli/bin.ts build` →
 `./dist/index.js hello` が動作 (起動 10ms 未満)。
 Phase 3 で `Type.*` / `argv.tsx` / valibot 変換 / `--help` 自動生成を追加。
 Phase 3.5 で `.decopin/types.d.ts` の生成と `decopin dev` の watch を追加し、
 `CommandProps<'hello'>` から `args.name: string` が引けることを実際の tsc で検証。
-Phase 4 で `error.tsx` / `global-error.tsx` のフォールバックと終了コードの上書きを追加。テストは 207 件。
+Phase 4 で `error.tsx` / `global-error.tsx` のフォールバックと終了コードの上書きを追加。
+Phase 5 で `layout.tsx` の入れ子適用と `middleware.tsx` (`next` 方式) を追加。テストは 231 件。
 
 **Phase 1-2 が最小の垂直スライス** — ここが通れば設計の骨格が正しいと確認できる。
 
@@ -1083,6 +1140,6 @@ Phase 4 で `error.tsx` / `global-error.tsx` のフォールバックと終了�
 - `<Arg variadic>` (可変長位置引数) と `<Type.Array>` の関係。`variadic` は「位置引数を何個も取る」、`Type.Array` は「1 つの値が配列」なので別物だが、生成される型は両方 `string[]` になり混同しやすい
 - ADR 11 の代償 (env / argv 検証エラーが middleware を通らない) が実用上問題になるなら、計測・ロギングの責務を `app/global-error.tsx` 側に寄せる形を Phase 5 で検討する
 - ADR 12 の起動時間は**未実測の見込み**。Phase 8 のベンチで単一ファイルのまま 10ms を割れるか確認し、割れない場合は `--splitting` へ切り替える
-- `middleware.tsx` の `children` だけが遅延評価の関数で、他の `children` (layout) と意味が違う。統一するなら layout も thunk にするか、middleware の prop 名を `next` に戻すかを Phase 5 で決める
-- `middleware.tsx` が JSX を差し替えられる設計は強力だが濫用されうる。v1 では「前後処理のみ、出力差し替えは非推奨」として文書化するか要検討
+- `middleware.tsx` の props に `env` が無い (Phase 8 で `env.tsx` を入れるときに足す)
+- middleware の `args` / `options` は `Record<string, unknown>` のまま。middleware は複数コマンドにまたがるので、生成された型を当てるには「そのディレクトリ以下のコマンドの union」が必要。要望が出たら考える
 - `<Columns>` の幅分配アルゴリズム (均等 / 内容比 / 明示 flex) は Phase 7 で決める

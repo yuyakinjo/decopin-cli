@@ -107,6 +107,46 @@ describe('generateRoutes — error.tsx の連鎖', () => {
   });
 });
 
+describe('generateRoutes — layout / middleware の連鎖', () => {
+  test('layout は外側から順に並べる', () => {
+    const code = generateRoutes(
+      {
+        routes,
+        layoutChains: new Map([
+          ['user/create', ['app/layout.tsx', 'app/user/layout.tsx']],
+        ]),
+      },
+      '.decopin'
+    );
+    const layouts = code.slice(code.indexOf('layouts: ['));
+    expect(layouts.indexOf('"../app/layout.tsx"')).toBeLessThan(
+      layouts.indexOf('"../app/user/layout.tsx"')
+    );
+  });
+
+  test('middleware も外側から順に並べる', () => {
+    const code = generateRoutes(
+      {
+        routes,
+        middlewareChains: new Map([
+          ['hello', ['app/middleware.tsx', 'app/hello/middleware.tsx']],
+        ]),
+      },
+      '.decopin'
+    );
+    const middlewares = code.slice(code.indexOf('middlewares: ['));
+    expect(middlewares.indexOf('"../app/middleware.tsx"')).toBeLessThan(
+      middlewares.indexOf('"../app/hello/middleware.tsx"')
+    );
+  });
+
+  test('該当が無ければ書かない', () => {
+    const code = generateRoutes({ routes }, '.decopin');
+    expect(code).not.toContain('layouts:');
+    expect(code).not.toContain('middlewares:');
+  });
+});
+
 describe('generateEntry', () => {
   test('routes を run に渡し、終了コードで exit する', () => {
     const code = generateEntry('mycli');

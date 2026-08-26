@@ -80,19 +80,30 @@ export async function generate(
     types: join(workDir, 'types.d.ts'),
   };
 
-  // error.tsx は上位ディレクトリから継承される (§4.4)
-  const errorChains = new Map<string, string[]>(
-    routes.map((route) => [
-      route.name,
-      inheritedChain(inherited, route.dir, 'error'),
-    ])
-  );
+  // error.tsx / layout.tsx / middleware.tsx は上位ディレクトリから継承される
+  const chain = (kind: 'error' | 'layout' | 'middleware') =>
+    new Map<string, string[]>(
+      routes.map((route) => {
+        const files = inheritedChain(inherited, route.dir, kind);
+        // error は近い順に試す。layout / middleware は外側から包む
+        return [route.name, kind === 'error' ? files : [...files].reverse()];
+      })
+    );
+  const errorChains = chain('error');
+  const layoutChains = chain('layout');
+  const middlewareChains = chain('middleware');
 
   await mkdir(workDir, { recursive: true });
   await Bun.write(
     files.routes,
     generateRoutes(
-      { routes, errorChains, globalError: rootFiles['global-error'] },
+      {
+        routes,
+        errorChains,
+        layoutChains,
+        middlewareChains,
+        globalError: rootFiles['global-error'],
+      },
       workDir
     )
   );

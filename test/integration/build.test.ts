@@ -91,7 +91,7 @@ describe('生成された CLI', () => {
 
   test('サブコマンドの階層', async () => {
     const result = await cli(['user', 'list']);
-    expect(result.stdout).toBe('alice\nbob\n');
+    expect(result.stdout).toBe('USERS\nalice\nbob\n');
     expect(result.code).toBe(0);
   });
 
@@ -118,9 +118,16 @@ describe('生成された CLI', () => {
     expect(result.stdout).toBe('hello, Bob\nhello, Bob\n');
   });
 
-  test('繰り返し指定は配列になる', async () => {
+  test('繰り返し指定は配列になり、layout に包まれる', async () => {
     const result = await cli(['user', 'list', '-n', '1', '--tag', 'x']);
-    expect(result.stdout).toBe('alice\nfiltered by: x\n');
+    expect(result.stdout).toBe('USERS\nalice\nfiltered by: x\n');
+  });
+
+  test('middleware は next の後で stderr に足せる', async () => {
+    const result = await cli(['user', 'list', '-n', '1', '--verbose']);
+    expect(result.stdout).toBe('USERS\nalice\n');
+    expect(result.stderr).toMatch(/took \d+ms/);
+    expect(result.code).toBe(0);
   });
 
   test('--help は宣言から使い方を出して exit 0', async () => {
@@ -151,8 +158,11 @@ describe('生成された CLI', () => {
     expect(result.code).toBe(42);
   });
 
-  test('上位ディレクトリの error.tsx を継承する', async () => {
+  test('上位ディレクトリの error.tsx を継承し、layout ごと stderr に出す', async () => {
     const result = await cli(['user', 'list', '-n', '0']);
+    // 失敗したときに layout の見出しが stdout に出ると誤解を生む
+    expect(result.stdout).toBe('');
+    expect(result.stderr).toContain('USERS');
     expect(result.stderr).toContain('user: --limit:');
     expect(result.stderr).toContain('Try: user list --help');
     expect(result.code).toBe(2);
