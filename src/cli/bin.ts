@@ -18,6 +18,7 @@ Commands:
 Options:
   --app <dir>    app directory (default: app)
   --out <dir>    output directory (default: dist)
+  --work <dir>   where to put generated files (default: .decopin)
   --minify       minify the output
   -h, --help     show this help
 `;
@@ -33,9 +34,16 @@ function runBuild(argv: string[]): Promise<number> {
   return build({
     appDir: optionValue(argv, '--app'),
     outDir: optionValue(argv, '--out'),
+    workDir: optionValue(argv, '--work'),
     minify: argv.includes('--minify'),
   }).then((result) => {
     const elapsed = Math.round(performance.now() - started);
+    for (const warning of result.warnings) {
+      process.stderr.write(`[decopin] warning: ${warning.message}\n`);
+      if (warning.hint !== undefined) {
+        process.stderr.write(`[decopin]   ${warning.hint}\n`);
+      }
+    }
     const names = result.routes.map((route) => route.name || '(root)');
     process.stdout.write(
       `Found ${result.routes.length} command(s): ${names.join(', ')}\n` +
@@ -51,7 +59,11 @@ function runDev(argv: string[]): Promise<number> {
   return new Promise((resolvePromise) => {
     const watcher = watchApp({
       appDir: optionValue(argv, '--app'),
+      workDir: optionValue(argv, '--work'),
       onGenerate: (result) => {
+        for (const warning of result.warnings) {
+          process.stderr.write(`[decopin] warning: ${warning.message}\n`);
+        }
         const names = result.routes.map((route) => route.name || '(root)');
         process.stdout.write(
           `[decopin] ${result.routes.length} command(s): ${names.join(', ')}\n`

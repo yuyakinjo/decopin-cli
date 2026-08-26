@@ -34,6 +34,27 @@ export interface ArgvSpec {
 
 export const EMPTY_ARGV_SPEC: ArgvSpec = { args: [], options: [] };
 
+/** 環境変数 1 つの宣言 (§4.7) */
+export interface VarSpec {
+  name: string;
+  description?: string;
+  required: boolean;
+  defaultValue?: unknown;
+  type: TypeNode;
+}
+
+export interface EnvSpec {
+  vars: VarSpec[];
+}
+
+export const EMPTY_ENV_SPEC: EnvSpec = { vars: [] };
+
+/** `--version` の内容 (§4.7) */
+export interface VersionSpec {
+  version: string;
+  name?: string;
+}
+
 /** 標準入力の読み方 (§4.2) */
 export type StdinMode = 'text' | 'lines' | 'json';
 

@@ -12,6 +12,8 @@ export type MiddlewareLoader = () => Promise<unknown>;
 
 /** middleware が受け取るもの。args / options は検証済み (ADR 11) */
 export interface MiddlewareContext {
+  /** 検証済みの環境変数 (§4.7) */
+  env: Record<string, unknown>;
   args: Record<string, unknown>;
   options: Record<string, unknown>;
   /** コマンド名として消費されなかった生の argv */

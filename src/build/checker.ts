@@ -1,0 +1,131 @@
+/**
+ * ビルド前の下調べ (§8 の check)。落とすのではなく警告する。
+ *
+ * ここで見るのは「動くけれど、たぶん意図と違う」こと。宣言そのものの
+ * 誤りは evaluator が集める。
+ */
+export interface Warning {
+  message: string;
+  hint?: string;
+}
+
+const JSX_IMPORT_SOURCE = 'decopin-cli/jsx';
+
+interface TsConfig {
+  compilerOptions?: {
+    jsx?: unknown;
+    jsxImportSource?: unknown;
+  };
+  extends?: unknown;
+}
+
+/**
+ * JSONC (コメントと末尾カンマ付き JSON) を JSON にする。
+ * 文字列の中の `//` を消してしまわないよう、状態を見ながら進む。
+ */
+export function stripJsonc(source: string): string {
+  let result = '';
+  let index = 0;
+  let inString = false;
+
+  while (index < source.length) {
+    const char = source[index] as string;
+    const next = source[index + 1];
+
+    if (inString) {
+      result += char;
+      if (char === '\\') {
+        // エスケープされた次の 1 文字はそのまま通す
+        result += source[index + 1] ?? '';
+        index += 2;
+        continue;
+      }
+      if (char === '"') inString = false;
+      index += 1;
+      continue;
+    }
+
+    if (char === '"') {
+      inString = true;
+      result += char;
+      index += 1;
+      continue;
+    }
+
+    if (char === '/' && next === '/') {
+      while (index < source.length && source[index] !== '\n') index += 1;
+      continue;
+    }
+
+    if (char === '/' && next === '*') {
+      index += 2;
+      while (
+        index < source.length &&
+        !(source[index] === '*' && source[index + 1] === '/')
+      ) {
+        index += 1;
+      }
+      index += 2;
+      continue;
+    }
+
+    result += char;
+    index += 1;
+  }
+
+  // 末尾カンマ (`,` のあとに ] か } が来るもの) を落とす
+  return result.replace(/,(\s*[}\]])/g, '$1');
+}
+
+/**
+ * `tsconfig.json` の JSX 設定を確かめる。
+ *
+ * `jsxImportSource` が無いと、TypeScript も Bun も React を探しに行き
+ * 「Could not resolve: react/jsx-dev-runtime」という分かりにくい失敗になる。
+ */
+export async function checkTsConfig(
+  path = 'tsconfig.json'
+): Promise<Warning[]> {
+  const file = Bun.file(path);
+  if (!(await file.exists())) {
+    return [
+      {
+        message: `${path} not found`,
+        hint: `Add "jsx": "react-jsx" and "jsxImportSource": "${JSX_IMPORT_SOURCE}" so .tsx files compile`,
+      },
+    ];
+  }
+
+  let config: TsConfig;
+  try {
+    // tsconfig.json はコメントと末尾カンマを許す (JSONC) 慣習なので、
+    // そのまま JSON.parse すると実在する設定で落ちる
+    config = JSON.parse(stripJsonc(await file.text())) as TsConfig;
+  } catch (error) {
+    return [
+      {
+        message: `${path} could not be parsed`,
+        hint: error instanceof Error ? error.message : String(error),
+      },
+    ];
+  }
+
+  // extends があると、この場に無くても継承されている可能性がある
+  if (config.extends !== undefined) return [];
+
+  const options = config.compilerOptions ?? {};
+  const warnings: Warning[] = [];
+  if (options.jsx === undefined) {
+    warnings.push({
+      message: `${path}: compilerOptions.jsx is not set`,
+      hint: 'Set "jsx": "react-jsx"',
+    });
+  }
+  if (options.jsxImportSource !== JSX_IMPORT_SOURCE) {
+    warnings.push({
+      message: `${path}: compilerOptions.jsxImportSource is not "${JSX_IMPORT_SOURCE}"`,
+      hint: 'Without it, JSX resolves to React and the build fails with "Could not resolve: react/jsx-runtime"',
+    });
+  }
+  return warnings;
+}

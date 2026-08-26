@@ -5,9 +5,13 @@
  * → 7 (command 実行) → 9 (書き出し) → 10 (終了コード)。
  * env (3)、middleware (5)、stdin (6)、error.tsx は後続フェーズで足す。
  */
-import { Stderr } from '../components/index.ts';
+import { Line, Stderr } from '../components/index.ts';
 import { parseArgvSpec } from '../declaration/parse.ts';
-import { parseStdinSpec } from '../declaration/parse.ts';
+import {
+  parseEnvSpec,
+  parseStdinSpec,
+  parseVersionSpec,
+} from '../declaration/parse.ts';
 import { resolveHosts } from '../declaration/resolve.ts';
 import { EMPTY_ARGV_SPEC } from '../declaration/spec.ts';
 import type { ArgvSpec, StdinSpec } from '../declaration/spec.ts';
@@ -15,6 +19,7 @@ import type { Renderable, RenderInput } from '../jsx/types.ts';
 import { render } from '../renderer/render.ts';
 import { write } from '../renderer/writer.ts';
 import type { WriteTargets } from '../renderer/writer.ts';
+import { validateEnv } from '../validation/env.ts';
 import { validateArgv } from '../validation/validate.ts';
 import { CliError, validationError } from './errors.ts';
 import { EXIT_CODE } from './exit.ts';
@@ -31,6 +36,8 @@ import type { StdinSource } from './stdin-reader.ts';
 
 /** Phase 3 で command.tsx が受け取るもの。型は Phase 3.5 の codegen で配る */
 export interface CommandContext {
+  /** 検証済みの環境変数 (§4.7) */
+  env: Record<string, unknown>;
   /** 検証済みの位置引数 */
   args: Record<string, unknown>;
   /** 検証済みのオプション */
@@ -53,6 +60,10 @@ export interface RunOptions {
   globalError?: () => Promise<unknown>;
   /** 標準入力の口 (テストから差し替えるため) */
   stdin?: StdinSource;
+  /** `app/env.tsx` (§4.7) */
+  envFile?: () => Promise<unknown>;
+  /** `app/version.tsx` (§4.7) */
+  versionFile?: () => Promise<unknown>;
   /** 書き出し先 (テストから差し替えるため) */
   targets?: WriteTargets;
 }
@@ -108,6 +119,18 @@ async function loadArgvSpec(
   return parseArgvSpec(hosts);
 }
 
+/** 宣言ファイルの default export を呼んで、組み込みノードの並びにする */
+async function declaredHosts(loader: () => Promise<unknown>, expected: string) {
+  const loaded = (await loader()) as { default?: unknown };
+  const declare = loaded.default;
+  if (typeof declare !== 'function') {
+    throw new CliError(
+      `${expected} must default-export a function that returns <${expected}>`
+    );
+  }
+  return resolveHosts((declare as () => Renderable)() as Renderable);
+}
+
 /** stdin.tsx を読んで宣言を組み立てる。無ければ undefined */
 async function loadStdinSpec(
   loader: (() => Promise<unknown>) | undefined
@@ -145,6 +168,44 @@ export async function run(
     .filter((name) => name !== '')
     .sort();
 
+  // --version はコマンドに依存しないので、ルート解決より前に処理する
+  if (versionRequested) {
+    if (options.versionFile === undefined) {
+      await emit(
+        <ErrorMessage
+          message="No version is configured"
+          hints={['Add app/version.tsx to enable --version']}
+        />,
+        options,
+        noColorFlag
+      );
+      return EXIT_CODE.usage;
+    }
+    try {
+      const spec = parseVersionSpec(
+        await declaredHosts(options.versionFile, 'Version')
+      );
+      await emit(
+        <Line>
+          {spec.name === undefined
+            ? spec.version
+            : `${spec.name} ${spec.version}`}
+        </Line>,
+        options,
+        noColorFlag
+      );
+      return EXIT_CODE.success;
+    } catch (error) {
+      const cliError = toCliError(error);
+      await emit(
+        <ErrorMessage message={cliError.message} />,
+        options,
+        noColorFlag
+      );
+      return EXIT_CODE.runtime;
+    }
+  }
+
   const resolved = resolveRoute(table, argv);
   if (resolved === undefined) {
     if (helpRequested || argv.length === 0) {
@@ -165,19 +226,6 @@ export async function run(
             ? [`Available commands: ${names.join(', ')}`]
             : [`Did you mean: ${guess.split('/').join(' ')}`]
         }
-      />,
-      options,
-      noColorFlag
-    );
-    return EXIT_CODE.usage;
-  }
-
-  if (versionRequested) {
-    // Phase 8 で app/version.tsx を読むようになる
-    await emit(
-      <ErrorMessage
-        message="No version is configured"
-        hints={['Add app/version.tsx to enable --version']}
       />,
       options,
       noColorFlag
@@ -220,6 +268,21 @@ export async function run(
       return EXIT_CODE.success;
     }
 
+    // env.tsx は起動時に一度だけ検証する (§7 の 3)
+    let env: Record<string, unknown> = {};
+    if (options.envFile !== undefined) {
+      const envSpec = parseEnvSpec(await declaredHosts(options.envFile, 'Env'));
+      const validated = validateEnv(envSpec, options.env ?? process.env);
+      if (!validated.ok) {
+        throw new CliError(validated.issues[0] ?? 'Invalid environment', {
+          kind: 'env',
+          exitCode: EXIT_CODE.usage,
+          issues: validated.issues,
+        });
+      }
+      env = validated.value;
+    }
+
     const rest = withoutFlags(resolved.rest, [...HELP_FLAGS, VERSION_FLAG]);
     let args: Record<string, unknown> = {};
     let commandOptions: Record<string, unknown> = {};
@@ -258,6 +321,7 @@ export async function run(
             ? undefined
             : await readStdin(stdinSpec, options.stdin ?? processStdin());
         const context: CommandContext = {
+          env,
           args,
           options: commandOptions,
           stdin: stdinValue,
@@ -268,7 +332,7 @@ export async function run(
           context
         )) as Renderable;
       },
-      { args, options: commandOptions, argv: rest, cwd }
+      { env, args, options: commandOptions, argv: rest, cwd }
     );
 
     const declared = await present(output, skipLayout);

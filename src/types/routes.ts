@@ -20,14 +20,19 @@ export interface RouteShape {
  */
 export interface Routes {}
 
-/** `app/env.tsx` から生成される (Phase 8) */
-export interface Env {}
+/**
+ * `app/env.tsx` から生成される (§4.7)。
+ * 型の名前を `Env` にすると `<Env>` コンポーネントと衝突するので分けている
+ */
+export interface EnvVars {}
 
 /** どのコマンドにも共通で渡るもの */
 export interface CommandBase {
   /** コマンド名として消費されなかった生の argv */
   argv: readonly string[];
   cwd: string;
+  /** `app/env.tsx` から検証済みの環境変数 (無ければ空) */
+  env: EnvVars;
 }
 
 /** 型が未生成のときの緩いフォールバック */

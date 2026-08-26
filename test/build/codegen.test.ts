@@ -151,6 +151,9 @@ describe('generateEntry', () => {
   test('routes を run に渡し、終了コードで exit する', () => {
     const code = generateEntry('mycli');
     expect(code).toContain("import { run } from 'decopin-cli';");
-    expect(code).toContain('program: "mycli", globalError');
+    expect(code).toContain('program: "mycli",');
+    expect(code).toContain('globalError,');
+    expect(code).toContain('envFile,');
+    expect(code).toContain('versionFile,');
   });
 });

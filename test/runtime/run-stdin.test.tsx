@@ -135,7 +135,7 @@ describe('stdin.tsx とライフサイクル', () => {
       },
     };
     await invoke(table, ['x'], source('data').stdin);
-    expect(seen).toEqual(['args', 'argv', 'cwd', 'next', 'options']);
+    expect(seen).toEqual(['args', 'argv', 'cwd', 'env', 'next', 'options']);
   });
 
   test('stdin.tsx が <Stdin> を返していなければ分かるエラーになる', async () => {

@@ -20,7 +20,8 @@
     "format": "oxfmt",
     "format:check": "oxfmt --check",
     "build": "bun src/cli/bin.ts build",
-    "dev": "bun src/cli/bin.ts dev"
+    "dev": "bun src/cli/bin.ts dev",
+    "bench": "bun scripts/benchmark-startup.ts"
   },
   "dependencies": {
     "typescript": "npm:@typescript/typescript6@^6.0.2",

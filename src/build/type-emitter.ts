@@ -7,6 +7,7 @@
 import type {
   ArgSpec,
   ArgvSpec,
+  EnvSpec,
   OptionSpec,
   StdinSpec,
 } from '../declaration/spec.ts';
@@ -113,7 +114,22 @@ function shape(spec: ArgvSpec, stdin: StdinSpec | undefined): string {
   )} }`;
 }
 
-export function generateTypes(evaluated: EvaluatedRoute[]): string {
+/** `env.tsx` の宣言から Env の型を作る (§4.7) */
+function envShape(env: EnvSpec | undefined): string {
+  if (env === undefined || env.vars.length === 0) return '';
+  const members = env.vars.map((declared) => {
+    const always = declared.required || declared.defaultValue !== undefined;
+    return `    ${quoteKey(declared.name)}${always ? '' : '?'}: ${toTypeText(
+      declared.type
+    )};`;
+  });
+  return `\n  interface EnvVars {\n${members.join('\n')}\n  }\n`;
+}
+
+export function generateTypes(
+  evaluated: EvaluatedRoute[],
+  env?: EnvSpec
+): string {
   const entries = evaluated
     .map(
       ({ route, spec, stdin }) =>
@@ -128,7 +144,7 @@ declare module 'decopin-cli' {
   interface Routes {
 ${entries}
   }
-}
+${envShape(env)}}
 `;
 }
 

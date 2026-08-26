@@ -7,10 +7,14 @@
  */
 import { resolve } from 'node:path';
 
-import { parseArgvSpec, parseStdinSpec } from '../declaration/parse.ts';
+import {
+  parseArgvSpec,
+  parseEnvSpec,
+  parseStdinSpec,
+} from '../declaration/parse.ts';
 import { resolveHosts } from '../declaration/resolve.ts';
 import { EMPTY_ARGV_SPEC } from '../declaration/spec.ts';
-import type { ArgvSpec, StdinSpec } from '../declaration/spec.ts';
+import type { ArgvSpec, EnvSpec, StdinSpec } from '../declaration/spec.ts';
 import type { Renderable } from '../jsx/types.ts';
 import type { Route } from './scanner.ts';
 
@@ -25,6 +29,11 @@ export interface EvaluationProblem {
   /** どのファイルの話か */
   file: string;
   message: string;
+}
+
+export interface EnvEvaluation {
+  spec?: EnvSpec;
+  problem?: EvaluationProblem;
 }
 
 export interface EvaluateResult {
@@ -47,6 +56,18 @@ async function loadHosts(file: string, expected: string) {
 
 function messageOf(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
+}
+
+/** `app/env.tsx` を評価する (型生成と実行時の両方で同じ宣言を使う) */
+export async function evaluateEnv(
+  file: string | undefined
+): Promise<EnvEvaluation> {
+  if (file === undefined) return {};
+  try {
+    return { spec: parseEnvSpec(await loadHosts(file, 'Env')) };
+  } catch (error) {
+    return { problem: { file, message: messageOf(error) } };
+  }
 }
 
 /**

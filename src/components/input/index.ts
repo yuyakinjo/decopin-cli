@@ -61,3 +61,32 @@ export interface StdinProps {
 
 /** 標準入力の読み方 (`stdin.tsx`) */
 export const Stdin = host<StdinProps>('stdin', 'Stdin');
+
+export interface EnvProps {
+  children?: Renderable;
+}
+
+export interface VarProps {
+  name: string;
+  /** 制約なしの型の短縮形。children と同時には指定できない */
+  type?: ShorthandType;
+  required?: boolean;
+  default?: unknown;
+  description?: string;
+  children?: Renderable;
+}
+
+/** 環境変数宣言のルート (`env.tsx`) */
+export const Env = host<EnvProps>('env', 'Env');
+
+/** 環境変数 1 つ */
+export const Var = host<VarProps>('var', 'Var');
+
+export interface VersionProps {
+  version: string;
+  /** 名前も出す場合 (`mycli 0.1.0`) */
+  name?: string;
+}
+
+/** `--version` の内容 (`version.tsx`) */
+export const Version = host<VersionProps>('version', 'Version');

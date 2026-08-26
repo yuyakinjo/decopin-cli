@@ -66,6 +66,7 @@ describe('build', () => {
       outDir: join(workspace, 'dist'),
     });
     expect(result.routes.map((route) => route.name)).toEqual([
+      'config',
       'count',
       'crash',
       'hello',

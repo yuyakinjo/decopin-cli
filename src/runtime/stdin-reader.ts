@@ -1,5 +1,4 @@
 import type { StdinSpec } from '../declaration/spec.ts';
-import { toSchema, validateValue } from '../validation/schema.ts';
 /**
  * 標準入力を読む (§4.2)。
  *
@@ -7,6 +6,7 @@ import { toSchema, validateValue } from '../validation/schema.ts';
  * 端末で実行したときに入力待ちでフリーズする、という最頻出の事故を
  * 構造的に起こせないようにしている。
  */
+import { toSchema, validateValue } from '../validation/schema.ts';
 import { CliError } from './errors.ts';
 import { EXIT_CODE } from './exit.ts';
 
@@ -74,6 +74,7 @@ export async function readStdin(
 
   if (spec.type === undefined) return parsed;
 
+  // 構造の宣言があるときだけ valibot を読む (ADR 12)
   const validated = validateValue(toSchema(spec.type), parsed);
   if (!validated.ok) {
     throw stdinError(

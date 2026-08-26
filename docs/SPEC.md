@@ -13,7 +13,9 @@ Next.js 風のファイル規約で、型安全に CLI を記述するための�
 - 出力 (stdout) と エラー出力 (stderr) を JSX で宣言的に記述する
 - 引数 (argv) と 標準入力 (stdin) を JSX で宣言し、`command.tsx` には検証済みの型付き値だけが届く
 - 入力の型宣言も JSX コンポーネント (`Type.*`) で書く。**利用者はバリデーションライブラリ (valibot) の書き方を知らなくてよい**
-- ビルド後は単一の `index.js` として配布でき、起動が速い (目標: 10ms 未満)
+- ビルド後は単一の `index.js` として配布でき、起動が速い
+  - **実測 (Apple Silicon / Bun 1.4)**: 総時間 12〜14ms。うち `bun` 自体のプロセス起動が 4.7ms、decopin の取り分が 7.7〜8.9ms (§8.8)
+  - 「10ms 未満」は decopin の取り分としては達成、総時間としては未達
 
 ### 非ゴール (v1 では扱わない)
 
@@ -423,16 +425,16 @@ type MiddlewareProps = {
 ### 4.7 `env.tsx` / `version.tsx` / `help.tsx`
 
 ```tsx
-// app/env.tsx — 起動時に一度だけ検証。失敗すれば kind:'env' のエラー
-import { Env, Var, Type } from 'decopin-cli';
+// app/env.tsx — 起動時に一度だけ検証。失敗すれば kind:'env' で exit 2
+import { Env, Type, Var } from 'decopin-cli';
 
 export default function DefineEnv() {
   return (
     <Env>
-      <Var name="API_TOKEN" type="string" required />
-      <Var name="LOG_LEVEL" default="info">
+      <Var name="DECOPIN_LOG" default="info" description="log level">
         <Type.Enum values={['debug', 'info', 'warn', 'error']} />
       </Var>
+      <Var name="DECOPIN_TOKEN" type="string" description="API token" />
     </Env>
   );
 }
@@ -443,7 +445,7 @@ export default function DefineEnv() {
 import { Version } from 'decopin-cli';
 
 export default function DefineVersion() {
-  return <Version version="0.1.0" name="mycli" />;
+  return <Version name="mycli" version="0.1.0" />;
 }
 ```
 
@@ -461,10 +463,11 @@ export default function Help({ auto }: HelpProps) {
 }
 ```
 
-- `auto` は `argv.tsx` の `<Argv>` ツリーから生成された usage の JSX。そのまま差し込むか、無視して全部自前で書くかを選べる
-- `<Env>` の子は `<Var>` のみ。`<Var>` は `<Option>` と同じ規則 (型は children か `type` 短縮形、存在は props) に従い、`CommandProps['env']` の型が生成される
-
----
+- `<Var>` は `<Option>` と同じ規則に従う (型は children か `type` 短縮形、存在は props)。生成される型は `EnvVars` (型の名前を `Env` にすると `<Env>` コンポーネントと衝突するため)
+- **空文字は「未設定」として扱う**。`TOKEN=` は required なら足りないと報告する
+- `env.tsx` の検証は**ルート解決の後**。`--help` と `--version` は env が足りない状態でも出せる (使い方を知りたいだけのときに設定を求めるのは親切でない)
+- `--version` は**ルート解決より前**に処理する。`cli --version` はコマンドを指定していないので、ルートが決まらないため
+- `auto` は `argv.tsx` の `<Argv>` ツリーから生成された usage の JSX。そのまま差し込むか、無視して全部自前で書くかを選べる (`help.tsx` は未実装)
 
 ### 4.7.1 予約されたオプション
 
@@ -796,6 +799,7 @@ fd ごとの出力が空でなく、末尾が改行でない場合は改行を 1
 1. argv をトークン化し、ルートを解決          → 未知のコマンドなら exit 2
 2. --help / --version を割り込み処理           → exit 0
 3. env.tsx を検証                              → 失敗: kind:'env', exit 2
+   (--version は 2 より前、env の検証は 3 で行う。§8.8)
 4. argv.tsx を検証                             → 失敗: kind:'validation', exit 2
 5. middleware を上位から入れ子で開始
 6. stdin.tsx があれば読む (TTY 判定)           → 失敗: kind:'stdin', exit 2
@@ -1081,6 +1085,45 @@ props ではなくモジュールの静的な性質なので、`export` で宣�
 
 ---
 
+### 8.8 Phase 8 で確定した細部
+
+**起動時間の実測**
+
+```
+case                             min     p50     p95     own
+(bun 自体の起動)                  4.5ms   4.7ms   5.0ms   -
+hello (argv 検証あり)             13.2ms  13.6ms  14.2ms  8.9ms
+hello --help                     12.8ms  13.6ms  15.2ms  8.9ms
+user list (layout + middleware)  13.1ms  13.5ms  13.7ms  8.8ms
+未知のコマンド (exit 2)            12.4ms  12.6ms  12.9ms  7.9ms
+--version                        12.1ms  12.4ms  12.6ms  7.7ms
+```
+
+- `bun run bench` で測れる (`scripts/benchmark-startup.ts`)
+- **コマンド数の影響は小さい**。1 コマンドだけの app でも取り分は 6〜8ms で、7 コマンドとの差は 1ms 前後。ADR 12 のとおり評価は遅延されており、増えるのはパースの分だけ
+- `--minify` の効果は 0.4ms 程度。**パースは律速でない**
+- 内訳の目安 (ソースからの import を個別に測ったもの): valibot の初期化 +1.8ms、renderer 一式 +2.6ms
+- valibot を遅延 import する実験をしたが、計測の揺れ (±1.5ms) に埋もれて差が出なかったので採用していない
+
+**型の名前は `EnvVars`**
+
+`<Env>` コンポーネントと衝突するため、生成される型は `Env` ではなく `EnvVars`。
+
+**`--version` と `env.tsx` の順序が逆**
+
+| 処理             | 位置               | 理由                                               |
+| ---------------- | ------------------ | -------------------------------------------------- |
+| `--version`      | ルート解決の**前** | `cli --version` はコマンドを指定していない         |
+| `env.tsx` の検証 | ルート解決の**後** | `--help` を env が足りない状態でも出せるようにする |
+
+**`tsconfig.json` の JSX 設定を検査する**
+
+利用者のプロジェクトで `jsxImportSource` が設定されていないと、TypeScript も Bun も React を探しに行き `Could not resolve: react/jsx-runtime` という分かりにくい失敗になる。ビルド時に警告する (落とさない)。
+
+`tsconfig.json` はコメントと末尾カンマを許す (JSONC) 慣習があるので、読むときにそれを落としてから `JSON.parse` する。
+
+---
+
 ## 9. `src/` 内部構成
 
 ```
@@ -1104,9 +1147,11 @@ src/
                  layout.tsx (§4.5), middleware.ts (§4.6),
                  messages.tsx (組み込みの既定表示),
                  stdin-reader.ts (§4.2)
-  validation/    type-node → valibot 変換 (§4.8 の対応表), argv パーサ, help 自動生成
+  validation/    schema.ts (type-node → valibot。§4.8 の対応表),
+                 coerce.ts, tokens.ts (argv の分解), validate.ts, env.ts
                  ※ valibot への依存はこのディレクトリに閉じ込める
-  build/         scanner.ts, evaluator.ts (argv.tsx を評価), codegen.ts,
+  build/         scanner.ts, evaluator.ts (宣言をビルド時に評価),
+                 checker.ts (tsconfig の JSX 設定を検査), codegen.ts,
                  type-emitter.ts (types.d.ts), bundler.ts, watch.ts (dev),
                  index.ts (generate / build)
   types/         routes.ts (生成された型の受け皿。Routes / CommandProps)
@@ -1194,7 +1239,7 @@ exit=2
 | 7     | 装飾コンポーネント (`Box` `Table` `List` `Columns`) + 幅計算    | 端末幅 40/80/120 でのスナップショット                           |
 | 8     | `env.tsx` / `version.tsx` / 起動時間ベンチ                      | 起動 10ms 未満                                                  |
 
-**Phase 1-7 は完了** (2026-08-27): `src/jsx/` `src/components/` `src/renderer/` と 52 件のテスト。`Text` / `Line` / `Br` / `Stdout` / `Stderr` / `Exit` が動き、`scripts/demo-render.tsx` で実機確認済み。
+**Phase 1-8 (全フェーズ) は完了** (2026-08-27): `src/jsx/` `src/components/` `src/renderer/` と 52 件のテスト。`Text` / `Line` / `Br` / `Stdout` / `Stderr` / `Exit` が動き、`scripts/demo-render.tsx` で実機確認済み。
 Phase 2 で `src/build/` `src/runtime/` `src/cli/` を追加し、`bun src/cli/bin.ts build` →
 `./dist/index.js hello` が動作 (起動 10ms 未満)。
 Phase 3 で `Type.*` / `argv.tsx` / valibot 変換 / `--help` 自動生成を追加。
@@ -1203,7 +1248,8 @@ Phase 3.5 で `.decopin/types.d.ts` の生成と `decopin dev` の watch を追�
 Phase 4 で `error.tsx` / `global-error.tsx` のフォールバックと終了コードの上書きを追加。
 Phase 5 で `layout.tsx` の入れ子適用と `middleware.tsx` (`next` 方式) を追加。
 Phase 6 で `stdin.tsx` を追加し、POSIX の 4 つの口 (argv / stdin / stdout / stderr) が揃った。
-Phase 7 で装飾コンポーネントと表示幅の計算を追加。テストは 325 件。
+Phase 7 で装飾コンポーネントと表示幅の計算を追加。
+Phase 8 で `env.tsx` / `version.tsx` と起動時間の計測を追加。テストは 367 件。
 
 **Phase 1-2 が最小の垂直スライス** — ここが通れば設計の骨格が正しいと確認できる。
 
@@ -1216,7 +1262,8 @@ Phase 7 で装飾コンポーネントと表示幅の計算を追加。テスト
 - `<Type.Object>` / `<Type.Field>` は `stdin.tsx` の JSON 構造宣言のためだけに存在する。実際に書いてみると 3 階層で 9 行になるので、深い JSON では `schema` prop (valibot 直渡し) を勧める運用にするか要検討
 - `<Arg variadic>` (可変長位置引数) と `<Type.Array>` の関係。`variadic` は「位置引数を何個も取る」、`Type.Array` は「1 つの値が配列」なので別物だが、生成される型は両方 `string[]` になり混同しやすい
 - ADR 11 の代償 (env / argv 検証エラーが middleware を通らない) が実用上問題になるなら、計測・ロギングの責務を `app/global-error.tsx` 側に寄せる形を Phase 5 で検討する
-- ADR 12 の起動時間は**未実測の見込み**。Phase 8 のベンチで単一ファイルのまま 10ms を割れるか確認し、割れない場合は `--splitting` へ切り替える
+- 起動時間は総時間 12〜14ms で、目標の 10ms は未達 (§8.8)。律速はパースではなくモジュールの評価で、`--minify` も `--splitting` も効かない見込み。さらに削るには何が 6〜8ms を使っているのかのプロファイルが必要
+- `help.tsx` (自動生成の上書き) は未実装。`--help` は常に宣言から生成する
 - `middleware.tsx` の props に `env` が無い (Phase 8 で `env.tsx` を入れるときに足す)
 - middleware の `args` / `options` は `Record<string, unknown>` のまま。middleware は複数コマンドにまたがるので、生成された型を当てるには「そのディレクトリ以下のコマンドの union」が必要。要望が出たら考える
 - `<Table>` のセルは文字列だけで、JSX を入れられない。セルに色を付けたい要望が出たら `Cell` に `{ text, style }` の形を足す

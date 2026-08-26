@@ -7,7 +7,15 @@ import { isReservedAlias, isReservedName } from '../runtime/reserved.ts';
  */
 import { DeclarationError } from './errors.ts';
 import type { HostNode } from './resolve.ts';
-import type { ArgSpec, ArgvSpec, OptionSpec, StdinSpec } from './spec.ts';
+import type {
+  ArgSpec,
+  ArgvSpec,
+  EnvSpec,
+  OptionSpec,
+  StdinSpec,
+  VarSpec,
+  VersionSpec,
+} from './spec.ts';
 import type { ObjectField, TypeNode } from './type-node.ts';
 
 type Shorthand = 'string' | 'number' | 'boolean';
@@ -225,6 +233,56 @@ function presence(node: HostNode, name: string) {
     );
   }
   return { required, defaultValue: node.props.default };
+}
+
+/** `env.tsx` の宣言を読む (§4.7) */
+export function parseEnvSpec(hosts: HostNode[]): EnvSpec {
+  if (hosts.length !== 1 || hosts[0]?.kind !== 'env') {
+    throw new DeclarationError('env.tsx must return a single <Env> element');
+  }
+  const vars: VarSpec[] = [];
+  const seen = new Set<string>();
+
+  for (const child of hosts[0].children) {
+    if (child.kind !== 'var') {
+      throw new DeclarationError(
+        `<Env> accepts <Var> children only, found <${child.displayName}>`
+      );
+    }
+    const name = requireName(child);
+    if (seen.has(name)) {
+      throw new DeclarationError(`Duplicate <Var name="${name}">`);
+    }
+    seen.add(name);
+    const { required, defaultValue } = presence(child, name);
+    vars.push({
+      name,
+      description: readString(child, 'description'),
+      required,
+      defaultValue,
+      type: resolveType(child),
+    });
+  }
+
+  if (vars.length === 0) {
+    throw new DeclarationError('<Env> requires at least one <Var>');
+  }
+  return { vars };
+}
+
+/** `version.tsx` の宣言を読む (§4.7) */
+export function parseVersionSpec(hosts: HostNode[]): VersionSpec {
+  if (hosts.length !== 1 || hosts[0]?.kind !== 'version') {
+    throw new DeclarationError(
+      'version.tsx must return a single <Version> element'
+    );
+  }
+  const node = hosts[0];
+  const version = readString(node, 'version');
+  if (version === undefined || version === '') {
+    throw new DeclarationError('<Version version> is required');
+  }
+  return { version, name: readString(node, 'name') };
 }
 
 /** `stdin.tsx` の宣言を読む (§4.2) */

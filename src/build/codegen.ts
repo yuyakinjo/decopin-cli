@@ -35,6 +35,10 @@ export interface RoutesInput {
   middlewareChains?: Map<string, string[]>;
   /** app/global-error.tsx */
   globalError?: string;
+  /** app/env.tsx */
+  env?: string;
+  /** app/version.tsx */
+  version?: string;
 }
 
 export function generateRoutes(input: RoutesInput, outDir: string): string {
@@ -64,10 +68,10 @@ export function generateRoutes(input: RoutesInput, outDir: string): string {
     return `  ${JSON.stringify(route.name)}: {\n${loaders.join('\n')}\n  },`;
   });
 
-  const globalError =
-    input.globalError === undefined
-      ? 'export const globalError = undefined;'
-      : `export const globalError = ${importer(outDir, input.globalError)};`;
+  const single = (name: string, file: string | undefined): string =>
+    file === undefined
+      ? `export const ${name} = undefined;`
+      : `export const ${name} = ${importer(outDir, file)};`;
 
   return `${HEADER}
 import type { RouteTable } from 'decopin-cli';
@@ -76,17 +80,24 @@ export const routes = {
 ${entries.join('\n')}
 } satisfies RouteTable;
 
-${globalError}
+${single('globalError', input.globalError)}
+${single('envFile', input.env)}
+${single('versionFile', input.version)}
 `;
 }
 
 export function generateEntry(program: string): string {
   return `${HEADER}
 import { run } from 'decopin-cli';
-import { globalError, routes } from './routes.ts';
+import { envFile, globalError, routes, versionFile } from './routes.ts';
 
 process.exit(
-  await run(routes, { program: ${JSON.stringify(program)}, globalError })
+  await run(routes, {
+    program: ${JSON.stringify(program)},
+    globalError,
+    envFile,
+    versionFile,
+  })
 );
 `;
 }

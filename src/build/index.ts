@@ -3,8 +3,10 @@ import { mkdir } from 'node:fs/promises';
 import { join } from 'node:path';
 
 import { bundle } from './bundler.ts';
+import { checkTsConfig } from './checker.ts';
+import type { Warning } from './checker.ts';
 import { generateEntry, generateRoutes } from './codegen.ts';
-import { evaluateRoutes } from './evaluator.ts';
+import { evaluateEnv, evaluateRoutes } from './evaluator.ts';
 import type { EvaluatedRoute } from './evaluator.ts';
 import { inheritedChain, scan } from './scanner.ts';
 import type { Route } from './scanner.ts';
@@ -29,6 +31,8 @@ export interface BuildOptions extends GenerateOptions {
 export interface GenerateResult {
   routes: Route[];
   evaluated: EvaluatedRoute[];
+  /** 落とすほどではないが、たぶん意図と違うこと */
+  warnings: Warning[];
   /** 生成したファイル */
   files: { routes: string; entry: string; types: string };
 }
@@ -66,6 +70,8 @@ export async function generate(
 
   // argv.tsx の誤りは 1 件目で止めず、全部まとめて報告する
   const { evaluated, problems } = await evaluateRoutes(routes);
+  const env = await evaluateEnv(rootFiles.env);
+  if (env.problem !== undefined) problems.push(env.problem);
   if (problems.length > 0) {
     const detail = problems
       .map((problem) => `  ${problem.file}: ${problem.message}`)
@@ -73,6 +79,7 @@ export async function generate(
     throw new Error(`Invalid declarations:\n${detail}`);
   }
 
+  const warnings = await checkTsConfig();
   const program = options.program ?? (await readProgramName());
   const files = {
     routes: join(workDir, 'routes.ts'),
@@ -103,14 +110,16 @@ export async function generate(
         layoutChains,
         middlewareChains,
         globalError: rootFiles['global-error'],
+        env: rootFiles.env,
+        version: rootFiles.version,
       },
       workDir
     )
   );
   await Bun.write(files.entry, generateEntry(program));
-  await Bun.write(files.types, generateTypes(evaluated));
+  await Bun.write(files.types, generateTypes(evaluated, env.spec));
 
-  return { routes, evaluated, files };
+  return { routes, evaluated, files, warnings };
 }
 
 export async function build(options: BuildOptions = {}): Promise<BuildResult> {
