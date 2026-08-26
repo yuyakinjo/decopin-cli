@@ -4,6 +4,12 @@
  *
  * ここではレイアウトも装飾の解決も行わない。木の形を確定させるだけ。
  */
+import type {
+  Align,
+  BorderStyle,
+  Cell,
+  SymbolKind,
+} from '../components/index.ts';
 import { isElement, isHost } from '../jsx/types.ts';
 import type {
   AnyComponent,
@@ -39,6 +45,22 @@ function isThenable(value: unknown): value is PromiseLike<unknown> {
     value !== null &&
     typeof (value as { then?: unknown }).then === 'function'
   );
+}
+
+function readString(
+  props: Record<string, unknown>,
+  key: string
+): string | undefined {
+  const value = props[key];
+  return typeof value === 'string' ? value : undefined;
+}
+
+function readNumber(
+  props: Record<string, unknown>,
+  key: string
+): number | undefined {
+  const value = props[key];
+  return typeof value === 'number' ? value : undefined;
 }
 
 async function evaluateChildren(children: Renderable): Promise<RenderNode[]> {
@@ -109,6 +131,66 @@ export async function evaluate(node: RenderInput): Promise<RenderNode> {
       return { kind: 'fd', fd: 1, children: await evaluateChildren(children) };
     case 'stderr':
       return { kind: 'fd', fd: 2, children: await evaluateChildren(children) };
+    case 'link':
+      return {
+        kind: 'link',
+        href: readString(props, 'href') ?? '',
+        style: pickStyle(props),
+        children: await evaluateChildren(children),
+      };
+    case 'indent':
+      return {
+        kind: 'indent',
+        by: readNumber(props, 'by') ?? 2,
+        children: await evaluateChildren(children),
+      };
+    case 'box':
+      return {
+        kind: 'box',
+        border: (readString(props, 'border') ?? 'round') as BorderStyle,
+        title: readString(props, 'title'),
+        maxWidth: readNumber(props, 'maxWidth'),
+        children: await evaluateChildren(children),
+      };
+    case 'columns':
+      return {
+        kind: 'columns',
+        gap: readNumber(props, 'gap') ?? 2,
+        children: await evaluateChildren(children),
+      };
+    case 'symbol':
+      return {
+        kind: 'symbol',
+        symbol: (readString(props, 'kind') ?? 'info') as SymbolKind,
+      };
+    case 'list':
+      return {
+        kind: 'list',
+        items: (props.items as readonly Cell[] | undefined) ?? [],
+        ordered: props.ordered === true,
+        bullet: readString(props, 'bullet') ?? '-',
+      };
+    case 'table':
+      return {
+        kind: 'table',
+        columns: (props.columns as readonly string[] | undefined) ?? [],
+        rows: (props.rows as ReadonlyArray<readonly Cell[]> | undefined) ?? [],
+        align: (props.align as readonly Align[] | undefined) ?? [],
+        headless: props.headless === true,
+      };
+    case 'keyvalue':
+      return {
+        kind: 'keyvalue',
+        data: (props.data as Readonly<Record<string, Cell>> | undefined) ?? {},
+        align: (readString(props, 'align') ?? 'left') as Align,
+        separator: readString(props, 'separator') ?? ': ',
+      };
+    case 'json':
+      return {
+        kind: 'json',
+        value: props.value,
+        indent: readNumber(props, 'indent') ?? 2,
+      };
     case 'exit': {
       const code = props.code;
       if (typeof code !== 'number' || !Number.isInteger(code)) {

@@ -18,6 +18,10 @@ export interface RenderOptions {
   isTTY?: { stdout?: boolean; stderr?: boolean };
   /** `--no-color` が渡されたか */
   noColorFlag?: boolean;
+  /** 端末の桁数 (省略時は process.stdout.columns、無ければ 80) */
+  columns?: number;
+  /** UTF-8 の記号を使えるか (省略時は環境変数から判定) */
+  unicode?: boolean;
 }
 
 export interface RenderResult {
@@ -37,14 +41,27 @@ function endWithNewline(value: string): string {
   return `${value}\n`;
 }
 
+/**
+ * UTF-8 の記号を出してよいか。locale で判断する。
+ * 判断できない場合は「出せる」側に倒す (今どきの端末はほぼ UTF-8)
+ */
+function supportsUnicode(env: Record<string, string | undefined>): boolean {
+  const locale = env.LC_ALL ?? env.LC_CTYPE ?? env.LANG;
+  if (locale === undefined) return true;
+  return /utf-?8/i.test(locale);
+}
+
 export async function render(
   node: RenderInput,
   options: RenderOptions = {}
 ): Promise<RenderResult> {
-  const tree = await evaluate(node);
-  const { segments, exitCode } = layout(tree);
-
   const env = options.env ?? process.env;
+  const tree = await evaluate(node);
+  const { segments, exitCode } = layout(tree, {
+    columns: options.columns ?? process.stdout.columns,
+    unicode: options.unicode ?? supportsUnicode(env),
+  });
+
   const depthFor = (
     fd: 'stdout' | 'stderr',
     explicit: ColorDepth | undefined

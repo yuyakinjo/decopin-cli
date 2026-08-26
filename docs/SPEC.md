@@ -668,39 +668,52 @@ argv と env の値は**常に文字列**として届くため、検証の前に
 | コンポーネント | props                                                                    |
 | -------------- | ------------------------------------------------------------------------ |
 | `<Text>`       | `color` `bg` `bold` `dim` `italic` `underline` `strikethrough` `inverse` |
-| `<Link>`       | `href` — OSC 8 ハイパーリンク (非対応端末では URL をそのまま表示)        |
+| `<Link>`       | `href` + `<Text>` と同じ装飾。OSC 8 のハイパーリンク                     |
 
 `color` は 16 色名 (`'red' | 'green' | ...`) + `'#rrggbb'` を受ける。24bit 非対応端末では最近似の 16 色へ丸める。
 
+`<Link>` は装飾を落とす設定 (パイプ・`NO_COLOR`) のときは `docs (https://...)` の形にする。リンクを開けない場所でも URL が読めるようにするため。
+
 ### 5.3 レイアウト (ブロック)
 
-| コンポーネント       | 役割                                                     |
-| -------------------- | -------------------------------------------------------- |
-| `<Line>`             | 1 行。末尾に改行を付ける。子はインラインとして横に連結   |
-| `<Br />`             | 空行                                                     |
-| `<Indent by={2}>`    | 子ブロック全体を字下げ                                   |
-| `<Box border title>` | 罫線で囲む (`'round' \| 'single' \| 'double' \| 'none'`) |
-| `<Columns gap>`      | 子を横並びにする (幅は端末幅で分配)                      |
+| コンポーネント | props                       | 役割                                                     |
+| -------------- | --------------------------- | -------------------------------------------------------- |
+| `<Line>`       | —                           | 1 行。末尾に改行を付ける。子はインラインとして横に連結   |
+| `<Br />`       | —                           | 空行                                                     |
+| `<Indent>`     | `by` (既定 2)               | 子ブロック全体を字下げ                                   |
+| `<Box>`        | `border` `title` `maxWidth` | 罫線で囲む (`'round' \| 'single' \| 'double' \| 'none'`) |
+| `<Columns>`    | `gap` (既定 2)              | 子 1 つを 1 列として横並びにする                         |
+
+- `<Box>` の幅は**内容に合わせる**。端末幅を超える場合だけ縮めて省略記号で切る (端末幅まで広げることはしない)
+- `<Columns>` は各列の自然な幅を測り、合計が端末幅を超える場合は比率を保って縮める (最低 3 桁は残す)
+- これらは `<Line>` の中に置けない。行の中に「行の並び」を入れることになり、意味が決まらないため
 
 ### 5.4 セマンティック (色 + 記号のプリセット)
 
-| コンポーネント | 既定の見た目 |
-| -------------- | ------------ |
-| `<Success>`    | 緑 `✔`       |
-| `<Warn>`       | 黄 `⚠`       |
-| `<Info>`       | 青 `ℹ`       |
-| `<Danger>`     | 赤 `✖`       |
+| コンポーネント | UTF-8 | ASCII | 色  |
+| -------------- | ----- | ----- | --- |
+| `<Success>`    | `✔`   | `+`   | 緑  |
+| `<Warn>`       | `⚠`   | `!`   | 黄  |
+| `<Info>`       | `ℹ`   | `i`   | 青  |
+| `<Danger>`     | `✖`   | `x`   | 赤  |
 
-記号は非 UTF-8 端末では ASCII (`+ ! i x`) にフォールバックする。
+- それぞれ 1 行を出す (`<Line>` を含む)
+- 記号だけが欲しい場合は `<Symbol kind="success" />` を行の中で使う
+- UTF-8 かどうかは `LC_ALL` / `LC_CTYPE` / `LANG` で判断し、分からない場合は「使える」側に倒す
 
 ### 5.5 データ表示
 
-| コンポーネント                | props                                                    |
-| ----------------------------- | -------------------------------------------------------- |
-| `<List items ordered bullet>` | 箇条書き                                                 |
-| `<Table columns rows align>`  | 列幅を内容から自動計算。端末幅を超える列は省略記号で切る |
-| `<KeyValue data align>`       | `key: value` の整列表示                                  |
-| `<Json value indent>`         | 構文着色付きの JSON                                      |
+| コンポーネント | props                                    |
+| -------------- | ---------------------------------------- |
+| `<List>`       | `items` `ordered` `bullet` (既定 `-`)    |
+| `<Table>`      | `columns` `rows` `align` `headless`      |
+| `<KeyValue>`   | `data` `align` `separator` (既定 `': '`) |
+| `<Json>`       | `value` `indent` (既定 2)                |
+
+- これらは **JSX ではなくデータ**を受け取る。幅を測って桁を揃える必要があり、その計算はレンダラー側に置いた方が素直なため
+- `<Table>` の列幅は内容から決め、端末幅を超える場合は比率を保って縮める
+- `<KeyValue>` は**区切りごと**桁を合わせる (キーだけ揃えると `routes : 6` のようにずれる)
+- `<List ordered>` は番号の桁を揃える (`10.` があれば ` 1.` になる)
 
 ---
 
@@ -712,7 +725,7 @@ argv と env の値は**常に文字列**として届くため、検証の前に
 JSX ツリー
   ↓ (1) 評価: 関数コンポーネントを再帰的に呼ぶ。Promise は await
 中間ノード木 (host node: line / text / box / ...)
-  ↓ (2) レイアウト: 端末幅を使って折返し・列幅・字下げを解決
+  ↓ (2) レイアウト: 幅を測って枠・列幅・字下げを解決 (行の折返しはしない)
 セグメント列 [{ fd, text, style }]
   ↓ (3) 直列化: style を ANSI エスケープへ。色を落とす判定はここ
 fd ごとの文字列
@@ -736,9 +749,12 @@ stdout と stderr で判定は独立して行う (stdout だけパイプされ�
 ### 6.3 幅
 
 - `process.stdout.columns` を使い、取得できなければ `80`
-- 東アジア文字・絵文字は表示幅 2 として数える (自前の幅計算テーブル)
+- 表示幅は自前で数える。`String.length` は UTF-16 の長さなので、日本語 (2 桁) や絵文字 (2 桁)、結合文字 (0 桁) と合わない
+- 書記素 (`Intl.Segmenter`) 単位で数えるので、`a` + 結合アクセントは 1 桁になる
 
----
+**`<Line>` は自動で折り返さない**
+
+端末は自分で折り返すし、パイプに流すときに勝手に改行が増えると受け側の行単位の処理が壊れる。幅を使うのは「測ってから組む」コンポーネント (`Box` / `Columns` / `Table` / `KeyValue`) だけ。
 
 ### 6.4 Phase 1 で確定した細部
 
@@ -1045,22 +1061,43 @@ props ではなくモジュールの静的な性質なので、`export` で宣�
 
 ---
 
+### 8.7 Phase 7 で確定した細部
+
+**データ表示はコンポーネントではなくレンダラーが組む**
+
+`<Table>` や `<KeyValue>` は幅を測って桁を揃える必要がある。コンポーネント側で組むには端末幅と表示幅の計算を持ち込むことになるので、props でデータを受け取り、組み立てはレンダラー (`src/renderer/data.ts`) に置いた。
+
+**「子を描いた結果」を測るための層を入れた**
+
+`Box` / `Columns` / `Indent` は子の描画結果の幅を知らないと組めない。レイアウトの中で子を独立したバッファに描き、行に分けてから組み替える (`src/renderer/lines.ts`)。
+
+**行末に空白を残さない**
+
+`Columns` は列を空白で埋めて横に並べるが、行末の埋めは落とす。コピーしたときに余分な空白が付くのを避けるため。
+
+**罫線と記号は UTF-8 でない端末では ASCII に落ちる**
+
+`╭─╮` → `+-+`、`✔` → `+`。判断は locale (`LC_ALL` / `LC_CTYPE` / `LANG`) で行い、分からない場合は UTF-8 が使える側に倒す。
+
+---
+
 ## 9. `src/` 内部構成
 
 ```
 src/
   jsx/           jsx-runtime.ts, jsx-dev-runtime.ts, types.ts (要素と装飾の型)
-  components/    host.ts (組み込みコンポーネントの標識), index.ts
-                 Phase 1: Text, Line, Br, Stdout, Stderr, Exit
-                 Phase 7: Indent, Box, Columns, Success, Warn, Info, Danger,
-                          List, Table, KeyValue, Json, Link
+  components/    host.ts (組み込みコンポーネントの標識), index.ts,
+                 status.tsx (Success / Warn / Info / Danger)
+                 Text, Link, Line, Br, Stdout, Stderr, Exit, Indent, Box,
+                 Columns, Symbol, List, Table, KeyValue, Json
   components/input/  Argv, Arg, Option, Stdin, Env, Var, Version (宣言専用ノード)
   components/type/   Type.String / Number / Boolean / Enum / Date / Array /
                      Object / Field / OneOf / Custom (型宣言ノード)
   renderer/      evaluate.ts (1)  layout.ts (2)  ansi.ts (3)  writer.ts (4)
                  render.ts (入口), node.ts (中間ノード), color.ts,
-                 capabilities.ts (TTY/NO_COLOR 判定), errors.ts
-                 Phase 7: width.ts (東アジア文字の幅計算)
+                 capabilities.ts (TTY/NO_COLOR 判定), errors.ts,
+                 width.ts (表示幅), lines.ts (行の操作),
+                 frames.ts (字下げ・罫線・横並び), data.ts (List/Table/…)
   runtime/       router.ts (ルート解決と候補提示), run.tsx (ライフサイクル),
                  exit.ts (終了コード規約), errors.ts (CliError), reserved.ts,
                  handle-error.tsx (§4.4 の連鎖), help.tsx (--help の生成),
@@ -1157,7 +1194,7 @@ exit=2
 | 7     | 装飾コンポーネント (`Box` `Table` `List` `Columns`) + 幅計算    | 端末幅 40/80/120 でのスナップショット                           |
 | 8     | `env.tsx` / `version.tsx` / 起動時間ベンチ                      | 起動 10ms 未満                                                  |
 
-**Phase 1-6 は完了** (2026-08-27): `src/jsx/` `src/components/` `src/renderer/` と 52 件のテスト。`Text` / `Line` / `Br` / `Stdout` / `Stderr` / `Exit` が動き、`scripts/demo-render.tsx` で実機確認済み。
+**Phase 1-7 は完了** (2026-08-27): `src/jsx/` `src/components/` `src/renderer/` と 52 件のテスト。`Text` / `Line` / `Br` / `Stdout` / `Stderr` / `Exit` が動き、`scripts/demo-render.tsx` で実機確認済み。
 Phase 2 で `src/build/` `src/runtime/` `src/cli/` を追加し、`bun src/cli/bin.ts build` →
 `./dist/index.js hello` が動作 (起動 10ms 未満)。
 Phase 3 で `Type.*` / `argv.tsx` / valibot 変換 / `--help` 自動生成を追加。
@@ -1165,7 +1202,8 @@ Phase 3.5 で `.decopin/types.d.ts` の生成と `decopin dev` の watch を追�
 `CommandProps<'hello'>` から `args.name: string` が引けることを実際の tsc で検証。
 Phase 4 で `error.tsx` / `global-error.tsx` のフォールバックと終了コードの上書きを追加。
 Phase 5 で `layout.tsx` の入れ子適用と `middleware.tsx` (`next` 方式) を追加。
-Phase 6 で `stdin.tsx` を追加し、POSIX の 4 つの口 (argv / stdin / stdout / stderr) が揃った。テストは 277 件。
+Phase 6 で `stdin.tsx` を追加し、POSIX の 4 つの口 (argv / stdin / stdout / stderr) が揃った。
+Phase 7 で装飾コンポーネントと表示幅の計算を追加。テストは 325 件。
 
 **Phase 1-2 が最小の垂直スライス** — ここが通れば設計の骨格が正しいと確認できる。
 
@@ -1181,4 +1219,4 @@ Phase 6 で `stdin.tsx` を追加し、POSIX の 4 つの口 (argv / stdin / std
 - ADR 12 の起動時間は**未実測の見込み**。Phase 8 のベンチで単一ファイルのまま 10ms を割れるか確認し、割れない場合は `--splitting` へ切り替える
 - `middleware.tsx` の props に `env` が無い (Phase 8 で `env.tsx` を入れるときに足す)
 - middleware の `args` / `options` は `Record<string, unknown>` のまま。middleware は複数コマンドにまたがるので、生成された型を当てるには「そのディレクトリ以下のコマンドの union」が必要。要望が出たら考える
-- `<Columns>` の幅分配アルゴリズム (均等 / 内容比 / 明示 flex) は Phase 7 で決める
+- `<Table>` のセルは文字列だけで、JSX を入れられない。セルに色を付けたい要望が出たら `Cell` に `{ text, style }` の形を足す

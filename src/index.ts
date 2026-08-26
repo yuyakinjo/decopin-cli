@@ -1,5 +1,25 @@
 /** decopin-cli の公開 API (Phase 1) */
-export { Text, Line, Br, Stdout, Stderr, Exit } from './components/index.ts';
+export {
+  Box,
+  Br,
+  Columns,
+  Danger,
+  Exit,
+  Indent,
+  Info,
+  Json,
+  KeyValue,
+  Line,
+  Link,
+  List,
+  Stderr,
+  Stdout,
+  Success,
+  Symbol,
+  Table,
+  Text,
+  Warn,
+} from './components/index.ts';
 export { Argv, Arg, Option, Stdin } from './components/input/index.ts';
 export type {
   ArgProps,
@@ -19,10 +39,24 @@ export {
   RESERVED_OPTION_NAMES,
 } from './runtime/reserved.ts';
 export type {
-  TextProps,
-  LineProps,
+  Align,
   BlockProps,
+  BorderStyle,
+  BoxProps,
+  Cell,
+  ColumnsProps,
   ExitProps,
+  IndentProps,
+  JsonProps,
+  KeyValueProps,
+  LineProps,
+  LinkProps,
+  ListProps,
+  StatusProps,
+  SymbolKind,
+  SymbolProps,
+  TableProps,
+  TextProps,
 } from './components/index.ts';
 
 export type {
@@ -66,3 +100,4 @@ export type {
   Style,
 } from './jsx/types.ts';
 export type { ColorDepth } from './renderer/color.ts';
+export { displayWidth, terminalWidth, truncate } from './renderer/width.ts';

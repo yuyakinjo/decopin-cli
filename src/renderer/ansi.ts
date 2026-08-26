@@ -37,12 +37,26 @@ export function openSequence(style: Style, depth: ColorDepth): string {
   return codes.length === 0 ? '' : `${ESC}[${codes.join(';')}m`;
 }
 
+/**
+ * OSC 8 のハイパーリンク。装飾を落とす設定のときは `text (url)` にする
+ * (リンクを開けない端末でも URL が見えるように)
+ */
+function withLink(text: string, href: string, depth: ColorDepth): string {
+  if (depth === 0) return text === href ? text : `${text} (${href})`;
+  return `${ESC}]8;;${href}${ESC}\\${text}${ESC}]8;;${ESC}\\`;
+}
+
 /** セグメント列を 1 本の文字列にする */
 export function serialize(segments: Segment[], depth: ColorDepth): string {
   let out = '';
   for (const segment of segments) {
     const open = openSequence(segment.style, depth);
-    out += open === '' ? segment.text : `${open}${segment.text}${RESET}`;
+    const styled =
+      open === '' ? segment.text : `${open}${segment.text}${RESET}`;
+    out +=
+      segment.link === undefined
+        ? styled
+        : withLink(styled, segment.link, depth);
   }
   return out;
 }

@@ -45,11 +45,22 @@ export interface Style {
 /** 出力を描く組み込みコンポーネント (レンダラーが解釈する) */
 export type OutputHostKind =
   | 'text'
+  | 'link'
   | 'line'
   | 'br'
   | 'stdout'
   | 'stderr'
-  | 'exit';
+  | 'exit'
+  // 子の描画結果を測ってから組み立てるもの (§5.3)
+  | 'indent'
+  | 'box'
+  | 'columns'
+  // データを渡して、レンダラーが幅を見ながら組み立てるもの (§5.4 / §5.5)
+  | 'symbol'
+  | 'list'
+  | 'table'
+  | 'keyvalue'
+  | 'json';
 
 /** 入力を宣言する組み込みコンポーネント (argv.tsx などで使う) */
 export type DeclarationHostKind =
