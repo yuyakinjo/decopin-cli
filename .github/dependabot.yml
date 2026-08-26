@@ -42,9 +42,9 @@ updates:
       include: 'scope'
     # Ignore specific dependencies if needed
     # ignore:
-      # Example: Ignore major version updates for TypeScript
-      # - dependency-name: "typescript"
-      #   update-types: ["version-update:semver-major"]
+    # Example: Ignore major version updates for TypeScript
+    # - dependency-name: "typescript"
+    #   update-types: ["version-update:semver-major"]
     # Versioning strategy
     versioning-strategy: 'increase'
     # Allow certain updates

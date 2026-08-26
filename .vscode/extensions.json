@@ -1,7 +1,5 @@
 {
-  "recommendations": [
-    "oxc.oxc-vscode",
-  ],
+  "recommendations": ["oxc.oxc-vscode"],
   "unwantedRecommendations": [
     "biomejs.biome",
     "esbenp.prettier-vscode",
