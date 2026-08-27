@@ -1,5 +1,5 @@
 /**
- * Phase 4 の完了条件: エラー経路のフォールバック順が仕様どおり (§4.4)。
+ * Phase 4 の完了条件: エラー経路のフォールバック順が仕様どおり (test/contract/routing.test.tsx)。
  * 近い error.tsx → 親の error.tsx → global-error.tsx → 組み込み。
  */
 import { describe, expect, test } from 'bun:test';

@@ -1,5 +1,5 @@
 /**
- * env.tsx / version.tsx のライフサイクル (§7 の 2, 3)。
+ * env.tsx / version.tsx のライフサイクル (test/contract/routing.test.tsx の 2, 3)。
  */
 import { describe, expect, test } from 'bun:test';
 

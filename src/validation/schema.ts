@@ -1,5 +1,5 @@
 /**
- * {@link TypeNode} → valibot スキーマ (§4.8 の対応表)。
+ * {@link TypeNode} → valibot スキーマ (ADR 9 の対応表)。
  *
  * valibot への依存はこのディレクトリに閉じ込める (ADR 10)。
  * 利用者のコードには valibot は出てこない。

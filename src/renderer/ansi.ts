@@ -1,6 +1,6 @@
 import type { Style } from '../jsx/types.ts';
 /**
- * (3) 直列化: セグメント列を fd ごとの文字列にする (§6.1)。
+ * (3) 直列化: セグメント列を fd ごとの文字列にする (ADR 1)。
  * 色を落とす判定はここで効く (深さ 0 なら装飾を一切出さない)。
  */
 import { colorCodes } from './color.ts';

@@ -1,9 +1,9 @@
 /**
  * 宣言用の JSX ツリーを、組み込みノードの木にする。
  *
- * レンダラーの evaluate (§6.1 の (1)) と役割は同じだが、出力ではなく
+ * レンダラーの evaluate (ADR 1 の (1)) と役割は同じだが、出力ではなく
  * 「宣言の構造」を取り出す。関数コンポーネントを呼び、Fragment と配列を
- * 平らにするので、`_` 配下の共有コンポーネントもそのまま展開される (§4.1)。
+ * 平らにするので、`_` 配下の共有コンポーネントもそのまま展開される (test/contract/argv-parsing.test.ts)。
  */
 import { isElement, isHost } from '../jsx/types.ts';
 import type {

@@ -1,6 +1,6 @@
 import { Stdin, Type } from 'decopin-cli';
 
-/** JSON の構造も Type.* で宣言できる (§4.2) */
+/** JSON の構造も Type.* で宣言できる (ADR 2) */
 export default function DefineStdin() {
   return (
     <Stdin mode="json" required>

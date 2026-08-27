@@ -1,5 +1,5 @@
 /**
- * 色を落とす条件の判定 (§6.2)。
+ * 色を落とす条件の判定。
  * 副作用を持たない純粋な関数にして、テストから任意の環境を再現できるようにする。
  */
 import type { ColorDepth } from './color.ts';
@@ -17,7 +17,7 @@ function isSet(value: string | undefined): boolean {
 }
 
 /**
- * 優先順は §6.2 のとおり:
+ * 優先順 (test/renderer/capabilities.test.ts が表として固定している):
  * 1. FORCE_COLOR → 色を付ける (ただし 0 / false は「明示的に落とす」)
  * 2. NO_COLOR → 落とす
  * 3. --no-color → 落とす

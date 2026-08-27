@@ -132,7 +132,7 @@ describe('run', () => {
   test('引数なしで呼ぶとコマンド一覧を stderr に出して exit 2', async () => {
     const result = await invoke(table, []);
     expect(result.code).toBe(2);
-    // コマンドが確定しないまま終わったので stderr + exit 2 (§7)
+    // コマンドが確定しないまま終わったので stderr + exit 2 (test/contract/routing.test.tsx)
     expect(result.stdout).toBe('');
     expect(result.stderr).toContain('Usage: cli <command> [options]');
     expect(result.stderr).toContain('user list');

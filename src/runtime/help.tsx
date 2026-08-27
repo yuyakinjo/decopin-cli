@@ -47,7 +47,7 @@ function pad(label: string, width: number): string {
 }
 
 /**
- * `help.tsx` が受け取る props (§4.7)。
+ * `help.tsx` が受け取る props (ADR 8)。
  * 利用者向けなので `src/index.ts` から export する
  */
 export interface HelpProps {
@@ -67,7 +67,7 @@ interface AutoHelpProps {
   /** コマンド名 (`user create`)。ルートコマンドなら空文字 */
   command: string;
   spec: ArgvSpec;
-  /** stdin.tsx があれば、その宣言 (§4.2) */
+  /** stdin.tsx があれば、その宣言 */
   stdin?: StdinSpec;
 }
 
@@ -165,7 +165,7 @@ interface CommandListProps {
 }
 
 /**
- * コマンドが確定しなかったときの一覧 (§7)。
+ * コマンドが確定しなかったときの一覧。
  * `group` を渡すとそのディレクトリ配下だけを出す
  */
 export function CommandList({

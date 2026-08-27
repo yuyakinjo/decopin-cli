@@ -1,5 +1,5 @@
 /**
- * Phase 5: middleware.tsx の適用順 (§4.6)。
+ * Phase 5: middleware.tsx の適用順 (ADR 13)。
  * next は関数なので、呼ばないと中が走らない。
  */
 import { describe, expect, test } from 'bun:test';

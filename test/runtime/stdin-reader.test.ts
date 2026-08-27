@@ -1,5 +1,5 @@
 /**
- * Phase 6 の完了条件: パイプ有 / 無 / TTY / required の 4 パターン (§4.2)。
+ * Phase 6 の完了条件: パイプ有 / 無 / TTY / required の 4 パターン (ADR 2)。
  */
 import { describe, expect, test } from 'bun:test';
 
@@ -150,7 +150,7 @@ describe('mode="json"', () => {
   });
 });
 
-describe('schema エスケープハッチ (§4.8)', () => {
+describe('schema エスケープハッチ (ADR 9)', () => {
   const schema = v.array(v.object({ id: v.number() }));
   const spec: StdinSpec = {
     mode: 'json',

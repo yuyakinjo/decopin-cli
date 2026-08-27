@@ -1,5 +1,5 @@
 /**
- * Phase 7 の完了条件: 端末幅 40 / 80 / 120 でのスナップショット (§5.3 / §5.5)。
+ * Phase 7 の完了条件: 端末幅 40 / 80 / 120 でのスナップショット (README.md / README.md)。
  */
 import { describe, expect, test } from 'bun:test';
 

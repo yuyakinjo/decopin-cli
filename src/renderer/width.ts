@@ -1,5 +1,5 @@
 /**
- * 文字の**表示幅**を数える (§6.3)。
+ * 文字の**表示幅**を数える。
  *
  * `String.length` は UTF-16 の長さなので、日本語は 1、絵文字は 2 と数えて
  * しまう。端末の桁数と合わないと罫線や表がずれるので、自前で数える。
@@ -114,7 +114,7 @@ export function padStart(text: string, width: number, fill = ' '): string {
   return missing <= 0 ? text : `${fill.repeat(missing)}${text}`;
 }
 
-/** 端末の桁数。取得できなければ 80 (§6.3) */
+/** 端末の桁数。取得できなければ 80 */
 export function terminalWidth(columns?: number): number {
   return columns !== undefined && columns > 0 ? columns : 80;
 }

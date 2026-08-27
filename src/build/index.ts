@@ -1,4 +1,4 @@
-/** scan → evaluate → check → emit → bundle をつなぐ (§8) */
+/** scan → evaluate → check → emit → bundle をつなぐ (ADR 5) */
 import { mkdir } from 'node:fs/promises';
 import { join } from 'node:path';
 
@@ -80,7 +80,7 @@ export async function generate(
   }
 
   const warnings = await checkTsConfig();
-  // 宣言ファイルが実行時の状態に依存していないか (§4.1)
+  // 宣言ファイルが実行時の状態に依存していないか (test/contract/argv-parsing.test.ts)
   warnings.push(
     ...(await checkPurity(
       routes.flatMap((route) =>

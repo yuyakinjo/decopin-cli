@@ -1,7 +1,7 @@
 import { Br, Info, type HelpProps } from 'decopin-cli';
 
 /**
- * グループ単位の上書き (§7)。`app/user/` には command.tsx が無いが、
+ * グループ単位の上書き (test/contract/routing.test.tsx)。`app/user/` には command.tsx が無いが、
  * help.tsx は置ける
  */
 export default function UserHelp({ auto }: HelpProps) {

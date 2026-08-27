@@ -1,5 +1,5 @@
 /**
- * 実行ライフサイクル (§7) の Phase 3 時点の実装。
+ * 実行ライフサイクル。argv の解決から書き出しまでを 1 本で通す。
  *
  * 通っているのは 1 (ルート解決) → 2 (--help / --version) → 4 (argv 検証)
  * → 7 (command 実行) → 9 (書き出し) → 10 (終了コード)。
@@ -38,7 +38,7 @@ import type { StdinSource } from './stdin-reader.ts';
 
 /** Phase 3 で command.tsx が受け取るもの。型は Phase 3.5 の codegen で配る */
 export interface CommandContext {
-  /** 検証済みの環境変数 (§4.7) */
+  /** 検証済みの環境変数 */
   env: Record<string, unknown>;
   /** 検証済みの位置引数 */
   args: Record<string, unknown>;
@@ -58,17 +58,17 @@ export interface RunOptions {
   program?: string;
   cwd?: string;
   env?: Record<string, string | undefined>;
-  /** `app/global-error.tsx` (§4.4 の最後の受け皿) */
+  /** `app/global-error.tsx` (エラー表示の最後の受け皿) */
   globalError?: () => Promise<unknown>;
   /** 標準入力の口 (テストから差し替えるため) */
   stdin?: StdinSource;
-  /** `app/env.tsx` (§4.7) */
+  /** `app/env.tsx` */
   envFile?: () => Promise<unknown>;
-  /** `app/version.tsx` (§4.7) */
+  /** `app/version.tsx` */
   versionFile?: () => Promise<unknown>;
-  /** ディレクトリ (ルートは空文字) → `help.tsx` (§4.7) */
+  /** ディレクトリ (ルートは空文字) → `help.tsx` */
   helps?: Record<string, () => Promise<unknown>>;
-  /** `app/not-found.tsx` (§7) */
+  /** `app/not-found.tsx` */
   notFound?: () => Promise<unknown>;
   /** 書き出し先 (テストから差し替えるため) */
   targets?: WriteTargets;
@@ -215,7 +215,7 @@ export async function run(
 
   const target = resolveTarget(table, argv);
 
-  // コマンドが確定しない経路 (§7 のルート解決表)。
+  // コマンドが確定しない経路 (表は test/contract/routing.test.tsx)。
   // 明示的に --help を求められたら stdout + exit 0、
   // そうでなければ「使い方の誤り」なので stderr + exit 2
   if (target.kind !== 'command') {
@@ -269,7 +269,7 @@ export async function run(
     if (route === undefined) throw new CliError('Route not found');
 
     const layouts = route.layouts ?? [];
-    /** layout.tsx で包んでから描画する。skipLayout なら包まない (§4.5) */
+    /** layout.tsx で包んでから描画する。skipLayout なら包まない (ADR 7) */
     const withLayout = async (
       node: RenderInput,
       skipLayout: boolean
@@ -311,7 +311,7 @@ export async function run(
       return EXIT_CODE.success;
     }
 
-    // env.tsx は起動時に一度だけ検証する (§7 の 3)
+    // env.tsx は起動時に一度だけ検証する
     let env: Record<string, unknown> = {};
     if (options.envFile !== undefined) {
       const envSpec = parseEnvSpec(await declaredHosts(options.envFile, 'Env'));
@@ -356,7 +356,7 @@ export async function run(
           );
         }
         skipLayout = loaded.skipLayout === true;
-        // stdin の読み取りは middleware の内側 (§7)。middleware が next() を
+        // stdin の読み取りは middleware の内側 (ADR 11)。middleware が next() を
         // 呼ばずに打ち切れば、標準入力を消費せずに終われる
         const stdinSpec = await loadStdinSpec(route.stdin);
         const stdinValue =
@@ -383,7 +383,8 @@ export async function run(
   } catch (error) {
     const cliError = toCliError(error);
     const route = table[resolved.name];
-    // 近い error.tsx → 親の error.tsx → global-error.tsx → 組み込み (§4.4)
+    // 近い error.tsx → 親の error.tsx → global-error.tsx → 組み込み
+    // (順序は test/runtime/handle-error.test.tsx が固定している)
     const handlers = [
       ...(route?.errors ?? []),
       ...(options.globalError === undefined ? [] : [options.globalError]),

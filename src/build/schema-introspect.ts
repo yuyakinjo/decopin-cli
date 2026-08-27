@@ -1,5 +1,5 @@
 /**
- * valibot スキーマを歩いて TypeScript の型テキストを作る (§4.8)。
+ * valibot スキーマを歩いて TypeScript の型テキストを作る (ADR 9)。
  *
  * `<Stdin mode="json" schema={...}>` のエスケープハッチのためだけに使う。
  * JSX は型を運べない (ADR 9) ので、渡された**実オブジェクト**を読む。

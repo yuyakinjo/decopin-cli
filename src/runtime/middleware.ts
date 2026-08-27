@@ -1,6 +1,6 @@
 import type { Renderable } from '../jsx/types.ts';
 /**
- * `middleware.tsx` でコマンドの実行を包む (§4.6)。
+ * `middleware.tsx` でコマンドの実行を包む (ADR 13)。
  *
  * `layout.tsx` の `children` が「値」なのに対し、middleware が受け取る
  * `next` は**関数**。呼ばないと中が走らないので、時間を測る・後片付けを
@@ -12,7 +12,7 @@ export type MiddlewareLoader = () => Promise<unknown>;
 
 /** middleware が受け取るもの。args / options は検証済み (ADR 11) */
 export interface MiddlewareContext {
-  /** 検証済みの環境変数 (§4.7) */
+  /** 検証済みの環境変数 */
   env: Record<string, unknown>;
   args: Record<string, unknown>;
   options: Record<string, unknown>;

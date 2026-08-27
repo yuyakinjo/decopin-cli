@@ -1,7 +1,7 @@
 import type { ArgSpec, ArgvSpec, OptionSpec } from '../declaration/spec.ts';
 import type { TypeNode } from '../declaration/type-node.ts';
 /**
- * argv を宣言 (§4.1) に照らして検証し、コマンドに渡す値を作る。
+ * argv を宣言 (test/contract/argv-parsing.test.ts) に照らして検証し、コマンドに渡す値を作る。
  *
  * 流れ: トークン分解 → 型に合わせて変換 → valibot で検証。
  * 失敗はすべて集めてから返す (1 つ直すたびに実行し直す手間を減らすため)。
@@ -19,7 +19,7 @@ export type ValidateResult =
   | { ok: true; value: ValidatedArgv }
   | { ok: false; issues: string[] };
 
-/** 「省略できるか」を反映したスキーマを作る (§4.1 の存在と型の分離) */
+/** 「省略できるか」を反映したスキーマを作る (test/contract/argv-parsing.test.ts の存在と型の分離) */
 function presenceSchema(
   type: TypeNode,
   required: boolean,

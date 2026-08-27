@@ -1,7 +1,7 @@
 import type { BorderStyle } from '../components/index.ts';
 import type { Fd } from '../jsx/types.ts';
 /**
- * 行の並びを組み替える (§5.3)。字下げ・罫線・横並び。
+ * 行の並びを組み替える。字下げ・罫線・横並び。
  * どれも「子を描いた結果の幅」を測ってから組む。
  */
 import { lineWidth, padLine, textLine, truncateLine } from './lines.ts';

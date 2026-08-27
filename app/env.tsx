@@ -1,6 +1,6 @@
 import { Env, Type, Var } from 'decopin-cli';
 
-/** 起動時に一度だけ検証される (§4.7) */
+/** 起動時に一度だけ検証される */
 export default function DefineEnv() {
   return (
     <Env>

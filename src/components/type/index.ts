@@ -1,6 +1,6 @@
 import type { Renderable } from '../../jsx/types.ts';
 /**
- * 型宣言コンポーネント `Type.*` (§5.1.2)。
+ * 型宣言コンポーネント `Type.*`。
  *
  * 利用者が valibot の書き方を覚えなくて済むように、型と制約を JSX で組む。
  * valibot への変換は `src/validation/` に閉じ込める (ADR 10)。
@@ -62,7 +62,7 @@ export interface CustomTypeProps {
    * 出力する TypeScript の型名。省略すると `unknown` になる。
    *
    * `'string'` / `'number'` / `'boolean'` のときだけ argv / env の文字列を
-   * その型に変換する。それ以外 (`'URL'` など) は生文字列を `validate` に渡す (§4.8)
+   * その型に変換する。それ以外 (`'URL'` など) は生文字列を `validate` に渡す (ADR 9)
    */
   as?: string;
 }

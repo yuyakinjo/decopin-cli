@@ -1,5 +1,5 @@
 /**
- * argv からコマンドを決める (§7 の 1)。
+ * argv からコマンドを決める。
  *
  * ディレクトリの階層がそのままサブコマンドなので、`user create` のように
  * 語が続く場合は「最も長く一致するもの」を選ぶ。
@@ -22,7 +22,7 @@ export interface RouteLoaders {
 export type RouteTable = Record<string, RouteLoaders>;
 
 /**
- * argv が何を指しているか (§7 のルート解決表)。
+ * argv が何を指しているか。表は test/contract/routing.test.tsx。
  *
  * - `command`: 実行すべきコマンドが決まった
  * - `group`: `command.tsx` を持たないディレクトリ (子コマンドを持つ)

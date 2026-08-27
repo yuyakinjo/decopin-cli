@@ -1,5 +1,5 @@
 /**
- * 宣言から `.decopin/types.d.ts` を書く (§4.8 の emit)。
+ * 宣言から `.decopin/types.d.ts` を書く (ADR 9 の emit)。
  *
  * `command.tsx` は `CommandProps<'hello'>` でこの型を引く。
  * JSX 式は型引数を運べない (ADR 9) ので、型はここを通してしか届かない。
@@ -51,7 +51,7 @@ export function toTypeText(type: TypeNode): string {
     case 'oneOf':
       return type.options.map(wrap).join(' | ');
     case 'custom':
-      // as が無ければ型は分からないので unknown (§4.8)
+      // as が無ければ型は分からないので unknown (ADR 9)
       return type.as ?? 'unknown';
   }
 }
@@ -86,7 +86,7 @@ function optionMember(option: OptionSpec): string {
   );
 }
 
-/** stdin.tsx の宣言から、command が受け取る値の型を決める (§4.2) */
+/** stdin.tsx の宣言から、command が受け取る値の型を決める (ADR 2) */
 export function stdinType(stdin: StdinSpec | undefined): SchemaTypeResult {
   if (stdin === undefined) return { text: 'never', unsupported: [] };
 
@@ -132,7 +132,7 @@ function shape(spec: ArgvSpec, stdin: StdinSpec | undefined): string {
   )} }`;
 }
 
-/** `env.tsx` の宣言から Env の型を作る (§4.7) */
+/** `env.tsx` の宣言から EnvVars の型を作る */
 function envShape(env: EnvSpec | undefined): string {
   if (env === undefined || env.vars.length === 0) return '';
   const members = env.vars.map((declared) => {
@@ -146,7 +146,7 @@ function envShape(env: EnvSpec | undefined): string {
 
 export interface TypesResult {
   text: string;
-  /** schema の内省で unknown に落ちた箇所 (§4.8) */
+  /** schema の内省で unknown に落ちた箇所 (ADR 9) */
   unsupported: Array<{ file: string; nodes: UnsupportedNode[] }>;
 }
 

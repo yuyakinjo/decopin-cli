@@ -64,7 +64,7 @@ export function coerce(type: TypeNode, raw: RawValue): CoerceResult {
       return { ok: true, value: date };
     }
     case 'object':
-      // argv / env で Type.Object は宣言時に弾いている (§4.8)。
+      // argv / env で Type.Object は宣言時に弾いている (ADR 9)。
       // stdin (JSON) は変換を通さないので、ここには来ない
       return {
         ok: false,
@@ -83,7 +83,7 @@ export function coerce(type: TypeNode, raw: RawValue): CoerceResult {
       return { ok: false, message: messages.join(' / ') };
     }
     case 'custom':
-      // as が primitive のときだけ変換する。それ以外は生文字列を渡す (§4.8)
+      // as が primitive のときだけ変換する。それ以外は生文字列を渡す (ADR 9)
       return type.coerceAs === 'none'
         ? coerceString(raw)
         : coerce({ kind: type.coerceAs } as TypeNode, raw);
@@ -94,7 +94,7 @@ export function coerce(type: TypeNode, raw: RawValue): CoerceResult {
  * 同じオプションが複数回現れた場合をまとめる。
  *
  * 配列型は繰り返しで集める。配列でない型の重複は**誤りとして報告する**
- * (最後勝ちにすると、意図しない上書きに気づけないため。§4.1)
+ * (最後勝ちにすると、意図しない上書きに気づけないため。test/contract/argv-parsing.test.ts)
  */
 export function coerceAll(type: TypeNode, raws: RawValue[]): CoerceResult {
   if (type.kind === 'array') {

@@ -2,14 +2,14 @@ import type { Align, Cell, SymbolKind } from '../components/index.ts';
 import type { Fd, Style } from '../jsx/types.ts';
 import { fitWidths } from './frames.ts';
 /**
- * データを渡すだけで組み立てられる表示 (§5.5)。
+ * データを渡すだけで組み立てられる表示 (List / Table / KeyValue / Json)。
  * 幅を測る必要があるので、コンポーネントではなくレンダラー側で組む。
  */
 import { padded, textLine } from './lines.ts';
 import type { SegmentLine } from './lines.ts';
 import { displayWidth, padStart, truncate } from './width.ts';
 
-/** 状態の記号 (§5.4)。UTF-8 でない端末では ASCII に落とす */
+/** 状態の記号。UTF-8 でない端末では ASCII に落とす */
 export const SYMBOLS: Record<
   SymbolKind,
   { unicode: string; ascii: string; style: Style }

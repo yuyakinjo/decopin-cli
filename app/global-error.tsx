@@ -3,7 +3,7 @@ import { Line, Text, type ErrorKind, type ErrorProps } from 'decopin-cli';
 /** 使い方の誤り (exit 2) にあたる kind */
 const USAGE_KINDS: ErrorKind[] = ['validation', 'stdin', 'env'];
 
-/** どの error.tsx でも捕まらなかったエラーの最後の受け皿 (§4.4) */
+/** どの error.tsx でも捕まらなかったエラーの最後の受け皿 (test/contract/routing.test.tsx) */
 export default function GlobalError({ error, exitCode }: ErrorProps) {
   return (
     <>

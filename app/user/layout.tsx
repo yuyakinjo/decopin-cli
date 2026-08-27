@@ -1,6 +1,6 @@
 import { Line, Text, type LayoutProps } from 'decopin-cli';
 
-/** `app/user/` 以下のコマンドの出力を包む (§4.5) */
+/** `app/user/` 以下のコマンドの出力を包む (ADR 7) */
 export default function UserLayout({ children }: LayoutProps) {
   return (
     <>

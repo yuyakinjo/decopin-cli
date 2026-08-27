@@ -1,5 +1,5 @@
 /**
- * 実行時のエラー分類 (§4.4)。
+ * 実行時のエラー分類。
  * `error.tsx` (Phase 4) はこの `kind` を見て表示を切り替える。
  */
 import { EXIT_CODE } from './exit.ts';
@@ -28,7 +28,7 @@ export class CliError extends Error {
   }
 }
 
-/** `error.tsx` / `global-error.tsx` が受け取る props (§4.4) */
+/** `error.tsx` / `global-error.tsx` が受け取る props */
 export interface ErrorProps {
   /** `kind` で場合分けできる */
   error: CliError;
@@ -38,7 +38,7 @@ export interface ErrorProps {
   cwd: string;
 }
 
-/** 引数の検証に失敗した。使い方の誤りなので exit 2 (§7) */
+/** 引数の検証に失敗した。使い方の誤りなので exit 2 */
 export function validationError(issues: string[]): CliError {
   return new CliError(issues[0] ?? 'Invalid arguments', {
     kind: 'validation',

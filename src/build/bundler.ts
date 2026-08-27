@@ -1,4 +1,4 @@
-/** `bun build` で単一ファイルにまとめる (§8 の bundle) */
+/** `bun build` で単一ファイルにまとめる (ADR 5 の bundle) */
 import { chmod } from 'node:fs/promises';
 import { join } from 'node:path';
 

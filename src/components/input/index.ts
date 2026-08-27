@@ -1,6 +1,6 @@
 import type { Renderable } from '../../jsx/types.ts';
 /**
- * 入力宣言コンポーネント (§5.1.1)。
+ * 入力宣言コンポーネント。
  * stdout には描画されず、`--help` の生成と argv の検証にだけ使われる。
  */
 import { host } from '../host.ts';
@@ -56,7 +56,7 @@ export interface StdinProps {
   /** 末尾の空白と改行を落とす (mode="text" のときだけ) */
   trim?: boolean;
   /**
-   * valibot スキーマを直接渡すエスケープハッチ (§4.8)。
+   * valibot スキーマを直接渡すエスケープハッチ (ADR 9)。
    * `mode="json"` のときだけ使えて、children とは併用できない。
    *
    * 深い JSON を `Type.Object` / `Type.Field` で書くと縦に長くなるので、

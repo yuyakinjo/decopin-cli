@@ -1,13 +1,13 @@
 import type { Fd, Style } from '../jsx/types.ts';
 /**
- * (2) レイアウト: 中間ノード木を「セグメント列」に潰す (§6.1)。
+ * (2) レイアウト: 中間ノード木を「セグメント列」に潰す (ADR 1)。
  *
  * ここで確定するのは「どの fd に、どの装飾で、どの文字を、どの順で出すか」。
  * `Box` / `Columns` / `Table` のように**幅を測ってから組む**ものは、
- * いったん子を行に描いてから組み替える (§5.3 / §5.5)。
+ * いったん子を行に描いてから組み替える。
  *
  * `<Line>` の折返しは行わない。端末が自分で折り返すし、パイプに流すときに
- * 勝手に改行が増えると、受け側の行単位の処理が壊れるため (§6.3)。
+ * 勝手に改行が増えると、受け側の行単位の処理が壊れるため。
  */
 import {
   jsonLines,
@@ -38,7 +38,7 @@ export interface LayoutResult {
 }
 
 export interface LayoutOptions {
-  /** 端末の桁数 (§6.3) */
+  /** 端末の桁数 */
   columns?: number;
   /** UTF-8 の記号を使えるか。偽なら ASCII に落とす */
   unicode?: boolean;
@@ -143,7 +143,7 @@ export function layout(
       }
 
       case 'exit':
-        // 最後に評価されたものが勝つ (§5.1)
+        // 最後に評価されたものが勝つ
         exitCode = node.code;
         return;
 

@@ -2,7 +2,7 @@ import { describe, expect, test } from 'bun:test';
 
 import { resolveColorDepth } from '../../src/renderer/capabilities.ts';
 
-describe('色を落とす条件 (§6.2)', () => {
+describe('色を落とす条件 (test/renderer/capabilities.test.ts)', () => {
   test('端末なら 16 色', () => {
     expect(resolveColorDepth({ isTTY: true, env: {} })).toBe(4);
   });

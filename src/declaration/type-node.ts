@@ -1,6 +1,6 @@
 /**
- * `Type.*` を評価した結果 (§5.1.2)。
- * valibot への変換 (§4.8 の対応表) と help の表示は、すべてこの木から導く。
+ * `Type.*` を評価した結果。
+ * valibot への変換 (ADR 9 の対応表) と help の表示は、すべてこの木から導く。
  */
 
 export interface StringType {
@@ -64,7 +64,7 @@ export interface CustomType {
   message?: string;
   /**
    * 出力する TypeScript の型名 (`'number'`, `'URL'` など)。
-   * 省略時は `unknown` (§4.8)
+   * 省略時は `unknown` (ADR 9)
    */
   as?: string;
   /**

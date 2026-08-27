@@ -1,6 +1,6 @@
 import { Danger, Line, List, Text, type NotFoundProps } from 'decopin-cli';
 
-/** 未知のコマンドの表示を差し替える (§7) */
+/** 未知のコマンドの表示を差し替える (test/contract/routing.test.tsx) */
 export default function NotFound({
   requested,
   suggestion,

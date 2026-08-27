@@ -1,7 +1,7 @@
 import { Stdin } from 'decopin-cli';
 import * as v from 'valibot';
 
-/** schema エスケープハッチ (§4.8)。深い JSON を valibot で直接書く */
+/** schema エスケープハッチ (ADR 9)。深い JSON を valibot で直接書く */
 export default function DefineStdin() {
   return (
     <Stdin

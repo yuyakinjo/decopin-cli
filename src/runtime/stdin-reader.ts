@@ -1,6 +1,6 @@
 import type { StdinSpec } from '../declaration/spec.ts';
 /**
- * 標準入力を読む (§4.2)。
+ * 標準入力を読む (ADR 2)。
  *
  * 一番大事なのは「**宣言のないコマンドは stdin に触らない**」こと。
  * 端末で実行したときに入力待ちでフリーズする、という最頻出の事故を
@@ -73,7 +73,7 @@ export async function readStdin(
     ]);
   }
 
-  // schema エスケープハッチが優先。どちらも無ければ検証しない (§4.8)
+  // schema エスケープハッチが優先。どちらも無ければ検証しない (ADR 9)
   const schema =
     spec.schema !== undefined
       ? (spec.schema as GenericSchema)

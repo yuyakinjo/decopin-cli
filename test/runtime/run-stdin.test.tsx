@@ -1,5 +1,5 @@
 /**
- * ライフサイクルの中での stdin (§7 の 6)。
+ * ライフサイクルの中での stdin (test/contract/routing.test.tsx の 6)。
  * 読むのは middleware の内側なので、打ち切れば標準入力を消費しない。
  */
 import { describe, expect, test } from 'bun:test';

@@ -1,5 +1,5 @@
 /**
- * 起動時間を測る (§1 のゴール: 10ms 未満)。
+ * 起動時間を測る (README.md のゴール: 10ms 未満)。
  *
  *   bun run bench            既定の 30 回
  *   bun scripts/benchmark-startup.ts --runs 100

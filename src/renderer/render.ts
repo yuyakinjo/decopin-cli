@@ -3,14 +3,14 @@ import { serialize } from './ansi.ts';
 import { resolveColorDepth } from './capabilities.ts';
 import type { ColorDepth } from './color.ts';
 /**
- * レンダリングの入口。(1) 評価 → (2) レイアウト → (3) 直列化 を通す (§6.1)。
+ * レンダリングの入口。(1) 評価 → (2) レイアウト → (3) 直列化 を通す (ADR 1)。
  * 書き出し (4) は行わない。文字列を返すだけなのでテストしやすい。
  */
 import { evaluate } from './evaluate.ts';
 import { layout } from './layout.ts';
 
 export interface RenderOptions {
-  /** 色の表現力を明示指定する (省略時は §6.2 の判定を使う) */
+  /** 色の表現力を明示指定する (省略時は capabilities.ts の判定を使う) */
   color?: { stdout?: ColorDepth; stderr?: ColorDepth };
   /** 判定に使う環境変数 (省略時は process.env) */
   env?: Record<string, string | undefined>;

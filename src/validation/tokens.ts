@@ -6,7 +6,7 @@
  *   --flag (boolean は値を取らない) / --no-flag (boolean を false にする)
  *   -- 以降はすべて位置引数として扱う
  *
- * 短縮形の結合 (`-lv`) は **boolean の alias だけ**束ねられる (§4.1)。
+ * 短縮形の結合 (`-lv`) は **boolean の alias だけ**束ねられる (test/contract/argv-parsing.test.ts)。
  * 値を取る alias が混ざる形は解釈しない (どの alias に値が付くのか曖昧なため)。
  */
 import type { ArgvSpec, OptionSpec } from '../declaration/spec.ts';
@@ -116,7 +116,7 @@ export function tokenize(
       }
     }
 
-    // `-lv` の束ね。boolean の alias が全部揃っているときだけ解く (§4.1)
+    // `-lv` の束ね。boolean の alias が全部揃っているときだけ解く (test/contract/argv-parsing.test.ts)
     if (!isLong && inlineValue === undefined && key.length > 1) {
       const bundled = unbundle(key, byAlias);
       if (bundled === undefined) {

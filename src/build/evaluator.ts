@@ -1,9 +1,9 @@
 /**
- * `argv.tsx` をビルド時に評価して宣言を取り出す (§8 の evaluate)。
+ * `argv.tsx` をビルド時に評価して宣言を取り出す (ADR 5 の evaluate)。
  *
  * AST 解析ではなく「import して呼ぶ」方式なので、`_` 配下の共有
- * コンポーネントもそのまま展開される (§4.8)。その代わり argv.tsx は
- * 純粋でなければならない (§4.1)。
+ * コンポーネントもそのまま展開される (ADR 9)。その代わり argv.tsx は
+ * 純粋でなければならない (test/contract/argv-parsing.test.ts)。
  */
 import { resolve } from 'node:path';
 
@@ -72,7 +72,7 @@ export async function evaluateEnv(
 
 /**
  * 誤りは 1 件目で止めずに全部集める。
- * ビルドし直すたびに 1 つずつ直す手間を避けるため (§8.2 と同じ考え方)。
+ * ビルドし直すたびに 1 つずつ直す手間を避けるため (test/contract/argv-parsing.test.ts と同じ考え方)。
  */
 export async function evaluateRoutes(routes: Route[]): Promise<EvaluateResult> {
   const evaluated: EvaluatedRoute[] = [];

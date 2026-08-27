@@ -1,7 +1,7 @@
 /**
- * 未知のコマンドの表示 (§7)。`app/not-found.tsx` で上書きできる。
+ * 未知のコマンドの表示。`app/not-found.tsx` で上書きできる。
  *
- * ルートが決まっていない時点の話なので `error.tsx` の連鎖 (§4.4) は通らない。
+ * ルートが決まっていない時点の話なので `error.tsx` の連鎖は通らない。
  * 「どの error.tsx を使うべきか」もまだ決まっていないため。
  */
 import { Line, Text } from '../components/index.ts';

@@ -1,5 +1,5 @@
 /**
- * (4) 書き出し (§6.1)。
+ * (4) 書き出し (ADR 1)。
  * fd ごとに 1 回だけ write する。分割して書くと、パイプ越しに
  * stdout と stderr が混ざったときに行が割れる事故が起きるため。
  */
@@ -14,7 +14,7 @@ export interface WriteTargets {
   stderr?: WritableLike;
 }
 
-/** 書き出し順は stdout → stderr に固定する (§6.1) */
+/** 書き出し順は stdout → stderr に固定する (ADR 1) */
 export function write(result: RenderResult, targets: WriteTargets = {}): void {
   const out = targets.stdout ?? process.stdout;
   const err = targets.stderr ?? process.stderr;

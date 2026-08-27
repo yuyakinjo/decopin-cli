@@ -1,7 +1,7 @@
 import { Line, Stderr, Text, type MiddlewareProps } from 'decopin-cli';
 
 /**
- * `app/user/` 以下のコマンドの実行を包む (§4.6)。
+ * `app/user/` 以下のコマンドの実行を包む (ADR 13)。
  * `next` は関数なので、呼んだ後に「終わったあとの処理」が書ける。
  */
 export default async function UserMiddleware({

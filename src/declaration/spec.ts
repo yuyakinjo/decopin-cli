@@ -1,4 +1,4 @@
-/** `argv.tsx` を評価した結果 (§4.1) */
+/** `argv.tsx` を評価した結果 (test/contract/argv-parsing.test.ts) */
 import type { TypeNode } from './type-node.ts';
 
 export interface ArgSpec {
@@ -34,7 +34,7 @@ export interface ArgvSpec {
 
 export const EMPTY_ARGV_SPEC: ArgvSpec = { args: [], options: [] };
 
-/** 環境変数 1 つの宣言 (§4.7) */
+/** 環境変数 1 つの宣言 */
 export interface VarSpec {
   name: string;
   description?: string;
@@ -49,13 +49,13 @@ export interface EnvSpec {
 
 export const EMPTY_ENV_SPEC: EnvSpec = { vars: [] };
 
-/** `--version` の内容 (§4.7) */
+/** `--version` の内容 */
 export interface VersionSpec {
   version: string;
   name?: string;
 }
 
-/** 標準入力の読み方 (§4.2) */
+/** 標準入力の読み方 (ADR 2) */
 export type StdinMode = 'text' | 'lines' | 'json';
 
 export interface StdinSpec {
@@ -66,6 +66,6 @@ export interface StdinSpec {
   trim: boolean;
   /** mode="json" のときの構造 (省略時は unknown) */
   type?: TypeNode;
-  /** valibot スキーマを直接渡した場合 (§4.8)。type とは排他 */
+  /** valibot スキーマを直接渡した場合 (ADR 9)。type とは排他 */
   schema?: unknown;
 }

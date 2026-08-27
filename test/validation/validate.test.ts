@@ -163,7 +163,7 @@ describe('validateArgv', () => {
   });
 
   test('配列でない型の繰り返しは exit 2 (最後勝ちにしない)', () => {
-    // 意図しない上書きに気づけないので、誤りとして報告する (§4.1)
+    // 意図しない上書きに気づけないので、誤りとして報告する (test/contract/argv-parsing.test.ts)
     expect(issues(['-t', '2', '-t', '4'])).toEqual([
       '--times: was given 2 times, but takes only one value',
     ]);

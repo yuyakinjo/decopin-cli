@@ -1,7 +1,7 @@
 /**
- * `app/` を走査して、コマンドとして登録すべきディレクトリを列挙する (§8 の scan)。
+ * `app/` を走査して、コマンドとして登録すべきディレクトリを列挙する (ADR 5 の scan)。
  *
- * ファイルの有無がそのまま機能の有無を表すという規約 (§3) なので、
+ * ファイルの有無がそのまま機能の有無を表すという規約 (test/contract/file-conventions.test.tsx) なので、
  * ここで見つけたファイル名の集合が、後段の全ての判断のもとになる。
  */
 import { readdir } from 'node:fs/promises';
@@ -39,7 +39,7 @@ export interface Route {
   files: Partial<Record<ConventionFile, string>>;
 }
 
-/** 上位ディレクトリから子コマンドに継承されるファイル (§4.4 / §4.5 / §4.6) */
+/** 上位ディレクトリから子コマンドに継承されるファイル (ADR 7 / ADR 13) */
 export const INHERITED_FILES = ['error', 'layout', 'middleware'] as const;
 
 export type InheritedFile = (typeof INHERITED_FILES)[number];
@@ -57,7 +57,7 @@ export interface ScanResult {
    * ディレクトリ (ルートは空文字) → `help.tsx`。
    *
    * help は継承しない (ディレクトリごとに完全一致で引く)。`command.tsx` を
-   * 持たないディレクトリにも置けるので、Route とは別に持つ (§7)
+   * 持たないディレクトリにも置けるので、Route とは別に持つ
    */
   helpFiles: Map<string, string>;
 }
@@ -122,10 +122,10 @@ export async function scan(appDir: string): Promise<ScanResult> {
     }
     if (Object.keys(inheritable).length > 0) inherited.set(dir, inheritable);
 
-    // help.tsx はコマンドでないディレクトリ (グループ) にも置ける (§7)
+    // help.tsx はコマンドでないディレクトリ (グループ) にも置ける
     if (files.help !== undefined) helpFiles.set(dir, files.help);
 
-    // command.tsx を持つディレクトリだけがコマンドになる (§3)
+    // command.tsx を持つディレクトリだけがコマンドになる (test/contract/file-conventions.test.tsx)
     if (files.command !== undefined) {
       routes.push({ name, dir, files });
     }
@@ -147,7 +147,7 @@ export async function scan(appDir: string): Promise<ScanResult> {
 /**
  * あるディレクトリから見た、継承ファイルの並び。**近い順** (自分 → 親 → ...)。
  *
- * `error.tsx` はこの順に試す (§4.4)。`layout.tsx` は逆順に包む (§4.5)。
+ * `error.tsx` はこの順に試す (近い順)。`layout.tsx` は逆順に包む (ADR 7)。
  */
 export function inheritedChain(
   inherited: ScanResult['inherited'],

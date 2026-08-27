@@ -3,7 +3,7 @@
  * decopin 自身の CLI。
  *
  * ここだけは argv の解析を手で書く。decopin の argv.tsx はビルドされた
- * CLI のためのもので、ビルドする側がそれに依存すると鶏と卵になるため (§8.1)。
+ * CLI のためのもので、ビルドする側がそれに依存すると鶏と卵になるため (ADR 5)。
  */
 import { build } from '../build/index.ts';
 import { watchApp } from '../build/watch.ts';

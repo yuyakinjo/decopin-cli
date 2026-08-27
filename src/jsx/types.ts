@@ -1,7 +1,7 @@
 /**
  * JSX の要素表現と、レンダラーが解釈する組み込みコンポーネントの標識。
  *
- * §4.8 で確認したとおり JSX 式の型は `JSX.Element` に潰れるため、要素に
+ * ADR 9 で確認したとおり JSX 式の型は `JSX.Element` に潰れるため、要素に
  * 型引数を運ばせることは狙わない。要素は「何を描くか」を持つだけのデータ構造。
  */
 
@@ -30,7 +30,7 @@ export type ColorName =
 /** 16 色名 または `#rrggbb` */
 export type Color = ColorName | `#${string}`;
 
-/** インラインの装飾 (§5.2) */
+/** インラインの装飾 */
 export interface Style {
   color?: Color;
   bg?: Color;
@@ -51,11 +51,11 @@ export type OutputHostKind =
   | 'stdout'
   | 'stderr'
   | 'exit'
-  // 子の描画結果を測ってから組み立てるもの (§5.3)
+  // 子の描画結果を測ってから組み立てるもの
   | 'indent'
   | 'box'
   | 'columns'
-  // データを渡して、レンダラーが幅を見ながら組み立てるもの (§5.4 / §5.5)
+  // データを渡して、レンダラーが幅を見ながら組み立てるもの
   | 'symbol'
   | 'list'
   | 'table'

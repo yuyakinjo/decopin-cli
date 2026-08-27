@@ -1,5 +1,5 @@
 /**
- * 未知のコマンドの表示 (§7)。`app/not-found.tsx` で上書きできる。
+ * 未知のコマンドの表示 (test/contract/routing.test.tsx)。`app/not-found.tsx` で上書きできる。
  */
 import { describe, expect, test } from 'bun:test';
 

@@ -4,7 +4,7 @@
  */
 import { Line, type CommandProps } from 'decopin-cli';
 
-// 型が未生成なら、どんなコマンド名でも受け付ける (§4.8 のフォールバック)
+// 型が未生成なら、どんなコマンド名でも受け付ける (ADR 9 のフォールバック)
 export default function Command({
   args,
   options,

@@ -1,5 +1,5 @@
 /**
- * ビルド前の下調べ (§8 の check)。落とすのではなく警告する。
+ * ビルド前の下調べ (ADR 5 の check)。落とすのではなく警告する。
  *
  * ここで見るのは「動くけれど、たぶん意図と違う」こと。宣言そのものの
  * 誤りは evaluator が集める。
@@ -17,7 +17,7 @@ const SUPPORTED_SCHEMA_NODES =
   'string, number, boolean, date, literal, picklist, array, object, optional, nullable, union';
 
 /**
- * `<Stdin schema>` の内省で unknown に落ちた箇所を伝える (§4.8)。
+ * `<Stdin schema>` の内省で unknown に落ちた箇所を伝える (ADR 9)。
  * 同じ種別はまとめて 1 件にする (大きなスキーマで警告が溢れないように)
  */
 export function stdinSchemaWarnings(
@@ -39,7 +39,7 @@ export function stdinSchemaWarnings(
 }
 
 /**
- * 宣言ファイルが実行時の状態に依存していないか (§4.1)。
+ * 宣言ファイルが実行時の状態に依存していないか (test/contract/argv-parsing.test.ts)。
  *
  * ビルド時に評価して型を出すので、`process.env` や現在時刻で宣言が変わると
  * 生成された型と実行時の挙動がずれる。ソースを読んで**警告**するだけに

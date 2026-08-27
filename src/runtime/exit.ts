@@ -1,5 +1,5 @@
 /**
- * 終了コードの規約 (§7)。
+ * 終了コードの規約 (表は test/contract/exit-codes.test.tsx)。
  * `2` を「使い方の誤り」に割り当てるのは POSIX ツールの慣習に合わせたもの。
  */
 export const EXIT_CODE = {

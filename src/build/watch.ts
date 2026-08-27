@@ -1,8 +1,8 @@
 /**
- * `decopin dev` (§8)。`app/` を見張って `.decopin/` を作り直す。
+ * `decopin dev` (ADR 5)。`app/` を見張って `.decopin/` を作り直す。
  *
  * 型は生成物なので、これを回していないと `command.tsx` の props の型が
- * 古くなる (§12 の未決事項)。バンドルはしない。
+ * 古くなる (docs/decisions.md の未決事項)。バンドルはしない。
  */
 import { watch } from 'node:fs';
 

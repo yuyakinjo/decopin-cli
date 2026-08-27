@@ -66,7 +66,7 @@ describe('stdin.tsx の宣言', () => {
   });
 });
 
-describe('schema エスケープハッチ (§4.8)', () => {
+describe('schema エスケープハッチ (ADR 9)', () => {
   test('valibot スキーマをそのまま持てる', async () => {
     const schema = v.object({ id: v.number() });
     const result = await spec(<Stdin mode="json" required schema={schema} />);

@@ -1,7 +1,7 @@
 /**
  * 宣言ノードの木を {@link ArgvSpec} にする。ここが `argv.tsx` の意味を決める場所。
  *
- * §8 の check に相当する検証もここで行う。ビルド時 (型生成) と実行時の
+ * ADR 5 の check に相当する検証もここで行う。ビルド時 (型生成) と実行時の
  * どちらから呼んでも同じ結果になるよう、副作用を持たせない。
  */
 import { isAsyncSchema, isValibotSchema } from '../build/schema-introspect.ts';
@@ -168,7 +168,7 @@ export function toTypeNode(node: HostNode): TypeNode {
         );
       }
       // as は「出力する TypeScript の型名」。primitive のときだけ
-      // argv の変換も行う (§4.8)
+      // argv の変換も行う (ADR 9)
       const as = readString(node, 'as');
       const coerceAs =
         as === 'string' || as === 'number' || as === 'boolean' ? as : 'none';
@@ -187,7 +187,7 @@ export function toTypeNode(node: HostNode): TypeNode {
   }
 }
 
-/** 宣言がどの入力源のものか。Type.Object が使えるのは stdin だけ (§4.8) */
+/** 宣言がどの入力源のものか。Type.Object が使えるのは stdin だけ (ADR 9) */
 export type InputSource = 'argv' | 'env' | 'stdin';
 
 /**
@@ -253,7 +253,7 @@ function requireName(node: HostNode): string {
   return name;
 }
 
-/** required と default の同時指定を弾く (§4.1) */
+/** required と default の同時指定を弾く (test/contract/argv-parsing.test.ts) */
 function presence(node: HostNode, name: string) {
   const required = readBoolean(node, 'required') ?? false;
   const hasDefault = node.props.default !== undefined;
@@ -265,7 +265,7 @@ function presence(node: HostNode, name: string) {
   return { required, defaultValue: node.props.default };
 }
 
-/** `env.tsx` の宣言を読む (§4.7) */
+/** `env.tsx` の宣言を読む */
 export function parseEnvSpec(hosts: HostNode[]): EnvSpec {
   if (hosts.length !== 1 || hosts[0]?.kind !== 'env') {
     throw new DeclarationError('env.tsx must return a single <Env> element');
@@ -300,7 +300,7 @@ export function parseEnvSpec(hosts: HostNode[]): EnvSpec {
   return { vars };
 }
 
-/** `version.tsx` の宣言を読む (§4.7) */
+/** `version.tsx` の宣言を読む */
 export function parseVersionSpec(hosts: HostNode[]): VersionSpec {
   if (hosts.length !== 1 || hosts[0]?.kind !== 'version') {
     throw new DeclarationError(
@@ -315,7 +315,7 @@ export function parseVersionSpec(hosts: HostNode[]): VersionSpec {
   return { version, name: readString(node, 'name') };
 }
 
-/** `stdin.tsx` の宣言を読む (§4.2) */
+/** `stdin.tsx` の宣言を読む (ADR 2) */
 export function parseStdinSpec(hosts: HostNode[]): StdinSpec {
   if (hosts.length !== 1 || hosts[0]?.kind !== 'stdin') {
     throw new DeclarationError(

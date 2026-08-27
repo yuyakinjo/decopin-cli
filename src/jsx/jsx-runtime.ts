@@ -1,5 +1,5 @@
 /**
- * 自作 jsx-runtime (§6.1)。React には依存しない。
+ * 自作 jsx-runtime (ADR 1)。React には依存しない。
  *
  * `tsconfig.json` の `jsxImportSource` をこのパッケージに向けることで、
  * `<Text>` などがこの `jsx()` を通って {@link Element} になる。
@@ -26,7 +26,7 @@ export function Fragment(props: { children?: Renderable }): Renderable {
 }
 
 export declare namespace JSX {
-  /** JSX 式の型。§4.8 のとおり、ここに型引数は運べない */
+  /** JSX 式の型。ADR 9 のとおり、ここに型引数は運べない */
   type Element = DecopinElement;
 
   /** タグに書けるもの。組み込みの小文字タグ (`<div>`) は許さない */

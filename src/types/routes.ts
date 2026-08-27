@@ -1,5 +1,5 @@
 /**
- * 生成された型の受け皿 (§4.8)。
+ * 生成された型の受け皿 (ADR 9)。
  *
  * `decopin build` / `decopin dev` が `.decopin/types.d.ts` を書き、
  * module augmentation で {@link Routes} と {@link Env} を埋める。
@@ -21,7 +21,7 @@ export interface RouteShape {
 export interface Routes {}
 
 /**
- * `app/env.tsx` から生成される (§4.7)。
+ * `app/env.tsx` から生成される。
  * 型の名前を `Env` にすると `<Env>` コンポーネントと衝突するので分けている
  */
 export interface EnvVars {}

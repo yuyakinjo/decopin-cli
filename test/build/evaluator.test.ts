@@ -54,7 +54,7 @@ describe('evaluateRoutes', () => {
   });
 });
 
-describe('schema エスケープハッチ (§4.8)', () => {
+describe('schema エスケープハッチ (ADR 9)', () => {
   test('valibot スキーマをビルド時に取り出し、型に変換できる', async () => {
     const { routes } = await scan(FIXTURE);
     const { evaluated, problems } = await evaluateRoutes(

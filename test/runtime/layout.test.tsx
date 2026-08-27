@@ -1,5 +1,5 @@
 /**
- * Phase 5: layout.tsx の適用順 (§4.5)。
+ * Phase 5: layout.tsx の適用順 (ADR 7)。
  * 外側 = 上位ディレクトリ。error.tsx の出力も包まれる。
  */
 import { describe, expect, test } from 'bun:test';

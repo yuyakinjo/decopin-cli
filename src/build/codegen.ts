@@ -1,5 +1,5 @@
 /**
- * `.decopin/` に生成するコード (§8 の emit)。
+ * `.decopin/` に生成するコード (ADR 5 の emit)。
  *
  * ルートごとに動的 import にするのは、実行しないコマンドの
  * モジュール本体を「評価しない」ため (ADR 12。パースは全量走る)。
@@ -27,15 +27,15 @@ function importer(outDir: string, file: string): string {
 
 export interface RoutesInput {
   routes: Route[];
-  /** ルート名 → error.tsx の並び (近い順)。§4.4 のフォールバック順 */
+  /** ルート名 → error.tsx の並び。**近い順** (自分 → 親 → ...) */
   errorChains?: Map<string, string[]>;
-  /** ルート名 → layout.tsx の並び (外側から順)。§4.5 */
+  /** ルート名 → layout.tsx の並び (外側から順)。ADR 7 */
   layoutChains?: Map<string, string[]>;
-  /** ルート名 → middleware.tsx の並び (外側から順)。§4.6 */
+  /** ルート名 → middleware.tsx の並び (外側から順)。ADR 13 */
   middlewareChains?: Map<string, string[]>;
   /** app/global-error.tsx */
   globalError?: string;
-  /** ディレクトリ (ルートは空文字) → help.tsx (§4.7) */
+  /** ディレクトリ (ルートは空文字) → help.tsx */
   helpFiles?: Map<string, string>;
   /** app/not-found.tsx */
   notFound?: string;
@@ -77,7 +77,7 @@ export function generateRoutes(input: RoutesInput, outDir: string): string {
       ? `export const ${name} = undefined;`
       : `export const ${name} = ${importer(outDir, file)};`;
 
-  // help はディレクトリ単位なので、コマンド表とは別のマップにする (§7)
+  // help はディレクトリ単位なので、コマンド表とは別のマップにする
   const helps = [...(input.helpFiles ?? new Map())]
     .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
     .map(
@@ -116,7 +116,7 @@ import {
   versionFile,
 } from './routes.ts';
 
-// Ctrl+C は 128+2 = 130 (§7)。ハンドラを置かないと Bun は 0 で終わる
+// Ctrl+C は 128+2 = 130。ハンドラを置かないと Bun は 0 で終わる
 process.on('SIGINT', () => process.exit(130));
 
 process.exit(
