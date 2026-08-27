@@ -45,7 +45,8 @@ export function toTypeText(type: TypeNode): string {
     case 'oneOf':
       return type.options.map(wrap).join(' | ');
     case 'custom':
-      return type.as;
+      // as が無ければ型は分からないので unknown (§4.8)
+      return type.as ?? 'unknown';
   }
 }
 

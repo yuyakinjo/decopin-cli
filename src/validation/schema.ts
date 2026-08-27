@@ -107,12 +107,15 @@ export function toSchema(type: TypeNode): Schema {
     case 'oneOf':
       return v.union(type.options.map(toSchema)) as Schema;
     case 'custom': {
+      // 変換しない場合は何が来るか分からないので unknown を基底にする
       const base =
-        type.as === 'number'
+        type.coerceAs === 'number'
           ? v.number()
-          : type.as === 'boolean'
+          : type.coerceAs === 'boolean'
             ? v.boolean()
-            : v.string();
+            : type.coerceAs === 'string'
+              ? v.string()
+              : v.unknown();
       return v.pipe(
         base as v.GenericSchema,
         v.check(

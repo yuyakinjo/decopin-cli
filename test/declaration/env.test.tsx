@@ -72,6 +72,19 @@ describe('env.tsx の宣言', () => {
       /cannot be both required and have a default/,
     ],
     [
+      'env で Type.Object',
+      <Env>
+        <Var name="A">
+          <Type.Object>
+            <Type.Field name="x" required>
+              <Type.String />
+            </Type.Field>
+          </Type.Object>
+        </Var>
+      </Env>,
+      /<Type.Object> cannot be used for env/,
+    ],
+    [
       '型の指定なし',
       <Env>
         <Var name="A" />

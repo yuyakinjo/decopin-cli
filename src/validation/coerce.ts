@@ -63,18 +63,13 @@ export function coerce(type: TypeNode, raw: RawValue): CoerceResult {
       }
       return { ok: true, value: date };
     }
-    case 'object': {
-      const asString = coerceString(raw);
-      if (!asString.ok) return asString;
-      try {
-        return { ok: true, value: JSON.parse(asString.value as string) };
-      } catch {
-        return {
-          ok: false,
-          message: `expected JSON, received "${String(raw)}"`,
-        };
-      }
-    }
+    case 'object':
+      // argv / env で Type.Object は宣言時に弾いている (§4.8)。
+      // stdin (JSON) は変換を通さないので、ここには来ない
+      return {
+        ok: false,
+        message: 'Type.Object cannot be used for argv or env',
+      };
     case 'array':
       // 配列は「同じオプションの繰り返し」で表すので、ここには要素が来る
       return coerce(type.item, raw);
@@ -88,11 +83,19 @@ export function coerce(type: TypeNode, raw: RawValue): CoerceResult {
       return { ok: false, message: messages.join(' / ') };
     }
     case 'custom':
-      return coerce({ kind: type.as } as TypeNode, raw);
+      // as が primitive のときだけ変換する。それ以外は生文字列を渡す (§4.8)
+      return type.coerceAs === 'none'
+        ? coerceString(raw)
+        : coerce({ kind: type.coerceAs } as TypeNode, raw);
   }
 }
 
-/** 同じオプションが複数回現れた場合をまとめる */
+/**
+ * 同じオプションが複数回現れた場合をまとめる。
+ *
+ * 配列型は繰り返しで集める。配列でない型の重複は**誤りとして報告する**
+ * (最後勝ちにすると、意図しない上書きに気づけないため。§4.1)
+ */
 export function coerceAll(type: TypeNode, raws: RawValue[]): CoerceResult {
   if (type.kind === 'array') {
     const values: unknown[] = [];
@@ -103,10 +106,17 @@ export function coerceAll(type: TypeNode, raws: RawValue[]): CoerceResult {
     }
     return { ok: true, value: values };
   }
-  // 配列でない型は最後の指定を採用する (よくある CLI の挙動)
-  const last = raws[raws.length - 1];
-  if (last === undefined) {
+
+  if (raws.length > 1) {
+    return {
+      ok: false,
+      message: `was given ${raws.length} times, but takes only one value`,
+    };
+  }
+
+  const only = raws[0];
+  if (only === undefined) {
     return { ok: false, message: 'expected a value but none was given' };
   }
-  return coerce(type, last);
+  return coerce(type, only);
 }

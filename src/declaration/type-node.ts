@@ -62,8 +62,16 @@ export interface CustomType {
   kind: 'custom';
   validate: (value: unknown) => boolean;
   message?: string;
-  /** argv の文字列をどう解釈するか */
-  as: 'string' | 'number' | 'boolean';
+  /**
+   * 出力する TypeScript の型名 (`'number'`, `'URL'` など)。
+   * 省略時は `unknown` (§4.8)
+   */
+  as?: string;
+  /**
+   * argv / env の文字列をどう変換するか。
+   * `as` が primitive のときだけ変換し、それ以外は生文字列を渡す
+   */
+  coerceAs: 'string' | 'number' | 'boolean' | 'none';
 }
 
 export type TypeNode =
@@ -97,6 +105,6 @@ export function typeLabel(type: TypeNode): string {
     case 'oneOf':
       return type.options.map(typeLabel).join('|');
     case 'custom':
-      return type.as;
+      return type.as ?? 'value';
   }
 }

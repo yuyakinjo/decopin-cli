@@ -85,8 +85,39 @@ describe('tokenize', () => {
     expect(run(['-z']).unknownOptions).toEqual(['-z']);
   });
 
-  test('短縮形の結合は解釈しない (v1)', () => {
+  test('boolean の alias は束ねられる', () => {
+    const spread: ArgvSpec = {
+      args: [],
+      options: [
+        ...spec.options,
+        {
+          name: 'verbose',
+          alias: 'v',
+          required: false,
+          hidden: false,
+          type: { kind: 'boolean' },
+        },
+      ],
+    };
+    const result = tokenize(['-lv'], spread);
+    expect(Object.fromEntries(result.options)).toEqual({
+      loud: [true],
+      verbose: [true],
+    });
+    expect(result.unknownOptions).toEqual([]);
+  });
+
+  test('値を取る alias が混ざる束ねは解釈しない', () => {
+    // -lt だと t に値が付くのか曖昧なので、束ね全体を未知として扱う
     expect(run(['-lt']).unknownOptions).toEqual(['-lt']);
+  });
+
+  test('未知の文字が混ざる束ねも解釈しない', () => {
+    expect(run(['-lz']).unknownOptions).toEqual(['-lz']);
+  });
+
+  test('束ねに = を付けた形は解釈しない', () => {
+    expect(run(['-lv=1']).unknownOptions).toEqual(['-lv']);
   });
 
   test('値が足りなければ誤りとして報告する', () => {

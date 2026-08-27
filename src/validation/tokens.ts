@@ -6,7 +6,8 @@
  *   --flag (boolean は値を取らない) / --no-flag (boolean を false にする)
  *   -- 以降はすべて位置引数として扱う
  *
- * v1 では短縮形の結合 (`-abc`) は解釈しない。未知のオプションとして扱う。
+ * 短縮形の結合 (`-lv`) は **boolean の alias だけ**束ねられる (§4.1)。
+ * 値を取る alias が混ざる形は解釈しない (どの alias に値が付くのか曖昧なため)。
  */
 import type { ArgvSpec, OptionSpec } from '../declaration/spec.ts';
 import type { RawValue } from './coerce.ts';
@@ -55,6 +56,23 @@ function push(
   else current.push(value);
 }
 
+/**
+ * 束ねられた短縮形を 1 文字ずつ解く。
+ * 未知の文字か、値を取る alias が混ざっていたら undefined (束ね全体を未知として扱う)
+ */
+function unbundle(
+  key: string,
+  byAlias: Map<string, OptionSpec>
+): OptionSpec[] | undefined {
+  const options: OptionSpec[] = [];
+  for (const character of key) {
+    const option = byAlias.get(character);
+    if (option === undefined || takesValue(option)) return undefined;
+    options.push(option);
+  }
+  return options;
+}
+
 export function tokenize(
   tokens: readonly string[],
   spec: ArgvSpec
@@ -96,6 +114,17 @@ export function tokenize(
         push(result.options, negated.name, 'false');
         continue;
       }
+    }
+
+    // `-lv` の束ね。boolean の alias が全部揃っているときだけ解く (§4.1)
+    if (!isLong && inlineValue === undefined && key.length > 1) {
+      const bundled = unbundle(key, byAlias);
+      if (bundled === undefined) {
+        result.unknownOptions.push(`-${key}`);
+      } else {
+        for (const option of bundled) push(result.options, option.name, true);
+      }
+      continue;
     }
 
     const option = isLong ? byName.get(key) : byAlias.get(key);

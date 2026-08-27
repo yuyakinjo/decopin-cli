@@ -75,8 +75,30 @@ describe('toTypeText', () => {
 
   test('custom は as で宣言された型', () => {
     expect(
-      toTypeText({ kind: 'custom', validate: () => true, as: 'number' })
+      toTypeText({
+        kind: 'custom',
+        validate: () => true,
+        as: 'number',
+        coerceAs: 'number',
+      })
     ).toBe('number');
+  });
+
+  test('custom の as は任意の型名を書ける', () => {
+    expect(
+      toTypeText({
+        kind: 'custom',
+        validate: () => true,
+        as: 'URL',
+        coerceAs: 'none',
+      })
+    ).toBe('URL');
+  });
+
+  test('custom の as を省略すると unknown', () => {
+    expect(
+      toTypeText({ kind: 'custom', validate: () => true, coerceAs: 'none' })
+    ).toBe('unknown');
   });
 });
 

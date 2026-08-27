@@ -166,17 +166,17 @@ export function toTypeNode(node: HostNode): TypeNode {
           '<Type.Custom validate> requires a function'
         );
       }
-      const as = readString(node, 'as') ?? 'string';
-      if (as !== 'string' && as !== 'number' && as !== 'boolean') {
-        throw new DeclarationError(
-          '<Type.Custom as> must be "string", "number", or "boolean"'
-        );
-      }
+      // as は「出力する TypeScript の型名」。primitive のときだけ
+      // argv の変換も行う (§4.8)
+      const as = readString(node, 'as');
+      const coerceAs =
+        as === 'string' || as === 'number' || as === 'boolean' ? as : 'none';
       return {
         kind: 'custom',
         validate: validate as (value: unknown) => boolean,
         message: readString(node, 'message'),
         as,
+        coerceAs,
       };
     }
     default:
@@ -186,8 +186,33 @@ export function toTypeNode(node: HostNode): TypeNode {
   }
 }
 
+/** 宣言がどの入力源のものか。Type.Object が使えるのは stdin だけ (§4.8) */
+export type InputSource = 'argv' | 'env' | 'stdin';
+
+/** 型の木に `object` が含まれていないか確かめる */
+function rejectObject(
+  type: TypeNode,
+  node: HostNode,
+  source: InputSource
+): void {
+  if (source === 'stdin') return;
+  const walk = (current: TypeNode): void => {
+    if (current.kind === 'object') {
+      throw new DeclarationError(
+        `<Type.Object> cannot be used for ${source}. ${source} values always arrive as strings; declare the structure in stdin.tsx instead`
+      );
+    }
+    if (current.kind === 'array') return walk(current.item);
+    if (current.kind === 'oneOf') {
+      for (const option of current.options) walk(option);
+    }
+  };
+  walk(type);
+  void node;
+}
+
 /** `type` 短縮形と children のどちらかから型を決める */
-function resolveType(node: HostNode): TypeNode {
+function resolveType(node: HostNode, source: InputSource): TypeNode {
   const shorthand = node.props.type as Shorthand | undefined;
   const hasChildren = node.children.length > 0;
 
@@ -208,7 +233,11 @@ function resolveType(node: HostNode): TypeNode {
     }
     return { kind: shorthand };
   }
-  if (hasChildren) return onlyType(node);
+  if (hasChildren) {
+    const type = onlyType(node);
+    rejectObject(type, node, source);
+    return type;
+  }
 
   throw new DeclarationError(
     `<${node.displayName} name="${String(node.props.name)}"> needs a type: set type="string" or nest a Type.* child`
@@ -260,7 +289,7 @@ export function parseEnvSpec(hosts: HostNode[]): EnvSpec {
       description: readString(child, 'description'),
       required,
       defaultValue,
-      type: resolveType(child),
+      type: resolveType(child, 'env'),
     });
   }
 
@@ -333,7 +362,7 @@ export function parseArgvSpec(hosts: HostNode[]): ArgvSpec {
         required,
         defaultValue,
         variadic: readBoolean(child, 'variadic') ?? false,
-        type: resolveType(child),
+        type: resolveType(child, 'argv'),
       });
       continue;
     }
@@ -365,7 +394,7 @@ export function parseArgvSpec(hosts: HostNode[]): ArgvSpec {
         required,
         defaultValue,
         hidden: readBoolean(child, 'hidden') ?? false,
-        type: resolveType(child),
+        type: resolveType(child, 'argv'),
       });
       continue;
     }

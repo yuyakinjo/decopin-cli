@@ -241,6 +241,34 @@ describe('宣言の誤りを弾く', () => {
       /requires at least two type children/,
     ],
     [
+      'argv で Type.Object',
+      <Argv>
+        <Option name="a">
+          <Type.Object>
+            <Type.Field name="x" required>
+              <Type.String />
+            </Type.Field>
+          </Type.Object>
+        </Option>
+      </Argv>,
+      /<Type.Object> cannot be used for argv/,
+    ],
+    [
+      'argv で Type.Object の配列',
+      <Argv>
+        <Option name="a">
+          <Type.Array>
+            <Type.Object>
+              <Type.Field name="x" required>
+                <Type.String />
+              </Type.Field>
+            </Type.Object>
+          </Type.Array>
+        </Option>
+      </Argv>,
+      /<Type.Object> cannot be used for argv/,
+    ],
+    [
       'Type.Object に Field 以外',
       <Argv>
         <Option name="a">
@@ -260,4 +288,51 @@ describe('宣言の誤りを弾く', () => {
       await expect(promise).rejects.toThrow(pattern);
     });
   }
+});
+
+describe('Type.Custom の as', () => {
+  test('primitive なら変換もする', async () => {
+    const result = await spec(
+      <Argv>
+        <Option name="port">
+          <Type.Custom as="number" validate={(value) => Number(value) > 0} />
+        </Option>
+      </Argv>
+    );
+    expect(result.options[0]?.type).toMatchObject({
+      kind: 'custom',
+      as: 'number',
+      coerceAs: 'number',
+    });
+  });
+
+  test('任意の型名を書ける (変換はしない)', async () => {
+    const result = await spec(
+      <Argv>
+        <Option name="site">
+          <Type.Custom as="URL" validate={() => true} />
+        </Option>
+      </Argv>
+    );
+    expect(result.options[0]?.type).toMatchObject({
+      kind: 'custom',
+      as: 'URL',
+      coerceAs: 'none',
+    });
+  });
+
+  test('省略すると型は unknown、変換もしない', async () => {
+    const result = await spec(
+      <Argv>
+        <Option name="x">
+          <Type.Custom validate={() => true} />
+        </Option>
+      </Argv>
+    );
+    expect(result.options[0]?.type).toMatchObject({
+      kind: 'custom',
+      as: undefined,
+      coerceAs: 'none',
+    });
+  });
 });

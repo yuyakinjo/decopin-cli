@@ -162,7 +162,10 @@ describe('validateArgv', () => {
     expect(result.value.options).toEqual({ tag: ['x', 'y'] });
   });
 
-  test('配列でない型の繰り返しは最後の指定が勝つ', () => {
-    expect(ok(['-t', '2', '-t', '4']).options.times).toBe(4);
+  test('配列でない型の繰り返しは exit 2 (最後勝ちにしない)', () => {
+    // 意図しない上書きに気づけないので、誤りとして報告する (§4.1)
+    expect(issues(['-t', '2', '-t', '4'])).toEqual([
+      '--times: was given 2 times, but takes only one value',
+    ]);
   });
 });

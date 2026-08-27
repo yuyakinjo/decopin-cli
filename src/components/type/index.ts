@@ -58,8 +58,13 @@ export interface OneOfTypeProps {
 export interface CustomTypeProps {
   validate: (value: unknown) => boolean;
   message?: string;
-  /** argv の文字列をどう解釈するか (既定: string) */
-  as?: 'string' | 'number' | 'boolean';
+  /**
+   * 出力する TypeScript の型名。省略すると `unknown` になる。
+   *
+   * `'string'` / `'number'` / `'boolean'` のときだけ argv / env の文字列を
+   * その型に変換する。それ以外 (`'URL'` など) は生文字列を `validate` に渡す (§4.8)
+   */
+  as?: string;
 }
 
 export const Type = {
