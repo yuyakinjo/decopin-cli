@@ -171,6 +171,7 @@ test-app-version/
 .decopin/
 .decopin-test-*/
 .decopin-probe/
+.readme-check-*/
 .mini-app/
 
 # watch のテストが一時的に作るコマンド

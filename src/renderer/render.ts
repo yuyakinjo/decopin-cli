@@ -9,6 +9,7 @@ import type { ColorDepth } from './color.ts';
 import { evaluate } from './evaluate.ts';
 import { layout } from './layout.ts';
 
+/** 描画の設定。省略した項目は環境から判定する */
 export interface RenderOptions {
   /** 色の表現力を明示指定する (省略時は capabilities.ts の判定を使う) */
   color?: { stdout?: ColorDepth; stderr?: ColorDepth };
@@ -24,6 +25,7 @@ export interface RenderOptions {
   unicode?: boolean;
 }
 
+/** fd ごとの文字列と、`<Exit>` で宣言された終了コード */
 export interface RenderResult {
   stdout: string;
   stderr: string;
@@ -51,6 +53,11 @@ function supportsUnicode(env: Record<string, string | undefined>): boolean {
   return /utf-?8/i.test(locale);
 }
 
+/**
+ * JSX を fd ごとの文字列にする。書き出しは行わない (テストしやすくするため)。
+ *
+ * @param node コンポーネントの戻り値をそのまま渡せる (Promise でもよい)
+ */
 export async function render(
   node: RenderInput,
   options: RenderOptions = {}

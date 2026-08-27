@@ -10,6 +10,10 @@ import { CliError } from './errors.ts';
 
 export type LayoutLoader = () => Promise<unknown>;
 
+/**
+ * `layout.tsx` が受け取る props。
+ * `children` は React と同じ**値**で、置かなければ中身は評価されない
+ */
 export interface LayoutProps {
   children: Renderable;
 }

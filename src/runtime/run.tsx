@@ -51,6 +51,10 @@ export interface CommandContext {
   cwd: string;
 }
 
+/**
+ * `run()` に渡すもの。生成された `entry.ts` が規約ファイルの
+ * 読み込み関数を詰めて呼ぶ
+ */
 export interface RunOptions {
   /** 省略時は process.argv.slice(2) */
   argv?: string[];

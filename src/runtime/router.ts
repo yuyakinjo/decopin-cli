@@ -35,6 +35,7 @@ export type Target =
   | { kind: 'root' }
   | { kind: 'unknown'; requested: string; suggestion: string | undefined };
 
+/** 一致したコマンドと、消費されなかった残りのトークン */
 export interface Resolved {
   /** 一致したコマンド名。ルートコマンドは空文字 */
   name: string;

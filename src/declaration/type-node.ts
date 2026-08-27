@@ -74,6 +74,7 @@ export interface CustomType {
   coerceAs: 'string' | 'number' | 'boolean' | 'none';
 }
 
+/** 型宣言の木。valibot への変換と型テキストの生成はここから導く */
 export type TypeNode =
   | StringType
   | NumberType

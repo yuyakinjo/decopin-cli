@@ -8,12 +8,19 @@ import { host } from '../host.ts';
 /** 型の短縮形。制約が要らない場合はこれで足りる */
 export type ShorthandType = 'string' | 'number' | 'boolean';
 
+/** 引数宣言のルート。`description` は `--help` の 1 行目に出る */
 export interface ArgvProps {
   /** コマンドの説明 (help の 1 行目) */
   description?: string;
   children?: Renderable;
 }
 
+/**
+ * 位置引数。JSX 上の記述順がそのまま引数の順になる。
+ *
+ * 型は children (`Type.*`) か `type` 短縮形で、存在 (`required` / `default`) は
+ * props で決める。「省略できるか」は型ではなく存在の話なので分けている
+ */
 export interface ArgProps {
   name: string;
   /** 制約なしの型の短縮形。children と同時には指定できない */
@@ -26,6 +33,10 @@ export interface ArgProps {
   children?: Renderable;
 }
 
+/**
+ * 名前付きオプション (`--name` / `-a`)。
+ * `alias` は 1 文字。boolean の alias だけ `-lv` のように束ねられる
+ */
 export interface OptionProps {
   name: string;
   type?: ShorthandType;
@@ -48,6 +59,7 @@ export const Arg = host<ArgProps>('arg', 'Arg');
 /** 名前付きオプション (`--name` / `-a`) */
 export const Option = host<OptionProps>('option', 'Option');
 
+/** 標準入力の読み方 */
 export interface StdinProps {
   /** 'text' = 全文, 'lines' = 改行で分割, 'json' = JSON.parse */
   mode: 'text' | 'lines' | 'json';
@@ -70,10 +82,12 @@ export interface StdinProps {
 /** 標準入力の読み方 (`stdin.tsx`) */
 export const Stdin = host<StdinProps>('stdin', 'Stdin');
 
+/** 環境変数宣言のルート */
 export interface EnvProps {
   children?: Renderable;
 }
 
+/** 環境変数 1 つ。`<Option>` と同じ規則に従う */
 export interface VarProps {
   name: string;
   /** 制約なしの型の短縮形。children と同時には指定できない */
@@ -90,6 +104,7 @@ export const Env = host<EnvProps>('env', 'Env');
 /** 環境変数 1 つ */
 export const Var = host<VarProps>('var', 'Var');
 
+/** `--version` で出す内容 */
 export interface VersionProps {
   version: string;
   /** 名前も出す場合 (`mycli 0.1.0`) */

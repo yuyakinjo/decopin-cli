@@ -12,6 +12,10 @@ export type EnvResult =
   | { ok: true; value: Record<string, unknown> }
   | { ok: false; issues: string[] };
 
+/**
+ * 環境変数を宣言に照らして検証する。
+ * 空文字は「未設定」として扱う (`TOKEN=` は required なら足りないと報告する)
+ */
 export function validateEnv(
   spec: EnvSpec,
   env: Record<string, string | undefined>

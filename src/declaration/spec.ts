@@ -1,6 +1,7 @@
 /** `argv.tsx` を評価した結果 (test/contract/argv-parsing.test.ts) */
 import type { TypeNode } from './type-node.ts';
 
+/** `<Arg>` を評価した結果 */
 export interface ArgSpec {
   name: string;
   description?: string;
@@ -13,6 +14,7 @@ export interface ArgSpec {
   type: TypeNode;
 }
 
+/** `<Option>` を評価した結果 */
 export interface OptionSpec {
   name: string;
   /** 1 文字の短縮形 */
@@ -25,6 +27,7 @@ export interface OptionSpec {
   type: TypeNode;
 }
 
+/** `argv.tsx` 全体を評価した結果。検証・help・型生成の元になる */
 export interface ArgvSpec {
   /** コマンドの説明 (help の 1 行目に出る) */
   description?: string;

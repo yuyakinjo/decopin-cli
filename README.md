@@ -1,1031 +1,371 @@
 # decopin-cli
 
-[![npm version](https://img.shields.io/npm/v/decopin-cli)](https://www.npmjs.com/package/decopin-cli)
-[![Test](https://github.com/yuyakinjo/decopin-cli/actions/workflows/test.yml/badge.svg)](https://github.com/yuyakinjo/decopin-cli/actions/workflows/test.yml)
-[![Integration Tests](https://github.com/yuyakinjo/decopin-cli/actions/workflows/integration.yml/badge.svg)](https://github.com/yuyakinjo/decopin-cli/actions/workflows/integration.yml)
-[![Build Check](https://github.com/yuyakinjo/decopin-cli/actions/workflows/build.yml/badge.svg)](https://github.com/yuyakinjo/decopin-cli/actions/workflows/build.yml)
-[![Lint](https://github.com/yuyakinjo/decopin-cli/actions/workflows/lint.yml/badge.svg)](https://github.com/yuyakinjo/decopin-cli/actions/workflows/lint.yml)
-[![Performance](https://img.shields.io/badge/dynamic/json?url=https://raw.githubusercontent.com/yuyakinjo/decopin-cli/performance-history/latest-badge.json&query=$.message&label=startup%20time&color=green)](https://github.com/yuyakinjo/decopin-cli/blob/performance-history/latest.md)
+Next.js のようなファイル規約で CLI を書くフレームワーク。TypeScript + Bun。
 
-A TypeScript-first CLI builder inspired by Next.js App Router's file-based routing system. Create powerful command-line interfaces with zero configuration using familiar file-based conventions and pre-validated, type-safe command contexts.
+シェルの 4 つの口が、そのままファイル名になります。
 
-## 🎉 What's New
+| ファイル      | シェルでの意味     | 必須 |
+| ------------- | ------------------ | ---- |
+| `command.tsx` | stdout (fd 1)      | 必須 |
+| `argv.tsx`    | コマンドライン引数 | 任意 |
+| `stdin.tsx`   | 標準入力 (fd 0)    | 任意 |
+| `error.tsx`   | stderr (fd 2)      | 任意 |
 
-### v0.5.0 - Major Updates
+出力は JSX で書きます。React には依存していません (自前の軽量レンダラー)。
 
-- **🔄 Simplified ParamsHandler**: No more `type` field needed! The system automatically detects whether you're using `mappings`, `schema`, or both
-- **🎯 Context-based architecture**: All handlers now receive a consistent context object with environment variables, args, and options
-- **💪 Enhanced validation patterns**: Support for three validation approaches:
-  - Mappings-only (with automatic valibot schema generation)
-  - Schema-only (for complex validation rules)
-  - Combined (schema + mappings for maximum flexibility)
-- **🔧 Improved error handling**: Error handlers now receive full context including the error object
-- **📝 Better TypeScript support**: Enhanced type inference and discriminated unions
+```tsx
+// app/hello/command.tsx
+import { Line, Text, type CommandProps } from 'decopin-cli';
 
-## ✨ Features
-
-- **📁 File-based routing**: Commands defined in `app/` directory with intuitive folder structure
-- **🔧 TypeScript-first**: Full TypeScript support with proper type definitions
-- **⚡ Pre-validated data**: Commands receive type-safe, pre-validated data from `params.ts`
-- **🔍 AST parsing**: TypeScript AST parsing for automatic command metadata extraction
-- **🛡️ Integrated validation**: Built-in validation with valibot, no separate `validate.ts` needed
-- **🎯 Function-based commands**: Clean function-based command definitions with dependency injection
-- **🔄 Real-time development**: Changes reflect instantly with mise watch tasks
-- **📦 Zero configuration**: Works out of the box with sensible defaults
-- **⚡ Dynamic imports**: Generated CLIs use dynamic imports for instant command loading
-- **🏷️ Command aliases**: Support for command aliases (e.g., `hi` → `hello`, `add` → `user create`)
-- **🔌 Middleware support**: Global middleware for authentication, logging, and cross-cutting concerns
-- **🤖 Auto-generated types**: Environment variable types automatically generated from schema definitions
-
-## 🚀 Quick Start
-
-### Installation
-
-```bash
-npm i -D decopin-cli
-```
-
-### Create your first CLI
-
-1. **Initialize project structure**:
-
-```bash
-mkdir my-cli && cd my-cli
-npm init -y
-npm install decopin-cli
-```
-
-2. **Create app directory and your first command**:
-
-```bash
-mkdir -p app/hello
-```
-
-3. **Create `app/hello/command.ts`**:
-
-```typescript
-import type { CommandContext } from '../../dist/types/index.js';
-import type { HelloData } from './params.js';
-
-export default async function createCommand(
-  context: CommandContext<HelloData>
-) {
-  const { name } = context.validatedData;
-
-  console.log(`Hello, ${name}!!!`);
+export default function Command({ args, options }: CommandProps<'hello'>) {
+  return (
+    <Line>
+      <Text bold color="green">
+        hello, {args.name}
+      </Text>
+    </Line>
+  );
 }
 ```
 
-4. **Create `app/hello/params.ts` for type-safe argument validation**:
-
-```typescript
-import type { ParamsHandler } from 'decopin-cli';
-
-export type HelloData = {
-  name: string;
-};
-
-export default function createParams(): ParamsHandler {
-  return {
-    mappings: [
-      {
-        field: 'name',
-        type: 'string',
-        option: 'name',
-        argIndex: 0,
-        defaultValue: 'World',
-        description: 'Name to greet',
-      },
-    ],
-  };
-}
+```sh
+$ bun run build
+$ ./dist/index.js hello world
+hello, world
 ```
 
-5. **Generate your CLI**:
+## セットアップ
 
-```bash
-npx decopin-cli build
+```sh
+bun add decopin-cli
 ```
 
-6. **Test your CLI**:
-
-```bash
-node dist/cli.js hello Alice
-# Output: Hello, Alice!
-
-node dist/cli.js hello --name Bob
-# Output: Hello, Bob!
-
-# Using aliases
-node dist/cli.js hi Alice
-# Output: Hello, Alice!
-```
-
-## 🏗️ Architecture
-
-### Function-Based Command Pattern
-
-```
-app/
-├── version.ts              # Version configuration
-├── hello/                  # Simple hello command
-│   ├── command.ts
-│   ├── params.ts
-│   └── help.ts
-└── user/                   # Nested user command group
-    ├── create/             # user create - Create a user
-    │   ├── command.ts
-    │   ├── params.ts
-    │   ├── error.ts
-    │   └── help.ts
-    └── list/               # user list - List users
-        ├── command.ts
-        ├── params.ts
-        ├── error.ts
-        └── help.ts
-```
-
-decopin-cli uses a simple function pattern where commands are async functions that receive pre-validated contexts:
-
-```typescript
-// decopin-cli approach
-export default async function createCommand(
-  context: CommandContext<HelloData>
-) {
-  const { name } = context.validatedData; // Already validated and typed!
-
-  console.log(`Hello, ${name}!!!`);
-}
-```
-
-## 📁 File Types and Conventions
-
-### `command.ts` - Command Handler
-
-Defines the main command logic. Exports an async function by default and receives a type-safe context.
-
-```typescript
-import type { CommandContext } from '../../dist/types/index.js';
-import type { UserData } from './params.js';
-
-export default async function createCommand(context: CommandContext<UserData>) {
-  const { name, email } = context.validatedData; // Pre-validated data
-
-  // Main command logic
-  console.log(`Creating user: ${name} (${email})`);
-}
-```
-
-**Requirements:**
-
-- Provide async function as default export
-- Accept `CommandContext<T>` or `BaseCommandContext`
-- When `params.ts` exists, validated data is available via `context.validatedData`
-
-### `params.ts` - Argument Definition and Validation
-
-Defines command argument types, validation schemas, and mapping configurations. The system automatically determines which pattern you're using based on the properties you provide - no explicit `type` field needed!
-
-You can choose between three approaches:
-
-#### Approach 1: Mappings-based Validation (Recommended for most cases)
-
-Automatically generates valibot schemas from mappings with built-in type coercion for CLI inputs:
-
-```typescript
-import type { ParamsHandler, Context } from 'decopin-cli';
-
-export default function createParams(
-  context: Context<typeof process.env>
-): ParamsHandler {
-  return {
-    mappings: [
-      {
-        field: 'name',
-        type: 'string',
-        option: 'name', // --name option
-        argIndex: 0, // 1st positional argument
-        required: true,
-        description: 'User name',
-      },
-      {
-        field: 'age',
-        type: 'number', // Automatically converts string to number
-        option: 'age', // --age option
-        argIndex: 1, // 2nd positional argument
-        defaultValue: 18,
-      },
-      {
-        field: 'active',
-        type: 'boolean', // Converts "true", "1", "yes" to true
-        option: 'active',
-        defaultValue: true,
-      },
-    ],
-  };
-}
-```
-
-**Type coercion rules:**
-
-- `number`: Converts strings to numbers (e.g., "123" → 123)
-- `boolean`: Converts "true", "1", "yes" to true, others to false
-- `array`: Splits comma-separated strings (e.g., "a,b,c" → ["a", "b", "c"])
-- `object`: Parses JSON strings (e.g., '{"key":"value"}' → {key: "value"})
-
-#### Approach 2: Schema-based Validation (For complex validation)
-
-Use valibot schemas directly for detailed validation rules:
-
-```typescript
-import * as v from 'valibot';
-import type { ParamsHandler, Context } from 'decopin-cli';
-
-const UserSchema = v.object({
-  arg0: v.pipe(
-    v.string(),
-    v.email('Invalid email format'),
-    v.endsWith('@company.com', 'Must be a company email')
-  ),
-  arg1: v.pipe(
-    v.string(),
-    v.minLength(8, 'Password must be at least 8 characters'),
-    v.regex(/[A-Z]/, 'Must contain uppercase letter'),
-    v.regex(/[0-9]/, 'Must contain number')
-  ),
-  role: v.optional(
-    v.picklist(['admin', 'user', 'guest'], 'Invalid role'),
-    'user'
-  ),
-});
-
-export type UserData = v.InferInput<typeof UserSchema>;
-
-export default function createParams(
-  context: Context<typeof process.env>
-): ParamsHandler {
-  return {
-    schema: UserSchema,
-  };
-}
-```
-
-#### Approach 3: Combined Pattern (Schema + Mappings)
-
-For complex validation scenarios where you need both custom validation rules and automatic argument mapping:
-
-```typescript
-import * as v from 'valibot';
-import type { ParamsHandler } from 'decopin-cli';
-
-const UserSchema = v.object({
-  name: v.pipe(v.string(), v.minLength(1, 'Name is required')),
-  email: v.pipe(v.string(), v.email('Invalid email format')),
-  age: v.optional(v.pipe(v.number(), v.minValue(0), v.maxValue(150)), 25),
-});
-
-export type UserData = v.InferInput<typeof UserSchema>;
-
-export default function createParams(): ParamsHandler {
-  return {
-    schema: UserSchema,
-    mappings: [
-      {
-        field: 'name',
-        option: 'name',
-        argIndex: 0,
-      },
-      {
-        field: 'email',
-        option: 'email',
-        argIndex: 1,
-      },
-      {
-        field: 'age',
-        option: 'age',
-      },
-    ],
-  };
-}
-```
-
-**Features:**
-
-- **Validation Options**: Valibot schema for powerful validation or simple mappings
-- **Argument Mapping**: Flexible mapping between positional and option arguments
-- **Default Values**: Default value configuration within schema
-- **Priority**: Positional arguments → Option arguments → Default values
-- **Type Safety**: Full TypeScript support with both patterns
-
-**When to use each pattern:**
-
-- **Mappings**: Best for simple CLIs with straightforward argument handling
-- **Valibot Schema**: Best for complex validation, advanced type transformations, nested objects
-
-### `error.ts` - Custom Error Handling
-
-Defines custom error handlers for validation errors and command execution errors.
-
-```typescript
-import type { ValiError } from 'valibot';
-
-export default function createErrorHandler() {
-  return async function handleError(error: ValiError<any>) {
-    console.error('🚫 Input error occurred:');
-
-    for (const issue of error.issues) {
-      const field = issue.path?.join('.') || 'unknown';
-      console.error(`  • ${field}: ${issue.message}`);
-    }
-
-    console.error('\n💡 Correct format: my-cli user create <name> <email>');
-    process.exit(1);
-  };
-}
-```
-
-**Use Cases:**
-
-- Customize validation error display
-- User-friendly error messages
-- Provide additional help information
-
-### `global-error.ts` - Global Error Handling
-
-Defines a global error handler that catches errors from commands without custom error handlers. Place this file in the root `app/` directory.
-
-```typescript
-import type { GlobalErrorHandler, CLIError } from 'decopin-cli';
-import { isValidationError, isModuleError, hasStackTrace } from 'decopin-cli';
-
-export default function createGlobalErrorHandler(): GlobalErrorHandler {
-  return async (error: CLIError) => {
-    console.error('\n❌ An error occurred\n');
-
-    // Type-safe error handling
-    if (isValidationError(error)) {
-      // Valibot validation error
-      console.error('📋 Validation Error:');
-      error.issues.forEach((issue) => {
-        const path = issue.path?.map((p) => p.key).join('.') || 'value';
-        console.error(`  • ${path}: ${issue.message}`);
-      });
-    } else if (isModuleError(error)) {
-      // Module loading error
-      console.error('📦 Module Error:');
-      console.error(`  ${error.message}`);
-    } else {
-      // Runtime error
-      console.error('💥 Error Details:');
-      console.error(`  ${error.message}`);
-    }
-
-    // Show stack trace in debug mode
-    if (process.env.DEBUG && hasStackTrace(error)) {
-      console.error('\n📍 Stack Trace:');
-      console.error(error.stack);
-    }
-
-    process.exit(1);
-  };
-}
-```
-
-**Features:**
-
-- Catches unhandled errors from any command
-- Fallback when no command-specific error.ts exists
-- Supports debug mode with stack traces
-- Type-safe error handling with proper TypeScript types
-
-**Error Types:**
-
-- `ValidationError` - Valibot validation errors with `issues` array
-- `ModuleError` - Node.js module loading errors with error `code`
-- `Error` - Standard JavaScript/runtime errors
-- Type guards available: `isValidationError()`, `isModuleError()`, `hasStackTrace()`
-
-### `help.ts` - Help Information
-
-Defines detailed command help information, usage examples, aliases, etc.
-
-```typescript
-import type { HelpHandler } from 'decopin-cli';
-
-export default function createHelp(): HelpHandler {
-  return {
-    name: 'user create',
-    description: 'Create a new user',
-    examples: [
-      'user create "John Doe" "john@example.com"',
-      'user create --name "Alice" --email "alice@example.com"',
-      'user create "Bob" --email "bob@test.com" --age 30',
-    ],
-    aliases: ['add-user', 'new-user'],
-    additionalHelp: `
-This command creates a new user.
-Name and email address are required. Age is optional with a default value of 25.
-    `.trim(),
-  };
-}
-```
-
-**Provided Information:**
-
-- Command description
-- List of usage examples
-- Command aliases
-- Additional help text
-
-### `version.ts` - Version Information
-
-Defines CLI version information and metadata (place in root `app/version.ts`).
-
-```typescript
-import type { VersionHandler } from '../dist/index.js';
-
-export default function createVersion(): VersionHandler {
-  return {
-    version: '1.2.0',
-    metadata: {
-      name: 'my-awesome-cli',
-      version: '1.2.0',
-      description: 'My awesome CLI tool',
-      author: 'Developer Name <dev@example.com>',
-      homepage: 'https://github.com/username/my-cli',
-      license: 'MIT',
-    },
-  };
-}
-```
-
-**Configuration Items:**
-
-- **version**: Version string
-- **metadata**: CLI-wide metadata
-  - **name**: CLI name
-  - **version**: CLI version
-  - **description**: CLI description
-  - **author**: Author information
-  - **homepage**: Project homepage (optional)
-  - **license**: License information (optional)
-
-### File Combination Patterns
-
-**Minimal Configuration:**
-
-```
-app/simple/
-└── command.ts          # Basic command
-```
-
-**Complete Configuration:**
-
-```
-app/complex/
-├── command.ts          # Main logic
-├── params.ts           # Argument definition
-├── error.ts            # Error handling
-└── help.ts             # Help information
-```
-
-**With Middleware:**
-
-```
-app/
-├── middleware.ts       # Global middleware (optional)
-└── user/
-    └── create/
-        ├── command.ts  # Main logic
-        └── params.ts   # Argument definition
-```
-
-**With Global Error Handler:**
-
-```
-app/
-├── global-error.ts     # Global error handler (optional)
-├── middleware.ts       # Global middleware (optional)
-└── commands/
-    ├── command.ts      # Commands without error.ts use global handler
-    └── params.ts
-```
-
-### Integrated Validation
-
-Validation is integrated into `params.ts`, providing type-safe parameter handling using valibot schemas:
-
-```text
-app/hello/
-├── params.ts    # ✅ Types + valibot schema + mappings
-└── command.ts   # ✅ Command logic (receives validated data)
-```
-
-## 🎯 Argument Processing
-
-decopin-cli automatically handles argument validation and type conversion based on your `params.ts` configuration:
-
-#### Positional Arguments
-
-```bash
-my-cli user create "John Doe" "john@example.com"
-```
-
-#### Named Options
-
-```bash
-my-cli user create --name "John Doe" --email "john@example.com"
-```
-
-#### Mixed Arguments (positional takes precedence)
-
-```bash
-my-cli user create "Jane" --email "jane@example.com"
-# name will be "Jane" (from position 0), not from --name option
-```
-
-## 🔄 Development
-
-### Auto-regeneration with Mise
-
-For development, use the built-in mise configuration for automatic CLI regeneration:
-
-```bash
-# Install mise if you haven't already
-curl https://mise.run | sh
-
-# Start development mode with auto-regeneration
-npm run dev
-```
-
-### Manual Build
-
-```bash
-npm run build
-npx decopin-cli build --app-dir app --output-dir examples
-```
-
-### TypeScript Toolchain
-
-Builds use the TypeScript 7 native compiler. Because TypeScript 7.0 does not
-provide a stable programmatic Compiler API, runtime AST parsing uses the
-[official `@typescript/typescript6` compatibility package](https://devblogs.microsoft.com/typescript/announcing-typescript-7-0/#running-side-by-side-with-typescript-6-0)
-side-by-side.
-
-### Code Quality Toolchain
-
-Linting and formatting use [Oxlint and Oxfmt](https://oxc.rs/). Run the
-non-mutating checks before pushing, or use the dedicated fix commands locally:
-
-```bash
-bun run check         # lint and formatting checks
-bun run lint:fix      # apply safe lint fixes
-bun run format        # format supported files
-```
-
-## 📋 CLI Options
-
-### Build Command
-
-```bash
-decopin-cli build [options]
-```
-
-**Options:**
-
-- `--output-dir <dir>`: Output directory (default: `dist`)
-- `--output-file <file>`: Output file name (default: `cli.js`)
-- `--app-dir <dir>`: App directory path (default: `app`)
-- `--cli-name <name>`: CLI name for generated files
-
-### Help Command
-
-```bash
-decopin-cli --help
-```
-
-Shows available commands and options.
-
-### Version Command
-
-```bash
-decopin-cli --version
-```
-
-Shows the current version of decopin-cli.
-
-## 🔍 Advanced Features
-
-### Global Error Handler Example
-
-Create a `global-error.ts` in your app root for centralized error handling:
-
-```typescript
-// app/global-error.ts
-import type { GlobalErrorHandler, CLIError } from 'decopin-cli';
-import { isValidationError, isModuleError } from 'decopin-cli';
-
-export default function createGlobalErrorHandler(): GlobalErrorHandler {
-  return async (error: CLIError) => {
-    // Log errors to file for debugging
-    const errorLog = `[${new Date().toISOString()}] ${error.message}\n`;
-    await fs.appendFile('cli-errors.log', errorLog).catch(() => {});
-
-    // User-friendly error display
-    if (isValidationError(error)) {
-      console.error('❌ Invalid input provided:');
-      error.issues.forEach((issue) => {
-        console.error(`   - ${issue.message}`);
-      });
-      console.error('\nRun with --help for usage information.');
-    } else {
-      console.error('❌ An unexpected error occurred.');
-      if (process.env.DEBUG) {
-        console.error(error);
-      }
-    }
-
-    process.exit(1);
-  };
-}
-```
-
-## 🔍 Advanced Features
-
-### Command Context
-
-Commands with parameters receive a `CommandContext<T>` with pre-validated data:
-
-```typescript
-interface CommandContext<T> {
-  validatedData: T; // Pre-validated typed data from params.ts
-  args: string[]; // Positional arguments
-  options: Record<string, string | boolean>; // Named options
-  params: Record<string, string>; // Dynamic route parameters
-  showHelp: () => void; // Function to show command help
-}
-```
-
-### Commands without Parameters
-
-For commands that don't need parameters, simply omit the `params.ts` file:
-
-```typescript
-// app/status/command.ts
-import type { BaseCommandContext } from 'decopin-cli';
-
-export default async function createCommand(context: BaseCommandContext) {
-  console.log('✅ Application is running');
-}
-```
-
-### Help Documentation
-
-Create `help.ts` to provide detailed command documentation:
-
-```typescript
-// app/hello/help.ts
-import type { HelpHandler } from 'decopin-cli';
-
-export default function createHelp(): HelpHandler {
-  return {
-    name: 'hello',
-    description: 'Say hello to someone',
-    examples: ['hello Alice', 'hello --name Bob', 'hello "Alice Smith"'],
-    aliases: ['hi', 'greet'],
-    additionalHelp:
-      'This command greets a person with a friendly hello message.',
-  };
-}
-```
-
-### Error Handling
-
-```typescript
-export default async function createCommand(context: CommandContext<UserData>) {
-  const { name, email } = context.validatedData;
-
-  try {
-    await createUser(name, email);
-    console.log('✅ User created successfully!');
-  } catch (error) {
-    console.error('❌ Error:', error.message);
-    process.exit(1);
-  }
-}
-```
-
-### Context-Based Architecture
-
-All handlers in decopin-cli follow a consistent context-based pattern, providing a unified interface for accessing command execution information:
-
-#### Handler Patterns
-
-1. **Command Handler** (`command.ts`)
-
-   ```typescript
-   export default async function createCommand(context: CommandContext<T, E>) {
-     const { validatedData, args, env, options } = context;
-     // Direct command implementation
-   }
-   ```
-
-2. **Params Handler** (`params.ts`)
-
-   ```typescript
-   export default function createParams(context: Context<E>): ParamsHandler {
-     // Can access environment during initialization
-     const { env } = context;
-     return {
-       mappings: [...] // or schema: ...
-     };
-   }
-   ```
-
-3. **Error Handler** (`error.ts`)
-
-   ```typescript
-   export default async function createErrorHandler(
-     context: ErrorContext<T, E>
-   ) {
-     const { error, validatedData, args, env } = context;
-     // Custom error handling with full context
-   }
-   ```
-
-4. **Middleware Factory** (`middleware.ts`)
-
-   ```typescript
-   export default function createMiddleware(context: Context<E>) {
-     return async (
-       middlewareContext: MiddlewareContext,
-       next: NextFunction
-     ) => {
-       // Middleware logic with access to factory context
-     };
-   }
-   ```
-
-5. **Global Error Handler** (`global-error.ts`)
-   ```typescript
-   export default function createGlobalErrorHandler(context: Context<E>) {
-     return async (error: unknown) => {
-       // Global error handling with factory context
-     };
-   }
-   ```
-
-#### Context Types
-
-- **Context**: Basic context with args, env, command, and options
-- **CommandContext**: Extends Context with validatedData
-- **ErrorContext**: Extends CommandContext with error property
-- **MiddlewareContext**: Used within middleware execution
-
-### Environment Variables and Type Generation
-
-decopin-cli provides robust environment variable handling with automatic type generation:
-
-#### Defining Environment Variables
-
-Create `app/env.ts` to define your environment schema:
-
-```typescript
-import type { EnvHandler } from '../dist/types/index.js';
-import { SCHEMA_TYPE } from '../dist/types/index.js';
-
-const envSchema = {
-  NODE_ENV: {
-    type: SCHEMA_TYPE.STRING,
-    required: false,
-    default: 'development',
-    errorMessage: 'NODE_ENV must be development, production, or test',
+`tsconfig.json` に JSX の設定が必要です。**これが無いと React を探しに行って失敗します**
+(`decopin build` が警告します)。
+
+```json
+{
+  "compilerOptions": {
+    "jsx": "react-jsx",
+    "jsxImportSource": "decopin-cli/jsx",
+    "allowImportingTsExtensions": true
   },
-  API_KEY: {
-    type: SCHEMA_TYPE.STRING,
-    required: true,
-    minLength: 10,
-    errorMessage: 'API_KEY is required and must be at least 10 characters',
-  },
-  PORT: {
-    type: SCHEMA_TYPE.NUMBER,
-    required: false,
-    default: 3000,
-    min: 1000,
-    max: 65535,
-    errorMessage: 'PORT must be between 1000 and 65535',
-  },
-} as const;
-
-export default function createEnv(): EnvHandler {
-  return envSchema;
+  "include": ["app/**/*", ".decopin/types.d.ts"]
 }
 ```
 
-#### Automatic Type Generation
-
-Types are automatically generated during build:
-
-```bash
-npm run build              # Types auto-generated to app/generated/env-types.ts
-npm run generate:env-types # Manually generate types
+```sh
+bunx decopin build   # app/ を走査して dist/index.js を作る
+bunx decopin dev     # app/ を見張って型を作り直す (バンドルはしない)
 ```
 
-The generated `app/generated/env-types.ts`:
+## 引数を宣言する
 
-```typescript
-// This file is auto-generated. Do not edit manually.
-export interface AppEnv {
-  NODE_ENV: string;
-  API_KEY: string;
-  PORT: number;
+`argv.tsx` に書いた宣言が、検証・`--help`・**型**の 3 つすべての元になります。
+バリデーションライブラリの書き方を覚える必要はありません。
+
+```tsx
+// app/hello/argv.tsx
+import { Arg, Argv, Option, Type } from 'decopin-cli';
+
+export default function DefineArgv() {
+  return (
+    <Argv description="Greet someone.">
+      {/* 制約が無い型は短縮形で書ける */}
+      <Arg
+        name="name"
+        type="string"
+        default="world"
+        description="who to greet"
+      />
+      <Option
+        name="loud"
+        alias="l"
+        type="boolean"
+        default={false}
+        description="shout it"
+      />
+
+      {/* 制約が要るときは children で型を組む */}
+      <Option name="times" alias="t" default={1} description="repeat count">
+        <Type.Number min={1} max={5} integer />
+      </Option>
+      <Option name="style" default="plain" description="how to decorate">
+        <Type.Enum values={['plain', 'bold', 'rainbow']} />
+      </Option>
+    </Argv>
+  );
 }
 ```
 
-#### Using Environment Variables in Commands
+型が再帰する場合は入れ子がそのまま効きます。
 
-Import the generated type for type-safe environment access:
+```tsx
+// app/user/list/argv.tsx (抜粋)
+<Option name="tag" description="filter by tag (repeatable)">
+  <Type.Array>
+    <Type.String minLength={1} />
+  </Type.Array>
+</Option>
+```
 
-```typescript
-import type { CommandContext } from '../../../dist/types/index.js';
-import type { AppEnv } from '../../generated/env-types.js';
+**型と「存在」を階層で分けます。**
 
-export default async function createCommand(
-  context: CommandContext<UserData, AppEnv>
-) {
-  const { API_KEY, NODE_ENV } = context.env; // Type-safe access
+| 何を決めるか          | どこに書くか                                           |
+| --------------------- | ------------------------------------------------------ |
+| 値の型と制約          | children (`Type.*`) または `type` 短縮形               |
+| 省略できるか / 既定値 | `<Arg>` / `<Option>` の props (`required` / `default`) |
 
-  console.log(`Environment: ${NODE_ENV}`);
-  // Use API_KEY for authentication...
+`required` と `default` は同時に指定できません (どちらも無ければ省略可能)。
+
+宣言すると型が届きます。
+
+```tsx
+import type { CommandProps } from 'decopin-cli';
+
+export default function Command({ args, options }: CommandProps<'hello'>) {
+  args.name; // string
+  options.times; // number
+  options.style; // "plain" | "bold" | "rainbow"
+  return null;
 }
 ```
 
-**Benefits:**
+`--help` も宣言から作られます。
 
-- **Single source of truth**: Schema defines both validation and types
-- **Type safety**: Full TypeScript support for environment variables
-- **Auto-sync**: Types always match your schema definition
-- **Build-time generation**: No runtime overhead
+```sh
+$ ./dist/index.js hello --help
+Usage: decopin-cli hello [name] [options]
 
-**Note:** The `app/generated/` directory is automatically excluded from file watching to prevent build loops during development.
+Greet someone.
 
-### Middleware Support
+Arguments:
+  name                              who to greet (default: "world")
 
-decopin-cli supports global middleware for cross-cutting concerns like authentication, logging, and error handling. Create `app/middleware.ts` to define middleware that runs before every command:
-
-```typescript
-// app/middleware.ts
-import type {
-  MiddlewareFactory,
-  MiddlewareContext,
-  NextFunction,
-} from '../dist/types/middleware.js';
-
-const createMiddleware: MiddlewareFactory = () => {
-  return async (
-    context: MiddlewareContext<typeof process.env>,
-    next: NextFunction
-  ) => {
-    // Pre-execution logic
-    console.log(`Executing command: ${context.command}`);
-    const startTime = Date.now();
-
-    try {
-      // Call the next middleware or command
-      await next();
-
-      // Post-execution logic
-      const duration = Date.now() - startTime;
-      console.log(`Command completed in ${duration}ms`);
-    } catch (error) {
-      // Global error handling
-      console.error('Command failed:', error);
-      throw error;
-    }
-  };
-};
-
-export default createMiddleware;
+Options:
+  -l, --loud                        shout it (default: false)
+  -t, --times <number>              repeat count (default: 1)
+      --style <plain|bold|rainbow>  how to decorate (default: "plain")
+  -h, --help                        show this help
 ```
 
-**Middleware Context:**
+## 標準入力を読む
 
-```typescript
-interface MiddlewareContext<Env> {
-  command: string; // Command path (e.g., 'user/create')
-  args: string[]; // Positional arguments
-  options: Record<string, string | boolean>; // CLI options
-  env: Env; // Environment variables
+`stdin.tsx` が**無いコマンドは stdin に一切触りません**。端末で実行したときに
+入力待ちでフリーズする、という事故が構造的に起きません。
+
+```tsx
+// app/count/stdin.tsx
+import { Stdin } from 'decopin-cli';
+
+export default function DefineStdin() {
+  return <Stdin mode="lines" required />;
 }
 ```
 
-**Common Middleware Use Cases:**
+| `mode`  | 受け取る型                                   |
+| ------- | -------------------------------------------- |
+| `text`  | `string` (全文)。`trim` で末尾の改行を落とす |
+| `lines` | `string[]` (改行で分割)                      |
+| `json`  | children で宣言した型、または `unknown`      |
 
-- **Authentication**: Check auth tokens before command execution
-- **Logging**: Log command execution for debugging
-- **Performance Monitoring**: Measure command execution time
-- **Error Handling**: Centralized error handling and reporting
-- **Environment Setup**: Initialize services or configurations
+`required` を付けなければ、端末で実行したときは `undefined` が渡ります (型にも
+`| undefined` が付きます)。
 
-**Example: Authentication Middleware**
+```sh
+$ printf 'a\nb\n\nc\n' | ./dist/index.js count
+4
+```
 
-```typescript
-export default function createMiddleware(): MiddlewareFactory {
-  return async (context, next) => {
-    // Check for auth flag
-    if (context.options.auth) {
-      const token = context.env.AUTH_TOKEN;
-      if (!token) {
-        console.error(
-          '❌ Authentication required. Set AUTH_TOKEN environment variable.'
-        );
-        process.exit(1);
-      }
-      console.log('✅ Authenticated');
-    }
+## エラーを出す
 
-    await next();
-  };
+`error.tsx` は**近いディレクトリから順に**探されます。
+
+```
+app/user/create/error.tsx   ← 自分のディレクトリ (最優先)
+app/user/error.tsx          ← 親を順にさかのぼる
+app/global-error.tsx        ← 最後の受け皿
+組み込みの既定表示           ← どれも無い / どれも失敗した
+```
+
+```tsx
+// app/user/error.tsx
+import { Line, Text, type ErrorProps } from 'decopin-cli';
+
+export default function UserError({ error }: ErrorProps) {
+  return (
+    <Line>
+      <Text color="red">user: </Text>
+      {error.issues[0] ?? error.message}
+    </Line>
+  );
 }
 ```
 
-## 🚧 Roadmap & TODO
+出力は既定で stderr に行きます。終了コードは `error.kind` から決まりますが、
+`<Exit code={n} />` で上書きできます。
 
-### Planned Features
+| コード | 意味                                                                       |
+| ------ | -------------------------------------------------------------------------- |
+| 0      | 成功                                                                       |
+| 1      | 実行時エラー (`command.tsx` 内の throw)                                    |
+| 2      | 使い方の誤り (引数の検証失敗 / 未知のコマンド / env 不足 / stdin 必須違反) |
+| 130    | Ctrl+C                                                                     |
 
-#### 🔄 Lifecycle Hooks
+## そのほかの規約
 
-- **Pre/Post action hooks**: Execute logic before and after command execution
-- **Global and command-specific hooks**: Support both CLI-wide and per-command hooks
-- **Error handling hooks**: Custom error processing hooks
+| ファイル         | 役割                                        |
+| ---------------- | ------------------------------------------- |
+| `layout.tsx`     | 出力を包む。上位ディレクトリから継承される  |
+| `middleware.tsx` | 実行を包む。`next()` を呼ぶまで中は走らない |
+| `help.tsx`       | `--help` の上書き。ディレクトリ単位         |
+| `not-found.tsx`  | 未知のコマンドの表示                        |
+| `env.tsx`        | 環境変数の宣言。起動時に一度だけ検証される  |
+| `version.tsx`    | `--version` の内容                          |
 
-```typescript
-// Planned API
-// app/hooks.ts - Global hooks
-export const hooks = {
-  preAction: async (context) => {
-    console.log(`About to execute: ${context.command.name}`);
-  },
-  postAction: async (context, result) => {
-    console.log(`Completed: ${context.command.name}`);
-  },
-};
+```tsx
+// app/user/middleware.tsx — next は「呼ぶまで走らない関数」
+import { Line, Stderr, Text, type MiddlewareProps } from 'decopin-cli';
 
-// app/user/create/hooks.ts - Command-specific hooks
-export default {
-  preAction: async (context) => {
-    // Validate user permissions before creating
-  },
-};
+export default async function Middleware({ next, options }: MiddlewareProps) {
+  const started = performance.now();
+  const output = await next();
+  if (options.verbose !== true) return output;
+  return (
+    <>
+      {output}
+      <Stderr>
+        <Line>
+          <Text dim>took {Math.round(performance.now() - started)}ms</Text>
+        </Line>
+      </Stderr>
+    </>
+  );
+}
 ```
 
-#### 🏁 Shell Autocompletion
+`_` で始まるディレクトリはコマンドになりません (共有コードの置き場)。
 
-- **Multi-shell support**: Generate completion scripts for bash, zsh, fish, PowerShell
-- **Dynamic completion**: Context-aware completion based on current command state
-- **Custom completion functions**: User-defined completion logic
+## サブコマンド
 
-```bash
-# Planned CLI options
-decopin-cli build --completion=bash > my-cli-completion.bash
-decopin-cli build --completion=zsh > _my-cli
-decopin-cli build --completion=fish > my-cli.fish
+ディレクトリの階層がそのままサブコマンドです。`command.tsx` を持たない
+ディレクトリは「グループ」として扱われ、配下の一覧を出します。
 
-# Auto-install completions
-decopin-cli build --install-completion=bash
+```
+app/user/list/command.tsx     → cli user list
+app/user/import/command.tsx   → cli user import
 ```
 
-#### 🔧 Advanced Option Features
+```sh
+$ ./dist/index.js user
+Usage: decopin-cli user <command> [options]
 
-- **Option choices**: Restrict option values to predefined sets
-- **Option conflicts/implies**: Define option dependencies and conflicts
-- **Variadic options**: Support for multiple values per option
-- **Option groups**: Group related options in help output
+Commands:
+  import
+  list
 
-### Implementation Priority
+Run "decopin-cli user <command> --help" for details.
+```
 
-1. **Shell Autocompletion** - High priority, essential for production CLIs
-2. **Lifecycle Hooks** - Medium priority, useful for complex workflows
-3. **Advanced Option Features** - Lower priority, nice-to-have features
+明示的に `--help` を求めたときは stdout に exit 0 で、コマンドが確定しないまま
+終わったときは stderr に exit 2 で出ます。
 
-### Contributing
+## 出力コンポーネント
 
-We welcome contributions! If you'd like to work on any of these features, please:
+```tsx
+<Line>1 行 (末尾に改行が付く)</Line>
+<Text bold dim italic underline color="green" bg="#333">
+  装飾
+</Text>
+<Br />
+<Stdout>
+  <Line>ここは stdout</Line>
+</Stdout>
+<Stderr>
+  <Line>ここは stderr</Line>
+</Stderr>
+<Exit code={2} />
+```
 
-1. Open an issue to discuss the implementation approach
-2. Check existing issues to avoid duplicate work
-3. Follow our coding standards and testing practices
+```tsx
+<Indent by={2}>
+  <Line>字下げ</Line>
+</Indent>
+<Box border="round" title="summary">
+  <Line>罫線で囲む</Line>
+</Box>
+<Columns gap={4}>
+  <Line>左の列</Line>
+  <Line>右の列</Line>
+</Columns>
+<Success>ok</Success>
+<Warn>careful</Warn>
+<Info>fyi</Info>
+<Danger>failed</Danger>
+<List items={['a', 'b']} ordered />
+<Table
+  columns={['NAME', 'SCORE']}
+  rows={[['alice', 42]]}
+  align={['left', 'right']}
+/>
+<KeyValue data={{ version: '0.1.0', routes: 6 }} />
+<Json value={{ ok: true }} />
+<Line>
+  <Link href="https://example.com">docs</Link>
+</Line>
+```
 
-## 📝 License
+日本語や絵文字の**表示幅**を数えるので、罫線や表がずれません。
 
-MIT License - see [LICENSE](LICENSE) for details.
+```
+╭─ summary ──────────────────────╮
+│ decopin-cli v0.1.0             │
+│ 日本語も桁がずれない           │
+╰────────────────────────────────╯
+```
 
-## 🙏 Acknowledgments
+色は自動で落ちます。パイプ・リダイレクト時、`NO_COLOR`、`--no-color`、
+`TERM=dumb` のいずれかで装飾なしになります (`FORCE_COLOR` で強制できます)。
+`<Line>` は自動で折り返しません (パイプ先の行単位の処理を壊さないため)。
 
-- Inspired by Next.js App Router's file-based routing
-- Built with TypeScript and modern Node.js features
-- Uses valibot for type-safe validation
+## 予約されているオプション
 
----
+`--help` / `-h` / `--version` / `--no-color` の 4 つはフレームワークが処理します。
+`argv.tsx` で同じ名前を宣言するとビルドエラーになります。
 
-**decopin-cli** - Build CLIs like you build Next.js apps! 🚀
+## 動くサンプル
+
+[`app/`](app/) がそのままサンプルです。ビルドとテストで常に検証されています。
+
+| コマンド                             | 見どころ                                                             |
+| ------------------------------------ | -------------------------------------------------------------------- |
+| [`app/hello`](app/hello)             | 位置引数・オプション・enum                                           |
+| [`app/count`](app/count)             | `stdin.tsx` (lines)、`help.tsx` の上書き、boolean alias の束ね       |
+| [`app/upper`](app/upper)             | 任意の stdin (端末なら `undefined`)                                  |
+| [`app/user`](app/user)               | サブコマンド、`layout.tsx`、`middleware.tsx`、継承される `error.tsx` |
+| [`app/user/import`](app/user/import) | `mode="json"` + `Type.Object`                                        |
+| [`app/config`](app/config)           | `env.tsx` の値を使う                                                 |
+| [`app/crash`](app/crash)             | `error.tsx` と `<Exit>`                                              |
+
+## 設計の理由
+
+なぜそうなっているかは [docs/decisions.md](docs/decisions.md) にあります
+(なぜ Ink を使わないか、なぜ型をビルド時に生成するか、なぜ middleware は
+`children` でなく `next` か、など)。
+
+挙動の約束は [`test/contract/`](test/contract) にテーブル駆動テストとして置いて
+あります。仕様書は持ちません — 動かないドキュメントは実装とずれるためです。
+
+## 開発
+
+```sh
+bun test              # 560 件
+bun run typecheck
+bun run lint
+bun run format
+bun run bench         # 起動時間
+```
+
+## ライセンス
+
+MIT

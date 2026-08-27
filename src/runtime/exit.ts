@@ -13,4 +13,5 @@ export const EXIT_CODE = {
   interrupted: 130,
 } as const;
 
+/** 規約で定めた終了コード */
 export type ExitCode = (typeof EXIT_CODE)[keyof typeof EXIT_CODE];

@@ -5,10 +5,12 @@
  */
 import type { RenderResult } from './render.ts';
 
+/** 書き出し先。テストから差し替えられるよう最小の形にしている */
 export interface WritableLike {
   write(chunk: string): unknown;
 }
 
+/** stdout / stderr の書き出し先 */
 export interface WriteTargets {
   stdout?: WritableLike;
   stderr?: WritableLike;

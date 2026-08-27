@@ -4,6 +4,7 @@
  */
 import { EXIT_CODE } from './exit.ts';
 
+/** エラーの分類。`error.tsx` はこれを見て表示を切り替える */
 export type ErrorKind = 'validation' | 'runtime' | 'stdin' | 'env' | 'unknown';
 
 export interface CliErrorOptions {
@@ -14,6 +15,10 @@ export interface CliErrorOptions {
   cause?: unknown;
 }
 
+/**
+ * 実行時のエラー。`kind` と `exitCode` を持つ。
+ * 検証の失敗のように理由が複数ある場合は `issues` に並べる
+ */
 export class CliError extends Error {
   override readonly name = 'CliError';
   readonly kind: ErrorKind;

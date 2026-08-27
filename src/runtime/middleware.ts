@@ -21,6 +21,12 @@ export interface MiddlewareContext {
   cwd: string;
 }
 
+/**
+ * `middleware.tsx` が受け取る props。
+ *
+ * `next` は**呼ぶまで走らない関数**。`layout.tsx` の `children` (値) と
+ * 意味が違うので名前を分けている (ADR 13)
+ */
 export interface MiddlewareProps extends MiddlewareContext {
   /**
    * 内側の処理を走らせて、その出力を返す。

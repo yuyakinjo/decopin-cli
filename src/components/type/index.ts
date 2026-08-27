@@ -67,6 +67,10 @@ export interface CustomTypeProps {
   as?: string;
 }
 
+/**
+ * 型宣言コンポーネントの集まり。`Arg` / `Option` / `Var` / `Stdin` の
+ * children として使う。覚えるのはこの 1 系統だけ
+ */
 export const Type = {
   String: host<StringTypeProps>('type.string', 'Type.String'),
   Number: host<NumberTypeProps>('type.number', 'Type.Number'),

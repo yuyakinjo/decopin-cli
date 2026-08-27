@@ -5,6 +5,7 @@
 import type { Renderable } from '../jsx/types.ts';
 import { Line, Symbol } from './index.ts';
 
+/** 状態を表すプリセットが受け取る props */
 export interface StatusProps {
   children?: Renderable;
 }
