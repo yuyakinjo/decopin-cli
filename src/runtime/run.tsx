@@ -28,8 +28,10 @@ import { CommandList, Help } from './help.tsx';
 import { applyLayouts } from './layout.tsx';
 import { ErrorMessage } from './messages.tsx';
 import { runMiddleware } from './middleware.ts';
+import { NotFound } from './not-found.tsx';
+import { present } from './override.ts';
 import { HELP_FLAGS, NO_COLOR_FLAG, VERSION_FLAG } from './reserved.ts';
-import { resolveRoute, suggest } from './router.ts';
+import { commandsUnder, resolveTarget } from './router.ts';
 import type { RouteTable } from './router.ts';
 import { processStdin, readStdin } from './stdin-reader.ts';
 import type { StdinSource } from './stdin-reader.ts';
@@ -64,6 +66,10 @@ export interface RunOptions {
   envFile?: () => Promise<unknown>;
   /** `app/version.tsx` (§4.7) */
   versionFile?: () => Promise<unknown>;
+  /** ディレクトリ (ルートは空文字) → `help.tsx` (§4.7) */
+  helps?: Record<string, () => Promise<unknown>>;
+  /** `app/not-found.tsx` (§7) */
+  notFound?: () => Promise<unknown>;
   /** 書き出し先 (テストから差し替えるため) */
   targets?: WriteTargets;
 }
@@ -76,6 +82,11 @@ async function emit(
   const result = await render(node, { env: options.env, noColorFlag });
   write(result, options.targets);
   return result.exitCode;
+}
+
+/** ルート名 (`user/list`) を利用者が打つ形 (`user list`) にする */
+function display(name: string): string {
+  return name.split('/').join(' ');
 }
 
 /** `--` より前だけを見る (それ以降は位置引数なので予約語として扱わない) */
@@ -164,10 +175,6 @@ export async function run(
   const helpRequested = findFlag(argv, HELP_FLAGS);
   const versionRequested = findFlag(argv, [VERSION_FLAG]);
 
-  const names = Object.keys(table)
-    .filter((name) => name !== '')
-    .sort();
-
   // --version はコマンドに依存しないので、ルート解決より前に処理する
   if (versionRequested) {
     if (options.versionFile === undefined) {
@@ -206,32 +213,56 @@ export async function run(
     }
   }
 
-  const resolved = resolveRoute(table, argv);
-  if (resolved === undefined) {
-    if (helpRequested || argv.length === 0) {
-      await emit(
-        <CommandList program={program} commands={names} />,
-        options,
-        noColorFlag
+  const target = resolveTarget(table, argv);
+
+  // コマンドが確定しない経路 (§7 のルート解決表)。
+  // 明示的に --help を求められたら stdout + exit 0、
+  // そうでなければ「使い方の誤り」なので stderr + exit 2
+  if (target.kind !== 'command') {
+    const group = target.kind === 'group' ? target.name : '';
+    const commands = commandsUnder(table, group);
+
+    if (target.kind === 'unknown') {
+      const shown = await present(
+        options.notFound,
+        {
+          requested: target.requested,
+          suggestion: target.suggestion?.split('/').join(' '),
+          commands: commands.map(display),
+          program,
+          argv,
+          cwd,
+        },
+        <NotFound
+          requested={target.requested}
+          suggestion={target.suggestion?.split('/').join(' ')}
+          commands={commands.map(display)}
+          program={program}
+          argv={argv}
+          cwd={cwd}
+        />
       );
-      return helpRequested ? EXIT_CODE.success : EXIT_CODE.usage;
+      await emit(<Stderr>{shown.node}</Stderr>, options, noColorFlag);
+      return EXIT_CODE.usage;
     }
-    const requested = argv.filter((token) => !token.startsWith('-'));
-    const guess = suggest(table, argv);
+
+    const auto = (
+      <CommandList program={program} commands={commands} group={group} />
+    );
+    const shown = await present(
+      options.helps?.[group],
+      { auto, program, command: display(group), argv, cwd },
+      auto
+    );
     await emit(
-      <ErrorMessage
-        message={`Unknown command: ${requested.join(' ')}`}
-        hints={
-          guess === undefined
-            ? [`Available commands: ${names.join(', ')}`]
-            : [`Did you mean: ${guess.split('/').join(' ')}`]
-        }
-      />,
+      helpRequested ? shown.node : <Stderr>{shown.node}</Stderr>,
       options,
       noColorFlag
     );
-    return EXIT_CODE.usage;
+    return helpRequested ? EXIT_CODE.success : EXIT_CODE.usage;
   }
+
+  const resolved = { name: target.name, rest: target.rest };
 
   try {
     const route = table[resolved.name];
@@ -239,7 +270,7 @@ export async function run(
 
     const layouts = route.layouts ?? [];
     /** layout.tsx で包んでから描画する。skipLayout なら包まない (§4.5) */
-    const present = async (
+    const withLayout = async (
       node: RenderInput,
       skipLayout: boolean
     ): Promise<number | undefined> => {
@@ -254,17 +285,29 @@ export async function run(
     const spec = await loadArgvSpec(route.argv);
 
     if (helpRequested) {
-      await emit(
+      // stdin の宣言も使い方に出す (パイプが必要だと気づけるように)
+      const auto = (
         <Help
           program={program}
           command={resolved.name}
           spec={spec}
-          // stdin の宣言も使い方に出す (パイプが必要だと気づけるように)
           stdin={await loadStdinSpec(route.stdin)}
-        />,
-        options,
-        noColorFlag
+        />
       );
+      const shown = await present(
+        options.helps?.[resolved.name],
+        {
+          auto,
+          program,
+          command: display(resolved.name),
+          argv: resolved.rest,
+          cwd,
+        },
+        auto
+      );
+      // 組み込みの表示は layout に包まない。上書きは利用者の出力なので包む
+      if (shown.overridden) await withLayout(shown.node, shown.skipLayout);
+      else await emit(shown.node, options, noColorFlag);
       return EXIT_CODE.success;
     }
 
@@ -335,7 +378,7 @@ export async function run(
       { env, args, options: commandOptions, argv: rest, cwd }
     );
 
-    const declared = await present(output, skipLayout);
+    const declared = await withLayout(output, skipLayout);
     return declared ?? EXIT_CODE.success;
   } catch (error) {
     const cliError = toCliError(error);

@@ -84,6 +84,10 @@ export { run } from './runtime/run.tsx';
 export type { CommandContext, RunOptions } from './runtime/run.tsx';
 export { EXIT_CODE } from './runtime/exit.ts';
 export type { ExitCode } from './runtime/exit.ts';
+export { Help, CommandList } from './runtime/help.tsx';
+export type { HelpProps } from './runtime/help.tsx';
+export { NotFound } from './runtime/not-found.tsx';
+export type { NotFoundProps } from './runtime/not-found.tsx';
 export { applyLayouts } from './runtime/layout.tsx';
 export type { LayoutProps } from './runtime/layout.tsx';
 export { runMiddleware } from './runtime/middleware.ts';
@@ -94,8 +98,18 @@ export type {
 export { processStdin, readStdin } from './runtime/stdin-reader.ts';
 export type { StdinSource } from './runtime/stdin-reader.ts';
 export { validateEnv } from './validation/env.ts';
-export { resolveRoute, suggest } from './runtime/router.ts';
-export type { Resolved, RouteLoaders, RouteTable } from './runtime/router.ts';
+export {
+  commandsUnder,
+  resolveRoute,
+  resolveTarget,
+  suggest,
+} from './runtime/router.ts';
+export type {
+  Resolved,
+  RouteLoaders,
+  RouteTable,
+  Target,
+} from './runtime/router.ts';
 
 export { render } from './renderer/render.ts';
 export type { RenderOptions, RenderResult } from './renderer/render.ts';

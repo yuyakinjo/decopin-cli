@@ -150,4 +150,31 @@ describe('CommandList', () => {
     expect(result.stdout).toContain('user list');
     expect(result.stdout).toContain('Run "cli <command> --help" for details.');
   });
+
+  test('group を渡すと usage 行と表示名がその配下になる', async () => {
+    const result = await render(
+      <CommandList
+        program="cli"
+        commands={['user/import', 'user/list']}
+        group="user"
+      />,
+      plain
+    );
+    expect(result.stdout).toContain('Usage: cli user <command> [options]');
+    // グループ名を除いた、打つべき残りの語だけを出す
+    expect(result.stdout).toContain('  import');
+    expect(result.stdout).toContain('  list');
+    expect(result.stdout).not.toContain('user import');
+    expect(result.stdout).toContain('Run "cli user <command> --help"');
+  });
+
+  test('行末に空白を残さない', async () => {
+    const result = await render(
+      <CommandList program="cli" commands={['a', 'longer']} />,
+      plain
+    );
+    for (const line of result.stdout.split('\n')) {
+      expect(line).toBe(line.trimEnd());
+    }
+  });
 });

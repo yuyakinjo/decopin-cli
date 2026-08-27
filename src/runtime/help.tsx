@@ -46,7 +46,22 @@ function pad(label: string, width: number): string {
   return label.padEnd(width + GAP, ' ');
 }
 
-interface HelpProps {
+/**
+ * `help.tsx` が受け取る props (§4.7)。
+ * 利用者向けなので `src/index.ts` から export する
+ */
+export interface HelpProps {
+  /** 宣言から生成した使い方。そのまま差し込める */
+  auto: Renderable;
+  /** 実行ファイルの名前 */
+  program: string;
+  /** コマンド名 (`user list`)。ルート / グループなら空白区切りの名前 */
+  command: string;
+  argv: readonly string[];
+  cwd: string;
+}
+
+interface AutoHelpProps {
   /** 実行ファイルの名前 */
   program: string;
   /** コマンド名 (`user create`)。ルートコマンドなら空文字 */
@@ -57,7 +72,12 @@ interface HelpProps {
 }
 
 /** 1 コマンドの使い方 */
-export function Help({ program, command, spec, stdin }: HelpProps): Renderable {
+export function Help({
+  program,
+  command,
+  spec,
+  stdin,
+}: AutoHelpProps): Renderable {
   const visibleOptions = spec.options.filter((option) => !option.hidden);
   const usage = [
     program,
@@ -140,18 +160,32 @@ export function Help({ program, command, spec, stdin }: HelpProps): Renderable {
 interface CommandListProps {
   program: string;
   commands: string[];
+  /** グループ名 (`user`)。指定すると usage 行と表示名がその配下になる */
+  group?: string;
 }
 
-/** コマンドを指定しなかったときの一覧 */
+/**
+ * コマンドが確定しなかったときの一覧 (§7)。
+ * `group` を渡すとそのディレクトリ配下だけを出す
+ */
 export function CommandList({
   program,
   commands,
+  group,
 }: CommandListProps): Renderable {
-  const width = Math.max(0, ...commands.map((name) => name.length));
+  const groupWords =
+    group === undefined || group === '' ? [] : group.split('/');
+  /** グループ名を除いた、利用者が打つべき残りの語 */
+  const labelOf = (name: string): string =>
+    name.split('/').slice(groupWords.length).join(' ');
+
+  const usage = [program, ...groupWords, '<command> [options]'].join(' ');
+  const detail = [program, ...groupWords, '<command> --help'].join(' ');
+
   return (
     <>
       <Line>
-        <Text bold>Usage:</Text> {program} {'<command> [options]'}
+        <Text bold>Usage:</Text> {usage}
       </Line>
       <Br />
       <Line>
@@ -160,11 +194,11 @@ export function CommandList({
       {commands.map((name) => (
         <Line key={name}>
           {'  '}
-          <Text color="cyan">{pad(name.split('/').join(' '), width)}</Text>
+          <Text color="cyan">{labelOf(name)}</Text>
         </Line>
       ))}
       <Br />
-      <Line>{`Run "${program} <command> --help" for details.`}</Line>
+      <Line>{`Run "${detail}" for details.`}</Line>
     </>
   );
 }

@@ -101,11 +101,41 @@ describe('生成された CLI', () => {
     expect(result.code).toBe(0);
   });
 
-  test('未知のコマンドは exit 2', async () => {
+  test('未知のコマンドは app/not-found.tsx で表示され exit 2', async () => {
     const result = await cli(['helo']);
     expect(result.stdout).toBe('');
-    expect(result.stderr).toContain('Unknown command: helo');
+    expect(result.stderr).toContain('no such command: helo');
+    expect(result.stderr).toContain('did you mean');
     expect(result.code).toBe(2);
+  });
+
+  test('引数なしはコマンド一覧を stderr に出して exit 2', async () => {
+    const result = await cli([]);
+    expect(result.stdout).toBe('');
+    expect(result.stderr).toContain('Usage: decopin-cli <command> [options]');
+    expect(result.code).toBe(2);
+  });
+
+  test('グループは配下の一覧、--help なら stdout + exit 0', async () => {
+    const implicit = await cli(['user']);
+    expect(implicit.stdout).toBe('');
+    expect(implicit.stderr).toContain('Usage: decopin-cli user <command>');
+    expect(implicit.code).toBe(2);
+
+    const explicit = await cli(['user', '--help']);
+    expect(explicit.stderr).toBe('');
+    expect(explicit.stdout).toContain('Usage: decopin-cli user <command>');
+    // app/user/help.tsx の上書きが効く
+    expect(explicit.stdout).toContain('users are read from');
+    expect(explicit.code).toBe(0);
+  });
+
+  test('コマンド単位の help.tsx が生成された使い方に足せる', async () => {
+    const result = await cli(['count', '--help']);
+    expect(result.stdout).toContain('Stdin:');
+    expect(result.stdout).toContain('Examples:');
+    expect(result.stdout).toContain('| decopin-cli count');
+    expect(result.code).toBe(0);
   });
 
   test('パイプ経由では装飾を落とす', async () => {

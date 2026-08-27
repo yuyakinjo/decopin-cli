@@ -21,7 +21,12 @@ export const CONVENTION_FILES = [
 export type ConventionFile = (typeof CONVENTION_FILES)[number];
 
 /** ルート直下にだけ置けるファイル */
-export const ROOT_ONLY_FILES = ['global-error', 'env', 'version'] as const;
+export const ROOT_ONLY_FILES = [
+  'global-error',
+  'not-found',
+  'env',
+  'version',
+] as const;
 
 export type RootOnlyFile = (typeof ROOT_ONLY_FILES)[number];
 
@@ -48,6 +53,13 @@ export interface ScanResult {
    * command.tsx を持たないディレクトリも含む (error.tsx だけ置ける)
    */
   inherited: Map<string, Partial<Record<InheritedFile, string>>>;
+  /**
+   * ディレクトリ (ルートは空文字) → `help.tsx`。
+   *
+   * help は継承しない (ディレクトリごとに完全一致で引く)。`command.tsx` を
+   * 持たないディレクトリにも置けるので、Route とは別に持つ (§7)
+   */
+  helpFiles: Map<string, string>;
 }
 
 /** `.tsx` を優先する。JSX を使わないコマンドのために `.ts` も許す */
@@ -79,6 +91,7 @@ export async function scan(appDir: string): Promise<ScanResult> {
   const routes: Route[] = [];
   const rootFiles: Partial<Record<RootOnlyFile, string>> = {};
   const inherited = new Map<string, Partial<Record<InheritedFile, string>>>();
+  const helpFiles = new Map<string, string>();
 
   const walk = async (dir: string, name: string): Promise<void> => {
     const absolute = join(appDir, dir);
@@ -109,6 +122,9 @@ export async function scan(appDir: string): Promise<ScanResult> {
     }
     if (Object.keys(inheritable).length > 0) inherited.set(dir, inheritable);
 
+    // help.tsx はコマンドでないディレクトリ (グループ) にも置ける (§7)
+    if (files.help !== undefined) helpFiles.set(dir, files.help);
+
     // command.tsx を持つディレクトリだけがコマンドになる (§3)
     if (files.command !== undefined) {
       routes.push({ name, dir, files });
@@ -125,7 +141,7 @@ export async function scan(appDir: string): Promise<ScanResult> {
 
   await walk('', '');
   routes.sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0));
-  return { routes, rootFiles, inherited };
+  return { routes, rootFiles, inherited, helpFiles };
 }
 
 /**

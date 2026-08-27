@@ -101,6 +101,16 @@ describe('run', () => {
     expect(result.stderr).toContain('Did you mean: hello');
   });
 
+  test('グループ (command.tsx を持たないディレクトリ) は配下の一覧を出す', async () => {
+    const result = await invoke(table, ['user']);
+    expect(result.code).toBe(2);
+    expect(result.stdout).toBe('');
+    expect(result.stderr).toContain('Usage: cli user <command> [options]');
+    expect(result.stderr).toContain('list');
+    // 他のグループのコマンドは出さない
+    expect(result.stderr).not.toContain('hello');
+  });
+
   test('候補がなければ利用できるコマンドを並べる', async () => {
     const result = await invoke(table, ['zzzzzz']);
     expect(result.code).toBe(2);
@@ -119,11 +129,13 @@ describe('run', () => {
     expect(result.stderr).toContain('must default-export a component');
   });
 
-  test('引数なしで呼ぶとコマンド一覧を出して exit 2', async () => {
+  test('引数なしで呼ぶとコマンド一覧を stderr に出して exit 2', async () => {
     const result = await invoke(table, []);
     expect(result.code).toBe(2);
-    expect(result.stdout).toContain('Usage: cli <command> [options]');
-    expect(result.stdout).toContain('user list');
+    // コマンドが確定しないまま終わったので stderr + exit 2 (§7)
+    expect(result.stdout).toBe('');
+    expect(result.stderr).toContain('Usage: cli <command> [options]');
+    expect(result.stderr).toContain('user list');
   });
 
   test('--help だけならコマンド一覧を出して exit 0', async () => {

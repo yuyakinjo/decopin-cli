@@ -35,6 +35,10 @@ export interface RoutesInput {
   middlewareChains?: Map<string, string[]>;
   /** app/global-error.tsx */
   globalError?: string;
+  /** ディレクトリ (ルートは空文字) → help.tsx (§4.7) */
+  helpFiles?: Map<string, string>;
+  /** app/not-found.tsx */
+  notFound?: string;
   /** app/env.tsx */
   env?: string;
   /** app/version.tsx */
@@ -73,6 +77,14 @@ export function generateRoutes(input: RoutesInput, outDir: string): string {
       ? `export const ${name} = undefined;`
       : `export const ${name} = ${importer(outDir, file)};`;
 
+  // help はディレクトリ単位なので、コマンド表とは別のマップにする (§7)
+  const helps = [...(input.helpFiles ?? new Map())]
+    .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
+    .map(
+      ([dir, file]) => `  ${JSON.stringify(dir)}: ${importer(outDir, file)},`
+    )
+    .join('\n');
+
   return `${HEADER}
 import type { RouteTable } from 'decopin-cli';
 
@@ -80,7 +92,12 @@ export const routes = {
 ${entries.join('\n')}
 } satisfies RouteTable;
 
+export const helps: Record<string, () => Promise<unknown>> = {
+${helps}
+};
+
 ${single('globalError', input.globalError)}
+${single('notFound', input.notFound)}
 ${single('envFile', input.env)}
 ${single('versionFile', input.version)}
 `;
@@ -89,12 +106,24 @@ ${single('versionFile', input.version)}
 export function generateEntry(program: string): string {
   return `${HEADER}
 import { run } from 'decopin-cli';
-import { envFile, globalError, routes, versionFile } from './routes.ts';
+import {
+  envFile,
+  globalError,
+  helps,
+  notFound,
+  routes,
+  versionFile,
+} from './routes.ts';
+
+// Ctrl+C は 128+2 = 130 (§7)。ハンドラを置かないと Bun は 0 で終わる
+process.on('SIGINT', () => process.exit(130));
 
 process.exit(
   await run(routes, {
     program: ${JSON.stringify(program)},
     globalError,
+    notFound,
+    helps,
     envFile,
     versionFile,
   })

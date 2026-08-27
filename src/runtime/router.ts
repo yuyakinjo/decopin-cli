@@ -21,6 +21,20 @@ export interface RouteLoaders {
 /** コマンド名 → 読み込み関数 */
 export type RouteTable = Record<string, RouteLoaders>;
 
+/**
+ * argv が何を指しているか (§7 のルート解決表)。
+ *
+ * - `command`: 実行すべきコマンドが決まった
+ * - `group`: `command.tsx` を持たないディレクトリ (子コマンドを持つ)
+ * - `root`: 語が 1 つも無く、ルートコマンドも無い
+ * - `unknown`: どれにも当たらない
+ */
+export type Target =
+  | { kind: 'command'; name: string; rest: string[] }
+  | { kind: 'group'; name: string }
+  | { kind: 'root' }
+  | { kind: 'unknown'; requested: string; suggestion: string | undefined };
+
 export interface Resolved {
   /** 一致したコマンド名。ルートコマンドは空文字 */
   name: string;
@@ -60,6 +74,46 @@ export function resolveRoute(
     return { name: '', rest: argv };
   }
   return undefined;
+}
+
+/**
+ * argv を {@link Target} に解決する。判定順が挙動を決める:
+ *
+ * 1. 最長一致するコマンド
+ * 2. ルートコマンド (`app/command.tsx`) — 単一コマンドの CLI を壊さないため
+ * 3. 語が 0 個 → ルート help
+ * 4. 語の全部がコマンド名の前方一致プレフィックス → グループ help
+ * 5. それ以外 → 未知のコマンド
+ */
+export function resolveTarget(table: RouteTable, argv: string[]): Target {
+  const words = leadingWords(argv);
+
+  // 1 と 2 は既存の解決に任せる (ルートコマンドのフォールバックを含む)
+  const resolved = resolveRoute(table, argv);
+  if (resolved !== undefined) {
+    return { kind: 'command', name: resolved.name, rest: resolved.rest };
+  }
+
+  if (words.length === 0) return { kind: 'root' };
+
+  // 語の全部が、あるコマンド名のディレクトリ部分に一致するか
+  const prefix = `${words.join('/')}/`;
+  const isGroup = Object.keys(table).some((name) => name.startsWith(prefix));
+  if (isGroup) return { kind: 'group', name: words.join('/') };
+
+  return {
+    kind: 'unknown',
+    requested: words.join(' '),
+    suggestion: suggest(table, argv),
+  };
+}
+
+/** あるグループの直下・配下にあるコマンド名 (昇順) */
+export function commandsUnder(table: RouteTable, group: string): string[] {
+  const prefix = group === '' ? '' : `${group}/`;
+  return Object.keys(table)
+    .filter((name) => name !== '' && name.startsWith(prefix))
+    .sort();
 }
 
 /** 未知のコマンドのときに「近いもの」を提案する */

@@ -61,7 +61,7 @@ export async function generate(
   const appDir = options.appDir ?? 'app';
   const workDir = options.workDir ?? '.decopin';
 
-  const { routes, rootFiles, inherited } = await scan(appDir);
+  const { routes, rootFiles, inherited, helpFiles } = await scan(appDir);
   if (routes.length === 0) {
     throw new Error(
       `No commands found in ${appDir}/. Create ${appDir}/<name>/command.tsx`
@@ -109,7 +109,9 @@ export async function generate(
         errorChains,
         layoutChains,
         middlewareChains,
+        helpFiles,
         globalError: rootFiles['global-error'],
+        notFound: rootFiles['not-found'],
         env: rootFiles.env,
         version: rootFiles.version,
       },
