@@ -53,6 +53,8 @@ app/
   env.tsx             任意  環境変数のスキーマ
   version.tsx         任意  --version の内容
   global-error.tsx    任意  どこでも捕まらなかったエラーの最終受け皿
+  not-found.tsx       任意  未知のコマンドの表示 (§7)
+  help.tsx            任意  ルートのコマンド一覧の表示
 
   hello/
     command.tsx       必須  → stdout   コマンド本体。JSX を返す
@@ -284,7 +286,7 @@ type CommandProps<R extends keyof Routes> = {
   args: Routes[R]['args']; // 位置引数 (検証済み)
   options: Routes[R]['options']; // オプション (検証済み)
   stdin: Routes[R]['stdin']; // stdin.tsx がなければ never
-  env: Env; // env.tsx から生成 (なければ {})
+  env: EnvVars; // env.tsx から生成 (なければ {})
   argv: readonly string[]; // 生の argv (エスケープハッチ)
   cwd: string;
 };
@@ -353,6 +355,22 @@ app/global-error.tsx        ← 最後の受け皿
 
 未知のコマンド (`Unknown command: helo`) とコマンド一覧は、フレームワークのルーターが出すので `error.tsx` / `global-error.tsx` を通らない。ルートが決まっていない時点では「どの `error.tsx` を使うべきか」も決まらないため。
 
+表示を変えたい場合は `app/not-found.tsx` (未知のコマンド) と `app/help.tsx` / `app/<group>/help.tsx` (コマンド一覧) を使う (§7)。
+
+```ts
+type NotFoundProps = {
+  /** 入力されたコマンド名 (空白区切り) */
+  requested: string;
+  /** 編集距離が近いコマンド。無ければ undefined */
+  suggestion: string | undefined;
+  /** 登録されているコマンド名 (空白区切り、昇順) */
+  commands: readonly string[];
+  program: string;
+  argv: readonly string[];
+  cwd: string;
+};
+```
+
 ### 4.5 `layout.tsx` — 共通装飾
 
 ```tsx
@@ -404,6 +422,7 @@ type MiddlewareProps = {
   next: () => Promise<Renderable>;
   args: Record<string, unknown>; // 検証済み
   options: Record<string, unknown>; // 検証済み
+  env: Record<string, unknown>; // 検証済み (§4.7)
   argv: readonly string[];
   cwd: string;
 };
@@ -467,7 +486,31 @@ export default function Help({ auto }: HelpProps) {
 - **空文字は「未設定」として扱う**。`TOKEN=` は required なら足りないと報告する
 - `env.tsx` の検証は**ルート解決の後**。`--help` と `--version` は env が足りない状態でも出せる (使い方を知りたいだけのときに設定を求めるのは親切でない)
 - `--version` は**ルート解決より前**に処理する。`cli --version` はコマンドを指定していないので、ルートが決まらないため
-- `auto` は `argv.tsx` の `<Argv>` ツリーから生成された usage の JSX。そのまま差し込むか、無視して全部自前で書くかを選べる (`help.tsx` は未実装)
+  **`help.tsx` はディレクトリ単位**
+
+| 置き場所             | 上書きされるもの                                |
+| -------------------- | ----------------------------------------------- |
+| `app/help.tsx`       | `cli` / `cli --help` (コマンド一覧)             |
+| `app/user/help.tsx`  | `cli user` / `cli user --help` (グループの一覧) |
+| `app/hello/help.tsx` | `cli hello --help`                              |
+
+`command.tsx` を持たないディレクトリにも置ける。継承はしない (ディレクトリごとに完全一致で引く)。
+
+```ts
+type HelpProps = {
+  /** 宣言から生成した使い方。そのまま差し込める */
+  auto: Renderable;
+  program: string;
+  /** コマンド名 (`user list`)。ルートなら空文字 */
+  command: string;
+  argv: readonly string[];
+  cwd: string;
+};
+```
+
+- `auto` は宣言から生成された usage の JSX。そのまま差し込むか、無視して全部自前で書くかを選べる
+- `async` でもよい。**失敗したら組み込みの表示に戻る** (`error.tsx` と同じ方針。§4.4)
+- 組み込みの表示は layout に包まないが、`help.tsx` の出力は利用者のものなので包む (`export const skipLayout = true` で外せる)
 
 ### 4.7.1 予約されたオプション
 
@@ -603,11 +646,15 @@ argv と env の値は**常に文字列**として届くため、検証の前に
 
 **`schema` エスケープハッチの型生成**
 
-`schema` prop に生の valibot スキーマを渡した場合、type-emitter はスキーマオブジェクトを内省して型を出力する。ただし出力できるのは**既知のノード種別のみ**:
+`schema` prop に生の valibot スキーマを渡せるのは **`<Stdin mode="json">` だけ**。ビルド時に宣言を評価しているので (§4.8 の evaluate)、スキーマの**実オブジェクトを内省**して型を出力する。
 
-- 出力可能: `string` / `number` / `boolean` / `date` / `literal` / `picklist` / `array` / `object` / `optional` / `nullable` / `union`
-- それ以外 (`transform` / `custom` / `lazy` など) を含むスキーマは **`unknown` にフォールバック**し、check ステップで警告する
-- `<Type.Custom>` は `as` prop で出力する型を文字列で明示する (例: `as="URL"`)。省略時は `unknown`
+- 出力可能: `string` / `number` / `boolean` / `date` / `literal` / `picklist` / `enum` / `array` / `object` / `optional` / `exact_optional` / `nullable` / `nullish` / `union` / `null` / `undefined` / `unknown`
+- `v.pipe()` の **validation と metadata は透過する** (`v.pipe(v.string(), v.minLength(1))` は `string`)
+- それ以外 (`transform` / `brand` / `custom` / `lazy` / `record` / `tuple` / `intersect` など) は**その位置だけ** `unknown` になり、check ステップで警告する。全体を諦めないので `{ id: number; meta: unknown }` のように残りの型が活きる
+- `v.pipe()` は基底スキーマの浅いコピー + `pipe` 配列で、**入れ子の pipe は平坦化されない**。1 段だけ見ると `v.pipe(v.pipe(v.string(), v.transform(Number)), v.minValue(0))` の transform を取りこぼすので、`pipe[0]` を再帰的に辿る
+- `v.lazy` の `getter` は呼ばない (循環参照とビルド時の副作用を避ける)
+- `async` なスキーマは受け付けない (検証が同期のため、宣言時にエラー)
+- `<Type.Custom>` は `as` prop で出力する型を文字列で明示する (例: `as="URL"`)。省略時は `unknown`。**`as` が `'string'` / `'number'` / `'boolean'` のときだけ** argv / env の文字列をその型に変換し、それ以外は生文字列を `validate` に渡す
 
 ---
 
@@ -625,16 +672,16 @@ argv と env の値は**常に文字列**として届くため、検証の前に
 
 | コンポーネント | props                                                             | 役割                                 |
 | -------------- | ----------------------------------------------------------------- | ------------------------------------ |
-| `<Argv>`       | —                                                                 | 引数宣言のルート                     |
+| `<Argv>`       | `description` (help の 1 行目)                                    | 引数宣言のルート                     |
 | `<Arg>`        | `name` `type` `required` `default` `description` `variadic`       | 位置引数。記述順 = 引数の順          |
 | `<Option>`     | `name` `type` `required` `default` `alias` `description` `hidden` | 名前付きオプション (`--name` / `-a`) |
-| `<Stdin>`      | `mode` `required`                                                 | 標準入力の読み方 (`stdin.tsx`)       |
+| `<Stdin>`      | `mode` `required` `trim` `schema`                                 | 標準入力の読み方 (`stdin.tsx`)       |
 | `<Env>`        | —                                                                 | 環境変数宣言のルート (`env.tsx`)     |
 | `<Var>`        | `name` `type` `required` `default` `description`                  | 環境変数 1 つ                        |
 | `<Version>`    | `version` `name`                                                  | `--version` の内容 (`version.tsx`)   |
 
 - `type` は制約なしの単純な型 (`'string' | 'number' | 'boolean'`) の短縮形。children があれば children が勝つ (両方指定はビルドエラー)
-- `schema` prop に valibot スキーマを直接渡すこともできる (上級者向けエスケープハッチ)
+- `schema` prop に valibot スキーマを直接渡せるのは **`<Stdin mode="json">` だけ** (上級者向けエスケープハッチ。§4.8)。argv / env は `Type.*` で足りるので用意していない
 - これらは stdout には描画されず、`--help` のレンダリング時のみ usage として出力される
 
 ### 5.1.2 型宣言 `Type.*` (入力宣言の children)
@@ -648,9 +695,9 @@ argv と env の値は**常に文字列**として届くため、検証の前に
 | `<Type.Date>`    | `min` `max`                                     | — (ISO 文字列を `Date` に変換) |
 | `<Type.Array>`   | `minItems` `maxItems`                           | 要素の型を 1 つ                |
 | `<Type.Object>`  | —                                               | `<Type.Field>` を複数          |
-| `<Type.Field>`   | `name` `required` `default`                     | 値の型を 1 つ                  |
+| `<Type.Field>`   | `name` `required` `defaultValue`                | 値の型を 1 つ                  |
 | `<Type.OneOf>`   | —                                               | 型を複数 (union)               |
-| `<Type.Custom>`  | `validate` `message` `as`                       | — (エスケープハッチ)           |
+| `<Type.Custom>`  | `validate` `message` `as` (任意の型名)          | — (エスケープハッチ)           |
 
 - `Arg` / `Option` / `Var` / `Stdin` のすべてで同じ `Type.*` を使う。覚えることは 1 系統だけ
 - children の型は必ず 1 つ (`Type.Object` / `Type.OneOf` を除く)。2 つ以上はビルドエラー
@@ -939,17 +986,17 @@ JSX を使わないコマンド (計算して数値を返すだけ、など) の
 
 **argv の書き方**
 
-| 書き方                          | 扱い                                                 |
-| ------------------------------- | ---------------------------------------------------- |
-| `--name value` / `--name=value` | 値を取るオプション                                   |
-| `-a value` / `-a=value`         | 短縮形も同じ                                         |
-| `--flag`                        | boolean は値を取らない (次のトークンを食わない)      |
-| `--no-flag`                     | boolean を false にする                              |
-| `--tag x --tag y`               | 配列型は繰り返しで集める                             |
-| `-t 2 -t 4`                     | 配列でない型は**最後の指定が勝つ**                   |
-| `--` 以降                       | すべて位置引数                                       |
-| `-` 単独                        | 位置引数 (標準入力を指す慣習のため)                  |
-| `-abc`                          | **v1 では解釈しない**。未知のオプションとして exit 2 |
+| 書き方                          | 扱い                                                                                                    |
+| ------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| `--name value` / `--name=value` | 値を取るオプション                                                                                      |
+| `-a value` / `-a=value`         | 短縮形も同じ                                                                                            |
+| `--flag`                        | boolean は値を取らない (次のトークンを食わない)                                                         |
+| `--no-flag`                     | boolean を false にする                                                                                 |
+| `--tag x --tag y`               | 配列型は繰り返しで集める                                                                                |
+| `-t 2 -t 4`                     | 配列でない型の重複は **exit 2** (最後勝ちにしない)                                                      |
+| `--` 以降                       | すべて位置引数                                                                                          |
+| `-` 単独                        | 位置引数 (標準入力を指す慣習のため)                                                                     |
+| `-lv`                           | **boolean の alias だけ**束ねられる。値を取る alias や未知の文字が混ざる形は束ね全体を未知として exit 2 |
 
 **`argv.tsx` が無いコマンドは検証しない**
 
@@ -1124,6 +1171,30 @@ user list (layout + middleware)  13.1ms  13.5ms  13.7ms  8.8ms
 
 ---
 
+### 8.9 仕様との乖離を埋めた記録 (2026-08-27)
+
+Phase 1〜8 のあとに SPEC を監査したところ、**書いてあるのに実装されていない機能が 9 件**あった。すべて実装し、実装に合わせるべき記述は SPEC 側を直した。
+
+| 対象                               | 結果                                                                 |
+| ---------------------------------- | -------------------------------------------------------------------- |
+| `help.tsx`                         | 実装 (ディレクトリ単位。§4.7)                                        |
+| ルート / グループ help の経路      | 実装 (§7 のルート解決表どおり)                                       |
+| `not-found.tsx`                    | 実装 (§4.4 / §7)                                                     |
+| `-lv` の束ね                       | 実装 (boolean の alias のみ)                                         |
+| 非配列オプションの重複 → exit 2    | 実装 (最後勝ちをやめた)                                              |
+| `Type.Object` を argv / env で禁止 | 実装 (宣言時に `DeclarationError`)                                   |
+| SIGINT → 130                       | 実装 (生成する `entry.ts` に配線。Bun はハンドラなしだと 0 で終わる) |
+| `schema` prop + スキーマ内省       | 実装 (`<Stdin mode="json">` のみ。§4.8)                              |
+| `argv.tsx` の非純粋性チェック      | 実装 (ソースを読んで警告)                                            |
+
+**この作業で分かったこと**
+
+- `v.pipe()` は基底スキーマの浅いコピー + `pipe` 配列で、**入れ子の pipe は平坦化されない**。1 段スキャンでは `transform` を取りこぼす
+- Bun は SIGINT のハンドラが無いと **exit 0** で終わる。シェル慣習の 130 にはならないので、明示的な配線が必要
+- 仕様を書いた側 (人間) と実装した側 (エージェント) が別のタイミングで動くと乖離は必ず起きる。**「仕様に書いてあるのに実装が無い」を機械的に洗い出す監査**を、フェーズの区切りで回すのが安い
+
+---
+
 ## 9. `src/` 内部構成
 
 ```
@@ -1249,7 +1320,8 @@ Phase 4 で `error.tsx` / `global-error.tsx` のフォールバックと終了�
 Phase 5 で `layout.tsx` の入れ子適用と `middleware.tsx` (`next` 方式) を追加。
 Phase 6 で `stdin.tsx` を追加し、POSIX の 4 つの口 (argv / stdin / stdout / stderr) が揃った。
 Phase 7 で装飾コンポーネントと表示幅の計算を追加。
-Phase 8 で `env.tsx` / `version.tsx` と起動時間の計測を追加。テストは 367 件。
+Phase 8 で `env.tsx` / `version.tsx` と起動時間の計測を追加。
+その後、仕様との乖離 9 件を埋めた (§8.9)。テストは 472 件。
 
 **Phase 1-2 が最小の垂直スライス** — ここが通れば設計の骨格が正しいと確認できる。
 
@@ -1258,12 +1330,9 @@ Phase 8 で `env.tsx` / `version.tsx` と起動時間の計測を追加。テス
 ## 12. 未決 / 要検討
 
 - 型が**古い** (生成済みだが宣言と食い違う) 場合は素直に型エラーになる。未生成のときのフォールバックは実装した (§4.8) が、「古い」と「未生成」は区別できていない。`decopin dev` を回す運用でしのぐ
-- 未知のコマンドを `global-error.tsx` で受けられない (§4.4)。ルート未決定の時点では表示係も決まらないため今はこうしているが、「コマンド一覧の見た目を変えたい」という要望が来たら `app/not-found.tsx` のような別の規約を足す形が素直
-- `<Type.Object>` / `<Type.Field>` は `stdin.tsx` の JSON 構造宣言のためだけに存在する。実際に書いてみると 3 階層で 9 行になるので、深い JSON では `schema` prop (valibot 直渡し) を勧める運用にするか要検討
+- `<Type.Object>` / `<Type.Field>` は 3 階層で 9 行になるので、深い JSON では `schema` prop (valibot 直渡し) を勧める。ただし `schema` は内省できないノードがあると型が `unknown` に落ちるので、精密な型が欲しければ `Type.*` を使う (§4.8)
 - `<Arg variadic>` (可変長位置引数) と `<Type.Array>` の関係。`variadic` は「位置引数を何個も取る」、`Type.Array` は「1 つの値が配列」なので別物だが、生成される型は両方 `string[]` になり混同しやすい
-- ADR 11 の代償 (env / argv 検証エラーが middleware を通らない) が実用上問題になるなら、計測・ロギングの責務を `app/global-error.tsx` 側に寄せる形を Phase 5 で検討する
+- ADR 11 の代償 (env / argv 検証エラーが middleware を通らない) が実用上問題になるなら、計測・ロギングの責務を `app/global-error.tsx` 側に寄せる形を検討する
 - 起動時間は総時間 12〜14ms で、目標の 10ms は未達 (§8.8)。律速はパースではなくモジュールの評価で、`--minify` も `--splitting` も効かない見込み。さらに削るには何が 6〜8ms を使っているのかのプロファイルが必要
-- `help.tsx` (自動生成の上書き) は未実装。`--help` は常に宣言から生成する
-- `middleware.tsx` の props に `env` が無い (Phase 8 で `env.tsx` を入れるときに足す)
 - middleware の `args` / `options` は `Record<string, unknown>` のまま。middleware は複数コマンドにまたがるので、生成された型を当てるには「そのディレクトリ以下のコマンドの union」が必要。要望が出たら考える
 - `<Table>` のセルは文字列だけで、JSX を入れられない。セルに色を付けたい要望が出たら `Cell` に `{ text, style }` の形を足す
