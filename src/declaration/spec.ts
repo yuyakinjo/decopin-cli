@@ -66,4 +66,6 @@ export interface StdinSpec {
   trim: boolean;
   /** mode="json" のときの構造 (省略時は unknown) */
   type?: TypeNode;
+  /** valibot スキーマを直接渡した場合 (§4.8)。type とは排他 */
+  schema?: unknown;
 }

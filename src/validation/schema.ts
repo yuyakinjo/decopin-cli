@@ -10,6 +10,9 @@ import type { TypeNode } from '../declaration/type-node.ts';
 
 type Schema = v.GenericSchema;
 
+/** valibot のスキーマ。生スキーマを受け取る経路のために公開する */
+export type GenericSchema = v.GenericSchema;
+
 function stringSchema(type: Extract<TypeNode, { kind: 'string' }>): Schema {
   const checks: v.GenericPipeAction<string, string, v.BaseIssue<unknown>>[] =
     [];

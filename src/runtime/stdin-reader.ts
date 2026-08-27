@@ -7,6 +7,7 @@ import type { StdinSpec } from '../declaration/spec.ts';
  * 構造的に起こせないようにしている。
  */
 import { toSchema, validateValue } from '../validation/schema.ts';
+import type { GenericSchema } from '../validation/schema.ts';
 import { CliError } from './errors.ts';
 import { EXIT_CODE } from './exit.ts';
 
@@ -72,10 +73,16 @@ export async function readStdin(
     ]);
   }
 
-  if (spec.type === undefined) return parsed;
+  // schema エスケープハッチが優先。どちらも無ければ検証しない (§4.8)
+  const schema =
+    spec.schema !== undefined
+      ? (spec.schema as GenericSchema)
+      : spec.type !== undefined
+        ? toSchema(spec.type)
+        : undefined;
+  if (schema === undefined) return parsed;
 
-  // 構造の宣言があるときだけ valibot を読む (ADR 12)
-  const validated = validateValue(toSchema(spec.type), parsed);
+  const validated = validateValue(schema, parsed);
   if (!validated.ok) {
     throw stdinError(
       'stdin does not match the declared structure',

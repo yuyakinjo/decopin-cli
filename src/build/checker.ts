@@ -4,12 +4,74 @@
  * ここで見るのは「動くけれど、たぶん意図と違う」こと。宣言そのものの
  * 誤りは evaluator が集める。
  */
+import type { UnsupportedNode } from './schema-introspect.ts';
+
 export interface Warning {
   message: string;
   hint?: string;
 }
 
 const JSX_IMPORT_SOURCE = 'decopin-cli/jsx';
+
+const SUPPORTED_SCHEMA_NODES =
+  'string, number, boolean, date, literal, picklist, array, object, optional, nullable, union';
+
+/**
+ * `<Stdin schema>` の内省で unknown に落ちた箇所を伝える (§4.8)。
+ * 同じ種別はまとめて 1 件にする (大きなスキーマで警告が溢れないように)
+ */
+export function stdinSchemaWarnings(
+  file: string,
+  nodes: UnsupportedNode[]
+): Warning[] {
+  const byNode = new Map<string, string[]>();
+  for (const node of nodes) {
+    const label = node.node === '' ? (node.detail ?? 'unsupported') : node.node;
+    const paths = byNode.get(label) ?? [];
+    paths.push(node.path);
+    byNode.set(label, paths);
+  }
+
+  return [...byNode].map(([label, paths]) => ({
+    message: `${file}: <Stdin schema> has an unsupported node "${label}" at ${paths.join(', ')}; that position is typed as unknown`,
+    hint: `Supported: ${SUPPORTED_SCHEMA_NODES} (v.pipe with validation actions is fine). Declare the structure with <Type.*> if you need a precise type`,
+  }));
+}
+
+/**
+ * 宣言ファイルが実行時の状態に依存していないか (§4.1)。
+ *
+ * ビルド時に評価して型を出すので、`process.env` や現在時刻で宣言が変わると
+ * 生成された型と実行時の挙動がずれる。ソースを読んで**警告**するだけに
+ * とどめる (構文解析まではしない)
+ */
+const IMPURE_PATTERNS: readonly [RegExp, string][] = [
+  [/\bprocess\.env\b/, 'process.env'],
+  [/\bBun\.env\b/, 'Bun.env'],
+  [/\bDate\.now\s*\(/, 'Date.now()'],
+  [/\bnew\s+Date\s*\(\s*\)/, 'new Date()'],
+  [/\bMath\.random\s*\(/, 'Math.random()'],
+];
+
+export async function checkPurity(files: string[]): Promise<Warning[]> {
+  const warnings: Warning[] = [];
+  for (const file of files) {
+    let source: string;
+    try {
+      source = await Bun.file(file).text();
+    } catch {
+      continue;
+    }
+    for (const [pattern, label] of IMPURE_PATTERNS) {
+      if (!pattern.test(source)) continue;
+      warnings.push({
+        message: `${file}: declaration depends on ${label}`,
+        hint: 'Declarations are evaluated at build time to generate types. If they depend on runtime state, the generated types and the actual behavior drift apart',
+      });
+    }
+  }
+  return warnings;
+}
 
 interface TsConfig {
   compilerOptions?: {

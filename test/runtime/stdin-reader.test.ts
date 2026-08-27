@@ -4,6 +4,7 @@
 import { describe, expect, test } from 'bun:test';
 
 import { CliError } from 'decopin-cli';
+import * as v from 'valibot';
 
 import type { StdinSpec } from '../../src/declaration/spec.ts';
 import { readStdin } from '../../src/runtime/stdin-reader.ts';
@@ -146,5 +147,38 @@ describe('mode="json"', () => {
     await expect(
       readStdin(typed, piped('[{"id":"x"}]').source)
     ).rejects.toThrow(/does not match the declared structure/);
+  });
+});
+
+describe('schema エスケープハッチ (§4.8)', () => {
+  const schema = v.array(v.object({ id: v.number() }));
+  const spec: StdinSpec = {
+    mode: 'json',
+    required: true,
+    trim: false,
+    schema,
+  };
+
+  test('渡されたスキーマで検証する', async () => {
+    expect(await readStdin(spec, piped('[{"id":1}]').source)).toEqual([
+      { id: 1 },
+    ]);
+  });
+
+  test('合わなければ exit 2', async () => {
+    await expect(readStdin(spec, piped('[{"id":"x"}]').source)).rejects.toThrow(
+      /does not match the declared structure/
+    );
+  });
+
+  test('schema が Type.* より優先される', async () => {
+    const both: StdinSpec = {
+      ...spec,
+      // 宣言時に排他を強制しているが、実行時も schema を優先する
+      type: { kind: 'string' },
+    };
+    expect(await readStdin(both, piped('[{"id":2}]').source)).toEqual([
+      { id: 2 },
+    ]);
   });
 });

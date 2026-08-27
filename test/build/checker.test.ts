@@ -3,7 +3,12 @@ import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
-import { checkTsConfig, stripJsonc } from '../../src/build/checker.ts';
+import {
+  checkPurity,
+  checkTsConfig,
+  stdinSchemaWarnings,
+  stripJsonc,
+} from '../../src/build/checker.ts';
 
 const dirs: string[] = [];
 
@@ -106,5 +111,75 @@ describe('stripJsonc', () => {
         jsxImportSource: 'decopin-cli/jsx',
       },
     });
+  });
+});
+
+describe('checkPurity', () => {
+  async function sourceFile(content: string): Promise<string> {
+    const dir = await mkdtemp(join(tmpdir(), 'decopin-purity-'));
+    dirs.push(dir);
+    const path = join(dir, 'argv.tsx');
+    await Bun.write(path, content);
+    return path;
+  }
+
+  test('純粋な宣言は警告なし', async () => {
+    const file = await sourceFile(
+      'export default function Argv() { return null; }'
+    );
+    expect(await checkPurity([file])).toEqual([]);
+  });
+
+  test('process.env に依存していれば警告する', async () => {
+    const file = await sourceFile(
+      'const dev = process.env.NODE_ENV === "development";'
+    );
+    const warnings = await checkPurity([file]);
+    expect(warnings).toHaveLength(1);
+    expect(warnings[0]?.message).toContain('process.env');
+    // ビルド時に評価して型を出すので、実行時の状態に依存すると型がずれる
+    expect(warnings[0]?.hint).toContain('generated types');
+  });
+
+  test('現在時刻と乱数も警告する', async () => {
+    const file = await sourceFile('const x = [Date.now(), Math.random()];');
+    const labels = (await checkPurity([file])).map((w) => w.message);
+    expect(labels.some((m) => m.includes('Date.now()'))).toBe(true);
+    expect(labels.some((m) => m.includes('Math.random()'))).toBe(true);
+  });
+
+  test('引数なしの new Date() を警告する (引数ありは見逃す)', async () => {
+    const bad = await sourceFile('const now = new Date();');
+    expect(await checkPurity([bad])).toHaveLength(1);
+    const fine = await sourceFile('const fixed = new Date("2020-01-01");');
+    expect(await checkPurity([fine])).toEqual([]);
+  });
+
+  test('読めないファイルは黙って飛ばす', async () => {
+    expect(await checkPurity(['/tmp/decopin-no-such-declaration.tsx'])).toEqual(
+      []
+    );
+  });
+});
+
+describe('stdinSchemaWarnings', () => {
+  test('未対応ノードをファイル付きで伝える', () => {
+    const warnings = stdinSchemaWarnings('app/x/stdin.tsx', [
+      { path: '$.a', node: 'record' },
+    ]);
+    expect(warnings).toHaveLength(1);
+    expect(warnings[0]?.message).toContain('app/x/stdin.tsx');
+    expect(warnings[0]?.message).toContain('"record" at $.a');
+    expect(warnings[0]?.hint).toContain('<Type.*>');
+  });
+
+  test('同じ種別はまとめる (大きなスキーマで溢れないように)', () => {
+    const warnings = stdinSchemaWarnings('s.tsx', [
+      { path: '$.a', node: 'record' },
+      { path: '$.b', node: 'record' },
+      { path: '$.c', node: 'tuple' },
+    ]);
+    expect(warnings).toHaveLength(2);
+    expect(warnings[0]?.message).toContain('$.a, $.b');
   });
 });

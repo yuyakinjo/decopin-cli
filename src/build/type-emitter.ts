@@ -13,6 +13,12 @@ import type {
 } from '../declaration/spec.ts';
 import type { TypeNode } from '../declaration/type-node.ts';
 import type { EvaluatedRoute } from './evaluator.ts';
+import {
+  schemaToTypeText,
+  type SchemaTypeResult,
+  type UnsupportedNode,
+} from './schema-introspect.ts';
+import { quoteKey, wrapUnion } from './ts-text.ts';
 
 const HEADER = `// このファイルは decopin build / decopin dev が生成します。
 // 直接編集しても次のビルドで上書きされます。
@@ -52,13 +58,7 @@ export function toTypeText(type: TypeNode): string {
 
 /** union を配列にするときは括弧が必要 */
 function wrap(type: TypeNode): string {
-  const text = toTypeText(type);
-  return text.includes(' | ') ? `(${text})` : text;
-}
-
-/** 識別子として使えない名前は引用符で囲む */
-function quoteKey(name: string): string {
-  return /^[A-Za-z_$][A-Za-z0-9_$]*$/.test(name) ? name : JSON.stringify(name);
+  return wrapUnion(toTypeText(type));
 }
 
 /** 省略できるキーは `?` を付ける (既定値があれば必ず入るので付けない) */
@@ -87,18 +87,35 @@ function optionMember(option: OptionSpec): string {
 }
 
 /** stdin.tsx の宣言から、command が受け取る値の型を決める (§4.2) */
-export function stdinTypeText(stdin: StdinSpec | undefined): string {
-  if (stdin === undefined) return 'never';
+export function stdinType(stdin: StdinSpec | undefined): SchemaTypeResult {
+  if (stdin === undefined) return { text: 'never', unsupported: [] };
+
+  const introspected =
+    stdin.mode === 'json' && stdin.schema !== undefined
+      ? schemaToTypeText(stdin.schema)
+      : undefined;
+
   const base =
-    stdin.mode === 'text'
-      ? 'string'
-      : stdin.mode === 'lines'
-        ? 'string[]'
-        : stdin.type === undefined
-          ? 'unknown'
-          : toTypeText(stdin.type);
-  // required でなければ、端末実行時に undefined が渡る
-  return stdin.required ? base : `${base} | undefined`;
+    introspected !== undefined
+      ? introspected.text
+      : stdin.mode === 'text'
+        ? 'string'
+        : stdin.mode === 'lines'
+          ? 'string[]'
+          : stdin.type === undefined
+            ? 'unknown'
+            : toTypeText(stdin.type);
+
+  // required でなければ、端末実行時に undefined が渡る。
+  // unknown はどんな値も含むので、足しても意味が増えない
+  const text =
+    stdin.required || base === 'unknown' ? base : `${base} | undefined`;
+  return { text, unsupported: introspected?.unsupported ?? [] };
+}
+
+/** 型テキストだけが欲しい場合 */
+export function stdinTypeText(stdin: StdinSpec | undefined): string {
+  return stdinType(stdin).text;
 }
 
 function shape(spec: ArgvSpec, stdin: StdinSpec | undefined): string {
@@ -127,18 +144,29 @@ function envShape(env: EnvSpec | undefined): string {
   return `\n  interface EnvVars {\n${members.join('\n')}\n  }\n`;
 }
 
+export interface TypesResult {
+  text: string;
+  /** schema の内省で unknown に落ちた箇所 (§4.8) */
+  unsupported: Array<{ file: string; nodes: UnsupportedNode[] }>;
+}
+
 export function generateTypes(
   evaluated: EvaluatedRoute[],
   env?: EnvSpec
-): string {
+): TypesResult {
+  const unsupported: TypesResult['unsupported'] = [];
   const entries = evaluated
-    .map(
-      ({ route, spec, stdin }) =>
-        `    ${quoteName(route.name)}: ${shape(spec, stdin)};`
-    )
+    .map(({ route, spec, stdin }) => {
+      const nodes = stdinType(stdin).unsupported;
+      const file = route.files.stdin;
+      if (nodes.length > 0 && file !== undefined) {
+        unsupported.push({ file, nodes });
+      }
+      return `    ${quoteName(route.name)}: ${shape(spec, stdin)};`;
+    })
     .join('\n');
 
-  return `${HEADER}
+  const text = `${HEADER}
 import 'decopin-cli';
 
 declare module 'decopin-cli' {
@@ -147,6 +175,7 @@ ${entries}
   }
 ${envShape(env)}}
 `;
+  return { text, unsupported };
 }
 
 /** ルートコマンドは空文字なので、常に引用符付きで書く */

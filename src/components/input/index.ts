@@ -55,6 +55,14 @@ export interface StdinProps {
   required?: boolean;
   /** 末尾の空白と改行を落とす (mode="text" のときだけ) */
   trim?: boolean;
+  /**
+   * valibot スキーマを直接渡すエスケープハッチ (§4.8)。
+   * `mode="json"` のときだけ使えて、children とは併用できない。
+   *
+   * 深い JSON を `Type.Object` / `Type.Field` で書くと縦に長くなるので、
+   * その逃げ道。生成される型はスキーマを内省して決まる
+   */
+  schema?: object;
   /** mode="json" のときだけ、構造を Type.* で宣言できる */
   children?: Renderable;
 }

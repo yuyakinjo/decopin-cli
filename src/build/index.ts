@@ -3,7 +3,7 @@ import { mkdir } from 'node:fs/promises';
 import { join } from 'node:path';
 
 import { bundle } from './bundler.ts';
-import { checkTsConfig } from './checker.ts';
+import { checkPurity, checkTsConfig, stdinSchemaWarnings } from './checker.ts';
 import type { Warning } from './checker.ts';
 import { generateEntry, generateRoutes } from './codegen.ts';
 import { evaluateEnv, evaluateRoutes } from './evaluator.ts';
@@ -80,6 +80,17 @@ export async function generate(
   }
 
   const warnings = await checkTsConfig();
+  // 宣言ファイルが実行時の状態に依存していないか (§4.1)
+  warnings.push(
+    ...(await checkPurity(
+      routes.flatMap((route) =>
+        [route.files.argv, route.files.stdin].filter(
+          (file): file is string => file !== undefined
+        )
+      )
+    )),
+    ...(await checkPurity(rootFiles.env === undefined ? [] : [rootFiles.env]))
+  );
   const program = options.program ?? (await readProgramName());
   const files = {
     routes: join(workDir, 'routes.ts'),
@@ -119,7 +130,11 @@ export async function generate(
     )
   );
   await Bun.write(files.entry, generateEntry(program));
-  await Bun.write(files.types, generateTypes(evaluated, env.spec));
+  const types = generateTypes(evaluated, env.spec);
+  for (const { file, nodes } of types.unsupported) {
+    warnings.push(...stdinSchemaWarnings(file, nodes));
+  }
+  await Bun.write(files.types, types.text);
 
   return { routes, evaluated, files, warnings };
 }

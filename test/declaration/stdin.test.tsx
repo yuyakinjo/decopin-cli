@@ -2,6 +2,7 @@ import { describe, expect, test } from 'bun:test';
 
 import { DeclarationError, Stdin, Type } from 'decopin-cli';
 import type { RenderInput } from 'decopin-cli';
+import * as v from 'valibot';
 
 import { parseStdinSpec } from '../../src/declaration/parse.ts';
 import { resolveHosts } from '../../src/declaration/resolve.ts';
@@ -63,6 +64,54 @@ describe('stdin.tsx の宣言', () => {
       },
     });
   });
+});
+
+describe('schema エスケープハッチ (§4.8)', () => {
+  test('valibot スキーマをそのまま持てる', async () => {
+    const schema = v.object({ id: v.number() });
+    const result = await spec(<Stdin mode="json" required schema={schema} />);
+    expect(result.schema).toBe(schema);
+    expect(result.type).toBeUndefined();
+  });
+
+  const cases: [string, RenderInput, RegExp][] = [
+    [
+      'children との併用',
+      <Stdin mode="json" schema={v.string()}>
+        <Type.String />
+      </Stdin>,
+      /cannot set both the "schema" prop and a Type\.\* child/,
+    ],
+    [
+      'mode="text" で schema',
+      <Stdin mode="text" schema={v.string()} />,
+      /cannot take a "schema" prop/,
+    ],
+    [
+      'スキーマでない値',
+      <Stdin mode="json" schema={{ id: 1 }} />,
+      /requires a valibot schema/,
+    ],
+    [
+      'async なスキーマ',
+      <Stdin
+        mode="json"
+        schema={v.pipeAsync(
+          v.string(),
+          v.checkAsync(async () => true)
+        )}
+      />,
+      /cannot take an async schema/,
+    ],
+  ];
+
+  for (const [name, node, pattern] of cases) {
+    test(name, async () => {
+      const promise = spec(node);
+      await expect(promise).rejects.toThrow(DeclarationError);
+      await expect(promise).rejects.toThrow(pattern);
+    });
+  }
 });
 
 describe('stdin.tsx の誤りを弾く', () => {

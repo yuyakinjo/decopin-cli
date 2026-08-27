@@ -1,10 +1,11 @@
-import { isReservedAlias, isReservedName } from '../runtime/reserved.ts';
 /**
  * 宣言ノードの木を {@link ArgvSpec} にする。ここが `argv.tsx` の意味を決める場所。
  *
  * §8 の check に相当する検証もここで行う。ビルド時 (型生成) と実行時の
  * どちらから呼んでも同じ結果になるよう、副作用を持たせない。
  */
+import { isAsyncSchema, isValibotSchema } from '../build/schema-introspect.ts';
+import { isReservedAlias, isReservedName } from '../runtime/reserved.ts';
 import { DeclarationError } from './errors.ts';
 import type { HostNode } from './resolve.ts';
 import type {
@@ -336,11 +337,36 @@ export function parseStdinSpec(hosts: HostNode[]): StdinSpec {
     );
   }
 
+  const schema = node.props.schema;
+  if (schema !== undefined) {
+    if (hasChildren) {
+      throw new DeclarationError(
+        '<Stdin> cannot set both the "schema" prop and a Type.* child'
+      );
+    }
+    if (mode !== 'json') {
+      throw new DeclarationError(
+        `<Stdin mode="${mode}"> cannot take a "schema" prop. Only mode="json" can`
+      );
+    }
+    if (!isValibotSchema(schema)) {
+      throw new DeclarationError(
+        '<Stdin schema> requires a valibot schema (e.g. v.object({ ... }))'
+      );
+    }
+    if (isAsyncSchema(schema)) {
+      throw new DeclarationError(
+        '<Stdin schema> cannot take an async schema (validation runs synchronously)'
+      );
+    }
+  }
+
   return {
     mode,
     required: readBoolean(node, 'required') ?? false,
     trim: readBoolean(node, 'trim') ?? false,
     type: hasChildren ? onlyType(node) : undefined,
+    schema,
   };
 }
 

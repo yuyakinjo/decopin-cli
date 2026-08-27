@@ -1,8 +1,11 @@
 import { describe, expect, test } from 'bun:test';
 
+import * as v from 'valibot';
+
 import type { EvaluatedRoute } from '../../src/build/evaluator.ts';
 import {
   generateTypes,
+  stdinType,
   stdinTypeText,
   toTypeText,
 } from '../../src/build/type-emitter.ts';
@@ -141,6 +144,52 @@ describe('stdinTypeText', () => {
   });
 });
 
+describe('stdinType (schema エスケープハッチ)', () => {
+  test('スキーマを内省して型にする', () => {
+    const result = stdinType({
+      mode: 'json',
+      required: true,
+      trim: false,
+      schema: v.object({ name: v.string(), admin: v.optional(v.boolean()) }),
+    });
+    expect(result.text).toBe('{ name: string; admin?: boolean }');
+    expect(result.unsupported).toEqual([]);
+  });
+
+  test('required でなければ | undefined が付く', () => {
+    expect(
+      stdinType({
+        mode: 'json',
+        required: false,
+        trim: false,
+        schema: v.object({ a: v.string() }),
+      }).text
+    ).toBe('{ a: string } | undefined');
+  });
+
+  test('unknown に落ちた場合は | undefined を足さない (意味が増えないため)', () => {
+    const result = stdinType({
+      mode: 'json',
+      required: false,
+      trim: false,
+      schema: v.record(v.string(), v.number()),
+    });
+    expect(result.text).toBe('unknown');
+    expect(result.unsupported[0]?.node).toBe('record');
+  });
+
+  test('schema が無ければ Type.* の宣言を使う', () => {
+    expect(
+      stdinType({
+        mode: 'json',
+        required: true,
+        trim: false,
+        type: { kind: 'array', item: { kind: 'string' } },
+      }).text
+    ).toBe('string[]');
+  });
+});
+
 describe('generateTypes', () => {
   test('Routes を module augmentation で埋める', () => {
     const code = generateTypes([
@@ -164,7 +213,7 @@ describe('generateTypes', () => {
           },
         ],
       }),
-    ]);
+    ]).text;
     expect(code).toContain("declare module 'decopin-cli'");
     expect(code).toContain('interface Routes {');
     expect(code).toContain(
@@ -185,7 +234,7 @@ describe('generateTypes', () => {
           },
         ],
       }),
-    ]);
+    ]).text;
     expect(code).toContain('options: { tag?: string[] }');
   });
 
@@ -202,7 +251,7 @@ describe('generateTypes', () => {
           },
         ],
       }),
-    ]);
+    ]).text;
     expect(code).toContain('options: { token: string }');
   });
 
@@ -219,13 +268,37 @@ describe('generateTypes', () => {
         ],
         options: [],
       }),
-    ]);
+    ]).text;
     expect(code).toContain('args: { files: string[] }');
   });
 
   test('宣言がなければ空のオブジェクトになる', () => {
-    const code = generateTypes([evaluated('x', { args: [], options: [] })]);
+    const code = generateTypes([
+      evaluated('x', { args: [], options: [] }),
+    ]).text;
     expect(code).toContain('"x": { args: {}; options: {}; stdin: never };');
+  });
+
+  test('schema の未対応ノードをファイル付きで返す', () => {
+    const result = generateTypes([
+      {
+        route: {
+          name: 'x',
+          dir: 'x',
+          files: { command: 'app/x/command.tsx', stdin: 'app/x/stdin.tsx' },
+        },
+        spec: { args: [], options: [] },
+        stdin: {
+          mode: 'json',
+          required: true,
+          trim: false,
+          schema: v.object({ a: v.record(v.string(), v.number()) }),
+        },
+      },
+    ]);
+    expect(result.text).toContain('stdin: { a: unknown }');
+    expect(result.unsupported[0]?.file).toBe('app/x/stdin.tsx');
+    expect(result.unsupported[0]?.nodes[0]?.node).toBe('record');
   });
 
   test('stdin.tsx の宣言を型に反映する', () => {
@@ -235,12 +308,12 @@ describe('generateTypes', () => {
         spec: { args: [], options: [] },
         stdin: { mode: 'lines', required: true, trim: false },
       },
-    ]);
+    ]).text;
     expect(code).toContain('stdin: string[] };');
   });
 
   test('ルートコマンドは空文字のキーになる', () => {
-    const code = generateTypes([evaluated('', { args: [], options: [] })]);
+    const code = generateTypes([evaluated('', { args: [], options: [] })]).text;
     expect(code).toContain('"": {');
   });
 });
