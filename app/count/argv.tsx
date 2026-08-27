@@ -10,6 +10,13 @@ export default function DefineArgv() {
         default={false}
         description="skip empty lines"
       />
+      <Option
+        name="unique"
+        alias="u"
+        type="boolean"
+        default={false}
+        description="count each line only once"
+      />
     </Argv>
   );
 }

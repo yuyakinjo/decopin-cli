@@ -222,6 +222,21 @@ describe('生成された CLI', () => {
     expect(result.stdout).toBe('2\n');
   });
 
+  test('boolean の alias を束ねられる (-nu)', async () => {
+    const bundled = await cli(['count', '-nu'], 'a\n\na\nb\n');
+    const separate = await cli(['count', '-n', '-u'], 'a\n\na\nb\n');
+    expect(bundled.stdout).toBe('2\n');
+    expect(bundled.stdout).toBe(separate.stdout);
+    expect(bundled.code).toBe(0);
+  });
+
+  test('非配列オプションの重複は exit 2', async () => {
+    const result = await cli(['hello', '-t', '1', '-t', '2']);
+    expect(result.stdout).toBe('');
+    expect(result.stderr).toContain('takes only one value');
+    expect(result.code).toBe(2);
+  });
+
   test('mode="text" の trim が効く', async () => {
     const result = await cli(['upper'], 'hello\n');
     expect(result.stdout).toBe('HELLO\n');
