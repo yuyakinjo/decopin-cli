@@ -1,8 +1,6 @@
 /**
- * §7 のルート解決表: 出力先 (stdout / stderr) と終了コードの組み合わせ。
- *
- * 原則: 明示的に --help を求められたら stdout + exit 0、
- * コマンドが確定しないまま終わったら stderr + exit 2。
+ * `help.tsx` による上書き。
+ * 出力先と終了コードの表そのものは test/contract/routing.test.tsx にある。
  */
 import { describe, expect, test } from 'bun:test';
 
@@ -45,62 +43,6 @@ const table: RouteTable = {
   'user/list': { command: loader(() => <Line>alice</Line>) },
   'user/import': { command: loader(() => <Line>imported</Line>) },
 };
-
-describe('出力先と終了コード (§7)', () => {
-  test('cli hello --help → stdout, exit 0', async () => {
-    const result = await invoke(table, ['hello', '--help']);
-    expect(result.code).toBe(0);
-    expect(result.stdout).toContain('Usage: cli hello');
-    expect(result.stderr).toBe('');
-  });
-
-  test('cli --help → stdout, exit 0', async () => {
-    const result = await invoke(table, ['--help']);
-    expect(result.code).toBe(0);
-    expect(result.stdout).toContain('Usage: cli <command> [options]');
-    expect(result.stderr).toBe('');
-  });
-
-  test('cli (引数なし) → stderr, exit 2', async () => {
-    const result = await invoke(table, []);
-    expect(result.code).toBe(2);
-    expect(result.stdout).toBe('');
-    expect(result.stderr).toContain('Usage: cli <command> [options]');
-  });
-
-  test('cli user (グループ) → stderr, exit 2', async () => {
-    const result = await invoke(table, ['user']);
-    expect(result.code).toBe(2);
-    expect(result.stdout).toBe('');
-    expect(result.stderr).toContain('Usage: cli user <command> [options]');
-  });
-
-  test('cli user --help → stdout, exit 0', async () => {
-    const result = await invoke(table, ['user', '--help']);
-    expect(result.code).toBe(0);
-    expect(result.stdout).toContain('Usage: cli user <command> [options]');
-    expect(result.stderr).toBe('');
-  });
-
-  test('グループの一覧は配下だけを、グループ名を除いて出す', async () => {
-    const result = await invoke(table, ['user', '--help']);
-    expect(result.stdout).toContain('import');
-    expect(result.stdout).toContain('list');
-    expect(result.stdout).not.toContain('hello');
-    // 打つべき残りの語だけを出す ("user list" ではなく "list")
-    expect(result.stdout).not.toContain('user list');
-  });
-
-  test('ルートコマンドがあれば引数なしでもそれを実行する', async () => {
-    const withRoot: RouteTable = {
-      ...table,
-      '': { command: loader(() => <Line>root</Line>) },
-    };
-    const result = await invoke(withRoot, []);
-    expect(result.code).toBe(0);
-    expect(result.stdout).toBe('root\n');
-  });
-});
 
 describe('help.tsx による上書き', () => {
   const helpView = ({ auto, program, command }: HelpProps) => (

@@ -190,12 +190,13 @@ export function toTypeNode(node: HostNode): TypeNode {
 /** 宣言がどの入力源のものか。Type.Object が使えるのは stdin だけ (§4.8) */
 export type InputSource = 'argv' | 'env' | 'stdin';
 
-/** 型の木に `object` が含まれていないか確かめる */
-function rejectObject(
-  type: TypeNode,
-  node: HostNode,
-  source: InputSource
-): void {
+/**
+ * 型の木に `object` が含まれていないか確かめる。
+ *
+ * argv / env の値は常に文字列で届くので、構造を宣言しても意味が取れない。
+ * ビルド時 (宣言の評価) に弾く
+ */
+export function rejectObjectFor(source: InputSource, type: TypeNode): void {
   if (source === 'stdin') return;
   const walk = (current: TypeNode): void => {
     if (current.kind === 'object') {
@@ -209,7 +210,6 @@ function rejectObject(
     }
   };
   walk(type);
-  void node;
 }
 
 /** `type` 短縮形と children のどちらかから型を決める */
@@ -236,7 +236,7 @@ function resolveType(node: HostNode, source: InputSource): TypeNode {
   }
   if (hasChildren) {
     const type = onlyType(node);
-    rejectObject(type, node, source);
+    rejectObjectFor(source, type);
     return type;
   }
 

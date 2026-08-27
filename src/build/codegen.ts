@@ -85,6 +85,9 @@ export function generateRoutes(input: RoutesInput, outDir: string): string {
     )
     .join('\n');
 
+  // entry.ts が必ず import するので、空でも export は出す
+  const helpsBody = helps === '' ? '{}' : `{\n${helps}\n}`;
+
   return `${HEADER}
 import type { RouteTable } from 'decopin-cli';
 
@@ -92,9 +95,7 @@ export const routes = {
 ${entries.join('\n')}
 } satisfies RouteTable;
 
-export const helps: Record<string, () => Promise<unknown>> = {
-${helps}
-};
+export const helps: Record<string, () => Promise<unknown>> = ${helpsBody};
 
 ${single('globalError', input.globalError)}
 ${single('notFound', input.notFound)}

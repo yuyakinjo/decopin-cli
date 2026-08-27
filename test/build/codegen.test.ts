@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 
-import { generateEntry, generateRoutes } from '../../src/build/codegen.ts';
+import { generateRoutes } from '../../src/build/codegen.ts';
 import type { Route } from '../../src/build/scanner.ts';
 
 const routes: Route[] = [
@@ -147,13 +147,4 @@ describe('generateRoutes — layout / middleware の連鎖', () => {
   });
 });
 
-describe('generateEntry', () => {
-  test('routes を run に渡し、終了コードで exit する', () => {
-    const code = generateEntry('mycli');
-    expect(code).toContain("import { run } from 'decopin-cli';");
-    expect(code).toContain('program: "mycli",');
-    expect(code).toContain('globalError,');
-    expect(code).toContain('envFile,');
-    expect(code).toContain('versionFile,');
-  });
-});
+// entry.ts / routes.ts の形そのものは test/contract/build.test.ts にある
