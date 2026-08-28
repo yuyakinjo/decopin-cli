@@ -1,15 +1,20 @@
 name: release
 
-# タグを打ったら公開する。タグと package.json の version が一致しなければ落とす
+# バージョンは日付から決めるので、タグは引き金ではなく**結果**。
+# 出したいときに Actions から手で実行する
 on:
-  push:
-    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      dry-run:
+        description: publish せず、決まるバージョンだけ確認する
+        type: boolean
+        default: false
 
 jobs:
   publish:
     runs-on: ubuntu-latest
     permissions:
-      contents: write # GitHub Release を作る
+      contents: write # バージョンのコミットとタグを push し、Release を作る
       id-token: write # npm の Trusted Publishing (OIDC) に必要
     steps:
       - uses: actions/checkout@v4
@@ -26,26 +31,44 @@ jobs:
 
       - run: bun install --frozen-lockfile
 
-      # タグと version の食い違いは、公開してから気づくと戻せない
-      - name: check the tag matches package.json
+      # 公開済みの一覧から、その年月の次の番号を決める (CalVer YYYY.MM.PATCH)
+      - name: decide the version
+        id: version
         run: |
-          tag="${GITHUB_REF_NAME#v}"
-          version="$(bun -e 'console.log(require("./package.json").version)')"
-          if [ "$tag" != "$version" ]; then
-            echo "tag v$tag does not match package.json $version" >&2
-            exit 1
-          fi
+          version="$(bun run --silent version:next)"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "releasing $version"
+
+      - name: write the version
+        run: bun scripts/next-version.ts --write
 
       - run: bun run ci
 
       - run: bun run build:package
 
+      - name: stop here on a dry run
+        if: inputs.dry-run
+        run: |
+          echo "would publish ${{ steps.version.outputs.version }}" >&2
+          exit 0
+
       # Trusted Publishing (OIDC) を使うので NPM_TOKEN は要らない
       - name: publish
+        if: ${{ !inputs.dry-run }}
         run: npm publish --provenance --access public
         working-directory: publish
 
-      - name: create the GitHub release
+      # 公開が通ってから記録する。逆順だと、公開できていないのに
+      # バージョンだけ進んだ履歴が残る
+      - name: record the release
+        if: ${{ !inputs.dry-run }}
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release create "$GITHUB_REF_NAME" --generate-notes
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -am "chore: release $VERSION"
+          git tag "v$VERSION"
+          git push origin HEAD --tags
+          gh release create "v$VERSION" --generate-notes

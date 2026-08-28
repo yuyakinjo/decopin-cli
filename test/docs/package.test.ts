@@ -87,21 +87,41 @@ describe('公開するパッケージ', () => {
 });
 
 describe('リリースの手順', () => {
-  test('タグと version の一致を CI が確かめている', async () => {
-    const workflow = await Bun.file('.github/workflows/release.yml').text();
-    expect(workflow).toContain('does not match package.json');
-    // トークンではなく OIDC で公開する (長期のトークンを secrets に置かない)
+  let workflow: string;
+
+  beforeAll(async () => {
+    workflow = await Bun.file('.github/workflows/release.yml').text();
+  });
+
+  test('バージョンは日付から決める (タグは引き金ではない)', () => {
+    expect(workflow).toContain('workflow_dispatch');
+    expect(workflow).toContain('version:next');
+    // タグを引き金にすると、番号を人が決めることになる
+    expect(workflow).not.toMatch(/^on:\s*\n\s*push:\s*\n\s*tags:/m);
+  });
+
+  test('トークンではなく OIDC で公開する', () => {
     expect(workflow).toContain('id-token: write');
     expect(workflow).toContain('--provenance');
     expect(workflow).not.toContain('NODE_AUTH_TOKEN');
     expect(workflow).not.toMatch(/secrets\.\w*NPM/);
   });
 
-  test('公開の前に ci を通している', async () => {
-    const workflow = await Bun.file('.github/workflows/release.yml').text();
+  test('公開の前に ci を通している', () => {
     const ciAt = workflow.indexOf('bun run ci');
     const publishAt = workflow.indexOf('npm publish');
     expect(ciAt).toBeGreaterThan(0);
     expect(publishAt).toBeGreaterThan(ciAt);
+  });
+
+  test('公開が通ってからタグを打つ', () => {
+    // 逆順だと、公開できていないのにバージョンだけ進んだ履歴が残る
+    const publishAt = workflow.indexOf('npm publish');
+    const tagAt = workflow.indexOf('git tag');
+    expect(tagAt).toBeGreaterThan(publishAt);
+  });
+
+  test('試し打ちができる', () => {
+    expect(workflow).toContain('dry-run');
   });
 });

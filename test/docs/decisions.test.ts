@@ -279,6 +279,11 @@ const GUARDS: Record<number, Guard> = {
     label: '公開するパッケージが壊れていない',
     file: 'test/docs/package.test.ts',
   },
+  18: {
+    kind: 'test',
+    label: 'バージョンは CalVer で、番号は人が決めない',
+    file: 'test/docs/version.test.ts',
+  },
 };
 
 const decisions = await Bun.file(DECISIONS).text();

@@ -1,6 +1,6 @@
 {
   "name": "decopin-cli",
-  "version": "0.5.0",
+  "version": "2026.8.0",
   "description": "Next.js-like rule-based CLI builder for TypeScript / Bun",
   "keywords": [
     "bun",
@@ -35,7 +35,8 @@
     "dev": "bun src/cli/bin.ts dev",
     "bench": "bun scripts/benchmark-startup.ts",
     "ci": "bun scripts/ci.tsx",
-    "build:package": "bun scripts/build-package.ts"
+    "build:package": "bun scripts/build-package.ts",
+    "version:next": "bun scripts/next-version.ts"
   },
   "dependencies": {
     "valibot": "^1.1.0"

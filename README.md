@@ -381,16 +381,26 @@ bun run format        # rewrite files (ci only checks)
 `bun run ci` runs exactly what CI runs
 ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)).
 
+## Versioning
+
+Versions are dates, not SemVer: `YYYY.MM.PATCH`, where the patch counts releases
+within that month (`2026.8.0`, `2026.8.1`, `2026.9.0`).
+
+**This changes what `^` means for you.** `^2026.8.0` allows anything below
+`2027.0.0`, so it will happily pick up a breaking change made later in the year.
+Pin with `~` or an exact version if that matters to you.
+
+```jsonc
+"decopin-cli": "~2026.8.0"   // 2026.8.x only
+"decopin-cli": "2026.8.0"    // exactly this one
+```
+
 ## Releasing
 
-Pushing a tag publishes the package
-([`.github/workflows/release.yml`](.github/workflows/release.yml)).
-
-```sh
-# 1. bump the version and commit
-# 2. tag it (CI fails if the tag and package.json disagree)
-git tag v0.2.0 && git push --tags
-```
+Releases are started by hand from the Actions tab
+([`.github/workflows/release.yml`](.github/workflows/release.yml)); the workflow
+picks the number, so the tag is a result rather than an input. `dry-run` shows
+which version it would publish without publishing it.
 
 npm auth goes through
 [Trusted Publishing (OIDC)](https://docs.npmjs.com/trusted-publishers), so there
