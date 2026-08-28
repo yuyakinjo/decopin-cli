@@ -147,6 +147,15 @@ describe('宣言と実体の一致', () => {
     expect(missing).toEqual([]);
   });
 
+  test('サンプルの version が package.json と一致する', async () => {
+    // app/ はこのリポジトリ自身のデモなので、古い版が残ると利用者が真似る
+    const manifest = (await Bun.file('package.json').json()) as {
+      version: string;
+    };
+    const sample = await Bun.file('app/version.tsx').text();
+    expect(sample).toContain(`version="${manifest.version}"`);
+  });
+
   test('CI が ci コマンドを回している', async () => {
     const workflow = await Bun.file('.github/workflows/ci.yml').text();
     expect(workflow).toContain('bun run ci');
