@@ -359,14 +359,12 @@ Run "decopin-cli user <command> --help" for details.
 決定が守られているかは [`test/docs/decisions.test.ts`](test/docs/decisions.test.ts)
 が検査します (ADR ごとに lint / test / manual の守り方を持ち、ADR を足すと
 守り方を決めるまで落ちます)。参照切れは
-[`test/docs/references.test.ts`](test/docs/references.test.ts)、決定の記録し忘れは
-Stop hook ([`.claude/hooks/remind-decisions.ts`](.claude/hooks/remind-decisions.ts))
-が知らせます。
+[`test/docs/references.test.ts`](test/docs/references.test.ts) が検出します。
 
 ## 開発
 
 ```sh
-bun test              # 560 件
+bun test
 bun run typecheck
 bun run lint
 bun run format

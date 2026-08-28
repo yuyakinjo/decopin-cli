@@ -249,17 +249,20 @@ const GUARDS: Record<number, Guard> = {
   },
   16: {
     kind: 'lint',
-    label: '参照切れのテストと、記録し忘れのフックが両方ある',
+    label: '決定を守る仕組みがテストとして存在する (フックには置かない)',
     check: async () => {
-      const required = [
-        'test/docs/references.test.ts',
-        '.claude/hooks/remind-decisions.ts',
-      ];
-      const missing: string[] = [];
-      for (const path of required) {
-        if (!(await Bun.file(path).exists())) missing.push(path);
+      const problems: string[] = [];
+      if (!(await Bun.file('test/docs/references.test.ts').exists())) {
+        problems.push('test/docs/references.test.ts がない');
       }
-      return missing;
+      // フックはセッション中しか効かないので、そこに移していないことも見る
+      if (await Bun.file('.claude/settings.json').exists()) {
+        const settings = await Bun.file('.claude/settings.json').text();
+        if (settings.includes('decisions')) {
+          problems.push('.claude/settings.json が決定の検査を持っている');
+        }
+      }
+      return problems;
     },
   },
 };
