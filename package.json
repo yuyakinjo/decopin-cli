@@ -2,7 +2,19 @@
   "name": "decopin-cli",
   "version": "0.1.0",
   "description": "Next.js-like rule-based CLI builder for TypeScript / Bun",
+  "keywords": [
+    "bun",
+    "cli",
+    "file-based-routing",
+    "framework",
+    "jsx",
+    "typescript"
+  ],
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yuyakinjo/decopin-cli.git"
+  },
   "bin": {
     "decopin": "./src/cli/bin.ts"
   },
@@ -22,10 +34,10 @@
     "build": "bun src/cli/bin.ts build",
     "dev": "bun src/cli/bin.ts dev",
     "bench": "bun scripts/benchmark-startup.ts",
-    "ci": "bun scripts/ci.tsx"
+    "ci": "bun scripts/ci.tsx",
+    "build:package": "bun scripts/build-package.ts"
   },
   "dependencies": {
-    "typescript": "npm:@typescript/typescript6@^6.0.2",
     "valibot": "^1.1.0"
   },
   "devDependencies": {
@@ -33,6 +45,10 @@
     "@types/node": "^24.3.0",
     "@typescript/native": "npm:typescript@^7.0.2",
     "oxfmt": "^0.65.0",
-    "oxlint": "^1.80.0"
+    "oxlint": "^1.80.0",
+    "typescript": "npm:@typescript/typescript6@^6.0.2"
+  },
+  "engines": {
+    "bun": ">=1.4.0"
   }
 }

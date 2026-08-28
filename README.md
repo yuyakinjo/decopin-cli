@@ -36,6 +36,9 @@ hello, world
 
 ## セットアップ
 
+**Bun が必要です。** ライブラリが `Bun.build` / `Bun.stdin` を使い、生成される
+CLI も `#!/usr/bin/env bun` で動きます (Node では動きません)。
+
 ```sh
 bun add decopin-cli
 ```
@@ -371,6 +374,23 @@ bun run format        # 整形する (ci は --check だけ)
 
 `bun run ci` は CI ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) が
 回すものと同じです。
+
+## リリース
+
+タグを打つと [`.github/workflows/release.yml`](.github/workflows/release.yml)
+が公開します。
+
+```sh
+# 1. version を上げてコミット
+# 2. タグを打つ (version と一致しなければ CI が落とす)
+git tag v0.2.0 && git push --tags
+```
+
+npm へは [Trusted Publishing (OIDC)](https://docs.npmjs.com/trusted-publishers)
+で認証するので、`NPM_TOKEN` は要りません。`--provenance` で来歴が付きます。
+
+公開する中身は `bun run build:package` が `publish/` に組み立てます
+(JS + `.d.ts` のみ。ソースは同梱しません)。
 
 ## ライセンス
 

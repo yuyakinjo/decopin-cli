@@ -5,7 +5,6 @@
     "": {
       "name": "decopin-cli",
       "dependencies": {
-        "typescript": "npm:@typescript/typescript6@^6.0.2",
         "valibot": "^1.1.0",
       },
       "devDependencies": {
@@ -14,6 +13,7 @@
         "@typescript/native": "npm:typescript@^7.0.2",
         "oxfmt": "^0.65.0",
         "oxlint": "^1.80.0",
+        "typescript": "npm:@typescript/typescript6@^6.0.2",
       },
     },
   },

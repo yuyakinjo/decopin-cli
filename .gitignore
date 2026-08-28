@@ -171,6 +171,8 @@ test-app-version/
 .decopin/
 .decopin-test-*/
 .decopin-probe/
+publish/
+lib/
 .readme-check-*/
 .mini-app/
 

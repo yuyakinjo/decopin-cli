@@ -265,6 +265,11 @@ const GUARDS: Record<number, Guard> = {
       return problems;
     },
   },
+  17: {
+    kind: 'test',
+    label: '公開するパッケージが壊れていない',
+    file: 'test/docs/package.test.ts',
+  },
 };
 
 const decisions = await Bun.file(DECISIONS).text();
