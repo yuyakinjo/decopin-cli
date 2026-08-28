@@ -7,23 +7,32 @@ import { describe, expect, test } from 'bun:test';
 
 import { calver, isCalVer } from '../../scripts/next-version.ts';
 
+/** ISO 文字列を UTC の時刻として読む */
+function utc(iso: string): Temporal.ZonedDateTime {
+  return Temporal.Instant.from(iso).toZonedDateTimeISO('UTC');
+}
+
 describe('calver', () => {
   test('日付と時刻から決まる', () => {
-    expect(calver(new Date('2026-08-28T14:30:00Z'))).toBe('2026.828.1430');
+    expect(calver(utc('2026-08-28T14:30:00Z'))).toBe('2026.828.1430');
   });
 
   test('先頭ゼロを付けない (semver として不正になるため)', () => {
-    expect(calver(new Date('2026-01-05T09:05:00Z'))).toBe('2026.105.905');
-    expect(calver(new Date('2026-01-05T00:07:00Z'))).toBe('2026.105.7');
+    expect(calver(utc('2026-01-05T09:05:00Z'))).toBe('2026.105.905');
+    expect(calver(utc('2026-01-05T00:07:00Z'))).toBe('2026.105.7');
   });
 
   test('真夜中は 0', () => {
-    expect(calver(new Date('2026-08-28T00:00:00Z'))).toBe('2026.828.0');
+    expect(calver(utc('2026-08-28T00:00:00Z'))).toBe('2026.828.0');
   });
 
-  test('UTC で読む (手元と CI で番号がぶれないため)', () => {
-    // 日本時間の 8/29 08:30 は UTC では 8/28 23:30
-    expect(calver(new Date('2026-08-28T23:30:00Z'))).toBe('2026.828.2330');
+  test('どの時間帯で読むかは値が持っている', () => {
+    // 同じ瞬間でも、東京で読めば 8/29 08:30、UTC なら 8/28 23:30
+    const moment = Temporal.Instant.from('2026-08-28T23:30:00Z');
+    expect(calver(moment.toZonedDateTimeISO('UTC'))).toBe('2026.828.2330');
+    expect(calver(moment.toZonedDateTimeISO('Asia/Tokyo'))).toBe(
+      '2026.829.830'
+    );
   });
 
   test('時刻が進めば番号も必ず増える', () => {
@@ -35,7 +44,7 @@ describe('calver', () => {
       '2026-02-01T00:00:00Z',
       '2026-12-25T12:00:00Z',
       '2027-01-01T00:00:00Z',
-    ].map((iso) => calver(new Date(iso)));
+    ].map((iso) => calver(utc(iso)));
 
     for (let index = 1; index < moments.length; index += 1) {
       expect(compare(moments[index] as string, moments[index - 1] as string)) //

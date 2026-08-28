@@ -45,17 +45,18 @@ export function isCalVer(version: string): boolean {
 }
 
 /**
- * @param now 基準にする時刻。**UTC で読む** (手元と CI で番号がぶれないため)
+ * @param now 基準にする時刻。`Temporal.ZonedDateTime` なので、どの時間帯で
+ *   読むかが値そのものに入っている (`Date` のように getUTC* を呼び忘れる余地がない)
  */
-export function calver(now: Date): string {
-  const year = now.getUTCFullYear();
-  const date = (now.getUTCMonth() + 1) * 100 + now.getUTCDate();
-  const time = now.getUTCHours() * 100 + now.getUTCMinutes();
-  return `${year}.${date}.${time}`;
+export function calver(now: Temporal.ZonedDateTime): string {
+  const date = now.month * 100 + now.day;
+  const time = now.hour * 100 + now.minute;
+  return `${now.year}.${date}.${time}`;
 }
 
 if (import.meta.main) {
-  const version = calver(new Date());
+  // UTC で決める。手元と CI で番号がぶれないため
+  const version = calver(Temporal.Now.zonedDateTimeISO('UTC'));
 
   if (process.argv.includes('--write')) {
     const manifest = await Bun.file('package.json').text();
