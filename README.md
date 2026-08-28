@@ -356,6 +356,10 @@ Run "decopin-cli user <command> --help" for details.
 挙動の約束は [`test/contract/`](test/contract) にテーブル駆動テストとして置いて
 あります。仕様書は持ちません — 動かないドキュメントは実装とずれるためです。
 
+参照切れ (ADR 番号・テストのパス) は [`test/docs/references.test.ts`](test/docs/references.test.ts)
+が検出します。決定の記録し忘れは Stop hook が知らせます
+([`.claude/hooks/remind-decisions.ts`](.claude/hooks/remind-decisions.ts))。
+
 ## 開発
 
 ```sh
