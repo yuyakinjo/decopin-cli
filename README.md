@@ -383,16 +383,15 @@ bun run format        # rewrite files (ci only checks)
 
 ## Versioning
 
-Versions are dates, not SemVer: `YYYY.MM.PATCH`, where the patch counts releases
-within that month (`2026.8.0`, `2026.8.1`, `2026.9.0`).
+Versions are timestamps, not SemVer: `YYYY.MMdd.HHmm` in UTC. `2026.828.1430`
+was published on 2026-08-28 at 14:30 UTC.
 
-**This changes what `^` means for you.** `^2026.8.0` allows anything below
-`2027.0.0`, so it will happily pick up a breaking change made later in the year.
-Pin with `~` or an exact version if that matters to you.
+**This changes what `^` and `~` mean for you.** `^2026.828.1430` allows anything
+below `2027.0.0`, and `~2026.828.1430` allows anything later that same day. Pin
+the exact version if that matters to you.
 
 ```jsonc
-"decopin-cli": "~2026.8.0"   // 2026.8.x only
-"decopin-cli": "2026.8.0"    // exactly this one
+"decopin-cli": "2026.828.1430"   // exactly this one
 ```
 
 ## Releasing

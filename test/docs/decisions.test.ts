@@ -281,7 +281,7 @@ const GUARDS: Record<number, Guard> = {
   },
   18: {
     kind: 'test',
-    label: 'バージョンは CalVer で、番号は人が決めない',
+    label: 'バージョンは時刻そのもので、人が決めない',
     file: 'test/docs/version.test.ts',
   },
 };

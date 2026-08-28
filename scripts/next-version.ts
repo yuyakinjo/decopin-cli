@@ -1,55 +1,67 @@
 #!/usr/bin/env bun
 /**
- * 次のバージョンを日付から決める (CalVer `YYYY.MM.PATCH`)。
+ * バージョンを時刻から決める (CalVer `YYYY.MMdd.HHmm`、UTC)。
  *
- *   bun scripts/next-version.ts           次の番号を出すだけ
+ *   bun scripts/next-version.ts           番号を出すだけ
  *   bun scripts/next-version.ts --write   package.json と app/version.tsx を書き換える
  *
- * PATCH は「その年月に何回目か」。公開済みの一覧は npm レジストリから取る
- * (git のタグは消せるが、公開したものは消せないため)。
+ * 時刻だけで決まるので、公開済みの一覧を調べる必要がない。
+ * 番号は単調に増え、衝突もしない (同じ分に 2 回出さない限り)。
+ *
+ * `yyyy.MM.dd.HHmm` の 4 つ組にしないのは、npm がそれを
+ * `2026.8.2-8.1430` という**プレリリース**として解釈してしまうため
+ * (実測。エラーにはならず、通常のインストールで拾われなくなる)。
  */
 
-/** npm が受け付ける形。先頭ゼロは semver として不正なので付けない */
-export const CALVER = /^(\d{4})\.(1[0-2]|[1-9])\.(\d+)$/;
+/** 日付と時刻を 3 つ組に畳んだ形。先頭ゼロは semver で不正なので付けない */
+export const CALVER = /^(\d{4})\.(\d{3,4})\.(\d{1,4})$/;
 
-/**
- * @param published すでに公開されているバージョン
- * @param now 基準にする日時
- */
-export function nextVersion(published: readonly string[], now: Date): string {
-  const prefix = `${now.getFullYear()}.${now.getMonth() + 1}`;
-  let highest = -1;
-  for (const version of published) {
-    const match = CALVER.exec(version);
-    if (match === null) continue;
-    if (`${match[1]}.${match[2]}` !== prefix) continue;
-    highest = Math.max(highest, Number(match[3]));
+/** その文字列が this の形式として妥当か (月日と時分の範囲まで見る) */
+export function isCalVer(version: string): boolean {
+  const match = CALVER.exec(version);
+  if (match === null) return false;
+  // 先頭ゼロは semver として不正 (npm が黙って解釈を変える)
+  if (match.slice(1).some((part) => part.length > 1 && part.startsWith('0'))) {
+    return false;
   }
-  return `${prefix}.${highest + 1}`;
+
+  const date = Number(match[2]);
+  const time = Number(match[3]);
+  const month = Math.floor(date / 100);
+  const day = date % 100;
+  const hour = Math.floor(time / 100);
+  const minute = time % 100;
+
+  return (
+    month >= 1 &&
+    month <= 12 &&
+    day >= 1 &&
+    day <= 31 &&
+    hour >= 0 &&
+    hour <= 23 &&
+    minute >= 0 &&
+    minute <= 59
+  );
 }
 
-/** 公開済みの一覧。まだ 1 度も公開していなければ空 */
-export async function publishedVersions(name: string): Promise<string[]> {
-  const response = await fetch(`https://registry.npmjs.org/${name}`);
-  if (!response.ok) return [];
-  const body = (await response.json()) as {
-    versions?: Record<string, unknown>;
-  };
-  return Object.keys(body.versions ?? {});
+/**
+ * @param now 基準にする時刻。**UTC で読む** (手元と CI で番号がぶれないため)
+ */
+export function calver(now: Date): string {
+  const year = now.getUTCFullYear();
+  const date = (now.getUTCMonth() + 1) * 100 + now.getUTCDate();
+  const time = now.getUTCHours() * 100 + now.getUTCMinutes();
+  return `${year}.${date}.${time}`;
 }
 
 if (import.meta.main) {
-  const manifest = (await Bun.file('package.json').json()) as { name: string };
-  const version = nextVersion(
-    await publishedVersions(manifest.name),
-    new Date()
-  );
+  const version = calver(new Date());
 
   if (process.argv.includes('--write')) {
-    const source = await Bun.file('package.json').text();
+    const manifest = await Bun.file('package.json').text();
     await Bun.write(
       'package.json',
-      source.replace(/"version": "[^"]*"/, `"version": "${version}"`)
+      manifest.replace(/"version": "[^"]*"/, `"version": "${version}"`)
     );
     // サンプルはこのリポジトリ自身の CLI なので合わせる
     const sample = await Bun.file('app/version.tsx').text();

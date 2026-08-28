@@ -31,7 +31,7 @@ jobs:
 
       - run: bun install --frozen-lockfile
 
-      # 公開済みの一覧から、その年月の次の番号を決める (CalVer YYYY.MM.PATCH)
+      # 時刻から決める (CalVer YYYY.MMdd.HHmm、UTC)。何も調べなくてよい
       - name: decide the version
         id: version
         run: |
