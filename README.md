@@ -1,17 +1,18 @@
 # decopin-cli
 
-Next.js のようなファイル規約で CLI を書くフレームワーク。TypeScript + Bun。
+Build CLIs the way Next.js builds web apps: file conventions, JSX output, and
+types that come from your declarations. TypeScript + Bun.
 
-シェルの 4 つの口が、そのままファイル名になります。
+The four channels of a shell map one-to-one onto file names.
 
-| ファイル      | シェルでの意味     | 必須 |
-| ------------- | ------------------ | ---- |
-| `command.tsx` | stdout (fd 1)      | 必須 |
-| `argv.tsx`    | コマンドライン引数 | 任意 |
-| `stdin.tsx`   | 標準入力 (fd 0)    | 任意 |
-| `error.tsx`   | stderr (fd 2)      | 任意 |
+| File          | What it is in the shell | Required |
+| ------------- | ----------------------- | -------- |
+| `command.tsx` | stdout (fd 1)           | yes      |
+| `argv.tsx`    | command line arguments  | no       |
+| `stdin.tsx`   | standard input (fd 0)   | no       |
+| `error.tsx`   | stderr (fd 2)           | no       |
 
-出力は JSX で書きます。React には依存していません (自前の軽量レンダラー)。
+Output is JSX. There is no React — decopin ships its own small renderer.
 
 ```tsx
 // app/hello/command.tsx
@@ -34,17 +35,18 @@ $ ./dist/index.js hello world
 hello, world
 ```
 
-## セットアップ
+## Setup
 
-**Bun が必要です。** ライブラリが `Bun.build` / `Bun.stdin` を使い、生成される
-CLI も `#!/usr/bin/env bun` で動きます (Node では動きません)。
+**Bun is required.** The library calls `Bun.build` / `Bun.stdin`, and the CLI it
+generates runs under `#!/usr/bin/env bun`. It does not run on Node.
 
 ```sh
 bun add decopin-cli
 ```
 
-`tsconfig.json` に JSX の設定が必要です。**これが無いと React を探しに行って失敗します**
-(`decopin build` が警告します)。
+Your `tsconfig.json` needs the JSX settings. **Without them TypeScript and Bun
+both look for React** and the build fails with a confusing error (`decopin build`
+warns you about this).
 
 ```json
 {
@@ -58,14 +60,14 @@ bun add decopin-cli
 ```
 
 ```sh
-bunx decopin build   # app/ を走査して dist/index.js を作る
-bunx decopin dev     # app/ を見張って型を作り直す (バンドルはしない)
+bunx decopin build   # scan app/ and produce dist/index.js
+bunx decopin dev     # watch app/ and keep the types fresh (no bundling)
 ```
 
-## 引数を宣言する
+## Declaring arguments
 
-`argv.tsx` に書いた宣言が、検証・`--help`・**型**の 3 つすべての元になります。
-バリデーションライブラリの書き方を覚える必要はありません。
+What you write in `argv.tsx` drives all three of validation, `--help`, and
+**types**. You never write the validation library by hand.
 
 ```tsx
 // app/hello/argv.tsx
@@ -74,7 +76,7 @@ import { Arg, Argv, Option, Type } from 'decopin-cli';
 export default function DefineArgv() {
   return (
     <Argv description="Greet someone.">
-      {/* 制約が無い型は短縮形で書ける */}
+      {/* the shorthand covers types without constraints */}
       <Arg
         name="name"
         type="string"
@@ -89,7 +91,7 @@ export default function DefineArgv() {
         description="shout it"
       />
 
-      {/* 制約が要るときは children で型を組む */}
+      {/* nest a Type.* child when you need constraints */}
       <Option name="times" alias="t" default={1} description="repeat count">
         <Type.Number min={1} max={5} integer />
       </Option>
@@ -101,10 +103,10 @@ export default function DefineArgv() {
 }
 ```
 
-型が再帰する場合は入れ子がそのまま効きます。
+Nesting is what you want when the type itself recurses.
 
 ```tsx
-// app/user/list/argv.tsx (抜粋)
+// app/user/list/argv.tsx (excerpt)
 <Option name="tag" description="filter by tag (repeatable)">
   <Type.Array>
     <Type.String minLength={1} />
@@ -112,16 +114,16 @@ export default function DefineArgv() {
 </Option>
 ```
 
-**型と「存在」を階層で分けます。**
+**Type and presence live at different levels.**
 
-| 何を決めるか          | どこに書くか                                           |
-| --------------------- | ------------------------------------------------------ |
-| 値の型と制約          | children (`Type.*`) または `type` 短縮形               |
-| 省略できるか / 既定値 | `<Arg>` / `<Option>` の props (`required` / `default`) |
+| What it decides              | Where it goes                                          |
+| ---------------------------- | ------------------------------------------------------ |
+| the type and its constraints | children (`Type.*`) or the `type` shorthand            |
+| whether it can be omitted    | props on `<Arg>` / `<Option>` (`required` / `default`) |
 
-`required` と `default` は同時に指定できません (どちらも無ければ省略可能)。
+`required` and `default` cannot both be set (with neither, the value is optional).
 
-宣言すると型が届きます。
+The declaration is where your types come from.
 
 ```tsx
 import type { CommandProps } from 'decopin-cli';
@@ -134,7 +136,7 @@ export default function Command({ args, options }: CommandProps<'hello'>) {
 }
 ```
 
-`--help` も宣言から作られます。
+So does `--help`.
 
 ```sh
 $ ./dist/index.js hello --help
@@ -152,10 +154,11 @@ Options:
   -h, --help                        show this help
 ```
 
-## 標準入力を読む
+## Reading stdin
 
-`stdin.tsx` が**無いコマンドは stdin に一切触りません**。端末で実行したときに
-入力待ちでフリーズする、という事故が構造的に起きません。
+**A command without `stdin.tsx` never touches stdin.** The most common CLI
+accident — running a command in a terminal and having it hang on input you did
+not know it wanted — cannot happen by construction.
 
 ```tsx
 // app/count/stdin.tsx
@@ -166,29 +169,29 @@ export default function DefineStdin() {
 }
 ```
 
-| `mode`  | 受け取る型                                   |
-| ------- | -------------------------------------------- |
-| `text`  | `string` (全文)。`trim` で末尾の改行を落とす |
-| `lines` | `string[]` (改行で分割)                      |
-| `json`  | children で宣言した型、または `unknown`      |
+| `mode`  | What the command receives                                     |
+| ------- | ------------------------------------------------------------- |
+| `text`  | `string` (the whole input). `trim` drops the trailing newline |
+| `lines` | `string[]` (split on newlines)                                |
+| `json`  | the type you declared in children, otherwise `unknown`        |
 
-`required` を付けなければ、端末で実行したときは `undefined` が渡ります (型にも
-`| undefined` が付きます)。
+Without `required`, a command run in a terminal receives `undefined` (and the
+type says `| undefined`).
 
 ```sh
 $ printf 'a\nb\n\nc\n' | ./dist/index.js count
 4
 ```
 
-## エラーを出す
+## Reporting errors
 
-`error.tsx` は**近いディレクトリから順に**探されます。
+`error.tsx` is looked up **from the closest directory outward**.
 
 ```
-app/user/create/error.tsx   ← 自分のディレクトリ (最優先)
-app/user/error.tsx          ← 親を順にさかのぼる
-app/global-error.tsx        ← 最後の受け皿
-組み込みの既定表示           ← どれも無い / どれも失敗した
+app/user/create/error.tsx   ← the command's own directory (wins)
+app/user/error.tsx          ← then each parent
+app/global-error.tsx        ← the last resort
+the built-in view           ← none of them exist, or all of them failed
 ```
 
 ```tsx
@@ -205,29 +208,29 @@ export default function UserError({ error }: ErrorProps) {
 }
 ```
 
-出力は既定で stderr に行きます。終了コードは `error.kind` から決まりますが、
-`<Exit code={n} />` で上書きできます。
+Errors go to stderr by default. The exit code follows `error.kind`, and
+`<Exit code={n} />` overrides it.
 
-| コード | 意味                                                                       |
-| ------ | -------------------------------------------------------------------------- |
-| 0      | 成功                                                                       |
-| 1      | 実行時エラー (`command.tsx` 内の throw)                                    |
-| 2      | 使い方の誤り (引数の検証失敗 / 未知のコマンド / env 不足 / stdin 必須違反) |
-| 130    | Ctrl+C                                                                     |
+| Code | Meaning                                                               |
+| ---- | --------------------------------------------------------------------- |
+| 0    | success                                                               |
+| 1    | runtime error (a throw inside `command.tsx`)                          |
+| 2    | usage error (validation, unknown command, missing env, missing stdin) |
+| 130  | Ctrl+C                                                                |
 
-## そのほかの規約
+## The other conventions
 
-| ファイル         | 役割                                        |
-| ---------------- | ------------------------------------------- |
-| `layout.tsx`     | 出力を包む。上位ディレクトリから継承される  |
-| `middleware.tsx` | 実行を包む。`next()` を呼ぶまで中は走らない |
-| `help.tsx`       | `--help` の上書き。ディレクトリ単位         |
-| `not-found.tsx`  | 未知のコマンドの表示                        |
-| `env.tsx`        | 環境変数の宣言。起動時に一度だけ検証される  |
-| `version.tsx`    | `--version` の内容                          |
+| File             | What it does                                                     |
+| ---------------- | ---------------------------------------------------------------- |
+| `layout.tsx`     | wraps the output. Inherited from parent directories              |
+| `middleware.tsx` | wraps the execution. Nothing inside runs until you call `next()` |
+| `help.tsx`       | overrides `--help`. Per directory                                |
+| `not-found.tsx`  | the view for an unknown command                                  |
+| `env.tsx`        | declares environment variables, validated once at startup        |
+| `version.tsx`    | what `--version` prints                                          |
 
 ```tsx
-// app/user/middleware.tsx — next は「呼ぶまで走らない関数」
+// app/user/middleware.tsx — next is a function, so nothing runs until you call it
 import { Line, Stderr, Text, type MiddlewareProps } from 'decopin-cli';
 
 export default async function Middleware({ next, options }: MiddlewareProps) {
@@ -247,12 +250,12 @@ export default async function Middleware({ next, options }: MiddlewareProps) {
 }
 ```
 
-`_` で始まるディレクトリはコマンドになりません (共有コードの置き場)。
+Directories starting with `_` never become commands (put shared code there).
 
-## サブコマンド
+## Subcommands
 
-ディレクトリの階層がそのままサブコマンドです。`command.tsx` を持たない
-ディレクトリは「グループ」として扱われ、配下の一覧を出します。
+The directory tree is the subcommand tree. A directory without a `command.tsx`
+is a group, and it lists what is under it.
 
 ```
 app/user/list/command.tsx     → cli user list
@@ -270,36 +273,36 @@ Commands:
 Run "decopin-cli user <command> --help" for details.
 ```
 
-明示的に `--help` を求めたときは stdout に exit 0 で、コマンドが確定しないまま
-終わったときは stderr に exit 2 で出ます。
+Asking for `--help` explicitly prints to stdout and exits 0. Ending up without a
+command prints to stderr and exits 2.
 
-## 出力コンポーネント
+## Output components
 
 ```tsx
-<Line>1 行 (末尾に改行が付く)</Line>
+<Line>one line (a newline is appended)</Line>
 <Text bold dim italic underline color="green" bg="#333">
-  装飾
+  decorated
 </Text>
 <Br />
 <Stdout>
-  <Line>ここは stdout</Line>
+  <Line>this goes to stdout</Line>
 </Stdout>
 <Stderr>
-  <Line>ここは stderr</Line>
+  <Line>this goes to stderr</Line>
 </Stderr>
 <Exit code={2} />
 ```
 
 ```tsx
 <Indent by={2}>
-  <Line>字下げ</Line>
+  <Line>indented</Line>
 </Indent>
 <Box border="round" title="summary">
-  <Line>罫線で囲む</Line>
+  <Line>framed</Line>
 </Box>
 <Columns gap={4}>
-  <Line>左の列</Line>
-  <Line>右の列</Line>
+  <Line>left column</Line>
+  <Line>right column</Line>
 </Columns>
 <Success>ok</Success>
 <Warn>careful</Warn>
@@ -318,7 +321,8 @@ Run "decopin-cli user <command> --help" for details.
 </Line>
 ```
 
-日本語や絵文字の**表示幅**を数えるので、罫線や表がずれません。
+Display width is counted properly, so frames and tables do not drift when the
+content is CJK or emoji.
 
 ```
 ╭─ summary ──────────────────────╮
@@ -327,71 +331,74 @@ Run "decopin-cli user <command> --help" for details.
 ╰────────────────────────────────╯
 ```
 
-色は自動で落ちます。パイプ・リダイレクト時、`NO_COLOR`、`--no-color`、
-`TERM=dumb` のいずれかで装飾なしになります (`FORCE_COLOR` で強制できます)。
-`<Line>` は自動で折り返しません (パイプ先の行単位の処理を壊さないため)。
+Color turns itself off when it should: piped or redirected output, `NO_COLOR`,
+`--no-color`, or `TERM=dumb` (`FORCE_COLOR` forces it back on). `<Line>` never
+wraps on its own, so line-oriented consumers downstream keep working.
 
-## 予約されているオプション
+## Reserved options
 
-`--help` / `-h` / `--version` / `--no-color` の 4 つはフレームワークが処理します。
-`argv.tsx` で同じ名前を宣言するとビルドエラーになります。
+`--help`, `-h`, `--version` and `--no-color` are handled by the framework.
+Declaring any of them in `argv.tsx` is a build error.
 
-## 動くサンプル
+## Working examples
 
-[`app/`](app/) がそのままサンプルです。ビルドとテストで常に検証されています。
+[`app/`](app/) is the example, and the build and the tests keep it honest.
 
-| コマンド                             | 見どころ                                                             |
-| ------------------------------------ | -------------------------------------------------------------------- |
-| [`app/hello`](app/hello)             | 位置引数・オプション・enum                                           |
-| [`app/count`](app/count)             | `stdin.tsx` (lines)、`help.tsx` の上書き、boolean alias の束ね       |
-| [`app/upper`](app/upper)             | 任意の stdin (端末なら `undefined`)                                  |
-| [`app/user`](app/user)               | サブコマンド、`layout.tsx`、`middleware.tsx`、継承される `error.tsx` |
-| [`app/user/import`](app/user/import) | `mode="json"` + `Type.Object`                                        |
-| [`app/config`](app/config)           | `env.tsx` の値を使う                                                 |
-| [`app/crash`](app/crash)             | `error.tsx` と `<Exit>`                                              |
+| Command                              | What it shows                                                         |
+| ------------------------------------ | --------------------------------------------------------------------- |
+| [`app/hello`](app/hello)             | positional args, options, enums                                       |
+| [`app/count`](app/count)             | `stdin.tsx` (lines), a `help.tsx` override, bundled boolean aliases   |
+| [`app/upper`](app/upper)             | optional stdin (`undefined` in a terminal)                            |
+| [`app/user`](app/user)               | subcommands, `layout.tsx`, `middleware.tsx`, an inherited `error.tsx` |
+| [`app/user/import`](app/user/import) | `mode="json"` with `Type.Object`                                      |
+| [`app/config`](app/config)           | reading validated `env.tsx` values                                    |
+| [`app/crash`](app/crash)             | `error.tsx` and `<Exit>`                                              |
 
-## 設計の理由
+## Why it is built this way
 
-なぜそうなっているかは [docs/decisions.md](docs/decisions.md) にあります
-(なぜ Ink を使わないか、なぜ型をビルド時に生成するか、なぜ middleware は
-`children` でなく `next` か、など)。
+The reasoning lives in [docs/decisions.md](docs/decisions.md) — why not Ink, why
+types are generated at build time, why middleware takes `next` instead of
+`children`, and so on. It is written in Japanese, as are the code comments.
 
-挙動の約束は [`test/contract/`](test/contract) にテーブル駆動テストとして置いて
-あります。仕様書は持ちません — 動かないドキュメントは実装とずれるためです。
+The behaviour itself is pinned by table-driven tests in
+[`test/contract/`](test/contract). There is no spec document: a document nobody
+executes drifts away from the code.
 
-決定が守られているかは [`test/docs/decisions.test.ts`](test/docs/decisions.test.ts)
-が検査します (ADR ごとに lint / test / manual の守り方を持ち、ADR を足すと
-守り方を決めるまで落ちます)。参照切れは
-[`test/docs/references.test.ts`](test/docs/references.test.ts) が検出します。
+Whether those decisions still hold is checked by
+[`test/docs/decisions.test.ts`](test/docs/decisions.test.ts) (every ADR carries a
+lint / test / manual guard, and adding an ADR fails the suite until you choose
+one). Dangling references are caught by
+[`test/docs/references.test.ts`](test/docs/references.test.ts).
 
-## 開発
+## Development
 
 ```sh
-bun run ci            # build → typecheck / test / lint / format を並列で
-bun run bench         # 起動時間
-bun run format        # 整形する (ci は --check だけ)
+bun run ci            # build, then typecheck / test / lint / format in parallel
+bun run bench         # startup time
+bun run format        # rewrite files (ci only checks)
 ```
 
-`bun run ci` は CI ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) が
-回すものと同じです。
+`bun run ci` runs exactly what CI runs
+([`.github/workflows/ci.yml`](.github/workflows/ci.yml)).
 
-## リリース
+## Releasing
 
-タグを打つと [`.github/workflows/release.yml`](.github/workflows/release.yml)
-が公開します。
+Pushing a tag publishes the package
+([`.github/workflows/release.yml`](.github/workflows/release.yml)).
 
 ```sh
-# 1. version を上げてコミット
-# 2. タグを打つ (version と一致しなければ CI が落とす)
+# 1. bump the version and commit
+# 2. tag it (CI fails if the tag and package.json disagree)
 git tag v0.2.0 && git push --tags
 ```
 
-npm へは [Trusted Publishing (OIDC)](https://docs.npmjs.com/trusted-publishers)
-で認証するので、`NPM_TOKEN` は要りません。`--provenance` で来歴が付きます。
+npm auth goes through
+[Trusted Publishing (OIDC)](https://docs.npmjs.com/trusted-publishers), so there
+is no `NPM_TOKEN`, and `--provenance` attaches provenance to the release.
 
-公開する中身は `bun run build:package` が `publish/` に組み立てます
-(JS + `.d.ts` のみ。ソースは同梱しません)。
+`bun run build:package` assembles what gets published into `publish/` — JS and
+`.d.ts` only, no sources.
 
-## ライセンス
+## License
 
 MIT

@@ -226,7 +226,7 @@ const GUARDS: Record<number, Guard> = {
   },
   14: {
     kind: 'lint',
-    label: 'フレームワークが出すメッセージは英語',
+    label: '外に出るもの (CLI の出力・生成物・README) は英語',
     check: async () => {
       const offenders: string[] = [];
       for (const [file, source] of srcSources) {
@@ -235,6 +235,15 @@ const GUARDS: Record<number, Guard> = {
             offenders.push(`${file}: ${literal.slice(0, 30)}`);
           }
         }
+      }
+
+      // README は地の文だけを見る。コードブロックの中は、表示幅の例のように
+      // 日本語そのものが題材になることがある
+      const readme = await Bun.file('README.md').text();
+      const prose = readme.replace(/```[\s\S]*?```/g, '');
+      for (const line of prose.split('\n')) {
+        if (JAPANESE.test(line))
+          offenders.push(`README.md: ${line.slice(0, 30)}`);
       }
       return offenders;
     },
