@@ -86,6 +86,9 @@ describe('コードからの参照', () => {
     for (const [file, source] of sources) {
       for (const match of source.matchAll(/\btest\/[\w./-]+\.tsx?\b/g)) {
         const path = match[0];
+        // fixtures はテスト実行時に作るものがあるので対象外。
+        // ここで見たいのは「挙動を説明しているテスト」への参照が切れていないか
+        if (path.startsWith('test/fixtures/')) continue;
         if (!(await Bun.file(path).exists())) missing.push(`${path} (${file})`);
       }
     }
@@ -118,5 +121,39 @@ describe('README からの参照', () => {
       if (!exists) missing.push(path);
     }
     expect(missing).toEqual([]);
+  });
+});
+
+describe('宣言と実体の一致', () => {
+  test('package.json が宣言する license のファイルが実在する', async () => {
+    const manifest = (await Bun.file('package.json').json()) as {
+      license?: string;
+    };
+    expect(manifest.license).toBe('MIT');
+    const license = await Bun.file('LICENSE').text();
+    expect(license).toContain('MIT License');
+  });
+
+  test('package.json の scripts が README に書いたとおり動く名前になっている', async () => {
+    const manifest = (await Bun.file('package.json').json()) as {
+      scripts?: Record<string, string>;
+    };
+    const readme = await Bun.file('README.md').text();
+    const missing: string[] = [];
+    for (const match of readme.matchAll(/^bun run ([\w:]+)$/gm)) {
+      const name = match[1] as string;
+      if (manifest.scripts?.[name] === undefined) missing.push(name);
+    }
+    expect(missing).toEqual([]);
+  });
+
+  test('CI が ci コマンドを回している', async () => {
+    const workflow = await Bun.file('.github/workflows/ci.yml').text();
+    expect(workflow).toContain('bun run ci');
+    // ローカルと CI で同じものが走ることを担保する
+    const manifest = (await Bun.file('package.json').json()) as {
+      scripts?: Record<string, string>;
+    };
+    expect(manifest.scripts?.ci).toBeDefined();
   });
 });

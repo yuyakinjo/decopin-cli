@@ -24,6 +24,6 @@
     "scripts/**/*",
     ".decopin/types.d.ts"
   ],
-  // 型が未生成の状態を再現する当て木。専用の tsconfig から検査する
-  "exclude": ["test/fixtures/untyped"]
+  // 当て木は専用の tsconfig から検査する (ルートの型検査からは外す)
+  "exclude": ["test/fixtures/untyped", "test/fixtures/typed"]
 }

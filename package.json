@@ -21,7 +21,8 @@
     "format:check": "oxfmt --check",
     "build": "bun src/cli/bin.ts build",
     "dev": "bun src/cli/bin.ts dev",
-    "bench": "bun scripts/benchmark-startup.ts"
+    "bench": "bun scripts/benchmark-startup.ts",
+    "ci": "bun scripts/ci.tsx"
   },
   "dependencies": {
     "typescript": "npm:@typescript/typescript6@^6.0.2",

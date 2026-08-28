@@ -1,0 +1,27 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# 同じブランチへの push が続いたら、古い実行は打ち切る
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.0
+
+      # lockfile どおりに入れる (CI で勝手に解決を変えない)
+      - run: bun install --frozen-lockfile
+
+      # build → (typecheck / test / lint / format) を並列で回す
+      - run: bun run ci

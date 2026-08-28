@@ -364,12 +364,13 @@ Run "decopin-cli user <command> --help" for details.
 ## 開発
 
 ```sh
-bun test
-bun run typecheck
-bun run lint
-bun run format
+bun run ci            # build → typecheck / test / lint / format を並列で
 bun run bench         # 起動時間
+bun run format        # 整形する (ci は --check だけ)
 ```
+
+`bun run ci` は CI ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) が
+回すものと同じです。
 
 ## ライセンス
 

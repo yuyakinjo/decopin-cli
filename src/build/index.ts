@@ -42,6 +42,19 @@ export interface BuildResult extends GenerateResult {
   bytes: number;
 }
 
+/**
+ * 中身が変わらないなら書かない。
+ *
+ * `.decopin/` は型検査が読むファイルなので、内容が同じなのに書き直すと
+ * 読んでいる側 (tsc やエディタ) が途中の状態を見る余地が生まれる。
+ * `decopin dev` の watch でも無駄な更新が減る
+ */
+async function writeIfChanged(path: string, content: string): Promise<void> {
+  const file = Bun.file(path);
+  if ((await file.exists()) && (await file.text()) === content) return;
+  await Bun.write(path, content);
+}
+
 /** help に出す名前は、既定でプロジェクトの package.json から取る */
 async function readProgramName(): Promise<string> {
   try {
@@ -112,7 +125,7 @@ export async function generate(
   const middlewareChains = chain('middleware');
 
   await mkdir(workDir, { recursive: true });
-  await Bun.write(
+  await writeIfChanged(
     files.routes,
     generateRoutes(
       {
@@ -129,12 +142,12 @@ export async function generate(
       workDir
     )
   );
-  await Bun.write(files.entry, generateEntry(program));
+  await writeIfChanged(files.entry, generateEntry(program));
   const types = generateTypes(evaluated, env.spec);
   for (const { file, nodes } of types.unsupported) {
     warnings.push(...stdinSchemaWarnings(file, nodes));
   }
-  await Bun.write(files.types, types.text);
+  await writeIfChanged(files.types, types.text);
 
   return { routes, evaluated, files, warnings };
 }

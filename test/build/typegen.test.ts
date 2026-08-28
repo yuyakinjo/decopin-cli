@@ -7,7 +7,15 @@ import { rm, writeFile } from 'node:fs/promises';
 
 import { generate } from '../../src/build/index.ts';
 
-const PROBE = 'app/_typegen-probe.tsx';
+/**
+ * 型が効いていることを確かめる当て木。
+ *
+ * `app/` に置くと、並行して走る `bun run typecheck` がこのファイルを拾って
+ * しまう。専用の tsconfig を持つ場所に隔離して、ルートの型検査からは
+ * 除外している (tsconfig.json の exclude)
+ */
+const PROBE = 'test/fixtures/typed/probe.tsx';
+const PROBE_PROJECT = 'test/fixtures/typed/tsconfig.json';
 
 async function typecheck(project?: string) {
   const proc = Bun.spawn(
@@ -50,7 +58,7 @@ export default function Command({ args, options }: CommandProps<'hello'>) {
 `
     );
     try {
-      const result = await typecheck();
+      const result = await typecheck(PROBE_PROJECT);
       expect(result.code).not.toBe(0);
       // args.name は string
       expect(result.output).toContain(
