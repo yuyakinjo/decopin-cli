@@ -1,0 +1,309 @@
+/**
+ * decisions.md に書いた決定が、コードで破られていないことを検査する。
+ *
+ * ADR は「決めた時点の事実」なので腐らないが、**決定が守られているか**は
+ * 放っておくと崩れる。機械で守れるものはここで守り、守れないものは
+ * 理由付きで明示する。
+ *
+ * ここが落ちたら、直すのはコードとは限らない。**決定そのものが変わったのなら
+ * decisions.md を書き換える**のが正しい対応。
+ */
+import { describe, expect, test } from 'bun:test';
+import { readdir } from 'node:fs/promises';
+import { join } from 'node:path';
+
+const DECISIONS = 'docs/decisions.md';
+
+/** ADR をどう守っているか */
+type Guard =
+  | { kind: 'lint'; label: string; check: () => Promise<string[]> }
+  | { kind: 'test'; label: string; file: string }
+  | { kind: 'manual'; reason: string };
+
+async function sourceFiles(dir: string): Promise<string[]> {
+  const entries = await readdir(dir, { withFileTypes: true });
+  const files: string[] = [];
+  for (const entry of entries) {
+    const path = join(dir, entry.name);
+    if (entry.isDirectory()) {
+      if (entry.name.startsWith('.') || entry.name === 'node_modules') continue;
+      files.push(...(await sourceFiles(path)));
+      continue;
+    }
+    if (/\.tsx?$/.test(entry.name)) files.push(path);
+  }
+  return files;
+}
+
+const srcFiles = await sourceFiles('src');
+const srcSources = new Map<string, string>();
+for (const file of srcFiles) srcSources.set(file, await Bun.file(file).text());
+
+/**
+ * コメントを落として、文字列リテラルの中身だけを取り出す。
+ *
+ * 素朴に正規表現をかけると JSDoc の日本語まで拾ってしまうので、
+ * 文字列とコメントの状態を見ながら 1 文字ずつ進む
+ */
+function stringLiterals(source: string): string[] {
+  const literals: string[] = [];
+  let index = 0;
+  let quote: string | undefined;
+  let current = '';
+
+  while (index < source.length) {
+    const char = source[index] as string;
+    const next = source[index + 1];
+
+    if (quote !== undefined) {
+      if (char === '\\') {
+        current += source.slice(index, index + 2);
+        index += 2;
+        continue;
+      }
+      if (char === quote) {
+        literals.push(current);
+        current = '';
+        quote = undefined;
+        index += 1;
+        continue;
+      }
+      current += char;
+      index += 1;
+      continue;
+    }
+
+    if (char === '/' && next === '/') {
+      while (index < source.length && source[index] !== '\n') index += 1;
+      continue;
+    }
+    if (char === '/' && next === '*') {
+      index += 2;
+      while (
+        index < source.length &&
+        !(source[index] === '*' && source[index + 1] === '/')
+      ) {
+        index += 1;
+      }
+      index += 2;
+      continue;
+    }
+    if (char === "'" || char === '"' || char === '`') {
+      quote = char;
+      index += 1;
+      continue;
+    }
+    index += 1;
+  }
+  return literals;
+}
+
+const JAPANESE = /[ぁ-んァ-ヶ一-龥]/;
+
+/** import 元がその指定子に一致するファイル */
+function importersOf(specifier: RegExp): string[] {
+  const found: string[] = [];
+  for (const [file, source] of srcSources) {
+    if (new RegExp(`from '${specifier.source}'`).test(source)) found.push(file);
+  }
+  return found;
+}
+
+const GUARDS: Record<number, Guard> = {
+  1: {
+    kind: 'lint',
+    label: '自作レンダラーを使う (React / Ink に依存しない)',
+    check: async () => {
+      const importers = importersOf(/(react|react-dom|ink)(\/.*)?/);
+      const manifest = (await Bun.file('package.json').json()) as {
+        dependencies?: Record<string, string>;
+      };
+      const deps = Object.keys(manifest.dependencies ?? {}).filter((name) =>
+        ['react', 'react-dom', 'ink'].includes(name)
+      );
+      return [...importers, ...deps.map((name) => `package.json: ${name}`)];
+    },
+  },
+  2: {
+    kind: 'test',
+    label: '宣言のないコマンドは stdin に触らない',
+    file: 'test/runtime/run-stdin.test.tsx',
+  },
+  3: {
+    kind: 'lint',
+    label: 'app/ のファイル名が規約に含まれる (綴り違いは黙って無視されるため)',
+    check: async () => {
+      const { CONVENTION_FILES, ROOT_ONLY_FILES } =
+        await import('../../src/build/scanner.ts');
+      const allowed = new Set<string>([
+        ...CONVENTION_FILES,
+        ...ROOT_ONLY_FILES,
+      ]);
+      const offenders: string[] = [];
+      for (const file of await sourceFiles('app')) {
+        // `_` で始まるディレクトリは共有コードの置き場なので自由
+        if (file.split('/').some((part) => part.startsWith('_'))) continue;
+        const base = (file.split('/').pop() as string).replace(/\.tsx?$/, '');
+        if (!allowed.has(base)) offenders.push(file);
+      }
+      return offenders;
+    },
+  },
+  4: {
+    kind: 'lint',
+    label: 'v1 は静的出力のみ (対話的な入力を読まない)',
+    check: async () =>
+      importersOf(/node:readline(\/.*)?/).concat(
+        [...srcSources]
+          .filter(([, source]) => source.includes('setRawMode'))
+          .map(([file]) => file)
+      ),
+  },
+  5: {
+    kind: 'test',
+    label: 'ビルド時にルートを生成する',
+    file: 'test/contract/build.test.ts',
+  },
+  6: {
+    kind: 'lint',
+    label: 'バリデーションは valibot',
+    check: async () => {
+      const manifest = (await Bun.file('package.json').json()) as {
+        dependencies?: Record<string, string>;
+      };
+      return manifest.dependencies?.valibot === undefined
+        ? ['package.json に valibot がない']
+        : [];
+    },
+  },
+  7: {
+    kind: 'test',
+    label: 'layout.tsx は上位ディレクトリから包む',
+    file: 'test/runtime/layout.test.tsx',
+  },
+  8: {
+    kind: 'test',
+    label: '--help は宣言から生成する',
+    file: 'test/runtime/help.test.tsx',
+  },
+  9: {
+    kind: 'test',
+    label: '型はビルド時の codegen で配る',
+    file: 'test/build/typegen.test.ts',
+  },
+  10: {
+    kind: 'lint',
+    label: 'valibot への依存を src/validation/ に閉じ込める',
+    check: async () =>
+      importersOf(/valibot/).filter(
+        (file) => !file.startsWith('src/validation/')
+      ),
+  },
+  11: {
+    kind: 'test',
+    label: 'argv の検証は middleware より前',
+    file: 'test/runtime/middleware.test.tsx',
+  },
+  12: {
+    kind: 'lint',
+    label: '単一ファイルで配る (--splitting は使わない)',
+    check: async () => {
+      const bundler = srcSources.get('src/build/bundler.ts') ?? '';
+      return bundler.includes('splitting') ? ['src/build/bundler.ts'] : [];
+    },
+  },
+  13: {
+    kind: 'lint',
+    label: 'middleware は children ではなく next を受け取る',
+    check: async () => {
+      const middleware = srcSources.get('src/runtime/middleware.ts') ?? '';
+      const props = /export interface MiddlewareProps[^}]*}/.exec(middleware);
+      if (props === null) return ['MiddlewareProps が見つからない'];
+      return props[0].includes('children')
+        ? ['MiddlewareProps に children がある']
+        : [];
+    },
+  },
+  14: {
+    kind: 'lint',
+    label: 'フレームワークが出すメッセージは英語',
+    check: async () => {
+      const offenders: string[] = [];
+      for (const [file, source] of srcSources) {
+        for (const literal of stringLiterals(source)) {
+          if (JAPANESE.test(literal)) {
+            offenders.push(`${file}: ${literal.slice(0, 30)}`);
+          }
+        }
+      }
+      return offenders;
+    },
+  },
+  15: {
+    kind: 'lint',
+    label: '仕様書を持たない (docs/ は decisions.md だけ)',
+    check: async () => {
+      const entries = await readdir('docs');
+      return entries.filter((name) => name !== 'decisions.md');
+    },
+  },
+  16: {
+    kind: 'lint',
+    label: '参照切れのテストと、記録し忘れのフックが両方ある',
+    check: async () => {
+      const required = [
+        'test/docs/references.test.ts',
+        '.claude/hooks/remind-decisions.ts',
+      ];
+      const missing: string[] = [];
+      for (const path of required) {
+        if (!(await Bun.file(path).exists())) missing.push(path);
+      }
+      return missing;
+    },
+  },
+};
+
+const decisions = await Bun.file(DECISIONS).text();
+const adrNumbers = [...decisions.matchAll(/^## ADR (\d+):/gm)].map((match) =>
+  Number(match[1])
+);
+
+describe('ADR に守る仕組みがある', () => {
+  test('すべての ADR が lint / test / manual に分類されている', () => {
+    // ADR を足したらここが落ちる。守り方を決めるまで通らない
+    const unclassified = adrNumbers.filter(
+      (number) => GUARDS[number] === undefined
+    );
+    expect(unclassified).toEqual([]);
+  });
+
+  test('分類したのに消えた ADR が残っていない', () => {
+    const orphans = Object.keys(GUARDS)
+      .map(Number)
+      .filter((number) => !adrNumbers.includes(number));
+    expect(orphans).toEqual([]);
+  });
+
+  test('test で守るとした ADR は、そのテストが実在する', async () => {
+    const missing: string[] = [];
+    for (const [number, guard] of Object.entries(GUARDS)) {
+      if (guard.kind !== 'test') continue;
+      if (!(await Bun.file(guard.file).exists())) {
+        missing.push(`ADR ${number}: ${guard.file}`);
+      }
+    }
+    expect(missing).toEqual([]);
+  });
+});
+
+describe('決定が守られている', () => {
+  for (const [number, guard] of Object.entries(GUARDS)) {
+    if (guard.kind !== 'lint') continue;
+    test(`ADR ${number}: ${guard.label}`, async () => {
+      const violations = await guard.check();
+      // 落ちたらコードを直すか、決定が変わったなら decisions.md を書き換える
+      expect(violations).toEqual([]);
+    });
+  }
+});
