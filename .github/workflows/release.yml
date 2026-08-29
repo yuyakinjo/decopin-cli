@@ -46,10 +46,15 @@ jobs:
 
       - run: bun run build:package
 
+      # CalVer の番号は互換性を伝えられないので、本文で知らせる (ADR 20)
+      - name: write the release notes
+        run: bun scripts/release-notes.ts "${{ steps.version.outputs.version }}" > "$RUNNER_TEMP/notes.md"
+
       - name: stop here on a dry run
         if: inputs.dry-run
         run: |
           echo "would publish ${{ steps.version.outputs.version }}" >&2
+          cat "$RUNNER_TEMP/notes.md" >&2
           exit 0
 
       # Trusted Publishing (OIDC) を使うので NPM_TOKEN は要らない
@@ -71,4 +76,4 @@ jobs:
           git commit -am "chore: release $VERSION"
           git tag "v$VERSION"
           git push origin HEAD --tags
-          gh release create "v$VERSION" --generate-notes
+          gh release create "v$VERSION" --notes-file "$RUNNER_TEMP/notes.md"

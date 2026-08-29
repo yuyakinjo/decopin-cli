@@ -37,6 +37,10 @@ export function toTypeText(type: TypeNode): string {
       return type.values.map((value) => JSON.stringify(value)).join(' | ');
     case 'date':
       return 'Date';
+    case 'instant':
+      return 'Temporal.Instant';
+    case 'plainDate':
+      return 'Temporal.PlainDate';
     case 'array':
       return `${wrap(type.item)}[]`;
     case 'object': {

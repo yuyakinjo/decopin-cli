@@ -99,11 +99,24 @@ export function toTypeNode(node: HostNode): TypeNode {
       }
       return { kind: 'enum', values: values as string[] };
     }
+    // 非推奨。src/deprecations.ts に削除期限がある
     case 'type.date':
       return {
         kind: 'date',
         min: readString(node, 'min'),
         max: readString(node, 'max'),
+      };
+    case 'type.instant':
+      return {
+        kind: 'instant',
+        min: readMoment(node, 'min', 'instant'),
+        max: readMoment(node, 'max', 'instant'),
+      };
+    case 'type.plainDate':
+      return {
+        kind: 'plainDate',
+        min: readMoment(node, 'min', 'plainDate'),
+        max: readMoment(node, 'max', 'plainDate'),
       };
     case 'type.array':
       return {
@@ -482,4 +495,28 @@ function checkDuplicates(args: ArgSpec[], options: OptionSpec[]): void {
     }
     aliases.set(option.alias, option.name);
   }
+}
+
+/**
+ * `min` / `max` を読み、その場で Temporal として解釈できるか確かめる。
+ *
+ * ビルド時に弾いておかないと、境界が読めないまま「常に通る検証」になる。
+ */
+function readMoment(
+  node: HostNode,
+  prop: string,
+  kind: 'instant' | 'plainDate'
+): string | undefined {
+  const raw = readString(node, prop);
+  if (raw === undefined) return undefined;
+  try {
+    if (kind === 'instant') Temporal.Instant.from(raw);
+    else Temporal.PlainDate.from(raw);
+  } catch {
+    const name = kind === 'instant' ? 'Type.Instant' : 'Type.PlainDate';
+    throw new DeclarationError(
+      `<${name} ${prop}="${raw}"> is not a ${kind === 'instant' ? 'Temporal.Instant' : 'Temporal.PlainDate'}`
+    );
+  }
+  return raw;
 }

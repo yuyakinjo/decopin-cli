@@ -4,6 +4,7 @@
  * ここで見るのは「動くけれど、たぶん意図と違う」こと。宣言そのものの
  * 誤りは evaluator が集める。
  */
+import { DEPRECATIONS, type Deprecation } from '../deprecations.ts';
 import type { UnsupportedNode } from './schema-introspect.ts';
 
 export interface Warning {
@@ -50,6 +51,7 @@ const IMPURE_PATTERNS: readonly [RegExp, string][] = [
   [/\bBun\.env\b/, 'Bun.env'],
   [/\bDate\.now\s*\(/, 'Date.now()'],
   [/\bnew\s+Date\s*\(\s*\)/, 'new Date()'],
+  [/\bTemporal\.Now\b/, 'Temporal.Now'],
   [/\bMath\.random\s*\(/, 'Math.random()'],
 ];
 
@@ -67,6 +69,35 @@ export async function checkPurity(files: string[]): Promise<Warning[]> {
       warnings.push({
         message: `${file}: declaration depends on ${label}`,
         hint: 'Declarations are evaluated at build time to generate types. If they depend on runtime state, the generated types and the actual behavior drift apart',
+      });
+    }
+  }
+  return warnings;
+}
+
+/**
+ * 非推奨のものを使っていたら、移行の手順と削除期限を伝える (ADR 20)。
+ *
+ * 削除する側の期限は test/docs/deprecations.test.ts が見張っている。
+ * こちらは使う側に、いつまでに直せばよいかを知らせる担当
+ */
+export async function checkDeprecations(
+  files: string[],
+  deprecations: readonly Deprecation[] = DEPRECATIONS
+): Promise<Warning[]> {
+  const warnings: Warning[] = [];
+  for (const file of files) {
+    let source: string;
+    try {
+      source = await Bun.file(file).text();
+    } catch {
+      continue;
+    }
+    for (const deprecation of deprecations) {
+      if (!source.includes(deprecation.what)) continue;
+      warnings.push({
+        message: `${file}: ${deprecation.what} is deprecated and will be removed after ${deprecation.removeAfter}`,
+        hint: deprecation.migration,
       });
     }
   }

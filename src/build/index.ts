@@ -3,7 +3,12 @@ import { mkdir } from 'node:fs/promises';
 import { join } from 'node:path';
 
 import { bundle } from './bundler.ts';
-import { checkPurity, checkTsConfig, stdinSchemaWarnings } from './checker.ts';
+import {
+  checkDeprecations,
+  checkPurity,
+  checkTsConfig,
+  stdinSchemaWarnings,
+} from './checker.ts';
 import type { Warning } from './checker.ts';
 import { generateEntry, generateRoutes } from './codegen.ts';
 import { evaluateEnv, evaluateRoutes } from './evaluator.ts';
@@ -92,17 +97,21 @@ export async function generate(
     throw new Error(`Invalid declarations:\n${detail}`);
   }
 
-  const warnings = await checkTsConfig();
-  // 宣言ファイルが実行時の状態に依存していないか (test/contract/argv-parsing.test.ts)
-  warnings.push(
-    ...(await checkPurity(
-      routes.flatMap((route) =>
-        [route.files.argv, route.files.stdin].filter(
-          (file): file is string => file !== undefined
-        )
+  const declarationFiles = [
+    ...routes.flatMap((route) =>
+      [route.files.argv, route.files.stdin].filter(
+        (file): file is string => file !== undefined
       )
-    )),
-    ...(await checkPurity(rootFiles.env === undefined ? [] : [rootFiles.env]))
+    ),
+    ...(rootFiles.env === undefined ? [] : [rootFiles.env]),
+  ];
+
+  const warnings = await checkTsConfig();
+  warnings.push(
+    // 宣言ファイルが実行時の状態に依存していないか (test/contract/argv-parsing.test.ts)
+    ...(await checkPurity(declarationFiles)),
+    // 非推奨のものを使っていないか (ADR 20)
+    ...(await checkDeprecations(declarationFiles))
   );
   const program = options.program ?? (await readProgramName());
   const files = {

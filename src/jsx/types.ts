@@ -76,6 +76,8 @@ export type DeclarationHostKind =
   | 'type.boolean'
   | 'type.enum'
   | 'type.date'
+  | 'type.instant'
+  | 'type.plainDate'
   | 'type.array'
   | 'type.object'
   | 'type.field'

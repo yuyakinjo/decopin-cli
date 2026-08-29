@@ -27,8 +27,8 @@ async function waitFor<T>(
   read: () => T | undefined,
   timeoutMs = 5000
 ): Promise<T> {
-  const deadline = Date.now() + timeoutMs;
-  while (Date.now() < deadline) {
+  const deadline = Temporal.Now.instant().add({ milliseconds: timeoutMs });
+  while (Temporal.Instant.compare(Temporal.Now.instant(), deadline) < 0) {
     const value = read();
     if (value !== undefined) return value;
     await Bun.sleep(20);

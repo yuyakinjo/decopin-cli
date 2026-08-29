@@ -148,6 +148,14 @@ describe('checkPurity', () => {
     expect(labels.some((m) => m.includes('Math.random()'))).toBe(true);
   });
 
+  test('Temporal.Now も現在時刻なので警告する', async () => {
+    const file = await sourceFile(
+      "const now = Temporal.Now.zonedDateTimeISO('UTC');"
+    );
+    const labels = (await checkPurity([file])).map((w) => w.message);
+    expect(labels.some((m) => m.includes('Temporal.Now'))).toBe(true);
+  });
+
   test('引数なしの new Date() を警告する (引数ありは見逃す)', async () => {
     const bad = await sourceFile('const now = new Date();');
     expect(await checkPurity([bad])).toHaveLength(1);

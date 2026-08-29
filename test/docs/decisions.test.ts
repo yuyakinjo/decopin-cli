@@ -284,6 +284,16 @@ const GUARDS: Record<number, Guard> = {
     label: 'バージョンは時刻そのもので、人が決めない',
     file: 'test/docs/version.test.ts',
   },
+  19: {
+    kind: 'test',
+    label: '瞬間と暦日で受け付ける入力が違う',
+    file: 'test/contract/coercion.test.ts',
+  },
+  20: {
+    kind: 'test',
+    label: '非推奨は 1 年後に消す。期限切れは CI が落ちる',
+    file: 'test/docs/deprecations.test.ts',
+  },
 };
 
 const decisions = await Bun.file(DECISIONS).text();

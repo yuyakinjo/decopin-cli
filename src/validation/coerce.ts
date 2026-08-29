@@ -52,6 +52,8 @@ export function coerce(type: TypeNode, raw: RawValue): CoerceResult {
     case 'enum':
       return coerceString(raw);
     case 'date': {
+      // 非推奨。Date は読めない文字列でも Invalid Date を返して先に進むので
+      // ここで弾く必要がある (Temporal は例外を投げるので不要)
       const asString = coerceString(raw);
       if (!asString.ok) return asString;
       const date = new Date(asString.value as string);
@@ -63,6 +65,16 @@ export function coerce(type: TypeNode, raw: RawValue): CoerceResult {
       }
       return { ok: true, value: date };
     }
+    case 'instant':
+      // Temporal は読めない文字列で例外を投げる。Date の Invalid Date と違い
+      // 「読めたつもりの値」が先に進まない
+      return fromTemporal(raw, 'an instant like 2026-08-28T14:30:00Z', (text) =>
+        Temporal.Instant.from(text)
+      );
+    case 'plainDate':
+      return fromTemporal(raw, 'a date like 2026-08-28', (text) =>
+        Temporal.PlainDate.from(text)
+      );
     case 'object':
       // argv / env で Type.Object は宣言時に弾いている (ADR 9)。
       // stdin (JSON) は変換を通さないので、ここには来ない
@@ -119,4 +131,22 @@ export function coerceAll(type: TypeNode, raws: RawValue[]): CoerceResult {
     return { ok: false, message: 'expected a value but none was given' };
   }
   return coerce(type, only);
+}
+
+/** 文字列を Temporal の値にする。読めなければ何を期待したかを言う */
+function fromTemporal(
+  raw: RawValue,
+  expected: string,
+  parse: (text: string) => unknown
+): CoerceResult {
+  const asString = coerceString(raw);
+  if (!asString.ok) return asString;
+  try {
+    return { ok: true, value: parse(asString.value as string) };
+  } catch {
+    return {
+      ok: false,
+      message: `expected ${expected}, received "${String(raw)}"`,
+    };
+  }
 }

@@ -155,18 +155,48 @@ describe('Type.Enum', () => {
   });
 });
 
-describe('Type.Date', () => {
-  test('argv / env: ISO 8601 を Date へ変換する', () => {
-    const result = fromArgv({ kind: 'date' }, ['--x', '2026-08-28']);
-    expect(result.ok && result.value.options.x).toBeInstanceOf(Date);
-    expect(fromEnv({ kind: 'date' }, '2026-08-28').ok).toBe(true);
+describe('Type.Instant / Type.PlainDate', () => {
+  // Temporal には Date のように両方の書き方を飲み込む型が無いので、
+  // 「瞬間」と「暦日」で受け付ける文字列が違う。その境目をここで固定する
+  const accepts: [string, string, boolean][] = [
+    ['instant', '2026-08-28T14:30:00Z', true],
+    ['instant', '2026-08-28T14:30:00+09:00', true],
+    ['instant', '2026-08-28', false], // 時間帯が無いので一点に定まらない
+    ['plainDate', '2026-08-28', true],
+    ['plainDate', '2026-08-28T14:30:00', true], // 時刻は落ちる
+    ['plainDate', '2026-08-28T14:30:00Z', false], // 暦日に時間帯は付かない
+    ['instant', 'nope', false],
+    ['plainDate', 'nope', false],
+  ];
+
+  for (const [kind, input, ok] of accepts) {
+    test(`${kind}: ${JSON.stringify(input)} を ${ok ? '受け取る' : '弾く'}`, () => {
+      const type = { kind } as TypeNode;
+      expect(fromArgv(type, ['--x', input]).ok).toBe(ok);
+      expect(fromEnv(type, input).ok).toBe(ok);
+    });
+  }
+
+  test('Temporal の値になる (Date ではない)', () => {
+    const instant = fromArgv({ kind: 'instant' }, [
+      '--x',
+      '2026-08-28T14:30:00Z',
+    ]);
+    expect(instant.ok && instant.value.options.x).toBeInstanceOf(
+      Temporal.Instant
+    );
+
+    const plain = fromArgv({ kind: 'plainDate' }, ['--x', '2026-08-28']);
+    expect(plain.ok && plain.value.options.x).toBeInstanceOf(
+      Temporal.PlainDate
+    );
   });
 
-  test('argv: パースできなければ誤り', () => {
-    const result = fromArgv({ kind: 'date' }, ['--x', 'nope']);
+  test('弾いたときは何を期待したかを言う', () => {
+    const result = fromArgv({ kind: 'plainDate' }, ['--x', 'nope']);
     expect(result.ok).toBe(false);
     if (result.ok) return;
-    expect(result.issues[0]).toContain('expected a date');
+    expect(result.issues[0]).toContain('a date like 2026-08-28');
   });
 });
 

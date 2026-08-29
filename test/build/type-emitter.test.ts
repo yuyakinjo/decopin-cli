@@ -16,7 +16,8 @@ describe('toTypeText', () => {
     expect(toTypeText({ kind: 'string' })).toBe('string');
     expect(toTypeText({ kind: 'number' })).toBe('number');
     expect(toTypeText({ kind: 'boolean' })).toBe('boolean');
-    expect(toTypeText({ kind: 'date' })).toBe('Date');
+    expect(toTypeText({ kind: 'instant' })).toBe('Temporal.Instant');
+    expect(toTypeText({ kind: 'plainDate' })).toBe('Temporal.PlainDate');
   });
 
   test('enum は文字列リテラルの union', () => {

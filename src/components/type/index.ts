@@ -25,8 +25,28 @@ export interface EnumTypeProps {
   values: readonly string[];
 }
 
+/**
+ * @deprecated 瞬間なのか暦日なのかが決まらない。`Type.Instant` か
+ *   `Type.PlainDate` を使う。2027-08-29 以降に削除する
+ */
 export interface DateTypeProps {
   min?: string;
+  max?: string;
+}
+
+/** 時間帯まで確定した一点。`2026-08-28T14:30:00Z` のようにオフセットが要る */
+export interface InstantTypeProps {
+  /** 下限。`Temporal.Instant` として読める文字列 */
+  min?: string;
+  /** 上限。`Temporal.Instant` として読める文字列 */
+  max?: string;
+}
+
+/** 時刻を持たない暦日。`2026-08-28` */
+export interface PlainDateTypeProps {
+  /** 下限。`Temporal.PlainDate` として読める文字列 */
+  min?: string;
+  /** 上限。`Temporal.PlainDate` として読める文字列 */
   max?: string;
 }
 
@@ -76,7 +96,13 @@ export const Type = {
   Number: host<NumberTypeProps>('type.number', 'Type.Number'),
   Boolean: host<Record<never, never>>('type.boolean', 'Type.Boolean'),
   Enum: host<EnumTypeProps>('type.enum', 'Type.Enum'),
+  /**
+   * @deprecated `Type.Instant` (瞬間) か `Type.PlainDate` (暦日) を使う。
+   *   2027-08-29 以降に削除する
+   */
   Date: host<DateTypeProps>('type.date', 'Type.Date'),
+  Instant: host<InstantTypeProps>('type.instant', 'Type.Instant'),
+  PlainDate: host<PlainDateTypeProps>('type.plainDate', 'Type.PlainDate'),
   Array: host<ArrayTypeProps>('type.array', 'Type.Array'),
   Object: host<ObjectTypeProps>('type.object', 'Type.Object'),
   Field: host<FieldTypeProps>('type.field', 'Type.Field'),

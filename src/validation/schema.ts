@@ -61,14 +61,11 @@ export function toSchema(type: TypeNode): Schema {
     case 'enum':
       return v.picklist(type.values) as Schema;
     case 'date': {
+      // 非推奨。Date は < で比べられるので valibot の minValue がそのまま使える
       const checks: v.GenericPipeAction<Date, Date, v.BaseIssue<unknown>>[] =
         [];
-      if (type.min !== undefined) {
-        checks.push(v.minValue(new Date(type.min)));
-      }
-      if (type.max !== undefined) {
-        checks.push(v.maxValue(new Date(type.max)));
-      }
+      if (type.min !== undefined) checks.push(v.minValue(new Date(type.min)));
+      if (type.max !== undefined) checks.push(v.maxValue(new Date(type.max)));
       return checks.length === 0
         ? v.date()
         : (v.pipe(
@@ -78,6 +75,20 @@ export function toSchema(type: TypeNode): Schema {
             ])
           ) as Schema);
     }
+    case 'instant':
+      return temporalSchema(
+        Temporal.Instant,
+        (text) => Temporal.Instant.from(text),
+        (left, right) => Temporal.Instant.compare(left, right),
+        type
+      );
+    case 'plainDate':
+      return temporalSchema(
+        Temporal.PlainDate,
+        (text) => Temporal.PlainDate.from(text),
+        (left, right) => Temporal.PlainDate.compare(left, right),
+        type
+      );
     case 'array': {
       const item = toSchema(type.item);
       const checks: v.GenericPipeAction<
@@ -148,4 +159,38 @@ export function validateValue(
     ok: false,
     messages: result.issues.map((issue) => issue.message),
   };
+}
+
+/**
+ * Temporal の値のスキーマ。valibot 1.1.0 に Temporal 対応が無いので自前で組む。
+ *
+ * `v.minValue` / `v.maxValue` は `<` で比べるが、Temporal の値は関係演算子で
+ * 比べようとすると TypeError を投げる (実測)。境界はその型の `compare` で見る。
+ */
+function temporalSchema<T>(
+  constructor: new (...args: never[]) => T,
+  parse: (text: string) => T,
+  compare: (left: T, right: T) => number,
+  type: { min?: string; max?: string }
+): Schema {
+  const base = v.instance(constructor) as unknown as v.GenericSchema<T>;
+  const checks: v.GenericPipeAction<T, T, v.BaseIssue<unknown>>[] = [];
+  if (type.min !== undefined) {
+    const min = parse(type.min);
+    checks.push(
+      v.check((value: T) => compare(value, min) >= 0, `expected >= ${type.min}`)
+    );
+  }
+  if (type.max !== undefined) {
+    const max = parse(type.max);
+    checks.push(
+      v.check((value: T) => compare(value, max) <= 0, `expected <= ${type.max}`)
+    );
+  }
+  return checks.length === 0
+    ? (base as Schema)
+    : (v.pipe(
+        base,
+        ...(checks as [v.GenericPipeAction<T, T, v.BaseIssue<unknown>>])
+      ) as Schema);
 }

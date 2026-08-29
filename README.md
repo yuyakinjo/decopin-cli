@@ -114,6 +114,24 @@ Nesting is what you want when the type itself recurses.
 </Option>
 ```
 
+Dates come in two flavours, because a moment and a calendar day accept
+different input and are not interchangeable.
+
+```tsx
+<Option name="at">
+  <Type.Instant />        {/* 2026-08-28T14:30:00Z  -> Temporal.Instant */}
+</Option>
+
+<Option name="since">
+  <Type.PlainDate min="2020-01-01" />  {/* 2026-08-28 -> Temporal.PlainDate */}
+</Option>
+```
+
+`Type.Instant` needs an offset (`Z` or `+09:00`); `Type.PlainDate` refuses one.
+
+`Type.Date` still works and still gives you a `Date`, but it is deprecated:
+`decopin build` warns, and it is removed after 2027-08-29.
+
 **Type and presence live at different levels.**
 
 | What it decides              | Where it goes                                          |
@@ -393,6 +411,17 @@ the exact version if that matters to you.
 ```jsonc
 "decopin-cli": "2026.828.1430"   // exactly this one
 ```
+
+### Breaking changes
+
+A version number is a date, so it cannot tell you whether an upgrade is safe.
+Instead:
+
+- nothing is removed without warning. It is deprecated first, keeps working,
+  and is removed **one year later**
+- `decopin build` warns when your code uses something deprecated, and tells you
+  what to use instead and by when
+- every GitHub Release lists breaking changes and pending removals at the top
 
 ## Releasing
 

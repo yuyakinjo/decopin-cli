@@ -93,6 +93,13 @@ describe('リリースの手順', () => {
     workflow = await Bun.file('.github/workflows/release.yml').text();
   });
 
+  test('Release の本文は自前で組む (破壊的変更を落とさないため)', () => {
+    expect(workflow).toContain('release-notes.ts');
+    expect(workflow).toContain('--notes-file');
+    // --generate-notes と併用するとどちらが残るか保証されない (ADR 20)
+    expect(workflow).not.toContain('--generate-notes');
+  });
+
   test('バージョンは日付から決める (タグは引き金ではない)', () => {
     expect(workflow).toContain('workflow_dispatch');
     expect(workflow).toContain('version:next');

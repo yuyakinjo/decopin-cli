@@ -28,8 +28,25 @@ export interface EnumType {
   values: string[];
 }
 
+/**
+ * @deprecated `InstantType` か `PlainDateType` を使う。2027-08-29 以降に削除する
+ */
 export interface DateType {
   kind: 'date';
+  min?: string;
+  max?: string;
+}
+
+/** 時間帯まで確定した一点 (`Temporal.Instant`) */
+export interface InstantType {
+  kind: 'instant';
+  min?: string;
+  max?: string;
+}
+
+/** 時刻を持たない暦日 (`Temporal.PlainDate`) */
+export interface PlainDateType {
+  kind: 'plainDate';
   min?: string;
   max?: string;
 }
@@ -81,6 +98,8 @@ export type TypeNode =
   | BooleanType
   | EnumType
   | DateType
+  | InstantType
+  | PlainDateType
   | ArrayType
   | ObjectType
   | OneOfType
@@ -98,6 +117,10 @@ export function typeLabel(type: TypeNode): string {
     case 'enum':
       return type.values.join('|');
     case 'date':
+      return 'date';
+    case 'instant':
+      return 'instant';
+    case 'plainDate':
       return 'date';
     case 'array':
       return `${typeLabel(type.item)}...`;
