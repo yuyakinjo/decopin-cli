@@ -21,6 +21,7 @@ import { write } from '../renderer/writer.ts';
 import type { WriteTargets } from '../renderer/writer.ts';
 import { validateEnv } from '../validation/env.ts';
 import { validateArgv } from '../validation/validate.ts';
+import { completionCandidates, formatCandidates } from './complete.ts';
 import { CliError, validationError } from './errors.ts';
 import { EXIT_CODE } from './exit.ts';
 import { handleError, toCliError } from './handle-error.tsx';
@@ -30,7 +31,12 @@ import { ErrorMessage } from './messages.tsx';
 import { runMiddleware } from './middleware.ts';
 import { NotFound } from './not-found.tsx';
 import { present } from './override.ts';
-import { HELP_FLAGS, NO_COLOR_FLAG, VERSION_FLAG } from './reserved.ts';
+import {
+  COMPLETE_COMMAND,
+  HELP_FLAGS,
+  NO_COLOR_FLAG,
+  VERSION_FLAG,
+} from './reserved.ts';
 import { commandsUnder, resolveTarget } from './router.ts';
 import type { RouteTable } from './router.ts';
 import { processStdin, readStdin } from './stdin-reader.ts';
@@ -172,6 +178,22 @@ export async function run(
   options: RunOptions = {}
 ): Promise<number> {
   const rawArgv = options.argv ?? process.argv.slice(2);
+
+  // シェル補完 (ADR 21)。人間ではなく補完シムが読むので、描画は通さず
+  // 1 回の write で返す。補完中に落ちると Tab のたびにエラーが出るため、
+  // 何があっても黙って成功にする
+  if (rawArgv[0] === COMPLETE_COMMAND) {
+    const words = rawArgv[1] === '--' ? rawArgv.slice(2) : rawArgv.slice(1);
+    const out = options.targets?.stdout ?? process.stdout;
+    try {
+      const text = formatCandidates(await completionCandidates(table, words));
+      if (text !== '') out.write(text);
+    } catch {
+      // 候補なし扱い。シェル側がファイル補完に落ちる
+    }
+    return EXIT_CODE.success;
+  }
+
   const noColorFlag = findFlag(rawArgv, [NO_COLOR_FLAG]);
   const argv = withoutFlags(rawArgv, [NO_COLOR_FLAG]);
   const cwd = options.cwd ?? process.cwd();

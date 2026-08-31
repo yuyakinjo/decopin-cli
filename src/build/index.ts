@@ -11,6 +11,7 @@ import {
 } from './checker.ts';
 import type { Warning } from './checker.ts';
 import { generateEntry, generateRoutes } from './codegen.ts';
+import { completionFileName, generateZshCompletion } from './completions.ts';
 import { evaluateEnv, evaluateRoutes } from './evaluator.ts';
 import type { EvaluatedRoute } from './evaluator.ts';
 import { inheritedChain, scan } from './scanner.ts';
@@ -40,11 +41,15 @@ export interface GenerateResult {
   warnings: Warning[];
   /** 生成したファイル */
   files: { routes: string; entry: string; types: string };
+  /** help と補完シムに出す実行ファイル名 (解決済み) */
+  program: string;
 }
 
 export interface BuildResult extends GenerateResult {
   outPath: string;
   bytes: number;
+  /** zsh 補完シム (ADR 21) の出力先 */
+  completionPath: string;
 }
 
 /**
@@ -158,16 +163,35 @@ export async function generate(
   }
   await writeIfChanged(files.types, types.text);
 
-  return { routes, evaluated, files, warnings };
+  return { routes, evaluated, files, warnings, program };
 }
 
 export async function build(options: BuildOptions = {}): Promise<BuildResult> {
   const generated = await generate(options);
+  const outDir = options.outDir ?? 'dist';
   const bundled = await bundle({
     entry: generated.files.entry,
-    outDir: options.outDir ?? 'dist',
+    outDir,
     outFile: options.outFile,
     minify: options.minify,
   });
-  return { ...generated, outPath: bundled.outPath, bytes: bundled.bytes };
+
+  // 補完シムは構成に依存しないが、bin 名は build 時に決まるのでここで書く
+  const completionPath = join(
+    outDir,
+    'completions',
+    completionFileName(generated.program)
+  );
+  await mkdir(join(outDir, 'completions'), { recursive: true });
+  await writeIfChanged(
+    completionPath,
+    generateZshCompletion(generated.program)
+  );
+
+  return {
+    ...generated,
+    outPath: bundled.outPath,
+    bytes: bundled.bytes,
+    completionPath,
+  };
 }
