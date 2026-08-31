@@ -11,6 +11,7 @@ import {
   binaryName,
   completionFileName,
   generateZshCompletion,
+  resolveBinaryName,
 } from '../../src/build/completions.ts';
 
 describe('zsh 補完シム', () => {
@@ -47,5 +48,12 @@ describe('zsh 補完シム', () => {
     const odd = generateZshCompletion('my.cli');
     expect(odd).toContain('_my_cli() {');
     expect(odd).toContain('compdef _my_cli my.cli');
+  });
+});
+
+describe('コマンド名の解決', () => {
+  test('package.json の bin のキーを使う (name ではない)', async () => {
+    // このリポジトリ自身が name: decopin-cli / bin: decopin の実例
+    expect(await resolveBinaryName('decopin-cli')).toBe('decopin');
   });
 });

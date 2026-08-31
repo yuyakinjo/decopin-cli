@@ -14,7 +14,15 @@ import { EMPTY_ARGV_SPEC } from '../declaration/spec.ts';
 import type { ArgvSpec, OptionSpec } from '../declaration/spec.ts';
 import type { TypeNode } from '../declaration/type-node.ts';
 import type { Renderable } from '../jsx/types.ts';
+import { takesValue, tokenize } from '../validation/tokens.ts';
 import type { RouteTable } from './router.ts';
+
+/**
+ * 「いま補完中の語がどの位置に落ちるか」を本物のトークナイザに聞くための印。
+ * 実際の入力には現れない文字を使う。独自に解析すると、単独の `-` (位置引数)、
+ * `--name=value`、束ねた alias (`-lv`)、`--no-flag` で実行時の解釈とずれる
+ */
+const PROBE = '\u0000';
 
 /** 補完候補 1 つ。description は zsh の `_describe` の説明欄に出る */
 export interface Candidate {
@@ -59,27 +67,6 @@ function findOption(spec: ArgvSpec, token: string): OptionSpec | undefined {
     return spec.options.find((option) => option.alias === alias);
   }
   return undefined;
-}
-
-/** コマンド確定後の語のうち、位置引数が何個すでに並んでいるか */
-function positionalCount(spec: ArgvSpec, rest: readonly string[]): number {
-  let count = 0;
-  let terminated = false;
-  for (let index = 0; index < rest.length; index += 1) {
-    const token = rest[index] as string;
-    if (token === '--' && !terminated) {
-      terminated = true;
-      continue;
-    }
-    if (!terminated && token.startsWith('-')) {
-      const option = findOption(spec, token);
-      // 値を取るオプションは次の語を消費する
-      if (option !== undefined && option.type.kind !== 'boolean') index += 1;
-      continue;
-    }
-    count += 1;
-  }
-  return count;
 }
 
 /**
@@ -141,20 +128,51 @@ export async function completionCandidates(
 
   const spec = await loadSpec(route.argv);
   const rest = prior.slice(consumed);
-  const terminated = rest.includes('--');
 
-  // 2. オプション名 (`-` を打ち始めたとき。`--` の後は位置引数なので出さない)
+  // 確定済みの語の解釈は実行時と同じトークナイザに任せる (tokens.ts)。
+  // probe は「いま補完中の語」を差し込んだときにどこへ落ちるかを見る
+  const typed = tokenize(rest, spec);
+  const probe = tokenize([...rest, PROBE], spec);
+
+  // 2. 直前の語が値を待っているオプションなら、その値の候補
+  const pending = spec.options.find((option) =>
+    probe.options.get(option.name)?.includes(PROBE)
+  );
+  if (pending !== undefined) {
+    for (const value of enumValues(pending.type)) {
+      if (value.startsWith(current)) candidates.push({ value });
+    }
+    return candidates;
+  }
+
+  const terminated = rest.includes('--');
   if (current.startsWith('-') && !terminated) {
-    const used = new Set(rest.filter((token) => token.startsWith('-')));
+    // 3. `--name=` の形は、= の後ろを値として補完する (語全体を置き換えるので
+    //    候補も `--name=値` の形で返す)
+    const equals = current.indexOf('=');
+    if (equals !== -1) {
+      const flag = current.slice(0, equals);
+      const partial = current.slice(equals + 1);
+      const option = findOption(spec, flag);
+      if (option !== undefined && takesValue(option)) {
+        for (const value of enumValues(option.type)) {
+          if (value.startsWith(partial)) {
+            candidates.push({ value: `${flag}=${value}` });
+          }
+        }
+      }
+      return candidates;
+    }
+
+    // 4. オプション名。打ったものは消す (`--name=value` や `-a` の形も
+    //    トークナイザが long 名に寄せてくれる)。繰り返せる array は残す
     for (const option of spec.options) {
       if (option.hidden) continue;
       const flag = `--${option.name}`;
       if (!flag.startsWith(current)) continue;
-      const typed =
-        used.has(flag) ||
-        (option.alias !== undefined && used.has(`-${option.alias}`));
-      // 繰り返せるのは array だけ。それ以外は一度打ったら候補から消す
-      if (typed && option.type.kind !== 'array') continue;
+      if (typed.options.has(option.name) && option.type.kind !== 'array') {
+        continue;
+      }
       candidates.push({ value: flag, description: option.description });
     }
     if ('--help'.startsWith(current)) {
@@ -163,19 +181,9 @@ export async function completionCandidates(
     return candidates;
   }
 
-  // 3. 直前の語が値を取るオプションなら、その値の候補
-  const previous = terminated ? undefined : rest[rest.length - 1];
-  const option =
-    previous === undefined ? undefined : findOption(spec, previous);
-  if (option !== undefined && option.type.kind !== 'boolean') {
-    for (const value of enumValues(option.type)) {
-      if (value.startsWith(current)) candidates.push({ value });
-    }
-    return candidates;
-  }
-
-  // 4. 位置引数。いま何番目かを数えて、その宣言の enum を出す
-  const index = positionalCount(spec, rest);
+  // 5. 位置引数。probe が何番目の位置引数に落ちたかで宣言を選ぶ
+  const index = probe.positionals.indexOf(PROBE);
+  if (index === -1) return candidates;
   const arg = spec.args[Math.min(index, spec.args.length - 1)];
   if (arg !== undefined && (index < spec.args.length || arg.variadic)) {
     for (const value of enumValues(arg.type)) {

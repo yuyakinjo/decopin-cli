@@ -181,9 +181,11 @@ export async function run(
 
   // シェル補完 (ADR 21)。人間ではなく補完シムが読むので、描画は通さず
   // 1 回の write で返す。補完中に落ちると Tab のたびにエラーが出るため、
-  // 何があっても黙って成功にする
-  if (rawArgv[0] === COMPLETE_COMMAND) {
-    const words = rawArgv[1] === '--' ? rawArgv.slice(2) : rawArgv.slice(1);
+  // 何があっても黙って成功にする。
+  // シムが必ず付ける 2 語目の `--` まで見て判定する。1 語目だけで判定すると、
+  // ルートコマンドが `__complete` という文字列を位置引数に取れなくなる
+  if (rawArgv[0] === COMPLETE_COMMAND && rawArgv[1] === '--') {
+    const words = rawArgv.slice(2);
     const out = options.targets?.stdout ?? process.stdout;
     try {
       const text = formatCandidates(await completionCandidates(table, words));

@@ -11,7 +11,11 @@ import {
 } from './checker.ts';
 import type { Warning } from './checker.ts';
 import { generateEntry, generateRoutes } from './codegen.ts';
-import { completionFileName, generateZshCompletion } from './completions.ts';
+import {
+  completionFileName,
+  generateZshCompletion,
+  resolveBinaryName,
+} from './completions.ts';
 import { evaluateEnv, evaluateRoutes } from './evaluator.ts';
 import type { EvaluatedRoute } from './evaluator.ts';
 import { inheritedChain, scan } from './scanner.ts';
@@ -176,17 +180,12 @@ export async function build(options: BuildOptions = {}): Promise<BuildResult> {
     minify: options.minify,
   });
 
-  // 補完シムは構成に依存しないが、bin 名は build 時に決まるのでここで書く
-  const completionPath = join(
-    outDir,
-    'completions',
-    completionFileName(generated.program)
-  );
+  // 補完シムは構成に依存しないが、コマンド名は build 時に決まるのでここで書く。
+  // 名前は help 用の program ではなく package.json の bin のキーから取る
+  const bin = await resolveBinaryName(generated.program);
+  const completionPath = join(outDir, 'completions', completionFileName(bin));
   await mkdir(join(outDir, 'completions'), { recursive: true });
-  await writeIfChanged(
-    completionPath,
-    generateZshCompletion(generated.program)
-  );
+  await writeIfChanged(completionPath, generateZshCompletion(bin));
 
   return {
     ...generated,

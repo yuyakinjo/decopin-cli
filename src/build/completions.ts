@@ -4,13 +4,34 @@
  * ここで焼き込むのはコマンドの構成ではなく「CLI に聞きに行く」手順だけ。
  * 候補は Tab のたびに `<bin> __complete` (src/runtime/complete.ts) が返すので、
  * コマンドを足してもこのファイルは変わらず、zsh の compdump を無効化する
- * 必要がない。`decopin dev` の最中も補完が古くならない。
+ * 必要がない。反映されるのは bundle が更新されたとき (`decopin build`)。
+ * `decopin dev` は bundle を作り直さないので、dev 中の変更は build するまで
+ * 補完には出ない。
  */
 
-/** npm のスコープ付きの名前 (`@scope/name`) から、実際に打つコマンド名を取る */
+/** スコープ付きの名前 (`@scope/name`) からスコープを落とす */
 export function binaryName(program: string): string {
   const segments = program.split('/');
   return segments[segments.length - 1] as string;
+}
+
+/**
+ * 実際に打つコマンド名を解決する。help に出す `program` (package.json の
+ * `name`) とは別物で、コマンド名は `bin` のキーが決める。`bin` が文字列の
+ * ときは npm の規則でパッケージ名 (スコープを除く) がコマンド名になる
+ */
+export async function resolveBinaryName(program: string): Promise<string> {
+  try {
+    const json = (await Bun.file('package.json').json()) as { bin?: unknown };
+    const bin = json.bin;
+    if (bin !== null && typeof bin === 'object') {
+      const key = Object.keys(bin)[0];
+      if (key !== undefined) return key;
+    }
+  } catch {
+    // package.json が無い / 読めないなら name に落ちる
+  }
+  return binaryName(program);
 }
 
 /** 補完シムのファイル名。zsh の規約で `_<コマンド名>` */

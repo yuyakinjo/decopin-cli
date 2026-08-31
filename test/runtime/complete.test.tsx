@@ -63,6 +63,12 @@ const modeArgv = () => (
     <Arg name="mode" description="how fast">
       <Type.Enum values={['fast', 'slow']} />
     </Arg>
+    {/* Type.Array<Type.Boolean> は繰り返せるフラグで、値を取らない */}
+    <Option name="verbose" alias="v" description="say more">
+      <Type.Array>
+        <Type.Boolean />
+      </Type.Array>
+    </Option>
   </Argv>
 );
 
@@ -155,6 +161,64 @@ describe('値の補完', () => {
   test('`--` の後は位置引数として補完する', async () => {
     const result = await complete(table, ['mode', '--', 'f']);
     expect(result.stdout).toBe('fast\n');
+  });
+});
+
+describe('解釈は実行時のトークナイザと同じ (tokens.ts)', () => {
+  test('`--name=` の形でも値を補完する (語全体を返す)', async () => {
+    const result = await complete(table, ['deploy', '--env=']);
+    expect(result.stdout).toBe('--env=dev\n--env=prod\n');
+  });
+
+  test('`--name=部分` で絞る', async () => {
+    const result = await complete(table, ['deploy', '--env=p']);
+    expect(result.stdout).toBe('--env=prod\n');
+  });
+
+  test('`--name=value` で確定済みのオプションは候補から消える', async () => {
+    const result = await complete(table, ['deploy', '--env=dev', '-']);
+    expect(result.stdout).not.toContain('--env');
+    expect(result.stdout).toContain('--force');
+  });
+
+  test('単独の `-` は位置引数 (次の補完位置を 1 つ進める)', async () => {
+    // mode の位置引数は 1 つだけ。`-` が 1 番目を埋めるので 2 番目は無い
+    const result = await complete(table, ['mode', '-', '']);
+    expect(result.stdout).toBe('');
+  });
+
+  test('Type.Array<Type.Boolean> のフラグは次の語を値として食わない', async () => {
+    const result = await complete(table, ['mode', '--verbose', 'f']);
+    expect(result.stdout).toBe('fast\n');
+  });
+
+  test('`--no-flag` の形も認識する', async () => {
+    const result = await complete(table, ['mode', '--no-verbose', 'f']);
+    expect(result.stdout).toBe('fast\n');
+  });
+});
+
+describe('プロトコルの入口', () => {
+  test('`--` が無ければ補完ではなく、通常の引数として扱う', async () => {
+    // ルートコマンドは未知の第 1 引数も位置引数として受け取れる。
+    // `__complete` という文字列がその入力空間を奪ってはいけない
+    const rootTable: RouteTable = {
+      '': {
+        command: loader(({ argv }: { argv: readonly string[] }) => (
+          <Line>{argv.join(',')}</Line>
+        )),
+      },
+    };
+    const stdout = recorder();
+    const stderr = recorder();
+    const code = await run(rootTable, {
+      argv: ['__complete', 'x'],
+      env: { NO_COLOR: '1' },
+      program: 'cli',
+      targets: { stdout, stderr },
+    });
+    expect(code).toBe(0);
+    expect(stdout.text).toBe('__complete,x\n');
   });
 });
 
