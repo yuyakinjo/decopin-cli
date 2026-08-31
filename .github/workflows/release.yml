@@ -17,7 +17,7 @@ jobs:
       contents: write # バージョンのコミットとタグを push し、Release を作る
       id-token: write # npm の Trusted Publishing (OIDC) に必要
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - uses: oven-sh/setup-bun@v2
         with:
