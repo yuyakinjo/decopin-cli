@@ -64,8 +64,10 @@ const HIDE_CURSOR = `${ESC}[?25l`;
 const SHOW_CURSOR = `${ESC}[?25h`;
 
 /** CSI と OSC の列。幅の計測では落とす */
-// oxlint-disable-next-line no-control-regex -- エスケープ列を落とすのが目的
-const ESCAPES = /\u001b\[[0-9;?]*[@-~]|\u001b\][^\u0007\u001b]*(?:\u0007|\u001b\\)/g;
+// oxlint-disable no-control-regex -- エスケープ列を落とすのが目的
+const ESCAPES =
+  /\u001b\[[0-9;?]*[@-~]|\u001b\][^\u0007\u001b]*(?:\u0007|\u001b\\)/g;
+// oxlint-enable no-control-regex
 
 /**
  * フレームが端末で占める行数。折り返しを考慮する

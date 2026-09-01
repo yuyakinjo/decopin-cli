@@ -63,11 +63,7 @@ describe('非 TTY (パイプ / CI)', () => {
       </>,
       options(io)
     );
-    expect(io.log).toEqual([
-      'out:before\n',
-      'err:step three\n',
-      'out:after\n',
-    ]);
+    expect(io.log).toEqual(['out:before\n', 'err:step three\n', 'out:after\n']);
   });
 
   test('source が空なら島は何も書かない', async () => {
