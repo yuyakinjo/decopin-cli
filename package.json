@@ -39,7 +39,7 @@
     "version:next": "bun scripts/next-version.ts"
   },
   "dependencies": {
-    "valibot": "^1.1.0"
+    "valibot": "^1.4.2"
   },
   "devDependencies": {
     "@types/bun": "^1.4.0",
