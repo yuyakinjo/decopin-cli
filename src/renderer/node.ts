@@ -38,6 +38,10 @@ export type RenderNode =
   | { kind: 'columns'; gap: number; children: RenderNode[] }
   /** 状態の記号 */
   | { kind: 'symbol'; symbol: SymbolKind }
+  /** 回転する記号。どのコマを出すかは layout の tick が決める (ADR 23) */
+  | { kind: 'spinner' }
+  /** 進捗のバー */
+  | { kind: 'progress'; value: number; max: number; width: number }
   /** 箇条書き */
   | { kind: 'list'; items: readonly Cell[]; ordered: boolean; bullet: string }
   /** 表 */

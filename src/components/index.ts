@@ -135,6 +135,30 @@ export interface SymbolProps {
  */
 export const Symbol = host<SymbolProps>('symbol', 'Symbol');
 
+/**
+ * 回転する記号。`<Dynamic>` の中で使うと、描き直しのたびに次のコマに進む。
+ *
+ * 時刻ではなく**描き直しの回数**で進むので、コンポーネントは純粋なまま
+ * (同じ入力なら同じ出力)。静的な出力の中では最初のコマで止まる (ADR 23)
+ */
+export type SpinnerProps = Record<never, never>;
+
+/** 回転する記号。UTF-8 でない端末では ASCII に落ちる */
+export const Spinner = host<SpinnerProps>('spinner', 'Spinner');
+
+/** 進捗のバー。行の中に置けるので、割合や説明と並べて書ける */
+export interface ProgressBarProps {
+  /** 現在の値。0 未満と max 超は端で止める */
+  value: number;
+  /** 満了とみなす値 (既定 100) */
+  max?: number;
+  /** バーの桁数 (既定 20) */
+  width?: number;
+}
+
+/** 進捗のバー。UTF-8 でない端末では ASCII (`#-`) に落ちる */
+export const ProgressBar = host<ProgressBarProps>('progress', 'ProgressBar');
+
 /** 表やリストに渡せる値。`null` / `undefined` は空文字になる */
 export type Cell = string | number | boolean | null | undefined;
 

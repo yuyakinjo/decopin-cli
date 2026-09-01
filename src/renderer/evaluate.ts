@@ -163,6 +163,25 @@ export async function evaluate(node: RenderInput): Promise<RenderNode> {
         kind: 'symbol',
         symbol: (readString(props, 'kind') ?? 'info') as SymbolKind,
       };
+    case 'spinner':
+      // どのコマを出すかは描き直しの回数で決まるので、ここでは何も持たない
+      return { kind: 'spinner' };
+    case 'progress': {
+      const value = readNumber(props, 'value') ?? 0;
+      const max = readNumber(props, 'max') ?? 100;
+      const width = readNumber(props, 'width') ?? 20;
+      // 範囲外の value は端で止めるが、数でないものは誤りとして落とす
+      if (!Number.isFinite(value)) {
+        throw new RenderError('<ProgressBar value> must be a finite number');
+      }
+      if (!Number.isFinite(max) || max <= 0) {
+        throw new RenderError('<ProgressBar max> must be a positive number');
+      }
+      if (!Number.isInteger(width) || width < 1) {
+        throw new RenderError('<ProgressBar width> must be a positive integer');
+      }
+      return { kind: 'progress', value, max, width };
+    }
     case 'list':
       return {
         kind: 'list',

@@ -20,6 +20,45 @@ export const SYMBOLS: Record<
   danger: { unicode: '✖', ascii: 'x', style: { color: 'red' } },
 };
 
+/**
+ * 回転する記号のコマ。UTF-8 でない端末では ASCII に落とす。
+ * 進めるのは時刻ではなく描き直しの回数 (ADR 23)
+ */
+export const SPINNER_FRAMES: { unicode: string[]; ascii: string[] } = {
+  unicode: [
+    '\u280b',
+    '\u2819',
+    '\u2839',
+    '\u2838',
+    '\u283c',
+    '\u2834',
+    '\u2826',
+    '\u2827',
+    '\u2807',
+    '\u280f',
+  ],
+  ascii: ['|', '/', '-', '\\'],
+};
+
+/** 進捗のバー 1 本ぶんの文字列。value は 0..max に丸める */
+export function progressBarText(
+  value: number,
+  max: number,
+  width: number,
+  unicode: boolean
+): string {
+  const ratio = Math.min(1, Math.max(0, value / max));
+  // 端は端として見せる: 0 は空、満了だけが全部埋まる
+  const filled =
+    ratio === 0
+      ? 0
+      : ratio === 1
+        ? width
+        : Math.max(1, Math.min(width - 1, Math.round(ratio * width)));
+  const [on, off] = unicode ? ['\u2588', '\u2591'] : ['#', '-'];
+  return on.repeat(filled) + off.repeat(width - filled);
+}
+
 function cellText(cell: Cell): string {
   return cell === null || cell === undefined ? '' : String(cell);
 }

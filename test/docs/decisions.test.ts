@@ -304,6 +304,19 @@ const GUARDS: Record<number, Guard> = {
     label: '動的な出力は AsyncIterable 駆動の島に限る',
     file: 'test/renderer/present.test.tsx',
   },
+  23: {
+    kind: 'lint',
+    label: '描画は時刻を読まない (アニメーションは tick で進む)',
+    check: async () =>
+      [...srcSources]
+        .filter(
+          ([file, source]) =>
+            (file.startsWith('src/renderer/') ||
+              file.startsWith('src/components/')) &&
+            /\b(?:Date\.now|performance\.now|new Date)\b/.test(source)
+        )
+        .map(([file]) => file),
+  },
 };
 
 const decisions = await Bun.file(DECISIONS).text();

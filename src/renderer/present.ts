@@ -133,9 +133,12 @@ async function driveIsland(
     options.columns ?? process.stderr.columns ?? process.stdout.columns
   );
 
+  /** 描き直しの回数。<Spinner> のコマを進める (ADR 23) */
+  let tick = 0;
+
   const frameText = async (value: unknown): Promise<string> => {
     const tree = await evaluate(island.frame(value));
-    const { segments, exitCode } = layout(tree, { columns, unicode });
+    const { segments, exitCode } = layout(tree, { columns, unicode, tick });
     // 終了コードは静的なドキュメントで宣言するもの。フレームの中では誤り
     if (exitCode !== undefined) {
       throw new RenderError(
@@ -157,6 +160,7 @@ async function driveIsland(
 
   const paint = async (value: unknown): Promise<void> => {
     const text = await frameText(value);
+    tick += 1;
     err.write(`${eraseSequence(previousRows)}${text}`);
     previousRows = frameRows(text, columns);
   };

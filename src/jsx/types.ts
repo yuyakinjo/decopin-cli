@@ -59,6 +59,8 @@ export type OutputHostKind =
   | 'columns'
   // データを渡して、レンダラーが幅を見ながら組み立てるもの
   | 'symbol'
+  | 'spinner'
+  | 'progress'
   | 'list'
   | 'table'
   | 'keyvalue'

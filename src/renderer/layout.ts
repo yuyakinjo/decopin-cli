@@ -13,6 +13,8 @@ import {
   jsonLines,
   keyValueLines,
   listLines,
+  progressBarText,
+  SPINNER_FRAMES,
   SYMBOLS,
   tableLines,
 } from './data.ts';
@@ -42,6 +44,11 @@ export interface LayoutOptions {
   columns?: number;
   /** UTF-8 の記号を使えるか。偽なら ASCII に落とす */
   unicode?: boolean;
+  /**
+   * 何回目の描き直しか。`<Spinner>` のコマを決める (ADR 23)。
+   * 静的な出力では 0 のまま
+   */
+  tick?: number;
 }
 
 interface Context {
@@ -77,6 +84,7 @@ export function layout(
 ): LayoutResult {
   const width = terminalWidth(options.columns);
   const unicode = options.unicode ?? true;
+  const tick = options.tick ?? 0;
   const segments: Segment[] = [];
   let exitCode: number | undefined;
 
@@ -167,6 +175,26 @@ export function layout(
         });
         return;
       }
+
+      case 'spinner': {
+        const frames = unicode ? SPINNER_FRAMES.unicode : SPINNER_FRAMES.ascii;
+        // 負の tick は来ない想定だが、剰余が負にならないようにしておく
+        const index = ((tick % frames.length) + frames.length) % frames.length;
+        out.push({
+          fd: ctx.fd,
+          text: frames[index] as string,
+          style: ctx.style,
+        });
+        return;
+      }
+
+      case 'progress':
+        out.push({
+          fd: ctx.fd,
+          text: progressBarText(node.value, node.max, node.width, unicode),
+          style: ctx.style,
+        });
+        return;
 
       case 'indent':
         out.push(
