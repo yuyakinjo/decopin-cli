@@ -108,6 +108,15 @@ describe('releaseNotes', () => {
   });
 });
 
+describe('リリースの手順', () => {
+  test('ワークフローが履歴とタグを取ってくる', async () => {
+    // 本文は「直前のタグから今回まで」の git log で組み立てる。
+    // 浅い clone だとタグも履歴も無く、直近 1 件だけの本文になる
+    const workflow = await Bun.file('.github/workflows/release.yml').text();
+    expect(workflow).toContain('fetch-depth: 0');
+  });
+});
+
 describe('parseLog', () => {
   test('NUL 区切りで件名と本文に分ける', () => {
     expect(parseLog('feat: one\n\nbody one\0fix: two\0')).toEqual([

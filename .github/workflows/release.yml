@@ -18,6 +18,11 @@ jobs:
       id-token: write # npm の Trusted Publishing (OIDC) に必要
     steps:
       - uses: actions/checkout@v7
+        with:
+          # リリースノートは「直前のタグから今回まで」を git log で読む
+          # (scripts/release-notes.ts)。既定の浅い clone ではタグも履歴も
+          # 無いので、9 件あっても直近 1 件しか本文に出ない (実測)
+          fetch-depth: 0
 
       - uses: oven-sh/setup-bun@v2
         with:
