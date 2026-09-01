@@ -250,10 +250,22 @@ const GUARDS: Record<number, Guard> = {
   },
   15: {
     kind: 'lint',
-    label: '仕様書を持たない (docs/ は decisions.md だけ)',
+    label: '仕様書を持たない (追跡される docs/ は decisions.md だけ)',
     check: async () => {
       const entries = await readdir('docs');
-      return entries.filter((name) => name !== 'decisions.md');
+      const extra = entries.filter((name) => name !== 'decisions.md');
+      if (extra.length === 0) return [];
+      // 配らない個人のメモは対象外。追跡された瞬間にここへ戻ってくる
+      const paths = extra.map((name) => `docs/${name}`);
+      const checked = Bun.spawnSync(['git', 'check-ignore', ...paths]);
+      const ignored = new Set(
+        checked.stdout
+          .toString()
+          .split('\n')
+          .map((line) => line.trim())
+          .filter((line) => line !== '')
+      );
+      return paths.filter((path) => !ignored.has(path));
     },
   },
   16: {
