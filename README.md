@@ -353,6 +353,60 @@ Color turns itself off when it should: piped or redirected output, `NO_COLOR`,
 `--no-color`, or `TERM=dumb` (`FORCE_COLOR` forces it back on). `<Line>` never
 wraps on its own, so line-oriented consumers downstream keep working.
 
+## Dynamic regions
+
+Output is static by default. When part of it should update over time — a
+progress display, a step counter — opt in with `<Dynamic>`. Time is passed
+as a stream of values: hand it an async generator, and render a frame from
+the latest value.
+
+```tsx
+import { Dynamic, Line } from 'decopin-cli';
+
+interface Progress {
+  step: string;
+  done: number;
+}
+
+async function* deploySteps(): AsyncGenerator<Progress> {
+  yield { step: 'building', done: 0 };
+  // ...do the work between yields...
+  yield { step: 'pushing', done: 1 };
+  yield { step: 'released', done: 2 };
+}
+
+export default function Command() {
+  return (
+    <>
+      <Line>deploy started</Line>
+      <Dynamic source={deploySteps()} interval={100}>
+        {(progress) => (
+          <Line>
+            [{progress.done}/2] {progress.step}
+          </Line>
+        )}
+      </Dynamic>
+      <Line>all done</Line>
+    </>
+  );
+}
+```
+
+The document streams top to bottom: static parts flush as soon as they are
+reached, the `<Dynamic>` region repaints in place until its source is
+exhausted, then the last frame stays put and the rest of the document
+follows. `interval` (ms) repaints even without a new value, for frames that
+read the clock.
+
+The region lives on **stderr**, following the Unix convention for progress
+decoration (like curl and cargo), so `cli deploy | tee log` stays clean:
+stdout carries only the static document. When stderr is not a TTY (pipes,
+CI), intermediate frames are skipped entirely and only the final frame is
+written once.
+
+`<Dynamic>` must sit at the top level of the command output — not inside
+`<Line>`, `<Box>`, `<Columns>`, or `<Indent>`.
+
 ## Reserved options
 
 `--help`, `-h`, `--version` and `--no-color` are handled by the framework.

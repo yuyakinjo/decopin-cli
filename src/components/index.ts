@@ -43,6 +43,35 @@ export const Stderr = host<BlockProps>('stderr', 'Stderr');
 /** 終了コードを宣言する。ツリー内で最後に評価されたものが勝つ */
 export const Exit = host<ExitProps>('exit', 'Exit');
 
+/**
+ * 時間で書き換わる領域 (ADR 22)。`source` が値を返すたびに `children`
+ * を呼び直し、stderr の領域を描き換える。source が尽きたら最後のフレームが
+ * 静的テキストとして確定し、ドキュメントの続きが流れる
+ */
+export interface DynamicProps<T = unknown> {
+  /** フレームの元になる値の列 (async generator をそのまま渡せる) */
+  source: AsyncIterable<T>;
+  /** 最新の値からフレームを描く。時刻を読めば interval だけでも動く */
+  children: (value: T) => Renderable;
+  /**
+   * 新しい値が無くても再描画する間隔 (ミリ秒)。
+   * スピナーのような時刻依存のフレームに使う。省略時は値が来たときだけ描く
+   */
+  interval?: number;
+}
+
+/** `<Dynamic source={...}>{(value) => ...}</Dynamic>` を型引数付きで書けるようにする */
+export interface DynamicHost {
+  <T>(props: DynamicProps<T>): never;
+  readonly $host: 'dynamic';
+}
+
+/** 時間で書き換わる領域。ドキュメントの直下 (ブロック位置) にだけ置ける */
+export const Dynamic = host<DynamicProps>(
+  'dynamic',
+  'Dynamic'
+) as unknown as DynamicHost;
+
 /** OSC 8 のハイパーリンク。対応していない端末では URL をそのまま出す */
 export interface LinkProps extends Style {
   href: string;

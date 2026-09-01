@@ -178,3 +178,5 @@ lib/
 
 # watch のテストが一時的に作るコマンド
 test/fixtures/watch-app/added/
+
+.claude/settings.json

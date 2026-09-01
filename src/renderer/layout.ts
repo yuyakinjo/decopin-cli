@@ -147,6 +147,13 @@ export function layout(
         exitCode = node.code;
         return;
 
+      case 'dynamic':
+        // 島の駆動は present() の仕事 (ADR 22)。ここに来るのは、測って組む
+        // コンテナや <Line> の中など、領域として扱えない場所に置かれたとき
+        throw new RenderError(
+          '<Dynamic> must be a top-level block in the command output (not inside <Line>, <Box>, <Indent>, <Columns>, <Stdout> or <Stderr>)'
+        );
+
       case 'group':
         for (const child of node.children) walk(child, ctx, out);
         return;
