@@ -218,6 +218,20 @@ $ ./dist/index.js stats --json
 }
 ```
 
+`--json` refuses to print data that would not survive the round trip, and
+names the path rather than letting it break quietly:
+
+```sh
+$ ./dist/index.js stats --json
+data.lookup cannot go into --json: Map becomes {} in JSON
+```
+
+`JSON.stringify` drops functions and `undefined`, turns `Map` and `Set` into
+`{}`, and turns `NaN` into `null` — all without complaining. `Date` and
+`Temporal` values become strings that the declared type never mentions. Export
+plain data, or convert at the edge (`when: when.toISOString()`). The `JsonValue`
+type is exported if you would rather assert it yourself with `satisfies`.
+
 Piping does **not** switch to JSON on its own. Dropping colour when stdout is
 not a terminal adjusts presentation; changing the output _format_ would break
 `cli stats | grep README`, so it happens only when asked. A command without a

@@ -304,6 +304,11 @@ const GUARDS: Record<number, Guard> = {
     label: '動的な出力は AsyncIterable 駆動の島に限る',
     file: 'test/renderer/present.test.tsx',
   },
+  27: {
+    kind: 'test',
+    label: '--json に出せるかを実行前に見る',
+    file: 'test/runtime/serializable.test.ts',
+  },
   26: {
     kind: 'test',
     label: 'パイプを壊さないことを全コマンドで掃いて確かめる',

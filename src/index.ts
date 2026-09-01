@@ -76,6 +76,8 @@ export type {
   TextProps,
 } from './components/index.ts';
 
+export type { JsonValue } from './types/json.ts';
+
 export type {
   CommandBase,
   CommandProps,

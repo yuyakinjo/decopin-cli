@@ -39,6 +39,7 @@ import {
 } from './reserved.ts';
 import { commandsUnder, resolveTarget } from './router.ts';
 import type { RouteTable } from './router.ts';
+import { findNotSerializable } from './serializable.ts';
 import { processStdin, readStdin } from './stdin-reader.ts';
 import type { StdinSource } from './stdin-reader.ts';
 
@@ -447,6 +448,14 @@ export async function run(
         // データは表示より先に確定する。--json のときは view を呼ばない
         const data = await loadData(route.data, base);
         if (jsonRequested) {
+          // 黙って欠けるより、どの経路が悪いかを言って止める (ADR 27)
+          const problem = findNotSerializable(data);
+          if (problem !== undefined) {
+            throw new CliError(
+              `${problem.path} cannot go into --json: ${problem.reason}`,
+              { exitCode: EXIT_CODE.runtime }
+            );
+          }
           skipLayout = true;
           return (<Json value={data} />) as Renderable;
         }
