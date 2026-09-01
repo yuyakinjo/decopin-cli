@@ -294,6 +294,11 @@ const GUARDS: Record<number, Guard> = {
     label: '非推奨は 1 年後に消す。期限切れは CI が落ちる',
     file: 'test/docs/deprecations.test.ts',
   },
+  21: {
+    kind: 'test',
+    label: '補完の候補は CLI 自身 (__complete) が返す',
+    file: 'test/runtime/complete.test.tsx',
+  },
 };
 
 const decisions = await Bun.file(DECISIONS).text();

@@ -358,6 +358,27 @@ wraps on its own, so line-oriented consumers downstream keep working.
 `--help`, `-h`, `--version` and `--no-color` are handled by the framework.
 Declaring any of them in `argv.tsx` is a build error.
 
+## Shell completion
+
+`bun run build` also writes a zsh completion shim to
+`dist/completions/_<bin>`. Put it on your `$fpath` (before `compinit` runs)
+and Tab completion works for subcommands, option names, and `Type.Enum`
+values:
+
+```sh
+mkdir -p ~/.zsh/completions
+cp dist/completions/_mycli ~/.zsh/completions/
+# in .zshrc, before compinit:
+#   fpath=(~/.zsh/completions $fpath)
+```
+
+The shim is thin on purpose: on every Tab it asks the CLI itself
+(`mycli __complete`) for candidates, so the file never changes when you
+add or remove commands — rebuilding the CLI is enough, and zsh's
+completion cache never goes stale. `__complete` is reserved by the
+framework and hidden from help. When there are no candidates, completion
+falls back to filenames.
+
 ## Working examples
 
 [`app/`](app/) is the example, and the build and the tests keep it honest.

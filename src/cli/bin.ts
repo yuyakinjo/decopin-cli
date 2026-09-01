@@ -48,6 +48,7 @@ function runBuild(argv: string[]): Promise<number> {
     process.stdout.write(
       `Found ${result.routes.length} command(s): ${names.join(', ')}\n` +
         `Wrote ${result.files.types}\n` +
+        `Wrote ${result.completionPath} (zsh completion)\n` +
         `Wrote ${result.outPath} (${(result.bytes / 1024).toFixed(1)} KB) in ${elapsed}ms\n`
     );
     return EXIT_CODE.success;

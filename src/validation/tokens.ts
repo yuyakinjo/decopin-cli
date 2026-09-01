@@ -38,7 +38,7 @@ function buildLookup(spec: ArgvSpec): Lookup {
 }
 
 /** boolean は `--flag` だけで真になるので、次のトークンを値として食わない */
-function takesValue(option: OptionSpec): boolean {
+export function takesValue(option: OptionSpec): boolean {
   if (option.type.kind === 'boolean') return false;
   if (option.type.kind === 'array' && option.type.item.kind === 'boolean') {
     return false;
