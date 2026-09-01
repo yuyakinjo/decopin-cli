@@ -304,6 +304,11 @@ const GUARDS: Record<number, Guard> = {
     label: '動的な出力は AsyncIterable 駆動の島に限る',
     file: 'test/renderer/present.test.tsx',
   },
+  32: {
+    kind: 'test',
+    label: '副作用はビルド時に数える (none は無いことの証明)',
+    file: 'test/build/effects.test.ts',
+  },
   31: {
     kind: 'test',
     label: '環境が整っていないときの形 (認証・ツール不足)',

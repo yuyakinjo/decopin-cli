@@ -16,6 +16,8 @@ import {
   generateZshCompletion,
   resolveBinaryName,
 } from './completions.ts';
+import { analyzeEffects } from './effects.ts';
+import type { EffectReport } from './effects.ts';
 import { evaluateEnv, evaluateRoutes } from './evaluator.ts';
 import type { EvaluatedRoute } from './evaluator.ts';
 import { inheritedChain, scan } from './scanner.ts';
@@ -47,6 +49,8 @@ export interface GenerateResult {
   files: { routes: string; entry: string; types: string };
   /** help と補完シムに出す実行ファイル名 (解決済み) */
   program: string;
+  /** コマンド名 → 副作用の到達判定 (ADR 32) */
+  effects: Map<string, EffectReport>;
 }
 
 export interface BuildResult extends GenerateResult {
@@ -170,7 +174,22 @@ export async function generate(
   }
   await writeIfChanged(files.types, types.text);
 
-  return { routes, evaluated, files, warnings, program };
+  // 副作用は「そのコマンドが読み込むもの全部」から数える (ADR 32)。
+  // ファイルごとの解析は使い回すので、コマンドが増えても歩き直さない
+  const cache = new Map();
+  const effects = new Map<string, EffectReport>();
+  for (const route of routes) {
+    const entries = [
+      ...Object.values(route.files),
+      ...(errorChains.get(route.name) ?? []),
+      ...(notFoundChains.get(route.name) ?? []),
+      ...(layoutChains.get(route.name) ?? []),
+      ...(middlewareChains.get(route.name) ?? []),
+    ].filter((file): file is string => file !== undefined);
+    effects.set(route.name, await analyzeEffects(entries, cache));
+  }
+
+  return { routes, evaluated, files, warnings, program, effects };
 }
 
 export async function build(options: BuildOptions = {}): Promise<BuildResult> {
