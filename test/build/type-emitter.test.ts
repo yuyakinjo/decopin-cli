@@ -218,7 +218,7 @@ describe('generateTypes', () => {
     expect(code).toContain("declare module 'decopin-cli'");
     expect(code).toContain('interface Routes {');
     expect(code).toContain(
-      '"hello": { args: { name: string }; options: { loud: boolean }; stdin: never };'
+      '"hello": { args: { name: string }; options: { loud: boolean }; stdin: never; data: never };'
     );
   });
 
@@ -277,7 +277,9 @@ describe('generateTypes', () => {
     const code = generateTypes([
       evaluated('x', { args: [], options: [] }),
     ]).text;
-    expect(code).toContain('"x": { args: {}; options: {}; stdin: never };');
+    expect(code).toContain(
+      '"x": { args: {}; options: {}; stdin: never; data: never };'
+    );
   });
 
   test('schema の未対応ノードをファイル付きで返す', () => {
@@ -310,7 +312,7 @@ describe('generateTypes', () => {
         stdin: { mode: 'lines', required: true, trim: false },
       },
     ]).text;
-    expect(code).toContain('stdin: string[] };');
+    expect(code).toContain('stdin: string[]; data: never };');
   });
 
   test('ルートコマンドは空文字のキーになる', () => {

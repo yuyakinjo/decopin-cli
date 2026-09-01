@@ -94,7 +94,7 @@ describe('argv.tsx の宣言', () => {
       return (
         <>
           <Option name="verbose" alias="v" type="boolean" default={false} />
-          <Option name="json" type="boolean" default={false} />
+          <Option name="quiet" type="boolean" default={false} />
         </>
       );
     }
@@ -106,7 +106,7 @@ describe('argv.tsx の宣言', () => {
     );
     expect(result.options.map((option) => option.name)).toEqual([
       'verbose',
-      'json',
+      'quiet',
     ]);
   });
 

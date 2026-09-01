@@ -70,6 +70,7 @@ describe('build', () => {
       'count',
       'crash',
       'hello',
+      'stats',
       'upper',
       'user/import',
       'user/list',

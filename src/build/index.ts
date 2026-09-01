@@ -161,7 +161,7 @@ export async function generate(
     )
   );
   await writeIfChanged(files.entry, generateEntry(program));
-  const types = generateTypes(evaluated, env.spec);
+  const types = generateTypes(evaluated, env.spec, workDir);
   for (const { file, nodes } of types.unsupported) {
     warnings.push(...stdinSchemaWarnings(file, nodes));
   }

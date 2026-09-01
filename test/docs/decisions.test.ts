@@ -304,6 +304,16 @@ const GUARDS: Record<number, Guard> = {
     label: '動的な出力は AsyncIterable 駆動の島に限る',
     file: 'test/renderer/present.test.tsx',
   },
+  26: {
+    kind: 'test',
+    label: 'パイプを壊さないことを全コマンドで掃いて確かめる',
+    file: 'test/contract/pipe-safety.test.tsx',
+  },
+  25: {
+    kind: 'test',
+    label: 'データは data.tsx で、表示と分ける',
+    file: 'test/runtime/run-data.test.tsx',
+  },
   24: {
     kind: 'test',
     label: '起動時間は PR ごとに測り、base と比べる',
