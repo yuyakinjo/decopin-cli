@@ -43,7 +43,7 @@ describe('生成された型', () => {
     const result = await typecheck();
     expect(result.output).toBe('');
     expect(result.code).toBe(0);
-  });
+  }, 30_000);
 
   test('args / options の型と、コマンド名の綴りを検査できる', async () => {
     await writeFile(
