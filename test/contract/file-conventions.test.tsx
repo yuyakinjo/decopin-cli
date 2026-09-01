@@ -46,6 +46,7 @@ describe('置ける場所', () => {
       'data',
       'output',
       'error',
+      'not-found',
       'layout',
       'middleware',
       'help',
@@ -63,7 +64,12 @@ describe('置ける場所', () => {
 
   test('上位ディレクトリから継承されるファイル', () => {
     // help は継承しない (ディレクトリごとに完全一致で引く)
-    expect([...INHERITED_FILES]).toEqual(['error', 'layout', 'middleware']);
+    expect([...INHERITED_FILES]).toEqual([
+      'error',
+      'not-found',
+      'layout',
+      'middleware',
+    ]);
   });
 });
 

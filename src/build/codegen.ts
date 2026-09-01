@@ -28,6 +28,8 @@ export interface RoutesInput {
   routes: Route[];
   /** ルート名 → error.tsx の並び。**近い順** (自分 → 親 → ...) */
   errorChains?: Map<string, string[]>;
+  /** ルート名 → not-found.tsx の並び。**近い順** (ADR 30) */
+  notFoundChains?: Map<string, string[]>;
   /** ルート名 → layout.tsx の並び (外側から順)。ADR 7 */
   layoutChains?: Map<string, string[]>;
   /** ルート名 → middleware.tsx の並び (外側から順)。ADR 13 */
@@ -57,6 +59,7 @@ export function generateRoutes(input: RoutesInput, outDir: string): string {
 
     const chains: [string, string[]][] = [
       ['errors', input.errorChains?.get(route.name) ?? []],
+      ['notFounds', input.notFoundChains?.get(route.name) ?? []],
       ['layouts', input.layoutChains?.get(route.name) ?? []],
       ['middlewares', input.middlewareChains?.get(route.name) ?? []],
     ];

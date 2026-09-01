@@ -53,6 +53,12 @@ const CASES: Record<string, { argv: string[]; stdin?: StdinSource }> = {
     stdin: piped('[{"name":"alice","email":"a@example.com"}]'),
   },
   'user/list': { argv: ['user', 'list'] },
+  'user/show': { argv: ['user', 'show', 'alice'] },
+  // notFound() の経路も stdout は空のまま (ADR 30)
+  'user/show (見つからない)': { argv: ['user', 'show', 'nope'] },
+  'user/show (見つからない, --json)': {
+    argv: ['user', 'show', 'nope', '--json'],
+  },
   '--help': { argv: ['--help'] },
   'hello --help': { argv: ['hello', '--help'] },
   '--version': { argv: ['--version'] },

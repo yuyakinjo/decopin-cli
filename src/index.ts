@@ -4,6 +4,7 @@ export {
   Br,
   Columns,
   Danger,
+  DidYouMean,
   Dynamic,
   Exit,
   Indent,
@@ -66,6 +67,7 @@ export type {
   BoxProps,
   Cell,
   ColumnsProps,
+  DidYouMeanProps,
   DynamicProps,
   ExitProps,
   IndentProps,
@@ -102,6 +104,8 @@ export type { ExitCode } from './runtime/exit.ts';
 export { Help, CommandList } from './runtime/help.tsx';
 export type { HelpProps } from './runtime/help.tsx';
 export { NotFound } from './runtime/not-found.tsx';
+export { notFound } from './runtime/not-found-signal.ts';
+export type { NotFoundInput } from './runtime/not-found-signal.ts';
 export type { NotFoundProps } from './runtime/not-found.tsx';
 export { applyLayouts } from './runtime/layout.tsx';
 export type { LayoutProps } from './runtime/layout.tsx';
@@ -114,6 +118,7 @@ export { processStdin, readStdin } from './runtime/stdin-reader.ts';
 export type { StdinSource } from './runtime/stdin-reader.ts';
 export { validateEnv } from './validation/env.ts';
 export {
+  closest,
   commandsUnder,
   resolveRoute,
   resolveTarget,

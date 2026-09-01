@@ -30,7 +30,9 @@ import { CommandList, Help } from './help.tsx';
 import { applyLayouts } from './layout.tsx';
 import { ErrorMessage } from './messages.tsx';
 import { runMiddleware } from './middleware.ts';
+import { isNotFoundSignal } from './not-found-signal.ts';
 import { NotFound } from './not-found.tsx';
+import type { NotFoundProps } from './not-found.tsx';
 import { present } from './override.ts';
 import {
   COMPLETE_COMMAND,
@@ -338,17 +340,19 @@ export async function run(
       const shown = await present(
         options.notFound,
         {
+          what: 'command',
           requested: target.requested,
           suggestion: target.suggestion?.split('/').join(' '),
-          commands: commands.map(display),
+          available: commands.map(display),
           program,
           argv,
           cwd,
         },
         <NotFound
+          what="command"
           requested={target.requested}
           suggestion={target.suggestion?.split('/').join(' ')}
-          commands={commands.map(display)}
+          available={commands.map(display)}
           program={program}
           argv={argv}
           cwd={cwd}
@@ -524,6 +528,50 @@ export async function run(
     const declared = await withLayout(output, skipLayout);
     return declared ?? EXIT_CODE.success;
   } catch (error) {
+    // notFound() は失敗ではなく「無かった」の合図 (ADR 30)。
+    // 一番近い not-found.tsx に見せる
+    if (isNotFoundSignal(error)) {
+      const route = table[resolved.name];
+      const props: NotFoundProps = {
+        what: error.what,
+        requested: error.requested,
+        suggestion: error.suggestion,
+        available: error.available,
+        program,
+        argv: resolved.rest,
+        cwd,
+      };
+      if (jsonRequested) {
+        await emit(
+          <Stderr>
+            <Json
+              value={{
+                error: {
+                  code: 'not-found',
+                  what: error.what,
+                  requested: error.requested,
+                  ...(error.suggestion === undefined
+                    ? {}
+                    : { suggestion: error.suggestion }),
+                  exitCode: error.exitCode,
+                },
+              }}
+            />
+          </Stderr>,
+          options,
+          noColorFlag
+        );
+        return error.exitCode;
+      }
+      const shown = await present(
+        route?.notFounds?.[0],
+        props,
+        <NotFound {...props} />
+      );
+      await emit(<Stderr>{shown.node}</Stderr>, options, noColorFlag);
+      return error.exitCode;
+    }
+
     const cliError = toCliError(error);
 
     // JSON を頼まれた相手に人間向けの文面を返すとパーサが壊れる (ADR 29)。

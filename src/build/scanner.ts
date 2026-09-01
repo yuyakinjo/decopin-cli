@@ -15,6 +15,7 @@ export const CONVENTION_FILES = [
   'data',
   'output',
   'error',
+  'not-found',
   'layout',
   'middleware',
   'help',
@@ -42,7 +43,12 @@ export interface Route {
 }
 
 /** 上位ディレクトリから子コマンドに継承されるファイル (ADR 7 / ADR 13) */
-export const INHERITED_FILES = ['error', 'layout', 'middleware'] as const;
+export const INHERITED_FILES = [
+  'error',
+  'not-found',
+  'layout',
+  'middleware',
+] as const;
 
 export type InheritedFile = (typeof INHERITED_FILES)[number];
 

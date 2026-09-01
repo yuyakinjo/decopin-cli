@@ -130,15 +130,17 @@ export async function generate(
   };
 
   // error.tsx / layout.tsx / middleware.tsx は上位ディレクトリから継承される
-  const chain = (kind: 'error' | 'layout' | 'middleware') =>
+  const chain = (kind: 'error' | 'not-found' | 'layout' | 'middleware') =>
     new Map<string, string[]>(
       routes.map((route) => {
         const files = inheritedChain(inherited, route.dir, kind);
         // error は近い順に試す。layout / middleware は外側から包む
-        return [route.name, kind === 'error' ? files : [...files].reverse()];
+        const nearestFirst = kind === 'error' || kind === 'not-found';
+        return [route.name, nearestFirst ? files : [...files].reverse()];
       })
     );
   const errorChains = chain('error');
+  const notFoundChains = chain('not-found');
   const layoutChains = chain('layout');
   const middlewareChains = chain('middleware');
 
@@ -149,6 +151,7 @@ export async function generate(
       {
         routes,
         errorChains,
+        notFoundChains,
         layoutChains,
         middlewareChains,
         helpFiles,
