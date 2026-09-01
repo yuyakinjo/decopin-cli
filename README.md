@@ -373,6 +373,36 @@ export default function Command() {
 }
 ```
 
+## When the input cannot be acted on
+
+`help()` shows this command's usage and stops. It builds the same thing
+`--help` does — including a `help.tsx` override — but since it was not asked
+for, it goes to stderr with exit 2, matching how the framework already treats
+misuse.
+
+```tsx
+// app/deploy/command.tsx
+import { help, Success, type CommandProps } from 'decopin-cli';
+
+export default function Command({ args, options }: CommandProps<'deploy'>) {
+  if (args.target === undefined && !options.all) {
+    help({ message: 'give a target, or pass --all' });
+  }
+  return (
+    <Success>deploying {options.all ? 'everything' : args.target}</Success>
+  );
+}
+```
+
+```sh
+$ ./dist/index.js deploy          # exit 2, all of it on stderr
+✖ give a target, or pass --all
+Usage: decopin-cli deploy [target] [options]
+
+Deploy a target, or everything with --all.
+...
+```
+
 ## Reporting errors
 
 `error.tsx` is looked up **from the closest directory outward**.
@@ -627,6 +657,7 @@ falls back to filenames.
 | [`app/user/import`](app/user/import) | `mode="json"` with `Type.Object`                                      |
 | [`app/config`](app/config)           | reading validated `env.tsx` values                                    |
 | [`app/user/show`](app/user/show)     | `notFound()` with an automatic suggestion                             |
+| [`app/deploy`](app/deploy)           | `help()` when the input cannot be acted on                            |
 | [`app/stats`](app/stats)             | `data.tsx` split from the view, and `--json`                          |
 | [`app/crash`](app/crash)             | `error.tsx` and `<Exit>`                                              |
 

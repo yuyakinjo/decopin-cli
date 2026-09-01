@@ -42,6 +42,9 @@ const CASES: Record<string, { argv: string[]; stdin?: StdinSource }> = {
   config: { argv: ['config'] },
   count: { argv: ['count'], stdin: piped('a\nb\n\nc\n') },
   crash: { argv: ['crash'] },
+  deploy: { argv: ['deploy', 'web'] },
+  // help() の経路も stdout は空のまま (ADR 30)
+  'deploy (使い方を出す)': { argv: ['deploy'] },
   hello: { argv: ['hello', 'world'] },
   stats: { argv: ['stats'] },
   'stats --json': { argv: ['stats', '--json'] },

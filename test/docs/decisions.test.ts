@@ -307,7 +307,7 @@ const GUARDS: Record<number, Guard> = {
   30: {
     kind: 'test',
     label: 'notFound() と、よくある形の詰め合わせ',
-    file: 'test/runtime/not-found-signal.test.tsx',
+    file: 'test/runtime/signals.test.tsx',
   },
   29: {
     kind: 'test',

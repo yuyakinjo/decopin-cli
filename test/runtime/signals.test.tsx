@@ -1,12 +1,22 @@
 /**
- * `notFound()` と「よくある形」の詰め合わせ (ADR 30)。
+ * `notFound()` / `help()` と「よくある形」の詰め合わせ (ADR 30)。
  *
  * 型の一覧を宣言させる代わりに、CLI で毎回書く形を用意する方針。
  * ここはその形が約束どおり動くことを固定する
  */
 import { describe, expect, test } from 'bun:test';
 
-import { closest, DidYouMean, Line, notFound, render, run } from 'decopin-cli';
+import {
+  Arg,
+  Argv,
+  closest,
+  DidYouMean,
+  help,
+  Line,
+  notFound,
+  render,
+  run,
+} from 'decopin-cli';
 import type { NotFoundProps, RouteTable } from 'decopin-cli';
 
 function recorder() {
@@ -163,5 +173,80 @@ describe('<DidYouMean>', () => {
       plain
     );
     expect(result.stdout).toBe('');
+  });
+});
+
+describe('help()', () => {
+  const usage: RouteTable = {
+    deploy: {
+      command: loader(({ args }: { args: { target?: string } }) => {
+        if (args.target === undefined) {
+          help({ message: 'give a target' });
+        }
+        return <Line>ok</Line>;
+      }),
+      argv: loader(() => (
+        <Argv description="Deploy something.">
+          <Arg name="target" type="string" description="what to deploy" />
+        </Argv>
+      )),
+    },
+    quiet: {
+      command: loader(() => {
+        help();
+      }),
+    },
+    zero: {
+      command: loader(() => {
+        help({ exitCode: 0 });
+      }),
+    },
+    overridden: {
+      command: loader(() => {
+        help();
+      }),
+    },
+  };
+
+  test('使い方を stderr に出して exit 2 (求められて出すのではない)', async () => {
+    const result = await invoke(usage, ['deploy']);
+    expect(result.code).toBe(2);
+    expect(result.stdout).toBe('');
+    expect(result.stderr).toContain('Usage: cli deploy');
+    expect(result.stderr).toContain('what to deploy');
+  });
+
+  test('理由の一行を先に出せる', async () => {
+    const result = await invoke(usage, ['deploy']);
+    expect(result.stderr).toContain('give a target');
+  });
+
+  test('message は省略できる', async () => {
+    const result = await invoke(usage, ['quiet']);
+    expect(result.code).toBe(2);
+    expect(result.stderr).toContain('Usage: cli quiet');
+  });
+
+  test('終了コードを指定できる', async () => {
+    const result = await invoke(usage, ['zero']);
+    expect(result.code).toBe(0);
+  });
+
+  test('help.tsx を置いていればそちらが使われる', async () => {
+    const result = await run(usage, {
+      argv: ['overridden'],
+      env: { NO_COLOR: '1' },
+      program: 'cli',
+      targets: { stdout: recorder(), stderr: recorder() },
+      helps: { overridden: loader(() => <Line>CUSTOM USAGE</Line>) },
+    });
+    expect(result).toBe(2);
+  });
+
+  test('--help は今までどおり stdout + exit 0 (help() と混ざらない)', async () => {
+    const result = await invoke(usage, ['deploy', '--help']);
+    expect(result.code).toBe(0);
+    expect(result.stderr).toBe('');
+    expect(result.stdout).toContain('Usage: cli deploy');
   });
 });

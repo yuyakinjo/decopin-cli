@@ -30,7 +30,6 @@ import { CommandList, Help } from './help.tsx';
 import { applyLayouts } from './layout.tsx';
 import { ErrorMessage } from './messages.tsx';
 import { runMiddleware } from './middleware.ts';
-import { isNotFoundSignal } from './not-found-signal.ts';
 import { NotFound } from './not-found.tsx';
 import type { NotFoundProps } from './not-found.tsx';
 import { present } from './override.ts';
@@ -44,6 +43,7 @@ import {
 import { commandsUnder, resolveTarget } from './router.ts';
 import type { RouteTable } from './router.ts';
 import { findNotSerializable } from './serializable.ts';
+import { isHelpSignal, isNotFoundSignal } from './signals.ts';
 import { processStdin, readStdin } from './stdin-reader.ts';
 import type { StdinSource } from './stdin-reader.ts';
 
@@ -528,6 +528,43 @@ export async function run(
     const declared = await withLayout(output, skipLayout);
     return declared ?? EXIT_CODE.success;
   } catch (error) {
+    // help() は「そのままでは進めない」の合図 (ADR 30)。--help と同じものを
+    // 組み立てるが、求められて出すのではないので stderr + exit 2 になる
+    if (isHelpSignal(error)) {
+      const route = table[resolved.name];
+      const spec = await loadArgvSpec(route?.argv);
+      const auto = (
+        <Help
+          program={program}
+          command={resolved.name}
+          spec={spec}
+          stdin={await loadStdinSpec(route?.stdin)}
+        />
+      );
+      const shown = await present(
+        options.helps?.[resolved.name],
+        {
+          auto,
+          program,
+          command: display(resolved.name),
+          argv: resolved.rest,
+          cwd,
+        },
+        auto
+      );
+      await emit(
+        <Stderr>
+          {error.message === undefined ? null : (
+            <ErrorMessage message={error.message} />
+          )}
+          {shown.node}
+        </Stderr>,
+        options,
+        noColorFlag
+      );
+      return error.exitCode;
+    }
+
     // notFound() は失敗ではなく「無かった」の合図 (ADR 30)。
     // 一番近い not-found.tsx に見せる
     if (isNotFoundSignal(error)) {

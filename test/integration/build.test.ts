@@ -69,6 +69,7 @@ describe('build', () => {
       'config',
       'count',
       'crash',
+      'deploy',
       'hello',
       'stats',
       'upper',
