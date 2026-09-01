@@ -48,7 +48,9 @@ function endWithNewline(value: string): string {
  * UTF-8 の記号を出してよいか。locale で判断する。
  * 判断できない場合は「出せる」側に倒す (今どきの端末はほぼ UTF-8)
  */
-function supportsUnicode(env: Record<string, string | undefined>): boolean {
+export function supportsUnicode(
+  env: Record<string, string | undefined>
+): boolean {
   const locale = env.LC_ALL ?? env.LC_CTYPE ?? env.LANG;
   if (locale === undefined) return true;
   return /utf-?8/i.test(locale);

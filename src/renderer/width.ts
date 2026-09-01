@@ -64,6 +64,8 @@ export function graphemes(text: string): string[] {
 function graphemeWidth(grapheme: string): number {
   const first = grapheme.codePointAt(0);
   if (first === undefined) return 0;
+  // 国旗 (regional indicator の組) は 1 書記素で 2 桁
+  if (first >= 0x1f1e6 && first <= 0x1f1ff) return 2;
   const width = codePointWidth(first);
   // 絵文字の異体字セレクタ付き (例: ✔️) は 2 桁として扱う端末が多い
   if (width === 1 && grapheme.includes('️')) return 2;

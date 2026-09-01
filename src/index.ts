@@ -115,7 +115,7 @@ export type {
 
 export { render } from './renderer/render.ts';
 export type { RenderOptions, RenderResult } from './renderer/render.ts';
-export { present } from './renderer/present.ts';
+export { frameRows, present } from './renderer/present.ts';
 export type { PresentOptions } from './renderer/present.ts';
 export { write } from './renderer/writer.ts';
 export type { WritableLike, WriteTargets } from './renderer/writer.ts';

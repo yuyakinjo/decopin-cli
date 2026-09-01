@@ -217,11 +217,21 @@ export async function evaluate(node: RenderInput): Promise<RenderNode> {
           '<Dynamic> children must be a function of the latest value'
         );
       }
+      // 0 や NaN は 1ms に丸められて高頻度の描き直しになる (Bun の実測)
+      const interval = readNumber(props, 'interval');
+      if (
+        interval !== undefined &&
+        (!Number.isFinite(interval) || interval <= 0)
+      ) {
+        throw new RenderError(
+          '<Dynamic interval> must be a positive number of milliseconds'
+        );
+      }
       return {
         kind: 'dynamic',
         source: source as AsyncIterable<unknown>,
         frame: children as unknown as (value: unknown) => Renderable,
-        interval: readNumber(props, 'interval'),
+        interval,
       };
     }
     default:

@@ -81,6 +81,11 @@ export interface RunOptions {
   notFound?: () => Promise<unknown>;
   /** 書き出し先 (テストから差し替えるため) */
   targets?: WriteTargets;
+  /**
+   * TTY 判定の明示指定。省略時、targets を差し替えているなら非 TTY として
+   * 扱う (キャプチャ先は端末ではないので、実端末の判定を継承しない)
+   */
+  isTTY?: { stdout?: boolean; stderr?: boolean };
 }
 
 async function emit(
@@ -93,6 +98,11 @@ async function emit(
     env: options.env,
     noColorFlag,
     targets: options.targets,
+    isTTY:
+      options.isTTY ??
+      (options.targets === undefined
+        ? undefined
+        : { stdout: false, stderr: false }),
   });
 }
 
