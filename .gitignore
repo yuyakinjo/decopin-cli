@@ -180,3 +180,6 @@ lib/
 test/fixtures/watch-app/added/
 
 .claude/settings.json
+
+# bun build --compile が残す一時ファイル
+*.bun-build
