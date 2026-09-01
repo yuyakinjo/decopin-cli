@@ -218,6 +218,41 @@ $ ./dist/index.js stats --json
 }
 ```
 
+### Declaring the shape
+
+`output.tsx` declares what `data.tsx` promises. When present it becomes the
+source of truth: the `data` prop is typed from the declaration rather than
+inferred, and the value is checked at runtime before anything is displayed
+or printed.
+
+```tsx
+// app/stats/output.tsx
+import { Output, Type } from 'decopin-cli';
+
+export default function DefineOutput() {
+  return (
+    <Output>
+      <Type.Object>
+        <Type.Field name="total" required>
+          <Type.Number min={0} integer />
+        </Type.Field>
+        <Type.Field name="files" required>
+          <Type.Array>
+            <Type.String minLength={1} />
+          </Type.Array>
+        </Type.Field>
+      </Type.Object>
+    </Output>
+  );
+}
+```
+
+Checking data your own code produced is worth it when it did not really come
+from your code: `return (await res.json()) as User[]` type-checks whether or
+not the response matches. `output.tsx` is the one place that boundary gets
+examined. Commands without one keep the inferred type and no check. For
+awkward shapes, pass a valibot schema instead: `<Output schema={v.object(…)} />`.
+
 `--json` refuses to print data that would not survive the round trip, and
 names the path rather than letting it break quietly:
 

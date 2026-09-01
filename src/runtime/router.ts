@@ -12,6 +12,8 @@ export interface RouteLoaders {
   stdin?: () => Promise<unknown>;
   /** data.tsx。表示の前にデータだけを用意する (ADR 25) */
   data?: () => Promise<unknown>;
+  /** output.tsx。data の形を宣言し、実行時に検証する (ADR 28) */
+  output?: () => Promise<unknown>;
   /** error.tsx の並び。**近い順** (自分のディレクトリ → 親 → ...) */
   errors?: Array<() => Promise<unknown>>;
   /** layout.tsx の並び。**外側から順** (ルート → ... → 自分のディレクトリ) */

@@ -44,6 +44,7 @@ describe('置ける場所', () => {
       'argv',
       'stdin',
       'data',
+      'output',
       'error',
       'layout',
       'middleware',

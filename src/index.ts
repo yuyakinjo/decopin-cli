@@ -28,6 +28,7 @@ export {
   Argv,
   Env,
   Option,
+  Output,
   Stdin,
   Var,
   Version,
@@ -37,6 +38,7 @@ export type {
   ArgvProps,
   EnvProps,
   OptionProps,
+  OutputProps,
   ShorthandType,
   StdinProps,
   VarProps,
@@ -46,7 +48,12 @@ export { Type } from './components/type/index.ts';
 export { CliError } from './runtime/errors.ts';
 export type { ErrorKind, ErrorProps } from './runtime/errors.ts';
 export { DeclarationError } from './declaration/errors.ts';
-export type { ArgSpec, ArgvSpec, OptionSpec } from './declaration/spec.ts';
+export type {
+  ArgSpec,
+  ArgvSpec,
+  OptionSpec,
+  OutputSpec,
+} from './declaration/spec.ts';
 export type { TypeNode } from './declaration/type-node.ts';
 export {
   RESERVED_OPTION_ALIASES,

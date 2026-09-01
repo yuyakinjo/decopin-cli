@@ -18,7 +18,7 @@ function toSpecifier(outDir: string, file: string): string {
 }
 
 /** ルートに書き出す規約ファイル。Phase が進むごとに増える */
-const WIRED_FILES = ['command', 'argv', 'stdin', 'data'] as const;
+const WIRED_FILES = ['command', 'argv', 'stdin', 'data', 'output'] as const;
 
 function importer(outDir: string, file: string): string {
   return `() => import(${JSON.stringify(toSpecifier(outDir, file))})`;

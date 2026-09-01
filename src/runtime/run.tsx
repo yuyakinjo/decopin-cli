@@ -9,6 +9,7 @@ import { Json, Line, Stderr } from '../components/index.ts';
 import { parseArgvSpec } from '../declaration/parse.ts';
 import {
   parseEnvSpec,
+  parseOutputSpec,
   parseStdinSpec,
   parseVersionSpec,
 } from '../declaration/parse.ts';
@@ -19,6 +20,7 @@ import type { Renderable, RenderInput } from '../jsx/types.ts';
 import { present as presentDocument } from '../renderer/present.ts';
 import type { WriteTargets } from '../renderer/writer.ts';
 import { validateEnv } from '../validation/env.ts';
+import { toSchema, validateValue } from '../validation/schema.ts';
 import { validateArgv } from '../validation/validate.ts';
 import { completionCandidates, formatCandidates } from './complete.ts';
 import { CliError, validationError } from './errors.ts';
@@ -184,6 +186,33 @@ async function loadStdinSpec(
     (declare as () => Renderable)() as Renderable
   );
   return parseStdinSpec(hosts);
+}
+
+/**
+ * output.tsx があれば data を検証する (ADR 28)。
+ *
+ * 自分のコードが返した値でも、外の API から来たものは型の宣言どおりとは
+ * 限らない。境界で確かめておくと、壊れた形のまま表示や --json に流れない
+ */
+async function validateData(
+  loader: (() => Promise<unknown>) | undefined,
+  data: unknown
+): Promise<unknown> {
+  if (loader === undefined) return data;
+  const spec = parseOutputSpec(await declaredHosts(loader, 'Output'));
+  const schema =
+    spec.schema !== undefined
+      ? (spec.schema as Parameters<typeof validateValue>[0])
+      : toSchema(spec.type as NonNullable<typeof spec.type>);
+  const result = validateValue(schema, data);
+  if (!result.ok) {
+    throw new CliError(`data does not match output.tsx`, {
+      kind: 'validation',
+      exitCode: EXIT_CODE.runtime,
+      issues: result.messages,
+    });
+  }
+  return result.value;
 }
 
 /** data.tsx を呼んでデータを作る。無ければ undefined (ADR 25) */
@@ -446,7 +475,10 @@ export async function run(
           cwd,
         };
         // データは表示より先に確定する。--json のときは view を呼ばない
-        const data = await loadData(route.data, base);
+        const data = await validateData(
+          route.output,
+          await loadData(route.data, base)
+        );
         if (jsonRequested) {
           // 黙って欠けるより、どの経路が悪いかを言って止める (ADR 27)
           const problem = findNotSerializable(data);
