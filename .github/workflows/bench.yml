@@ -1,0 +1,99 @@
+name: bench
+
+# 起動時間は README に貼った時点で朽ちるので、PR ごとに測って貼り直す。
+# 落とすためのゲートではない (ランナーが騒がしく、閾値を置くと嘘になる)
+on:
+  pull_request:
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: bench-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+env:
+  BENCH_RUNS: '50'
+
+jobs:
+  startup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # base をこのジョブの中でビルドして比べるので履歴が要る
+          fetch-depth: 0
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.0
+
+      - name: install hyperfine
+        run: |
+          version=1.19.0
+          curl -fsSL -o hyperfine.deb \
+            "https://github.com/sharkdp/hyperfine/releases/download/v${version}/hyperfine_${version}_amd64.deb"
+          sudo dpkg -i hyperfine.deb
+
+      - run: bun install --frozen-lockfile
+
+      # 測る対象は「argv を検証して JSX を描く」代表的なコマンド 1 本
+      - name: build this branch
+        run: |
+          bun run build
+          bun build --compile --bytecode .decopin/entry.ts --outfile "$RUNNER_TEMP/head"
+
+      # base が壊れていても PR の数字は出す。比較だけ諦める
+      - name: build the base branch
+        id: base
+        continue-on-error: true
+        run: |
+          git worktree add "$RUNNER_TEMP/base-src" "origin/${{ github.base_ref }}"
+          cd "$RUNNER_TEMP/base-src"
+          bun install --frozen-lockfile
+          bun run build
+          bun build --compile --bytecode .decopin/entry.ts --outfile "$RUNNER_TEMP/base"
+
+      # ランタイムの固定費。合計から引くと decopin の取り分が出る
+      - name: build the runtime floor
+        run: |
+          echo 'process.exit(0);' > "$RUNNER_TEMP/empty.ts"
+          bun build --compile --bytecode "$RUNNER_TEMP/empty.ts" --outfile "$RUNNER_TEMP/floor"
+
+      - name: measure
+        env:
+          NO_COLOR: '1'
+        run: |
+          measure() {
+            hyperfine --warmup 20 --runs "$BENCH_RUNS" --shell=none \
+              --export-json "$2" "$1" > /dev/null
+          }
+          measure "$RUNNER_TEMP/head hello world" "$RUNNER_TEMP/head.json"
+          measure "$RUNNER_TEMP/floor" "$RUNNER_TEMP/floor.json"
+          if [ -x "$RUNNER_TEMP/base" ]; then
+            measure "$RUNNER_TEMP/base hello world" "$RUNNER_TEMP/base.json"
+          fi
+
+      - name: write the report
+        env:
+          BENCH_BASE_REF: ${{ github.base_ref }}
+        run: |
+          base="$RUNNER_TEMP/base.json"
+          [ -f "$base" ] || base='-'
+          bun scripts/bench-report.ts \
+            "$RUNNER_TEMP/head.json" "$base" "$RUNNER_TEMP/floor.json" \
+            > "$RUNNER_TEMP/report.md"
+          cat "$RUNNER_TEMP/report.md"
+
+      # 毎回足さずに 1 つを書き換える。fork からの PR はトークンが読み取り
+      # 専用なので、貼れなくてもジョブは緑のままにする
+      - name: comment on the pull request
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          gh pr comment "$PR" --body-file "$RUNNER_TEMP/report.md" \
+            --edit-last --create-if-none \
+            || gh pr comment "$PR" --body-file "$RUNNER_TEMP/report.md"

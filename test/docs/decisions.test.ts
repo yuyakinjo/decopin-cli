@@ -304,6 +304,11 @@ const GUARDS: Record<number, Guard> = {
     label: '動的な出力は AsyncIterable 駆動の島に限る',
     file: 'test/renderer/present.test.tsx',
   },
+  24: {
+    kind: 'test',
+    label: '起動時間は PR ごとに測り、base と比べる',
+    file: 'test/docs/bench-report.test.ts',
+  },
   23: {
     kind: 'lint',
     label: '描画は時刻を読まない (アニメーションは tick で進む)',
