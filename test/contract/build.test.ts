@@ -86,8 +86,16 @@ describe('entry.ts', () => {
   });
 
   test('run の戻り値をそのまま終了コードにする', () => {
-    expect(code).toContain('process.exit(');
-    expect(code).toContain('await run(routes, {');
+    expect(code).toContain('run(routes, {');
+    expect(code).toContain('(code) => process.exit(code)');
+  });
+
+  test('top-level await を使わない (--bytecode が拒む)', () => {
+    // `bun build --compile --bytecode` は TLA のあるモジュールを弾く。
+    // bytecode は起動の約 5 分の 1 (11.0ms vs 13.8ms) なので手放さない。
+    // 理由を書いたコメント自体に await の語が出るので、落としてから見る
+    const withoutComments = code.replace(/^\s*\/\/.*$/gm, '');
+    expect(withoutComments).not.toContain('await');
   });
 
   test('help に出す名前をビルド時に埋め込む (実行時に推測しない)', () => {
