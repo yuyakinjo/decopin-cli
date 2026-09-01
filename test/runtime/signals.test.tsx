@@ -9,9 +9,11 @@ import { describe, expect, test } from 'bun:test';
 import {
   Arg,
   Argv,
+  authRequired,
   closest,
   DidYouMean,
   help,
+  missingTool,
   Line,
   notFound,
   render,
@@ -248,5 +250,104 @@ describe('help()', () => {
     expect(result.code).toBe(0);
     expect(result.stderr).toBe('');
     expect(result.stdout).toContain('Usage: cli deploy');
+  });
+});
+
+describe('環境が整っていないときの形 (ADR 31)', () => {
+  const setup: RouteTable = {
+    'needs-auth': {
+      command: loader(() => {
+        authRequired({ service: 'GitHub', fix: 'gh auth login' });
+      }),
+    },
+    expired: {
+      command: loader(() => {
+        authRequired({ service: 'AWS', expired: true, fix: 'aws sso login' });
+      }),
+    },
+    bare: {
+      command: loader(() => {
+        authRequired();
+      }),
+    },
+    'needs-tool': {
+      command: loader(() => {
+        missingTool({
+          tool: 'git',
+          reason: 'to clone the repository',
+          install: ['brew install git', 'apt install git'],
+        });
+      }),
+    },
+    'tool-only': {
+      command: loader(() => {
+        missingTool({ tool: 'jq' });
+      }),
+    },
+  };
+
+  test('認証が要ることと、直し方を出す', async () => {
+    const result = await invoke(setup, ['needs-auth']);
+    expect(result.code).toBe(1);
+    expect(result.stdout).toBe('');
+    expect(result.stderr).toContain('Not authenticated to GitHub');
+    expect(result.stderr).toContain('gh auth login');
+  });
+
+  test('切れている場合は文言が変わる', async () => {
+    const result = await invoke(setup, ['expired']);
+    expect(result.stderr).toContain('have expired');
+  });
+
+  test('何も渡さなくても成立する', async () => {
+    const result = await invoke(setup, ['bare']);
+    expect(result.stderr).toContain('Not authenticated');
+  });
+
+  test('必要なコマンドと、入れ方を複数出せる', async () => {
+    const result = await invoke(setup, ['needs-tool']);
+    expect(result.stderr).toContain('git is not installed to clone');
+    expect(result.stderr).toContain('brew install git');
+    expect(result.stderr).toContain('apt install git');
+  });
+
+  test('理由と入れ方は省略できる', async () => {
+    const result = await invoke(setup, ['tool-only']);
+    expect(result.stderr).toContain('jq is not installed');
+  });
+
+  test('--json では code と hints が出る (次の一手を機械が決められる)', async () => {
+    const withData: RouteTable = {
+      'needs-auth': {
+        command: loader(() => <Line>never</Line>),
+        data: loader(() => {
+          authRequired({ service: 'GitHub', fix: 'gh auth login' });
+        }),
+      },
+    };
+    const result = await invoke(withData, ['needs-auth', '--json']);
+    expect(result.stdout).toBe('');
+    const payload = JSON.parse(result.stderr) as {
+      error: { code: string; hints?: string[] };
+    };
+    expect(payload.error.code).toBe('auth');
+    expect(payload.error.hints).toEqual(['gh auth login']);
+  });
+
+  test('kind で error.tsx が場合分けできる', async () => {
+    const branching: RouteTable = {
+      'needs-tool': {
+        command: loader(() => {
+          missingTool({ tool: 'git' });
+        }),
+        errors: [
+          loader(({ error }: { error: { kind: string } }) => (
+            <Line>KIND {error.kind}</Line>
+          )),
+        ],
+      },
+    };
+    const result = await invoke(branching, ['needs-tool']);
+    expect(result.stderr).toContain('KIND missing-tool');
   });
 });

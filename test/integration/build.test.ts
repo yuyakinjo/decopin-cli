@@ -71,6 +71,7 @@ describe('build', () => {
       'crash',
       'deploy',
       'hello',
+      'publish',
       'stats',
       'upper',
       'user/import',

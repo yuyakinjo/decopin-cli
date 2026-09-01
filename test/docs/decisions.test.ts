@@ -304,6 +304,11 @@ const GUARDS: Record<number, Guard> = {
     label: '動的な出力は AsyncIterable 駆動の島に限る',
     file: 'test/renderer/present.test.tsx',
   },
+  31: {
+    kind: 'test',
+    label: '環境が整っていないときの形 (認証・ツール不足)',
+    file: 'test/runtime/signals.test.tsx',
+  },
   30: {
     kind: 'test',
     label: 'notFound() と、よくある形の詰め合わせ',

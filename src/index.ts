@@ -104,8 +104,18 @@ export type { ExitCode } from './runtime/exit.ts';
 export { Help, CommandList } from './runtime/help.tsx';
 export type { HelpProps } from './runtime/help.tsx';
 export { NotFound } from './runtime/not-found.tsx';
-export { help, notFound } from './runtime/signals.ts';
-export type { HelpInput, NotFoundInput } from './runtime/signals.ts';
+export {
+  authRequired,
+  help,
+  missingTool,
+  notFound,
+} from './runtime/signals.ts';
+export type {
+  AuthRequiredInput,
+  HelpInput,
+  MissingToolInput,
+  NotFoundInput,
+} from './runtime/signals.ts';
 export type { NotFoundProps } from './runtime/not-found.tsx';
 export { applyLayouts } from './runtime/layout.tsx';
 export type { LayoutProps } from './runtime/layout.tsx';

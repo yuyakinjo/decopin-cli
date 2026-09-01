@@ -34,6 +34,8 @@ function builtinView(error: CliError, extraHints: string[]): RenderInput {
   const issueHints = error.issues.length > 1 ? error.issues.slice(1) : [];
   const hints = [
     ...issueHints,
+    // 直し方は理由より先に読ませる (ADR 31)
+    ...error.hints,
     ...(error.kind === 'validation'
       ? ['Run with --help to see the usage']
       : []),

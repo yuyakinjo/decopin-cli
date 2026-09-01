@@ -130,6 +130,8 @@ function errorPayload(error: CliError): {
     code: error.kind,
     message: error.issues[0] ?? error.message,
     exitCode: error.exitCode,
+    // 直し方は機械にも渡す。エージェントが次の一手を決められる (ADR 31)
+    ...(error.hints.length > 0 ? { hints: error.hints } : {}),
     ...(error.issues.length > 1 ? { issues: error.issues } : {}),
   };
 }
