@@ -267,6 +267,26 @@ data.lookup cannot go into --json: Map becomes {} in JSON
 plain data, or convert at the edge (`when: when.toISOString()`). The `JsonValue`
 type is exported if you would rather assert it yourself with `satisfies`.
 
+When a command fails under `--json`, the failure is structured too — on
+stderr, with stdout left empty:
+
+```sh
+$ ./dist/index.js stats --limit 99 --json
+{
+  "error": {
+    "code": "validation",
+    "message": "--limit: Invalid value: Expected <=3 but received 99",
+    "exitCode": 2
+  }
+}
+```
+
+Asking for JSON and getting a human-formatted error back would break the
+parser on the other end, so `error.tsx` is skipped here for the same reason
+the view is. `code` is what a caller should branch on — messages get reworded,
+categories do not. `exitCode` is repeated in the body because a caller reading
+through a pipe cannot see `$?` (in `cmd | jq`, that belongs to jq).
+
 Piping does **not** switch to JSON on its own. Dropping colour when stdout is
 not a terminal adjusts presentation; changing the output _format_ would break
 `cli stats | grep README`, so it happens only when asked. A command without a

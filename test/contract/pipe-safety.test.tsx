@@ -45,6 +45,8 @@ const CASES: Record<string, { argv: string[]; stdin?: StdinSource }> = {
   hello: { argv: ['hello', 'world'] },
   stats: { argv: ['stats'] },
   'stats --json': { argv: ['stats', '--json'] },
+  // 失敗しても stdout は空のまま (ADR 29)
+  'stats --json (失敗)': { argv: ['stats', '--limit', '99', '--json'] },
   upper: { argv: ['upper'], stdin: piped('shout') },
   'user/import': {
     argv: ['user', 'import'],

@@ -112,6 +112,26 @@ async function emit(
   });
 }
 
+/**
+ * `--json` のときに stderr へ出すエラーの形 (ADR 29)。
+ *
+ * `code` は機械が分岐する先なので、文面ではなく分類を出す。
+ * 理由が複数ある検証の失敗は `issues` に並べる
+ */
+function errorPayload(error: CliError): {
+  code: string;
+  message: string;
+  exitCode: number;
+  issues?: string[];
+} {
+  return {
+    code: error.kind,
+    message: error.issues[0] ?? error.message,
+    exitCode: error.exitCode,
+    ...(error.issues.length > 1 ? { issues: error.issues } : {}),
+  };
+}
+
 /** ルート名 (`user/list`) を利用者が打つ形 (`user list`) にする */
 function display(name: string): string {
   return name.split('/').join(' ');
@@ -302,6 +322,9 @@ export async function run(
     }
   }
 
+  // --json はコマンドに依らないので、失敗しても同じ判断ができるよう先に見る
+  const jsonRequested = findFlag(argv, [JSON_FLAG]);
+
   const target = resolveTarget(table, argv);
 
   // コマンドが確定しない経路 (表は test/contract/routing.test.tsx)。
@@ -416,7 +439,6 @@ export async function run(
     }
 
     // --json は data.tsx の結果をそのまま出す (ADR 25)
-    const jsonRequested = findFlag(argv, [JSON_FLAG]);
     if (jsonRequested && route.data === undefined) {
       const where = resolved.name === '' ? 'app' : `app/${resolved.name}`;
       throw new CliError(
@@ -503,6 +525,20 @@ export async function run(
     return declared ?? EXIT_CODE.success;
   } catch (error) {
     const cliError = toCliError(error);
+
+    // JSON を頼まれた相手に人間向けの文面を返すとパーサが壊れる (ADR 29)。
+    // error.tsx は人が読むための表示なので、ここでは通さない
+    if (jsonRequested) {
+      await emit(
+        <Stderr>
+          <Json value={{ error: errorPayload(cliError) }} />
+        </Stderr>,
+        options,
+        noColorFlag
+      );
+      return cliError.exitCode;
+    }
+
     const route = table[resolved.name];
     // 近い error.tsx → 親の error.tsx → global-error.tsx → 組み込み
     // (順序は test/runtime/handle-error.test.tsx が固定している)
