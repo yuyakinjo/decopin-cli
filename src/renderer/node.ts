@@ -5,7 +5,7 @@ import type {
   Cell,
   SymbolKind,
 } from '../components/index.ts';
-import type { Fd, Style } from '../jsx/types.ts';
+import type { Fd, Renderable, Style } from '../jsx/types.ts';
 
 export type RenderNode =
   /** 文字そのもの */
@@ -56,4 +56,14 @@ export type RenderNode =
       separator: string;
     }
   /** 構文着色付きの JSON */
-  | { kind: 'json'; value: unknown; indent: number };
+  | { kind: 'json'; value: unknown; indent: number }
+  /**
+   * 時間で書き換わる領域 (ADR 22)。評価時は駆動せず、present() が
+   * source を消費してフレームを描く。layout に渡ると誤りとして落ちる
+   */
+  | {
+      kind: 'dynamic';
+      source: AsyncIterable<unknown>;
+      frame: (value: unknown) => Renderable;
+      interval: number | undefined;
+    };

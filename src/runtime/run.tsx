@@ -16,8 +16,7 @@ import { resolveHosts } from '../declaration/resolve.ts';
 import { EMPTY_ARGV_SPEC } from '../declaration/spec.ts';
 import type { ArgvSpec, StdinSpec } from '../declaration/spec.ts';
 import type { Renderable, RenderInput } from '../jsx/types.ts';
-import { render } from '../renderer/render.ts';
-import { write } from '../renderer/writer.ts';
+import { present as presentDocument } from '../renderer/present.ts';
 import type { WriteTargets } from '../renderer/writer.ts';
 import { validateEnv } from '../validation/env.ts';
 import { validateArgv } from '../validation/validate.ts';
@@ -89,9 +88,12 @@ async function emit(
   options: RunOptions,
   noColorFlag: boolean
 ): Promise<number | undefined> {
-  const result = await render(node, { env: options.env, noColorFlag });
-  write(result, options.targets);
-  return result.exitCode;
+  // 島 (<Dynamic>) が無ければ render + write と同じ 1 回書きになる (ADR 22)
+  return presentDocument(node, {
+    env: options.env,
+    noColorFlag,
+    targets: options.targets,
+  });
 }
 
 /** ルート名 (`user/list`) を利用者が打つ形 (`user list`) にする */

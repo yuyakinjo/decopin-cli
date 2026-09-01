@@ -8,6 +8,7 @@ import type { ColorDepth } from './color.ts';
  */
 import { evaluate } from './evaluate.ts';
 import { layout } from './layout.ts';
+import type { RenderNode } from './node.ts';
 
 /** 描画の設定。省略した項目は環境から判定する */
 export interface RenderOptions {
@@ -53,33 +54,34 @@ function supportsUnicode(env: Record<string, string | undefined>): boolean {
   return /utf-?8/i.test(locale);
 }
 
-/**
- * JSX を fd ごとの文字列にする。書き出しは行わない (テストしやすくするため)。
- *
- * @param node コンポーネントの戻り値をそのまま渡せる (Promise でもよい)
- */
-export async function render(
-  node: RenderInput,
-  options: RenderOptions = {}
-): Promise<RenderResult> {
+/** fd の色深度を決める。明示指定 > TTY と環境変数からの判定 */
+export function colorDepthFor(
+  fd: 'stdout' | 'stderr',
+  options: RenderOptions
+): ColorDepth {
+  const explicit = options.color?.[fd];
+  if (explicit !== undefined) return explicit;
   const env = options.env ?? process.env;
-  const tree = await evaluate(node);
+  const isTTY = options.isTTY?.[fd] ?? process[fd].isTTY === true;
+  return resolveColorDepth({ isTTY, env, noColorFlag: options.noColorFlag });
+}
+
+/**
+ * 評価済みの木を fd ごとの文字列にする。
+ * present() が島の合間の静的チャンクを描くときにも使う (ADR 22)
+ */
+export function renderTree(
+  tree: RenderNode,
+  options: RenderOptions = {}
+): RenderResult {
+  const env = options.env ?? process.env;
   const { segments, exitCode } = layout(tree, {
     columns: options.columns ?? process.stdout.columns,
     unicode: options.unicode ?? supportsUnicode(env),
   });
 
-  const depthFor = (
-    fd: 'stdout' | 'stderr',
-    explicit: ColorDepth | undefined
-  ): ColorDepth => {
-    if (explicit !== undefined) return explicit;
-    const isTTY = options.isTTY?.[fd] ?? process[fd].isTTY === true;
-    return resolveColorDepth({ isTTY, env, noColorFlag: options.noColorFlag });
-  };
-
-  const stdoutDepth = depthFor('stdout', options.color?.stdout);
-  const stderrDepth = depthFor('stderr', options.color?.stderr);
+  const stdoutDepth = colorDepthFor('stdout', options);
+  const stderrDepth = colorDepthFor('stderr', options);
 
   return {
     stdout: endWithNewline(
@@ -96,4 +98,16 @@ export async function render(
     ),
     exitCode,
   };
+}
+
+/**
+ * JSX を fd ごとの文字列にする。書き出しは行わない (テストしやすくするため)。
+ *
+ * @param node コンポーネントの戻り値をそのまま渡せる (Promise でもよい)
+ */
+export async function render(
+  node: RenderInput,
+  options: RenderOptions = {}
+): Promise<RenderResult> {
+  return renderTree(await evaluate(node), options);
 }

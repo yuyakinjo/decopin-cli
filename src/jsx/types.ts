@@ -51,6 +51,8 @@ export type OutputHostKind =
   | 'stdout'
   | 'stderr'
   | 'exit'
+  // 時間で書き換わる領域 (ADR 22)。present() だけが駆動できる
+  | 'dynamic'
   // 子の描画結果を測ってから組み立てるもの
   | 'indent'
   | 'box'

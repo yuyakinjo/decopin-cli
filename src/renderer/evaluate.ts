@@ -198,6 +198,32 @@ export async function evaluate(node: RenderInput): Promise<RenderNode> {
       }
       return { kind: 'exit', code };
     }
+    case 'dynamic': {
+      // source と frame はここでは触らない。駆動は present() の仕事 (ADR 22)
+      const source = props.source;
+      if (
+        typeof source !== 'object' ||
+        source === null ||
+        typeof (source as { [Symbol.asyncIterator]?: unknown })[
+          Symbol.asyncIterator
+        ] !== 'function'
+      ) {
+        throw new RenderError(
+          '<Dynamic source> must be an AsyncIterable (an async generator works)'
+        );
+      }
+      if (typeof children !== 'function') {
+        throw new RenderError(
+          '<Dynamic> children must be a function of the latest value'
+        );
+      }
+      return {
+        kind: 'dynamic',
+        source: source as AsyncIterable<unknown>,
+        frame: children as unknown as (value: unknown) => Renderable,
+        interval: readNumber(props, 'interval'),
+      };
+    }
     default:
       // 入力宣言のコンポーネントは出力ツリーには置けない
       throw new RenderError(

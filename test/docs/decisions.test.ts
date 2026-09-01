@@ -299,6 +299,11 @@ const GUARDS: Record<number, Guard> = {
     label: '補完の候補は CLI 自身 (__complete) が返す',
     file: 'test/runtime/complete.test.tsx',
   },
+  22: {
+    kind: 'test',
+    label: '動的な出力は AsyncIterable 駆動の島に限る',
+    file: 'test/renderer/present.test.tsx',
+  },
 };
 
 const decisions = await Bun.file(DECISIONS).text();
