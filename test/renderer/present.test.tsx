@@ -370,6 +370,38 @@ describe('フレームの内容の契約', () => {
   });
 });
 
+describe('シグナルでの後始末', () => {
+  test('SIGTERM で殺されてもカーソルを返し、慣習コード 143 で終わる', async () => {
+    const fixture = new URL('../fixtures/dynamic-signal.tsx', import.meta.url)
+      .pathname;
+    const proc = Bun.spawn(['bun', fixture], {
+      stdout: 'pipe',
+      stderr: 'pipe',
+    });
+
+    // 島が描き始める (= シグナルハンドラが登録された) のを待ってから送る
+    const reader = proc.stderr.getReader();
+    const decoder = new TextDecoder();
+    let stderr = '';
+    while (!stderr.includes('running')) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      stderr += decoder.decode(value, { stream: true });
+    }
+    proc.kill('SIGTERM');
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      stderr += decoder.decode(value, { stream: true });
+    }
+
+    const code = await proc.exited;
+    expect(code).toBe(143);
+    expect(stderr).toContain(HIDE);
+    expect(stderr.endsWith(SHOW)).toBe(true);
+  }, 10_000);
+});
+
 describe('run() を通した配線', () => {
   test('command.tsx が返した島も同じ契約で動く', async () => {
     const table: RouteTable = {
