@@ -24,6 +24,11 @@ export interface RenderOptions {
   columns?: number;
   /** UTF-8 の記号を使えるか (省略時は環境変数から判定) */
   unicode?: boolean;
+  /**
+   * 何回目の描き直しか。`<Spinner>` のコマを決める (ADR 23)。
+   * `present()` が `<Dynamic>` の描き直しごとに増やす
+   */
+  tick?: number;
 }
 
 /** fd ごとの文字列と、`<Exit>` で宣言された終了コード */
@@ -80,6 +85,7 @@ export function renderTree(
   const { segments, exitCode } = layout(tree, {
     columns: options.columns ?? process.stdout.columns,
     unicode: options.unicode ?? supportsUnicode(env),
+    tick: options.tick,
   });
 
   const stdoutDepth = colorDepthFor('stdout', options);

@@ -361,7 +361,7 @@ as a stream of values: hand it an async generator, and render a frame from
 the latest value.
 
 ```tsx
-import { Dynamic, Line } from 'decopin-cli';
+import { Dynamic, Line, ProgressBar, Spinner } from 'decopin-cli';
 
 interface Progress {
   step: string;
@@ -382,7 +382,8 @@ export default function Command() {
       <Dynamic source={deploySteps()} interval={100}>
         {(progress) => (
           <Line>
-            [{progress.done}/2] {progress.step}
+            <Spinner /> <ProgressBar value={progress.done} max={2} width={16} />{' '}
+            {progress.step}
           </Line>
         )}
       </Dynamic>
@@ -406,6 +407,14 @@ written once.
 
 `<Dynamic>` must sit at the top level of the command output — not inside
 `<Line>`, `<Box>`, `<Columns>`, or `<Indent>`.
+
+`<Spinner>` and `<ProgressBar>` are ordinary inline components, so compose
+them inside a `<Line>` with anything else. The spinner advances on each
+repaint rather than reading the clock, which keeps frames a pure function of
+their input: the same input always renders the same output, and animation
+falls out of the repaint loop (pair it with `interval`). In static output a
+spinner simply shows its first frame. Both fall back to ASCII (`|/-\\`, `#-`)
+when the terminal is not UTF-8.
 
 ## Reserved options
 
