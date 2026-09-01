@@ -12,6 +12,7 @@ export const CONVENTION_FILES = [
   'command',
   'argv',
   'stdin',
+  'data',
   'error',
   'layout',
   'middleware',

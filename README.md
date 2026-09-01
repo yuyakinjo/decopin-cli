@@ -172,6 +172,57 @@ Options:
   -h, --help                        show this help
 ```
 
+## Separating data from the view
+
+A command can split in two: `data.tsx` computes, `command.tsx` displays. The
+return value of `data.tsx` arrives as the `data` prop, fully typed — no
+annotation needed, because the generated types read it back through
+TypeScript's own inference.
+
+```tsx
+// app/stats/data.tsx
+import type { CommandProps } from 'decopin-cli';
+
+export default function Data({ options }: CommandProps<'stats'>) {
+  const files = ['README.md', 'package.json'];
+  return { files, total: files.length };
+}
+```
+
+```tsx
+// app/stats/command.tsx
+import { KeyValue, List, type CommandProps } from 'decopin-cli';
+
+export default function Command({ data }: CommandProps<'stats'>) {
+  // data.files is string[], data.total is number
+  return (
+    <>
+      <List items={data.files} />
+      <KeyValue data={{ total: data.total }} />
+    </>
+  );
+}
+```
+
+Splitting buys you `--json`, which is reserved by the framework: it skips the
+view and prints what `data.tsx` returned.
+
+```sh
+$ ./dist/index.js stats --json
+{
+  "files": [
+    "README.md",
+    "package.json"
+  ],
+  "total": 2
+}
+```
+
+Piping does **not** switch to JSON on its own. Dropping colour when stdout is
+not a terminal adjusts presentation; changing the output _format_ would break
+`cli stats | grep README`, so it happens only when asked. A command without a
+`data.tsx` exits 2 on `--json` and tells you where to put the file.
+
 ## Reading stdin
 
 **A command without `stdin.tsx` never touches stdin.** The most common CLI
@@ -454,6 +505,7 @@ falls back to filenames.
 | [`app/user`](app/user)               | subcommands, `layout.tsx`, `middleware.tsx`, an inherited `error.tsx` |
 | [`app/user/import`](app/user/import) | `mode="json"` with `Type.Object`                                      |
 | [`app/config`](app/config)           | reading validated `env.tsx` values                                    |
+| [`app/stats`](app/stats)             | `data.tsx` split from the view, and `--json`                          |
 | [`app/crash`](app/crash)             | `error.tsx` and `<Exit>`                                              |
 
 ## Startup cost

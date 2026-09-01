@@ -4,6 +4,8 @@
  * `command.tsx` は `CommandProps<'hello'>` でこの型を引く。
  * JSX 式は型引数を運べない (ADR 9) ので、型はここを通してしか届かない。
  */
+import { relative } from 'node:path';
+
 import type {
   ArgSpec,
   ArgvSpec,
@@ -122,7 +124,30 @@ export function stdinTypeText(stdin: StdinSpec | undefined): string {
   return stdinType(stdin).text;
 }
 
-function shape(spec: ArgvSpec, stdin: StdinSpec | undefined): string {
+/**
+ * `data.tsx` の戻り値の型 (ADR 25)。
+ *
+ * argv と違って中身を評価できない (I/O を伴う) ので、**TypeScript の推論を
+ * 借りる**。生成した型に `import()` を書いておけば、data.tsx の戻り値が
+ * そのまま `command.tsx` の props に届く。Compiler API は要らない
+ */
+export function dataTypeText(
+  file: string | undefined,
+  workDir: string
+): string {
+  if (file === undefined) return 'never';
+  const path = relative(workDir, file).split('\\').join('/');
+  const specifier = path.startsWith('.') ? path : `./${path}`;
+  return `Awaited<ReturnType<typeof import(${JSON.stringify(
+    specifier
+  )}).default>>`;
+}
+
+function shape(
+  spec: ArgvSpec,
+  stdin: StdinSpec | undefined,
+  data: string
+): string {
   const args =
     spec.args.length === 0
       ? '{}'
@@ -133,7 +158,7 @@ function shape(spec: ArgvSpec, stdin: StdinSpec | undefined): string {
       : `{ ${spec.options.map(optionMember).join('; ')} }`;
   return `{ args: ${args}; options: ${options}; stdin: ${stdinTypeText(
     stdin
-  )} }`;
+  )}; data: ${data} }`;
 }
 
 /** `env.tsx` の宣言から EnvVars の型を作る */
@@ -156,7 +181,8 @@ export interface TypesResult {
 
 export function generateTypes(
   evaluated: EvaluatedRoute[],
-  env?: EnvSpec
+  env?: EnvSpec,
+  workDir = '.decopin'
 ): TypesResult {
   const unsupported: TypesResult['unsupported'] = [];
   const entries = evaluated
@@ -166,7 +192,8 @@ export function generateTypes(
       if (nodes.length > 0 && file !== undefined) {
         unsupported.push({ file, nodes });
       }
-      return `    ${quoteName(route.name)}: ${shape(spec, stdin)};`;
+      const data = dataTypeText(route.files.data, workDir);
+      return `    ${quoteName(route.name)}: ${shape(spec, stdin, data)};`;
     })
     .join('\n');
 

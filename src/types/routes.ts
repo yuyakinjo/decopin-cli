@@ -12,6 +12,8 @@ export interface RouteShape {
   options: Record<string, unknown>;
   /** stdin.tsx が無ければ never (Phase 6) */
   stdin: unknown;
+  /** data.tsx の戻り値。無ければ never (ADR 25) */
+  data: unknown;
 }
 
 /**
@@ -40,6 +42,7 @@ export interface UntypedCommandProps extends CommandBase {
   args: Record<string, unknown>;
   options: Record<string, unknown>;
   stdin: unknown;
+  data: unknown;
 }
 
 /** 型が生成されていればコマンド名を、まだなら任意の文字列を受ける */

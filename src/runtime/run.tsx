@@ -5,7 +5,7 @@
  * → 7 (command 実行) → 9 (書き出し) → 10 (終了コード)。
  * env (3)、middleware (5)、stdin (6)、error.tsx は後続フェーズで足す。
  */
-import { Line, Stderr } from '../components/index.ts';
+import { Json, Line, Stderr } from '../components/index.ts';
 import { parseArgvSpec } from '../declaration/parse.ts';
 import {
   parseEnvSpec,
@@ -33,6 +33,7 @@ import { present } from './override.ts';
 import {
   COMPLETE_COMMAND,
   HELP_FLAGS,
+  JSON_FLAG,
   NO_COLOR_FLAG,
   VERSION_FLAG,
 } from './reserved.ts';
@@ -51,6 +52,8 @@ export interface CommandContext {
   options: Record<string, unknown>;
   /** stdin.tsx があれば読み取った値。無ければ undefined */
   stdin: unknown;
+  /** data.tsx の戻り値。無ければ undefined (ADR 25) */
+  data: unknown;
   /** コマンド名として消費されなかった生の argv */
   argv: readonly string[];
   cwd: string;
@@ -180,6 +183,22 @@ async function loadStdinSpec(
     (declare as () => Renderable)() as Renderable
   );
   return parseStdinSpec(hosts);
+}
+
+/** data.tsx を呼んでデータを作る。無ければ undefined (ADR 25) */
+async function loadData(
+  loader: (() => Promise<unknown>) | undefined,
+  context: Omit<CommandContext, 'data'>
+): Promise<unknown> {
+  if (loader === undefined) return undefined;
+  const loaded = (await loader()) as { default?: unknown };
+  const provide = loaded.default;
+  if (typeof provide !== 'function') {
+    throw new CliError('data.tsx must default-export a function');
+  }
+  return await (provide as (props: Omit<CommandContext, 'data'>) => unknown)(
+    context
+  );
 }
 
 /**
@@ -366,7 +385,21 @@ export async function run(
       env = validated.value;
     }
 
-    const rest = withoutFlags(resolved.rest, [...HELP_FLAGS, VERSION_FLAG]);
+    // --json は data.tsx の結果をそのまま出す (ADR 25)
+    const jsonRequested = findFlag(argv, [JSON_FLAG]);
+    if (jsonRequested && route.data === undefined) {
+      const where = resolved.name === '' ? 'app' : `app/${resolved.name}`;
+      throw new CliError(
+        `--json needs data to serialize. Add ${where}/data.tsx`,
+        { exitCode: EXIT_CODE.usage }
+      );
+    }
+
+    const rest = withoutFlags(resolved.rest, [
+      ...HELP_FLAGS,
+      VERSION_FLAG,
+      JSON_FLAG,
+    ]);
     let args: Record<string, unknown> = {};
     let commandOptions: Record<string, unknown> = {};
 
@@ -403,7 +436,7 @@ export async function run(
           stdinSpec === undefined
             ? undefined
             : await readStdin(stdinSpec, options.stdin ?? processStdin());
-        const context: CommandContext = {
+        const base = {
           env,
           args,
           options: commandOptions,
@@ -411,6 +444,13 @@ export async function run(
           argv: rest,
           cwd,
         };
+        // データは表示より先に確定する。--json のときは view を呼ばない
+        const data = await loadData(route.data, base);
+        if (jsonRequested) {
+          skipLayout = true;
+          return (<Json value={data} />) as Renderable;
+        }
+        const context: CommandContext = { ...base, data };
         return (await (command as (props: CommandContext) => RenderInput)(
           context
         )) as Renderable;

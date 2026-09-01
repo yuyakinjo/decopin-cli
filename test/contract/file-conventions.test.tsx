@@ -43,6 +43,7 @@ describe('置ける場所', () => {
       'command',
       'argv',
       'stdin',
+      'data',
       'error',
       'layout',
       'middleware',
