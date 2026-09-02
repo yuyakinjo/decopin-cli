@@ -165,4 +165,9 @@ describe('宣言と実体の一致', () => {
     };
     expect(manifest.scripts?.ci).toBeDefined();
   });
+
+  test('CI の GITHUB_TOKEN は読み取り専用にする', async () => {
+    const workflow = await Bun.file('.github/workflows/ci.yml').text();
+    expect(workflow).toMatch(/^permissions:\n  contents: read\n\n/m);
+  });
 });

@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 
-import { generateRoutes } from '../../src/build/codegen.ts';
+import { generateEntry, generateRoutes } from '../../src/build/codegen.ts';
 import type { Route } from '../../src/build/scanner.ts';
 
 const routes: Route[] = [
@@ -64,6 +64,53 @@ describe('generateRoutes', () => {
         '.decopin'
       )
     ).toThrow(/has no command file/);
+  });
+
+  test('埋め込む値の危険な文字を Unicode エスケープする', () => {
+    const unsafe = '</script>\u2028\u2029"';
+    const code = generateRoutes(
+      {
+        routes: [
+          {
+            name: unsafe,
+            dir: unsafe,
+            files: { command: `app/${unsafe}/command.tsx` },
+          },
+        ],
+        helpFiles: new Map([[unsafe, `app/${unsafe}/help.tsx`]]),
+      },
+      '.decopin'
+    );
+
+    expect(code).not.toContain('</script>');
+    expect(code).not.toContain('\u2028');
+    expect(code).not.toContain('\u2029');
+    expect(code).toContain('\\u003C/script\\u003E\\u2028\\u2029');
+    const routeName = code.match(/^  (.+): \{$/m)?.[1];
+    expect(routeName).toBeDefined();
+    expect(JSON.parse(routeName ?? '')).toBe(unsafe);
+    const commandSpecifier = code.match(
+      /^    command: \(\) => import\((.+)\),$/m
+    )?.[1];
+    expect(commandSpecifier).toBeDefined();
+    expect(JSON.parse(commandSpecifier ?? '')).toBe(
+      `../app/${unsafe}/command.tsx`
+    );
+  });
+});
+
+describe('generateEntry', () => {
+  test('program の危険な文字を Unicode エスケープする', () => {
+    const unsafe = '</script>\u2028\u2029"\\';
+    const code = generateEntry(unsafe, unsafe);
+
+    expect(code).not.toContain('</script>');
+    expect(code).not.toContain('\u2028');
+    expect(code).not.toContain('\u2029');
+    expect(code).toContain('program: "\\u003C/script\\u003E\\u2028\\u2029');
+    const program = code.match(/^  program: (.+),$/m)?.[1];
+    expect(program).toBeDefined();
+    expect(JSON.parse(program ?? '')).toBe(unsafe);
   });
 });
 
