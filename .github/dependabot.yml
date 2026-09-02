@@ -16,6 +16,11 @@ updates:
     # and the auto-merge workflow to handle the actual merging
     # Update dependencies
     groups:
+      # Group all security updates together
+      security-updates:
+        applies-to: 'security-updates'
+        patterns:
+          - '*'
       # Group all development dependencies together
       dev-dependencies:
         patterns:
