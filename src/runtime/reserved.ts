@@ -7,6 +7,7 @@ export const RESERVED_OPTION_NAMES = [
   'version',
   'no-color',
   'json',
+  'dry-run',
 ] as const;
 
 /** 予約された短縮形。`-v` / `-V` は予約しない (大文字小文字の違いで意味が変わるのは誤操作を誘うため) */
@@ -37,6 +38,12 @@ export const NO_COLOR_FLAG = '--no-color';
 
 /** data.tsx の結果をそのまま構造化して出す (ADR 25) */
 export const JSON_FLAG = '--json';
+
+/**
+ * 何も変えずに「何をするつもりか」だけ見せる (ADR 37)。枠組みは差し替えを
+ * せず、`dryRun: true` を渡すだけ。従うのはコマンドの責任
+ */
+export const DRY_RUN_FLAG = '--dry-run';
 
 export function isReservedName(name: string): boolean {
   return (RESERVED_OPTION_NAMES as readonly string[]).includes(name);

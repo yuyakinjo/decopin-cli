@@ -1,7 +1,7 @@
 import { authRequired, missingTool, type CommandProps } from 'decopin-cli';
 
 /** Prerequisites belong with the data, before anything is displayed (ADR 31) */
-export default function Data({ env }: CommandProps<'publish'>) {
+export default function Data({ env, dryRun }: CommandProps<'publish'>) {
   if (env.DECOPIN_TOKEN === undefined) {
     authRequired({ service: 'the registry', fix: 'export DECOPIN_TOKEN=…' });
   }
@@ -12,5 +12,7 @@ export default function Data({ env }: CommandProps<'publish'>) {
       install: 'brew install definitely-not-installed',
     });
   }
-  return { published: true };
+  // --dry-run is only a flag the framework hands over (ADR 37); honouring
+  // it is this command's job
+  return { published: !dryRun, dryRun };
 }

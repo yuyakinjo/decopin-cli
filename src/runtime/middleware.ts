@@ -19,6 +19,8 @@ export interface MiddlewareContext {
   /** コマンド名として消費されなかった生の argv */
   argv: readonly string[];
   cwd: string;
+  /** `--dry-run` が付いているか (ADR 37) */
+  dryRun: boolean;
 }
 
 /**
