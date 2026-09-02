@@ -286,6 +286,27 @@ async function loadData(
   );
 }
 
+/**
+ * 一覧に添える説明を argv.tsx から集める。help のときだけ通る道なので、
+ * コマンド数ぶん読み込んでも気にならない。壊れた argv.tsx は説明なしで済ませる
+ * (一覧そのものが出ないほうが困る)
+ */
+async function describeCommands(
+  table: RouteTable,
+  commands: readonly string[]
+): Promise<Record<string, string | undefined>> {
+  const entries = await Promise.all(
+    commands.map(async (name) => {
+      try {
+        return [name, (await loadArgvSpec(table[name]?.argv)).description];
+      } catch {
+        return [name, undefined];
+      }
+    })
+  );
+  return Object.fromEntries(entries);
+}
+
 /** shell.tsx を読む。command.tsx と同じ props を受けて Shell.* を返す関数 */
 async function loadShell(
   loader: () => Promise<unknown>
@@ -459,7 +480,12 @@ export async function run(
     }
 
     const auto = (
-      <CommandList program={program} commands={commands} group={group} />
+      <CommandList
+        program={program}
+        commands={commands}
+        group={group}
+        descriptions={await describeCommands(table, commands)}
+      />
     );
     const shown = await present(
       options.helps?.[group],
