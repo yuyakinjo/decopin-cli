@@ -22,6 +22,12 @@ import type { WriteTargets } from '../renderer/writer.ts';
 import { validateEnv } from '../validation/env.ts';
 import { toSchema, validateValue } from '../validation/schema.ts';
 import { validateArgv } from '../validation/validate.ts';
+import {
+  nonInteractiveTerminal,
+  processTerminal,
+  setTerminal,
+} from './choose.ts';
+import type { Terminal } from './choose.ts';
 import { completionCandidates, formatCandidates } from './complete.ts';
 import { CliError, validationError } from './errors.ts';
 import { EXIT_CODE } from './exit.ts';
@@ -54,7 +60,11 @@ import {
   SHELL_FILE_ENV,
   SHELLS,
 } from './shell.ts';
-import { isHelpSignal, isNotFoundSignal } from './signals.ts';
+import {
+  isHelpSignal,
+  isInterruptSignal,
+  isNotFoundSignal,
+} from './signals.ts';
 import { processStdin, readStdin } from './stdin-reader.ts';
 import type { StdinSource } from './stdin-reader.ts';
 
@@ -102,6 +112,11 @@ export interface RunOptions {
   notFound?: () => Promise<unknown>;
   /** 書き出し先 (テストから差し替えるため) */
   targets?: WriteTargets;
+  /**
+   * choose() が使う端末 (ADR 36)。省略時、targets を差し替えているなら
+   * 端末ではない扱い (問い掛けは失敗する)
+   */
+  terminal?: Terminal;
   /**
    * TTY 判定の明示指定。省略時、targets を差し替えているなら非 TTY として
    * 扱う (キャプチャ先は端末ではないので、実端末の判定を継承しない)
@@ -395,6 +410,14 @@ export async function run(
   // --json はコマンドに依らないので、失敗しても同じ判断ができるよう先に見る
   const jsonRequested = findFlag(argv, [JSON_FLAG]);
 
+  // choose() は利用者のコードから呼ばれるので、端末はここで差し込む (ADR 36)
+  setTerminal(
+    options.terminal ??
+      (options.targets === undefined
+        ? processTerminal(options.env)
+        : nonInteractiveTerminal())
+  );
+
   const target = resolveTarget(table, argv);
 
   // コマンドが確定しない経路 (表は test/contract/routing.test.tsx)。
@@ -630,6 +653,9 @@ export async function run(
     }
     return code;
   } catch (error) {
+    // 打ち切り (ADR 36)。エラーではないので何も出さない
+    if (isInterruptSignal(error)) return error.exitCode;
+
     // help() は「そのままでは進めない」の合図 (ADR 30)。--help と同じものを
     // 組み立てるが、求められて出すのではないので stderr + exit 2 になる
     if (isHelpSignal(error)) {

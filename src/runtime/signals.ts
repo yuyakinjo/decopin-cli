@@ -195,3 +195,29 @@ function toHints(fix: string | readonly string[] | undefined): string[] {
   if (fix === undefined) return [];
   return typeof fix === 'string' ? [fix] : [...fix];
 }
+
+/** Ctrl+C / Esc で打ち切られた印 (ADR 36)。何も表示せず 130 で終わる */
+export interface InterruptSignal {
+  readonly $interrupted: true;
+  readonly exitCode: number;
+}
+
+export function isInterruptSignal(value: unknown): value is InterruptSignal {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    (value as { $interrupted?: unknown }).$interrupted === true
+  );
+}
+
+/**
+ * 利用者が打ち切った。エラーではないので何も出さず、シェル慣習の 130 で終わる。
+ * raw mode の間は SIGINT が来ないので、Ctrl+C を読んだ側がこれを投げる
+ */
+export function interrupt(): never {
+  const signal: InterruptSignal = {
+    $interrupted: true,
+    exitCode: EXIT_CODE.interrupted,
+  };
+  throw signal;
+}

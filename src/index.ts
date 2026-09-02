@@ -56,6 +56,12 @@ export type {
   UnsetProps,
 } from './components/shell/index.ts';
 export { generateShellHook, renderShell } from './runtime/shell.ts';
+export {
+  choose,
+  nonInteractiveTerminal,
+  processTerminal,
+} from './runtime/choose.ts';
+export type { ChooseOptions, Terminal } from './runtime/choose.ts';
 export type { ShellName } from './runtime/shell.ts';
 export { CliError } from './runtime/errors.ts';
 export type { ErrorKind, ErrorProps } from './runtime/errors.ts';
@@ -134,12 +140,14 @@ export {
   help,
   missingTool,
   notFound,
+  interrupt,
 } from './runtime/signals.ts';
 export type {
   AuthRequiredInput,
   HelpInput,
   MissingToolInput,
   NotFoundInput,
+  InterruptSignal,
 } from './runtime/signals.ts';
 export type { NotFoundProps } from './runtime/not-found.tsx';
 export { applyLayouts } from './runtime/layout.tsx';

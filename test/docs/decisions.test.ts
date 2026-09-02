@@ -151,10 +151,11 @@ const GUARDS: Record<number, Guard> = {
   },
   4: {
     kind: 'lint',
-    label: 'v1 は静的出力のみ (対話的な入力を読まない)',
+    label: '対話的な入力を読むのは choose() だけ (ADR 36 で 1 つ例外を作った)',
     check: async () =>
       importersOf(/node:readline(\/.*)?/).concat(
         [...srcSources]
+          .filter(([file]) => file !== 'src/runtime/choose.ts')
           .filter(([, source]) => source.includes('setRawMode'))
           .map(([file]) => file)
       ),
@@ -303,6 +304,11 @@ const GUARDS: Record<number, Guard> = {
     kind: 'test',
     label: '動的な出力は AsyncIterable 駆動の島に限る',
     file: 'test/renderer/present.test.tsx',
+  },
+  36: {
+    kind: 'test',
+    label: '対話は端末とだけ (choose は関数、パイプでは exit 2)',
+    file: 'test/runtime/choose.test.tsx',
   },
   35: {
     kind: 'test',
