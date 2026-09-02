@@ -607,8 +607,9 @@ $ ./dist/index.js user
 Usage: decopin-cli user <command> [options]
 
 Commands:
-  import
-  list
+  import  Import users from JSON on stdin.
+  list    List users.
+  show    Show one user, or suggest a close name.
 
 Run "decopin-cli user <command> --help" for details.
 ```

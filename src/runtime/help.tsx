@@ -162,6 +162,11 @@ interface CommandListProps {
   commands: string[];
   /** グループ名 (`user`)。指定すると usage 行と表示名がその配下になる */
   group?: string;
+  /**
+   * コマンド名 → argv.tsx の description。一覧は「どれを打てばいいか」を
+   * 選ぶ場面なので、名前だけでは足りない (dotfiles に載せて分かった)
+   */
+  descriptions?: Record<string, string | undefined>;
 }
 
 /**
@@ -172,6 +177,7 @@ export function CommandList({
   program,
   commands,
   group,
+  descriptions = {},
 }: CommandListProps): Renderable {
   const groupWords =
     group === undefined || group === '' ? [] : group.split('/');
@@ -181,6 +187,7 @@ export function CommandList({
 
   const usage = [program, ...groupWords, '<command> [options]'].join(' ');
   const detail = [program, ...groupWords, '<command> --help'].join(' ');
+  const width = Math.max(0, ...commands.map((name) => labelOf(name).length));
 
   return (
     <>
@@ -191,12 +198,20 @@ export function CommandList({
       <Line>
         <Text bold>Commands:</Text>
       </Line>
-      {commands.map((name) => (
-        <Line key={name}>
-          {'  '}
-          <Text color="cyan">{labelOf(name)}</Text>
-        </Line>
-      ))}
+      {commands.map((name) => {
+        const description = descriptions[name];
+        return (
+          <Line key={name}>
+            {'  '}
+            <Text color="cyan">
+              {description === undefined
+                ? labelOf(name)
+                : pad(labelOf(name), width)}
+            </Text>
+            {description === undefined ? null : description}
+          </Line>
+        );
+      })}
       <Br />
       <Line>{`Run "${detail}" for details.`}</Line>
     </>

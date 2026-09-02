@@ -168,9 +168,27 @@ describe('CommandList', () => {
     expect(result.stdout).toContain('Run "cli user <command> --help"');
   });
 
+  test('説明があれば名前を揃えて添える。無いものは名前だけ', async () => {
+    const result = await render(
+      <CommandList
+        program="cli"
+        commands={['a', 'longer', 'user/list']}
+        descriptions={{ a: 'first', 'user/list': 'List users.' }}
+      />,
+      plain
+    );
+    expect(result.stdout).toContain('  a          first');
+    expect(result.stdout).toContain('  longer\n');
+    expect(result.stdout).toContain('  user list  List users.');
+  });
+
   test('行末に空白を残さない', async () => {
     const result = await render(
-      <CommandList program="cli" commands={['a', 'longer']} />,
+      <CommandList
+        program="cli"
+        commands={['a', 'longer']}
+        descriptions={{ a: 'x' }}
+      />,
       plain
     );
     for (const line of result.stdout.split('\n')) {
