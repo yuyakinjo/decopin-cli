@@ -81,11 +81,58 @@ describe('choose()', () => {
     expect(written[2]).toContain('Which? green');
   });
 
-  test('j / k と数字でも動く。端を越えると回る', async () => {
+  test('j / k でも動く。端を越えると回る', async () => {
     const { terminal } = scripted(['k', '\r']);
     expect((await invoke(terminal)).stdout).toBe('blue\n');
-    const digit = scripted(['3', 'k', 'j', 'j', '\r']);
-    expect((await invoke(digit.terminal)).stdout).toBe('red\n');
+    const around = scripted(['j', 'j', 'j', '\r']);
+    expect((await invoke(around.terminal)).stdout).toBe('red\n');
+  });
+
+  test('文字を打つと候補が絞られる。Backspace で戻る。一致なしの Enter は無視', async () => {
+    const BS = String.fromCharCode(127);
+    const { terminal, written } = scripted(['g', 'R', '\r']);
+    expect((await invoke(terminal)).stdout).toBe('green\n');
+    // 絞り込み中の見出しは「何件中何件」
+    expect(written[2]).toContain('gR');
+    expect(written[2]).toContain('(1 of 3)');
+    expect(written[2]).not.toContain('red');
+
+    const back = scripted(['x', '\r', BS, `${ESC}[B`, '\r']);
+    const result = await invoke(back.terminal);
+    // 'x' は一致なしなので Enter は無視され、Backspace で全部戻ってから ↓ で green
+    expect(result.stdout).toBe('green\n');
+    expect(back.written.some((w) => w.includes('(no match)'))).toBe(true);
+  });
+
+  test('候補が多いときは選択位置の周りだけ見せる', async () => {
+    const many = Array.from(
+      { length: 30 },
+      (_, i) => `item-${String(i).padStart(2, '0')}`
+    );
+    const stdout = recorder();
+    const stderr = recorder();
+    const { terminal, written } = scripted(['\r']);
+    await run(
+      {
+        pick: {
+          command: loader(async () => (
+            <Line>{await choose('Many?', many, { window: 5 })}</Line>
+          )),
+        },
+      },
+      {
+        argv: ['pick'],
+        program: 'cli',
+        env: {},
+        targets: { stdout, stderr },
+        terminal,
+      }
+    );
+    expect(stdout.text).toBe('item-00\n');
+    const first = written[0] ?? '';
+    expect(first).toContain('item-04');
+    expect(first).not.toContain('item-05');
+    expect(first).toContain('… 25 more');
   });
 
   test('Esc / Ctrl+C は何も出さず 130', async () => {

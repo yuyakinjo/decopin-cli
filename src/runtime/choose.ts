@@ -100,6 +100,11 @@ export interface ChooseOptions {
   hint?: string;
   /** 最初に選ばれている値 */
   initial?: string;
+  /**
+   * 一度に見せる候補の数 (既定 10)。候補がそれより多いときは選択位置の
+   * 周りだけを出し、残りは「… N more」で数を言う
+   */
+  window?: number;
 }
 
 // 制御文字は値で作る (生のバイトを置くと test/docs/source-hygiene が落ちる)
@@ -107,6 +112,18 @@ const ESC = String.fromCharCode(27);
 const UP = `${ESC}[A`;
 const DOWN = `${ESC}[B`;
 const CTRL_C = String.fromCharCode(3);
+const BACKSPACE = String.fromCharCode(127);
+const CTRL_H = String.fromCharCode(8);
+
+/** 1 文字の、表示できる打鍵か (絞り込みの文字として受ける) */
+function isPrintable(key: string): boolean {
+  return [...key].length === 1 && key >= ' ' && key !== BACKSPACE;
+}
+
+/** 候補の絞り込み。大文字小文字を区別しない部分一致 */
+export function matches(value: string, filter: string): boolean {
+  return filter === '' || value.toLowerCase().includes(filter.toLowerCase());
+}
 
 /**
  * 候補から 1 つ選ばせる。stdin と stderr が端末でなければ exit 2。
@@ -116,7 +133,8 @@ const CTRL_C = String.fromCharCode(3);
  * //    ^? 'web' | 'api'
  * ```
  *
- * ↑↓ / j k / 1-9 で動き、Enter で決める。Esc / Ctrl+C は 130 で打ち切る
+ * 文字を打つと候補が絞られ、↑↓ (候補に j / k が無ければ j k も) で動き、
+ * Enter で決める。Esc / Ctrl+C は 130 で打ち切る
  */
 export async function choose<const T extends readonly string[]>(
   prompt: string,
@@ -143,37 +161,72 @@ export async function choose<const T extends readonly string[]>(
   const sgr = (code: string, text: string) =>
     terminal.colors ? `${ESC}[${code}m${text}${ESC}[0m` : text;
   const marker = terminal.unicode ? '❯' : '>';
-  let index = Math.max(0, values.indexOf(options.initial ?? ''));
+  const window = Math.max(1, options.window ?? 10);
+  // 文字を打つと候補が絞られる (候補が何十個もあるときに矢印だけでは選べない)
+  let filter = '';
+  let shown: string[] = [...values];
+  let index = Math.max(0, shown.indexOf(options.initial ?? ''));
   let drawn = 0;
 
   // 前回描いた分を消す。カーソルを上げて末尾まで消す
   const erase = () => (drawn === 0 ? '' : `${ESC}[${drawn}A${ESC}[J`);
   const draw = () => {
+    const help =
+      filter === ''
+        ? '(type to filter, arrows to move, enter to select)'
+        : `(${shown.length} of ${values.length})`;
+    const head = `${sgr('1', prompt)} ${filter === '' ? '' : `${filter}${sgr('2', '|')} `}${sgr('2', help)}`;
+    // 選択位置が見える範囲だけ出す
+    const start = Math.max(
+      0,
+      Math.min(index - Math.floor(window / 2), shown.length - window)
+    );
+    const visible = shown.slice(start, start + window);
     const lines = [
-      `${sgr('1', prompt)} ${sgr('2', '(arrows to move, enter to select)')}`,
-      ...values.map((value, at) =>
-        at === index ? `${sgr('36', marker)} ${sgr('1', value)}` : `  ${value}`
+      head,
+      ...(shown.length === 0 ? [sgr('2', '  (no match)')] : []),
+      ...visible.map((value, at) =>
+        start + at === index
+          ? `${sgr('36', marker)} ${sgr('1', value)}`
+          : `  ${value}`
       ),
+      ...(start + window < shown.length
+        ? [sgr('2', `  … ${shown.length - start - window} more`)]
+        : []),
     ];
     terminal.write(`${erase()}${lines.join('\n')}\n`);
     drawn = lines.length;
   };
+  const refilter = () => {
+    shown = values.filter((value) => matches(value, filter));
+    index = 0;
+  };
 
   draw();
   for await (const key of terminal.keys()) {
-    if (key === UP || key === 'k') {
-      index = (index - 1 + values.length) % values.length;
-    } else if (key === DOWN || key === 'j') {
-      index = (index + 1) % values.length;
-    } else if (/^[1-9]$/.test(key) && Number(key) <= values.length) {
-      index = Number(key) - 1;
+    if (key === UP || (key === 'k' && filter === '' && !values.includes('k'))) {
+      if (shown.length > 0) index = (index - 1 + shown.length) % shown.length;
+    } else if (
+      key === DOWN ||
+      (key === 'j' && filter === '' && !values.includes('j'))
+    ) {
+      if (shown.length > 0) index = (index + 1) % shown.length;
     } else if (key === '\r' || key === '\n') {
+      const picked = shown[index];
+      if (picked === undefined) continue;
       // 選んだものだけを残す。後から読み返したときに何を選んだか分かる
-      terminal.write(`${erase()}${sgr('2', prompt)} ${values[index]}\n`);
-      return values[index] as T[number];
+      terminal.write(`${erase()}${sgr('2', prompt)} ${picked}\n`);
+      return picked as T[number];
     } else if (key === ESC || key === CTRL_C) {
       terminal.write(erase());
       interrupt();
+    } else if (key === BACKSPACE || key === CTRL_H) {
+      if (filter === '') continue;
+      filter = filter.slice(0, -1);
+      refilter();
+    } else if (isPrintable(key)) {
+      filter += key;
+      refilter();
     } else {
       continue;
     }
