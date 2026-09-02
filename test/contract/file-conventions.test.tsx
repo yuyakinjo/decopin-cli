@@ -50,6 +50,7 @@ describe('置ける場所', () => {
       'layout',
       'middleware',
       'help',
+      'shell',
     ]);
   });
 

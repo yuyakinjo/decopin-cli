@@ -26,6 +26,12 @@ export const COMPLETE_COMMAND = '__complete';
  * `__complete` と同じ理由で、利用者のコマンドとは衝突しない
  */
 export const MCP_COMMAND = '__mcp';
+
+/**
+ * シェル関数の出力 (ADR 35)。`eval "$(<bin> __shell zsh)"` で親シェルに
+ * cd / export を届ける関数を定義する
+ */
+export const SHELL_COMMAND = '__shell';
 export const VERSION_FLAG = '--version';
 export const NO_COLOR_FLAG = '--no-color';
 

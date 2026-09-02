@@ -52,8 +52,10 @@ export interface GenerateResult {
   warnings: Warning[];
   /** 生成したファイル */
   files: { routes: string; entry: string; types: string };
-  /** help と補完シムに出す実行ファイル名 (解決済み) */
+  /** help に出す名前 (解決済み) */
   program: string;
+  /** 実際に打つコマンド名 (package.json の bin のキー)。補完とシェル関数が使う */
+  bin: string;
   /** コマンド名 → 副作用の到達判定 (ADR 32) */
   effects: Map<string, EffectReport>;
 }
@@ -132,6 +134,8 @@ export async function generate(
     ...(await checkDeprecations(declarationFiles))
   );
   const program = options.program ?? (await readProgramName());
+  // 名前は help 用の program ではなく package.json の bin のキーから取る
+  const bin = await resolveBinaryName(program);
   const files = {
     routes: join(workDir, 'routes.ts'),
     entry: join(workDir, 'entry.ts'),
@@ -215,14 +219,14 @@ export async function generate(
       workDir
     )
   );
-  await writeIfChanged(files.entry, generateEntry(program));
+  await writeIfChanged(files.entry, generateEntry(program, bin));
   const types = generateTypes(evaluated, env.spec, workDir);
   for (const { file, nodes } of types.unsupported) {
     warnings.push(...stdinSchemaWarnings(file, nodes));
   }
   await writeIfChanged(files.types, types.text);
 
-  return { routes, evaluated, files, warnings, program, effects };
+  return { routes, evaluated, files, warnings, program, bin, effects };
 }
 
 export async function build(options: BuildOptions = {}): Promise<BuildResult> {
@@ -235,9 +239,8 @@ export async function build(options: BuildOptions = {}): Promise<BuildResult> {
     minify: options.minify,
   });
 
-  // 補完シムは構成に依存しないが、コマンド名は build 時に決まるのでここで書く。
-  // 名前は help 用の program ではなく package.json の bin のキーから取る
-  const bin = await resolveBinaryName(generated.program);
+  // 補完シムは構成に依存しないが、コマンド名は build 時に決まるのでここで書く
+  const bin = generated.bin;
   const completionPath = join(outDir, 'completions', completionFileName(bin));
   await mkdir(join(outDir, 'completions'), { recursive: true });
   await writeIfChanged(completionPath, generateZshCompletion(bin));

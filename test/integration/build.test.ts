@@ -70,6 +70,7 @@ describe('build', () => {
       'count',
       'crash',
       'deploy',
+      'go',
       'hello',
       'publish',
       'stats',

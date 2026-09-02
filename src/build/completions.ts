@@ -9,11 +9,9 @@
  * 補完には出ない。
  */
 
-/** スコープ付きの名前 (`@scope/name`) からスコープを落とす */
-export function binaryName(program: string): string {
-  const segments = program.split('/');
-  return segments[segments.length - 1] as string;
-}
+import { binaryName } from '../runtime/shell.ts';
+
+export { binaryName };
 
 /**
  * 実際に打つコマンド名を解決する。help に出す `program` (package.json の

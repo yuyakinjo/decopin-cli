@@ -46,6 +46,8 @@ const CASES: Record<string, { argv: string[]; stdin?: StdinSource }> = {
   // help() の経路も stdout は空のまま (ADR 30)
   'deploy (使い方を出す)': { argv: ['deploy'] },
   hello: { argv: ['hello', 'world'] },
+  // shell.tsx の出力はファイルに書くので stdout には出ない (ADR 35)
+  go: { argv: ['go', 'docs'] },
   stats: { argv: ['stats'] },
   'stats --json': { argv: ['stats', '--json'] },
   // 失敗しても stdout は空のまま (ADR 29)

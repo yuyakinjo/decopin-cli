@@ -19,6 +19,7 @@ export const CONVENTION_FILES = [
   'layout',
   'middleware',
   'help',
+  'shell',
 ] as const;
 
 export type ConventionFile = (typeof CONVENTION_FILES)[number];

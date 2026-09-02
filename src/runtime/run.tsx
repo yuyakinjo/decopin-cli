@@ -40,11 +40,20 @@ import {
   JSON_FLAG,
   MCP_COMMAND,
   NO_COLOR_FLAG,
+  SHELL_COMMAND,
   VERSION_FLAG,
 } from './reserved.ts';
 import { commandsUnder, resolveTarget } from './router.ts';
 import type { RouteTable } from './router.ts';
 import { findNotSerializable } from './serializable.ts';
+import {
+  binaryName,
+  generateShellHook,
+  isShellName,
+  renderShell,
+  SHELL_FILE_ENV,
+  SHELLS,
+} from './shell.ts';
 import { isHelpSignal, isNotFoundSignal } from './signals.ts';
 import { processStdin, readStdin } from './stdin-reader.ts';
 import type { StdinSource } from './stdin-reader.ts';
@@ -75,6 +84,8 @@ export interface RunOptions {
   argv?: string[];
   /** help に出す実行ファイル名 */
   program?: string;
+  /** 実際に打つコマンド名。シェル関数 (ADR 35) が包む相手。省略時は program から */
+  bin?: string;
   cwd?: string;
   env?: Record<string, string | undefined>;
   /** `app/global-error.tsx` (エラー表示の最後の受け皿) */
@@ -257,6 +268,20 @@ async function loadData(
   );
 }
 
+/** shell.tsx を読む。command.tsx と同じ props を受けて Shell.* を返す関数 */
+async function loadShell(
+  loader: () => Promise<unknown>
+): Promise<(props: CommandContext) => RenderInput> {
+  const loaded = (await loader()) as { default?: unknown };
+  const declare = loaded.default;
+  if (typeof declare !== 'function') {
+    throw new CliError(
+      'shell.tsx must default-export a function that returns Shell.* components'
+    );
+  }
+  return declare as (props: CommandContext) => RenderInput;
+}
+
 /**
  * @returns 終了コード。呼び出し側が process.exit に渡す
  */
@@ -300,6 +325,26 @@ export async function run(
       input,
       options.targets?.stdout ?? process.stdout
     );
+  }
+
+  // シェル関数の出力 (ADR 35)。rc ファイルの eval が読むので描画は通さない
+  if (rawArgv[0] === SHELL_COMMAND) {
+    const shell = rawArgv[1] ?? '';
+    const out = options.targets?.stdout ?? process.stdout;
+    if (rawArgv.length !== 2 || !isShellName(shell)) {
+      const err = options.targets?.stderr ?? process.stderr;
+      err.write(
+        `Usage: ${options.program ?? 'cli'} ${SHELL_COMMAND} <${SHELLS.join('|')}>\n`
+      );
+      return EXIT_CODE.usage;
+    }
+    out.write(
+      generateShellHook(
+        options.bin ?? binaryName(options.program ?? 'cli'),
+        shell
+      )
+    );
+    return EXIT_CODE.success;
   }
 
   const noColorFlag = findFlag(rawArgv, [NO_COLOR_FLAG]);
@@ -492,6 +537,8 @@ export async function run(
 
     // command.tsx が layout を外したいと宣言している場合に使う
     let skipLayout = false;
+    // shell.tsx に渡す、command.tsx と同じ props (ADR 35)
+    let shellContext: CommandContext | undefined;
 
     // middleware は検証済みの入力を受け取り、コマンドの実行を包む (ADR 11)
     const output = await runMiddleware(
@@ -538,9 +585,11 @@ export async function run(
             );
           }
           skipLayout = true;
+          shellContext = { ...base, data };
           return (<Json value={data} />) as Renderable;
         }
         const context: CommandContext = { ...base, data };
+        shellContext = context;
         return (await (command as (props: CommandContext) => RenderInput)(
           context
         )) as Renderable;
@@ -549,7 +598,37 @@ export async function run(
     );
 
     const declared = await withLayout(output, skipLayout);
-    return declared ?? EXIT_CODE.success;
+    const code = declared ?? EXIT_CODE.success;
+
+    // shell.tsx は成功したときだけ親シェルに届ける (ADR 35)。失敗したのに
+    // cd されると、エラーを読む前に足場が動く
+    if (route.shell !== undefined && code === EXIT_CODE.success) {
+      const file = (options.env ?? process.env)[SHELL_FILE_ENV];
+      const declare = await loadShell(route.shell);
+      const hosts = await resolveHosts(
+        (await declare(shellContext as CommandContext)) as Renderable
+      );
+      const script = renderShell(hosts);
+      if (file !== undefined && file !== '') {
+        await Bun.write(file, script);
+      } else if (script !== '') {
+        // 関数が無いと黙って何も起きない。それが一番分かりにくいので言う
+        const bin = options.bin ?? binaryName(program);
+        await emit(
+          <Stderr>
+            <ErrorMessage
+              message="Shell changes were not applied (no shell hook installed)"
+              hints={[
+                `Add to your rc file: eval "$(${bin} ${SHELL_COMMAND} zsh)"`,
+              ]}
+            />
+          </Stderr>,
+          options,
+          noColorFlag
+        );
+      }
+    }
+    return code;
   } catch (error) {
     // help() は「そのままでは進めない」の合図 (ADR 30)。--help と同じものを
     // 組み立てるが、求められて出すのではないので stderr + exit 2 になる
