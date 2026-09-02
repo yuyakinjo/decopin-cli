@@ -1,6 +1,6 @@
 /** scan → evaluate → check → emit → bundle をつなぐ (ADR 5) */
 import { mkdir } from 'node:fs/promises';
-import { join } from 'node:path';
+import { join, relative } from 'node:path';
 
 import { bundle } from './bundler.ts';
 import {
@@ -16,7 +16,7 @@ import {
   generateZshCompletion,
   resolveBinaryName,
 } from './completions.ts';
-import { analyzeEffects } from './effects.ts';
+import { acceptsUnknown, analyzeEffects } from './effects.ts';
 import type { EffectReport } from './effects.ts';
 import { evaluateEnv, evaluateRoutes } from './evaluator.ts';
 import type { EvaluatedRoute } from './evaluator.ts';
@@ -31,6 +31,11 @@ export interface GenerateOptions {
   workDir?: string;
   /** help に出す実行ファイル名。省略時は package.json の name */
   program?: string;
+  /**
+   * 副作用の解析が諦めた (`unknown`) コマンドをビルドエラーにする (ADR 34)。
+   * command.tsx が `export const unsafeEval = true` を持つコマンドは通す
+   */
+  strictEffects?: boolean;
 }
 
 export interface BuildOptions extends GenerateOptions {
@@ -161,6 +166,31 @@ export async function generate(
       ...(middlewareChains.get(route.name) ?? []),
     ].filter((file): file is string => file !== undefined);
     effects.set(route.name, await analyzeEffects(entries, cache));
+  }
+
+  // strict: `none` を名乗れないコマンドを通さない (ADR 34)。何に当たったか
+  // と、そこまでの経路を全部まとめて言う (1 件ずつ直して回さないように)
+  if (options.strictEffects === true) {
+    const refused: string[] = [];
+    for (const route of routes) {
+      const report = effects.get(route.name);
+      if (report === undefined || report.escapes.length === 0) continue;
+      if (await acceptsUnknown(route.files.command as string)) continue;
+      const where = route.files.command as string;
+      const reasons = report.escapes
+        .map(
+          (escape) =>
+            `    ${escape.via}: ${escape.path.map((f) => relative(process.cwd(), f)).join(' -> ')}`
+        )
+        .join('\n');
+      refused.push(
+        `  ${route.name || '(root)'}: analysis gave up, so no effect can be ruled out\n${reasons}\n` +
+          `    Fix the code above, or add \`export const unsafeEval = true\` to ${where} to accept unknown`
+      );
+    }
+    if (refused.length > 0) {
+      throw new Error(`Effects could not be verified:\n${refused.join('\n')}`);
+    }
   }
 
   await mkdir(workDir, { recursive: true });

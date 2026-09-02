@@ -22,6 +22,10 @@ Options:
   --out <dir>    output directory (default: dist)
   --work <dir>   where to put generated files (default: .decopin)
   --minify       minify the output
+  --strict-effects
+                 fail the build when the effects analysis gives up on a
+                 command (eval, unresolved import). Opt a command out with
+                 export const unsafeEval = true in its command.tsx
   -h, --help     show this help
 `;
 
@@ -38,6 +42,7 @@ function runBuild(argv: string[]): Promise<number> {
     outDir: optionValue(argv, '--out'),
     workDir: optionValue(argv, '--work'),
     minify: argv.includes('--minify'),
+    strictEffects: argv.includes('--strict-effects'),
   }).then((result) => {
     const elapsed = Math.round(performance.now() - started);
     for (const warning of result.warnings) {
@@ -97,6 +102,7 @@ function runDev(argv: string[]): Promise<number> {
     const watcher = watchApp({
       appDir: optionValue(argv, '--app'),
       workDir: optionValue(argv, '--work'),
+      strictEffects: argv.includes('--strict-effects'),
       onGenerate: (result) => {
         for (const warning of result.warnings) {
           process.stderr.write(`[decopin] warning: ${warning.message}\n`);
