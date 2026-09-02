@@ -734,6 +734,18 @@ and network are all unreachable; `openWorldHint: false` only when network and
 spawning are. If the analysis had to give up on a command (`eval`, an import
 it could not resolve), no hints are sent and the host falls back to the
 protocol's conservative defaults. A hint is still a hint, not a sandbox.
+The raw verdicts ride along in each tool's `_meta` under `decopin-cli/effects`,
+so a host that wants its own policy can read `none` / `detected` / `unknown`
+per category instead of trusting the hints.
+
+When a command does reach something, `decopin build` shows the import chain
+that gets there, so you know what to change:
+
+```
+Effects reachable (? = analysis gave up):
+  publish: fs.read
+    fs.read: app/publish/data.tsx -> Bun.which
+```
 
 The server has no dependencies: it is a few hundred lines of newline-delimited
 JSON-RPC, because that is all stdio MCP needs.

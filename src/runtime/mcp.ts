@@ -53,6 +53,12 @@ export interface ToolAnnotations {
   openWorldHint?: boolean;
 }
 
+/**
+ * `_meta` に載せる生の判定のキー。仕様はサーバ固有のキーに接頭辞を求める
+ * (`modelcontextprotocol` / `mcp` 始まりは予約)
+ */
+export const EFFECTS_META_KEY = 'decopin-cli/effects';
+
 /** `tools/list` の 1 件 */
 export interface McpTool {
   name: string;
@@ -60,6 +66,12 @@ export interface McpTool {
   inputSchema: JsonSchema;
   outputSchema?: JsonSchema;
   annotations?: ToolAnnotations;
+  /**
+   * 生の判定 (ADR 32) をそのまま載せる。hint は `none` のときしか動かさない
+   * ので、`unknown` で hint が消えた理由や、`detected` の内訳はここでしか
+   * 読めない。ホストが自分の基準で判断できるように
+   */
+  _meta?: { [EFFECTS_META_KEY]: EffectVerdicts };
 }
 
 interface RpcRequest {
@@ -183,6 +195,9 @@ export async function listTools(
       tool.outputSchema = toJsonSchema(output.type);
     const annotations = annotationsFor(route.effects);
     if (annotations !== undefined) tool.annotations = annotations;
+    if (route.effects !== undefined) {
+      tool._meta = { [EFFECTS_META_KEY]: route.effects };
+    }
     tools.push(tool);
   }
   return tools;

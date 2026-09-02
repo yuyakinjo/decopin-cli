@@ -93,7 +93,12 @@ export type {
 } from './types/effects.ts';
 export { argumentsSchema, toJsonSchema } from './declaration/json-schema.ts';
 export type { JsonSchema } from './declaration/json-schema.ts';
-export { annotationsFor, listTools, toolName } from './runtime/mcp.ts';
+export {
+  annotationsFor,
+  EFFECTS_META_KEY,
+  listTools,
+  toolName,
+} from './runtime/mcp.ts';
 export type { CallResult, McpTool, ToolAnnotations } from './runtime/mcp.ts';
 
 export type {
