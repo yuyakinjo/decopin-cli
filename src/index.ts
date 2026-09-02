@@ -62,6 +62,11 @@ export {
   processTerminal,
 } from './runtime/choose.ts';
 export type { ChooseOptions, Terminal } from './runtime/choose.ts';
+export type {
+  Candidate,
+  Completer,
+  CompleteProps,
+} from './runtime/complete.ts';
 export type { ShellName } from './runtime/shell.ts';
 export { CliError } from './runtime/errors.ts';
 export type { ErrorKind, ErrorProps } from './runtime/errors.ts';

@@ -51,6 +51,7 @@ describe('置ける場所', () => {
       'middleware',
       'help',
       'shell',
+      'complete',
     ]);
   });
 

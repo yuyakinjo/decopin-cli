@@ -48,6 +48,7 @@ const WIRED_FILES = [
   'data',
   'output',
   'shell',
+  'complete',
 ] as const;
 
 function importer(outDir: string, file: string): string {

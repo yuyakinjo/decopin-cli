@@ -18,6 +18,8 @@ export interface RouteLoaders {
   output?: () => Promise<unknown>;
   /** shell.tsx。親シェルへの指示 (ADR 35) */
   shell?: () => Promise<unknown>;
+  /** complete.tsx。実行時に決まる補完候補 (ADR 38) */
+  complete?: () => Promise<unknown>;
   /** error.tsx の並び。**近い順** (自分のディレクトリ → 親 → ...) */
   errors?: Array<() => Promise<unknown>>;
   /** not-found.tsx の並び。**近い順**。notFound() が使う (ADR 30) */
