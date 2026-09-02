@@ -304,6 +304,36 @@ const GUARDS: Record<number, Guard> = {
     label: '動的な出力は AsyncIterable 駆動の島に限る',
     file: 'test/renderer/present.test.tsx',
   },
+  32: {
+    kind: 'test',
+    label: '副作用はビルド時に数える (none は無いことの証明)',
+    file: 'test/build/effects.test.ts',
+  },
+  31: {
+    kind: 'test',
+    label: '環境が整っていないときの形 (認証・ツール不足)',
+    file: 'test/runtime/signals.test.tsx',
+  },
+  30: {
+    kind: 'test',
+    label: 'notFound() と、よくある形の詰め合わせ',
+    file: 'test/runtime/signals.test.tsx',
+  },
+  29: {
+    kind: 'test',
+    label: '--json のときは失敗も構造化して返す',
+    file: 'test/runtime/run-json-error.test.tsx',
+  },
+  28: {
+    kind: 'test',
+    label: 'output.tsx があれば出力の正になる',
+    file: 'test/runtime/run-output.test.tsx',
+  },
+  27: {
+    kind: 'test',
+    label: '--json に出せるかを実行前に見る',
+    file: 'test/runtime/serializable.test.ts',
+  },
   26: {
     kind: 'test',
     label: 'パイプを壊さないことを全コマンドで掃いて確かめる',

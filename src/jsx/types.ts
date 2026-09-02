@@ -69,6 +69,7 @@ export type OutputHostKind =
 /** 入力を宣言する組み込みコンポーネント (argv.tsx などで使う) */
 export type DeclarationHostKind =
   | 'argv'
+  | 'output'
   | 'arg'
   | 'option'
   | 'stdin'

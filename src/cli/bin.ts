@@ -45,8 +45,27 @@ function runBuild(argv: string[]): Promise<number> {
       }
     }
     const names = result.routes.map((route) => route.name || '(root)');
+    // 副作用は「無いことの証明」が価値なので、あるものだけ挙げる (ADR 32)
+    const notable = [...result.effects]
+      .map(([name, report]) => {
+        const listed = Object.entries(report.effects)
+          .filter(([, verdict]) => verdict !== 'none')
+          .map(([category, verdict]) =>
+            verdict === 'unknown' ? `${category}?` : category
+          );
+        return listed.length === 0
+          ? undefined
+          : `  ${name || '(root)'}: ${listed.join(', ')}`;
+      })
+      .filter((line): line is string => line !== undefined);
+    const effectsBlock =
+      notable.length === 0
+        ? 'No effects reachable from any command\n'
+        : `Effects reachable (? = analysis gave up):\n${notable.join('\n')}\n`;
+
     process.stdout.write(
       `Found ${result.routes.length} command(s): ${names.join(', ')}\n` +
+        effectsBlock +
         `Wrote ${result.files.types}\n` +
         `Wrote ${result.completionPath} (zsh completion)\n` +
         `Wrote ${result.outPath} (${(result.bytes / 1024).toFixed(1)} KB) in ${elapsed}ms\n`

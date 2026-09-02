@@ -42,15 +42,28 @@ const CASES: Record<string, { argv: string[]; stdin?: StdinSource }> = {
   config: { argv: ['config'] },
   count: { argv: ['count'], stdin: piped('a\nb\n\nc\n') },
   crash: { argv: ['crash'] },
+  deploy: { argv: ['deploy', 'web'] },
+  // help() の経路も stdout は空のまま (ADR 30)
+  'deploy (使い方を出す)': { argv: ['deploy'] },
   hello: { argv: ['hello', 'world'] },
   stats: { argv: ['stats'] },
   'stats --json': { argv: ['stats', '--json'] },
+  // 失敗しても stdout は空のまま (ADR 29)
+  'stats --json (失敗)': { argv: ['stats', '--limit', '99', '--json'] },
   upper: { argv: ['upper'], stdin: piped('shout') },
   'user/import': {
     argv: ['user', 'import'],
     stdin: piped('[{"name":"alice","email":"a@example.com"}]'),
   },
   'user/list': { argv: ['user', 'list'] },
+  // 環境が整っていない経路も stdout は空のまま (ADR 31)
+  publish: { argv: ['publish'] },
+  'user/show': { argv: ['user', 'show', 'alice'] },
+  // notFound() の経路も stdout は空のまま (ADR 30)
+  'user/show (見つからない)': { argv: ['user', 'show', 'nope'] },
+  'user/show (見つからない, --json)': {
+    argv: ['user', 'show', 'nope', '--json'],
+  },
   '--help': { argv: ['--help'] },
   'hello --help': { argv: ['hello', '--help'] },
   '--version': { argv: ['--version'] },

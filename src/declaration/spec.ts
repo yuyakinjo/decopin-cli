@@ -52,6 +52,14 @@ export interface EnvSpec {
 
 export const EMPTY_ENV_SPEC: EnvSpec = { vars: [] };
 
+/** `output.tsx` を評価した結果 (ADR 28) */
+export interface OutputSpec {
+  /** `Type.*` で組んだ形 */
+  type?: TypeNode;
+  /** valibot スキーマを直接渡した場合。type とは排他 */
+  schema?: unknown;
+}
+
 /** `--version` の内容 */
 export interface VersionSpec {
   version: string;

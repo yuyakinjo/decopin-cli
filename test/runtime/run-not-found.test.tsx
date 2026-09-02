@@ -67,7 +67,7 @@ describe('not-found.tsx による上書き', () => {
   const view = ({
     requested,
     suggestion,
-    commands,
+    available,
     program,
   }: NotFoundProps) => (
     <>
@@ -75,7 +75,7 @@ describe('not-found.tsx による上書き', () => {
         <Text bold>{program}</Text>: no such command "{requested}"
       </Line>
       {suggestion === undefined ? (
-        <List items={commands} />
+        <List items={available} />
       ) : (
         <Line>try: {suggestion}</Line>
       )}

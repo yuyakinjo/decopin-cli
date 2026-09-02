@@ -10,11 +10,17 @@ import { resolve } from 'node:path';
 import {
   parseArgvSpec,
   parseEnvSpec,
+  parseOutputSpec,
   parseStdinSpec,
 } from '../declaration/parse.ts';
 import { resolveHosts } from '../declaration/resolve.ts';
 import { EMPTY_ARGV_SPEC } from '../declaration/spec.ts';
-import type { ArgvSpec, EnvSpec, StdinSpec } from '../declaration/spec.ts';
+import type {
+  ArgvSpec,
+  EnvSpec,
+  OutputSpec,
+  StdinSpec,
+} from '../declaration/spec.ts';
 import type { Renderable } from '../jsx/types.ts';
 import type { Route } from './scanner.ts';
 
@@ -23,6 +29,8 @@ export interface EvaluatedRoute {
   spec: ArgvSpec;
   /** stdin.tsx があれば、その宣言 */
   stdin?: StdinSpec;
+  /** output.tsx があれば、その宣言 (ADR 28) */
+  output?: OutputSpec;
 }
 
 export interface EvaluationProblem {
@@ -103,7 +111,18 @@ export async function evaluateRoutes(routes: Route[]): Promise<EvaluateResult> {
       }
     }
 
-    if (!failed) evaluated.push({ route, spec, stdin });
+    let output: OutputSpec | undefined;
+    const outputFile = route.files.output;
+    if (outputFile !== undefined) {
+      try {
+        output = parseOutputSpec(await loadHosts(outputFile, 'Output'));
+      } catch (error) {
+        problems.push({ file: outputFile, message: messageOf(error) });
+        failed = true;
+      }
+    }
+
+    if (!failed) evaluated.push({ route, spec, stdin, output });
   }
 
   return { evaluated, problems };

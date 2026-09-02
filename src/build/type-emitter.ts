@@ -11,6 +11,7 @@ import type {
   ArgvSpec,
   EnvSpec,
   OptionSpec,
+  OutputSpec,
   StdinSpec,
 } from '../declaration/spec.ts';
 import type { TypeNode } from '../declaration/type-node.ts';
@@ -133,8 +134,12 @@ export function stdinTypeText(stdin: StdinSpec | undefined): string {
  */
 export function dataTypeText(
   file: string | undefined,
-  workDir: string
+  workDir: string,
+  output?: OutputSpec
 ): string {
+  // output.tsx があれば宣言が正 (ADR 28)。実行時に検証されるのはこちら
+  if (output?.type !== undefined) return toTypeText(output.type);
+  if (output?.schema !== undefined) return schemaToTypeText(output.schema).text;
   if (file === undefined) return 'never';
   const path = relative(workDir, file).split('\\').join('/');
   const specifier = path.startsWith('.') ? path : `./${path}`;
@@ -186,13 +191,13 @@ export function generateTypes(
 ): TypesResult {
   const unsupported: TypesResult['unsupported'] = [];
   const entries = evaluated
-    .map(({ route, spec, stdin }) => {
+    .map(({ route, spec, stdin, output }) => {
       const nodes = stdinType(stdin).unsupported;
       const file = route.files.stdin;
       if (nodes.length > 0 && file !== undefined) {
         unsupported.push({ file, nodes });
       }
-      const data = dataTypeText(route.files.data, workDir);
+      const data = dataTypeText(route.files.data, workDir, output);
       return `    ${quoteName(route.name)}: ${shape(spec, stdin, data)};`;
     })
     .join('\n');

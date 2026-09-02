@@ -4,6 +4,7 @@ export {
   Br,
   Columns,
   Danger,
+  DidYouMean,
   Dynamic,
   Exit,
   Indent,
@@ -28,6 +29,7 @@ export {
   Argv,
   Env,
   Option,
+  Output,
   Stdin,
   Var,
   Version,
@@ -37,6 +39,7 @@ export type {
   ArgvProps,
   EnvProps,
   OptionProps,
+  OutputProps,
   ShorthandType,
   StdinProps,
   VarProps,
@@ -46,7 +49,12 @@ export { Type } from './components/type/index.ts';
 export { CliError } from './runtime/errors.ts';
 export type { ErrorKind, ErrorProps } from './runtime/errors.ts';
 export { DeclarationError } from './declaration/errors.ts';
-export type { ArgSpec, ArgvSpec, OptionSpec } from './declaration/spec.ts';
+export type {
+  ArgSpec,
+  ArgvSpec,
+  OptionSpec,
+  OutputSpec,
+} from './declaration/spec.ts';
 export type { TypeNode } from './declaration/type-node.ts';
 export {
   RESERVED_OPTION_ALIASES,
@@ -59,6 +67,7 @@ export type {
   BoxProps,
   Cell,
   ColumnsProps,
+  DidYouMeanProps,
   DynamicProps,
   ExitProps,
   IndentProps,
@@ -75,6 +84,8 @@ export type {
   TableProps,
   TextProps,
 } from './components/index.ts';
+
+export type { JsonValue } from './types/json.ts';
 
 export type {
   CommandBase,
@@ -93,6 +104,18 @@ export type { ExitCode } from './runtime/exit.ts';
 export { Help, CommandList } from './runtime/help.tsx';
 export type { HelpProps } from './runtime/help.tsx';
 export { NotFound } from './runtime/not-found.tsx';
+export {
+  authRequired,
+  help,
+  missingTool,
+  notFound,
+} from './runtime/signals.ts';
+export type {
+  AuthRequiredInput,
+  HelpInput,
+  MissingToolInput,
+  NotFoundInput,
+} from './runtime/signals.ts';
 export type { NotFoundProps } from './runtime/not-found.tsx';
 export { applyLayouts } from './runtime/layout.tsx';
 export type { LayoutProps } from './runtime/layout.tsx';
@@ -105,6 +128,7 @@ export { processStdin, readStdin } from './runtime/stdin-reader.ts';
 export type { StdinSource } from './runtime/stdin-reader.ts';
 export { validateEnv } from './validation/env.ts';
 export {
+  closest,
   commandsUnder,
   resolveRoute,
   resolveTarget,

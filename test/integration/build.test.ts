@@ -69,11 +69,14 @@ describe('build', () => {
       'config',
       'count',
       'crash',
+      'deploy',
       'hello',
+      'publish',
       'stats',
       'upper',
       'user/import',
       'user/list',
+      'user/show',
     ]);
   });
 
@@ -106,7 +109,7 @@ describe('生成された CLI', () => {
     const result = await cli(['helo']);
     expect(result.stdout).toBe('');
     expect(result.stderr).toContain('no such command: helo');
-    expect(result.stderr).toContain('did you mean');
+    expect(result.stderr).toContain('Did you mean');
     expect(result.code).toBe(2);
   });
 

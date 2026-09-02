@@ -1,32 +1,35 @@
-import { Danger, Line, List, Text, type NotFoundProps } from 'decopin-cli';
+import { Danger, DidYouMean, type NotFoundProps } from 'decopin-cli';
 
-/** 未知のコマンドの表示を差し替える (test/contract/routing.test.tsx) */
+/**
+ * Serves both cases: an unknown command, and `notFound()` from a command
+ * (ADR 30). `what` tells them apart — a command is worth prefixing with the
+ * program name, a user name is not.
+ */
 export default function NotFound({
+  what,
   requested,
   suggestion,
-  commands,
+  available,
   program,
 }: NotFoundProps) {
+  const isCommand = what === 'command';
   return (
     <>
-      <Danger>no such command: {requested}</Danger>
-      {suggestion === undefined ? (
-        <>
-          <Line>
-            <Text dim>available commands:</Text>
-          </Line>
-          <List items={commands} />
-        </>
-      ) : (
-        <Line>
-          {'  '}
-          did you mean{' '}
-          <Text bold color="cyan">
-            {program} {suggestion}
-          </Text>
-          ?
-        </Line>
-      )}
+      <Danger>
+        no such {what}: {requested}
+      </Danger>
+      <DidYouMean
+        requested={requested}
+        from={
+          isCommand ? available.map((name) => `${program} ${name}`) : available
+        }
+        suggestion={
+          suggestion === undefined || !isCommand
+            ? suggestion
+            : `${program} ${suggestion}`
+        }
+        label={isCommand ? 'available commands' : `available ${what}s`}
+      />
     </>
   );
 }

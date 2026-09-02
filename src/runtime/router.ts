@@ -12,8 +12,12 @@ export interface RouteLoaders {
   stdin?: () => Promise<unknown>;
   /** data.tsx。表示の前にデータだけを用意する (ADR 25) */
   data?: () => Promise<unknown>;
+  /** output.tsx。data の形を宣言し、実行時に検証する (ADR 28) */
+  output?: () => Promise<unknown>;
   /** error.tsx の並び。**近い順** (自分のディレクトリ → 親 → ...) */
   errors?: Array<() => Promise<unknown>>;
+  /** not-found.tsx の並び。**近い順**。notFound() が使う (ADR 30) */
+  notFounds?: Array<() => Promise<unknown>>;
   /** layout.tsx の並び。**外側から順** (ルート → ... → 自分のディレクトリ) */
   layouts?: Array<() => Promise<unknown>>;
   /** middleware.tsx の並び。**外側から順** */
@@ -119,27 +123,38 @@ export function commandsUnder(table: RouteTable, group: string): string[] {
     .sort();
 }
 
+/**
+ * 打ち間違いに一番近い候補を返す (ADR 30)。
+ *
+ * コマンド名だけでなく、利用者が持っている値の一覧にも使える
+ * (`closest('alcie', ['alice', 'bob'])` → `'alice'`)。
+ * 遠すぎる候補を出すと混乱するので、入力の長さの半分までに限る
+ */
+export function closest(
+  value: string,
+  candidates: Iterable<string>
+): string | undefined {
+  let best: string | undefined;
+  let bestDistance = Number.POSITIVE_INFINITY;
+  for (const candidate of candidates) {
+    if (candidate === '') continue;
+    const distance = editDistance(value, candidate);
+    if (distance < bestDistance) {
+      bestDistance = distance;
+      best = candidate;
+    }
+  }
+  if (best === undefined || bestDistance > Math.ceil(value.length / 2)) {
+    return undefined;
+  }
+  return best;
+}
+
 /** 未知のコマンドのときに「近いもの」を提案する */
 export function suggest(table: RouteTable, argv: string[]): string | undefined {
   const words = leadingWords(argv);
   if (words.length === 0) return undefined;
-  const target = words.join('/');
-
-  let best: string | undefined;
-  let bestDistance = Number.POSITIVE_INFINITY;
-  for (const name of Object.keys(table)) {
-    if (name === '') continue;
-    const distance = editDistance(target, name);
-    if (distance < bestDistance) {
-      bestDistance = distance;
-      best = name;
-    }
-  }
-  // 遠すぎる候補を出すと混乱するので、名前の長さの半分までに限る
-  if (best === undefined || bestDistance > Math.ceil(target.length / 2)) {
-    return undefined;
-  }
-  return best;
+  return closest(words.join('/'), Object.keys(table));
 }
 
 function editDistance(a: string, b: string): number {

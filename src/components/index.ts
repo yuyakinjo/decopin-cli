@@ -221,3 +221,6 @@ export interface JsonProps {
 export const Json = host<JsonProps>('json', 'Json');
 
 export { Danger, Info, Success, Warn, type StatusProps } from './status.tsx';
+
+export { DidYouMean } from './patterns.tsx';
+export type { DidYouMeanProps } from './patterns.tsx';

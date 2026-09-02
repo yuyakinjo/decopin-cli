@@ -9,6 +9,7 @@ import { Json, Line, Stderr } from '../components/index.ts';
 import { parseArgvSpec } from '../declaration/parse.ts';
 import {
   parseEnvSpec,
+  parseOutputSpec,
   parseStdinSpec,
   parseVersionSpec,
 } from '../declaration/parse.ts';
@@ -19,6 +20,7 @@ import type { Renderable, RenderInput } from '../jsx/types.ts';
 import { present as presentDocument } from '../renderer/present.ts';
 import type { WriteTargets } from '../renderer/writer.ts';
 import { validateEnv } from '../validation/env.ts';
+import { toSchema, validateValue } from '../validation/schema.ts';
 import { validateArgv } from '../validation/validate.ts';
 import { completionCandidates, formatCandidates } from './complete.ts';
 import { CliError, validationError } from './errors.ts';
@@ -29,6 +31,7 @@ import { applyLayouts } from './layout.tsx';
 import { ErrorMessage } from './messages.tsx';
 import { runMiddleware } from './middleware.ts';
 import { NotFound } from './not-found.tsx';
+import type { NotFoundProps } from './not-found.tsx';
 import { present } from './override.ts';
 import {
   COMPLETE_COMMAND,
@@ -39,6 +42,8 @@ import {
 } from './reserved.ts';
 import { commandsUnder, resolveTarget } from './router.ts';
 import type { RouteTable } from './router.ts';
+import { findNotSerializable } from './serializable.ts';
+import { isHelpSignal, isNotFoundSignal } from './signals.ts';
 import { processStdin, readStdin } from './stdin-reader.ts';
 import type { StdinSource } from './stdin-reader.ts';
 
@@ -107,6 +112,28 @@ async function emit(
         ? undefined
         : { stdout: false, stderr: false }),
   });
+}
+
+/**
+ * `--json` のときに stderr へ出すエラーの形 (ADR 29)。
+ *
+ * `code` は機械が分岐する先なので、文面ではなく分類を出す。
+ * 理由が複数ある検証の失敗は `issues` に並べる
+ */
+function errorPayload(error: CliError): {
+  code: string;
+  message: string;
+  exitCode: number;
+  issues?: string[];
+} {
+  return {
+    code: error.kind,
+    message: error.issues[0] ?? error.message,
+    exitCode: error.exitCode,
+    // 直し方は機械にも渡す。エージェントが次の一手を決められる (ADR 31)
+    ...(error.hints.length > 0 ? { hints: error.hints } : {}),
+    ...(error.issues.length > 1 ? { issues: error.issues } : {}),
+  };
 }
 
 /** ルート名 (`user/list`) を利用者が打つ形 (`user list`) にする */
@@ -183,6 +210,33 @@ async function loadStdinSpec(
     (declare as () => Renderable)() as Renderable
   );
   return parseStdinSpec(hosts);
+}
+
+/**
+ * output.tsx があれば data を検証する (ADR 28)。
+ *
+ * 自分のコードが返した値でも、外の API から来たものは型の宣言どおりとは
+ * 限らない。境界で確かめておくと、壊れた形のまま表示や --json に流れない
+ */
+async function validateData(
+  loader: (() => Promise<unknown>) | undefined,
+  data: unknown
+): Promise<unknown> {
+  if (loader === undefined) return data;
+  const spec = parseOutputSpec(await declaredHosts(loader, 'Output'));
+  const schema =
+    spec.schema !== undefined
+      ? (spec.schema as Parameters<typeof validateValue>[0])
+      : toSchema(spec.type as NonNullable<typeof spec.type>);
+  const result = validateValue(schema, data);
+  if (!result.ok) {
+    throw new CliError(`data does not match output.tsx`, {
+      kind: 'validation',
+      exitCode: EXIT_CODE.runtime,
+      issues: result.messages,
+    });
+  }
+  return result.value;
 }
 
 /** data.tsx を呼んでデータを作る。無ければ undefined (ADR 25) */
@@ -272,6 +326,9 @@ export async function run(
     }
   }
 
+  // --json はコマンドに依らないので、失敗しても同じ判断ができるよう先に見る
+  const jsonRequested = findFlag(argv, [JSON_FLAG]);
+
   const target = resolveTarget(table, argv);
 
   // コマンドが確定しない経路 (表は test/contract/routing.test.tsx)。
@@ -285,17 +342,19 @@ export async function run(
       const shown = await present(
         options.notFound,
         {
+          what: 'command',
           requested: target.requested,
           suggestion: target.suggestion?.split('/').join(' '),
-          commands: commands.map(display),
+          available: commands.map(display),
           program,
           argv,
           cwd,
         },
         <NotFound
+          what="command"
           requested={target.requested}
           suggestion={target.suggestion?.split('/').join(' ')}
-          commands={commands.map(display)}
+          available={commands.map(display)}
           program={program}
           argv={argv}
           cwd={cwd}
@@ -386,7 +445,6 @@ export async function run(
     }
 
     // --json は data.tsx の結果をそのまま出す (ADR 25)
-    const jsonRequested = findFlag(argv, [JSON_FLAG]);
     if (jsonRequested && route.data === undefined) {
       const where = resolved.name === '' ? 'app' : `app/${resolved.name}`;
       throw new CliError(
@@ -445,8 +503,19 @@ export async function run(
           cwd,
         };
         // データは表示より先に確定する。--json のときは view を呼ばない
-        const data = await loadData(route.data, base);
+        const data = await validateData(
+          route.output,
+          await loadData(route.data, base)
+        );
         if (jsonRequested) {
+          // 黙って欠けるより、どの経路が悪いかを言って止める (ADR 27)
+          const problem = findNotSerializable(data);
+          if (problem !== undefined) {
+            throw new CliError(
+              `${problem.path} cannot go into --json: ${problem.reason}`,
+              { exitCode: EXIT_CODE.runtime }
+            );
+          }
           skipLayout = true;
           return (<Json value={data} />) as Renderable;
         }
@@ -461,7 +530,102 @@ export async function run(
     const declared = await withLayout(output, skipLayout);
     return declared ?? EXIT_CODE.success;
   } catch (error) {
+    // help() は「そのままでは進めない」の合図 (ADR 30)。--help と同じものを
+    // 組み立てるが、求められて出すのではないので stderr + exit 2 になる
+    if (isHelpSignal(error)) {
+      const route = table[resolved.name];
+      const spec = await loadArgvSpec(route?.argv);
+      const auto = (
+        <Help
+          program={program}
+          command={resolved.name}
+          spec={spec}
+          stdin={await loadStdinSpec(route?.stdin)}
+        />
+      );
+      const shown = await present(
+        options.helps?.[resolved.name],
+        {
+          auto,
+          program,
+          command: display(resolved.name),
+          argv: resolved.rest,
+          cwd,
+        },
+        auto
+      );
+      await emit(
+        <Stderr>
+          {error.message === undefined ? null : (
+            <ErrorMessage message={error.message} />
+          )}
+          {shown.node}
+        </Stderr>,
+        options,
+        noColorFlag
+      );
+      return error.exitCode;
+    }
+
+    // notFound() は失敗ではなく「無かった」の合図 (ADR 30)。
+    // 一番近い not-found.tsx に見せる
+    if (isNotFoundSignal(error)) {
+      const route = table[resolved.name];
+      const props: NotFoundProps = {
+        what: error.what,
+        requested: error.requested,
+        suggestion: error.suggestion,
+        available: error.available,
+        program,
+        argv: resolved.rest,
+        cwd,
+      };
+      if (jsonRequested) {
+        await emit(
+          <Stderr>
+            <Json
+              value={{
+                error: {
+                  code: 'not-found',
+                  what: error.what,
+                  requested: error.requested,
+                  ...(error.suggestion === undefined
+                    ? {}
+                    : { suggestion: error.suggestion }),
+                  exitCode: error.exitCode,
+                },
+              }}
+            />
+          </Stderr>,
+          options,
+          noColorFlag
+        );
+        return error.exitCode;
+      }
+      const shown = await present(
+        route?.notFounds?.[0],
+        props,
+        <NotFound {...props} />
+      );
+      await emit(<Stderr>{shown.node}</Stderr>, options, noColorFlag);
+      return error.exitCode;
+    }
+
     const cliError = toCliError(error);
+
+    // JSON を頼まれた相手に人間向けの文面を返すとパーサが壊れる (ADR 29)。
+    // error.tsx は人が読むための表示なので、ここでは通さない
+    if (jsonRequested) {
+      await emit(
+        <Stderr>
+          <Json value={{ error: errorPayload(cliError) }} />
+        </Stderr>,
+        options,
+        noColorFlag
+      );
+      return cliError.exitCode;
+    }
+
     const route = table[resolved.name];
     // 近い error.tsx → 親の error.tsx → global-error.tsx → 組み込み
     // (順序は test/runtime/handle-error.test.tsx が固定している)
