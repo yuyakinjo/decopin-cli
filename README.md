@@ -592,6 +592,21 @@ stderr that the shell changes were not applied. `Shell.Cd`, `Shell.Export`,
 `Shell.Unset`, `Shell.Alias` and `Shell.Source` quote their values;
 `Shell.Raw` passes code through verbatim when you need something else.
 
+Quoting is literal: `<Shell.Source file="$HOME/.zshrc" />` looks for a file
+called `$HOME/.zshrc`, and `~` is not expanded either. Build the path in
+TypeScript instead:
+
+```tsx
+import { homedir } from 'node:os';
+import { join } from 'node:path';
+
+import { Shell } from 'decopin-cli';
+
+export default function ShellChanges() {
+  return <Shell.Cd to={join(homedir(), 'workspace')} />;
+}
+```
+
 ## Subcommands
 
 The directory tree is the subcommand tree. A directory without a `command.tsx`
