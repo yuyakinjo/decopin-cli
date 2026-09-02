@@ -434,9 +434,10 @@ export default async function Command({ args }: CommandProps<'deploy'>) {
 }
 ```
 
-Arrow keys, `j`/`k` and digits move; Enter selects; Esc or Ctrl+C exits with
-130 and prints nothing. stdout is never touched, so `deploy web | cat` and
-`deploy | cat` both behave.
+Typing filters the list (case-insensitive substring), arrow keys move, Enter
+selects; Esc or Ctrl+C exits with 130 and prints nothing. Long lists show a
+window around the selection (`window`, default 10). stdout is never touched,
+so `deploy web | cat` and `deploy | cat` both behave.
 
 ## When the environment is not ready
 
