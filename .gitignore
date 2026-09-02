@@ -170,6 +170,7 @@ test-app-version/
 # decopin build の生成物
 .decopin/
 .decopin-test-*/
+.decopin-lazy-*/
 .decopin-probe/
 # npm 公開物の出力先。ルート直下だけ (app/publish/ のようなコマンド名を巻き込まない)
 /publish/
