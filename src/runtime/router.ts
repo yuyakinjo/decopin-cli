@@ -5,6 +5,8 @@
  * 語が続く場合は「最も長く一致するもの」を選ぶ。
  */
 
+import type { EffectVerdicts } from '../types/effects.ts';
+
 /** 1 コマンド分の読み込み関数。ファイルが無い規約は undefined */
 export interface RouteLoaders {
   command: () => Promise<unknown>;
@@ -22,6 +24,11 @@ export interface RouteLoaders {
   layouts?: Array<() => Promise<unknown>>;
   /** middleware.tsx の並び。**外側から順** */
   middlewares?: Array<() => Promise<unknown>>;
+  /**
+   * ビルド時に数えた副作用の判定 (ADR 32)。MCP の annotations の元になる (ADR 33)。
+   * 生成された routes.ts だけが埋める。手書きの表では省略してよい
+   */
+  effects?: EffectVerdicts;
 }
 
 /** コマンド名 → 読み込み関数 */

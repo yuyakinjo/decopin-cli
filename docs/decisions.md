@@ -684,6 +684,44 @@ C# は採らなかった。typed throws を**新たに入れた** Swift 6 でさ
 読む相手 (MCP 輸出) がまだ無い。使われない生成物は朽ちるので、輸出を作るときに
 一緒に足す (ADR 28 と同じ判断)。
 
+## ADR 33: MCP は宣言の輸出であって、新しい宣言ではない
+
+`<bin> __mcp` で stdio の MCP サーバになる。ツールの定義に**新しく書くものは無い**:
+argv.tsx が `inputSchema`、output.tsx が `outputSchema`、data.tsx の戻り値が
+`structuredContent`、ビルド時の副作用の判定 (ADR 32) が `annotations`。
+宣言から help・補完・型を導くのと同じ出口が 1 つ増えただけで、
+宣言と MCP の定義がずれる余地がない。
+
+**公式 SDK は使わない**。実測で 4.3MB・依存 17 個 (express, hono, zod, ajv ...)。
+stdio で要るのは改行区切りの JSON-RPC と `initialize` / `ping` / `tools/list` /
+`tools/call` の 4 つで、依存 1 つで起動を ms で測るこの構造と釣り合わない。
+
+**実行は `run()` をそのまま呼ぶ**。ツールの引数を argv に戻して `--json` を付ける。
+検証・middleware・output.tsx の検査・エラーの構造化 (ADR 29) がすべて CLI と
+同じ経路を通り、MCP のためだけの経路を持たない。argv に戻せるのは、argv が
+`Type.Object` を取れない (ADR 9) からで、JSON と文字列の往復で情報が落ちない。
+stdin.tsx があるコマンドは、パイプの中身を `stdin` 引数で受ける。
+
+**annotations は `none` を確かめたときだけ既定より安全側に動かす**。MCP の既定
+(`readOnlyHint: false`, `destructiveHint: true`, `openWorldHint: true`) が最も
+保守的なので、`unknown` が 1 つでもあれば何も言わない。導出の規則:
+
+- `readOnlyHint: true` ⇐ fs.write / process.spawn / process.mutate / network が
+  すべて `none`。network は読みだけかもしれないが、モジュール粒度では GET と
+  POST を区別できないので、書かない側に倒す (健全性を精度より優先。ADR 32)
+- `destructiveHint: false` ⇐ readOnlyHint が真。書くものは既定のまま
+- `openWorldHint: false` ⇐ network と process.spawn が `none`。spawn は任意の
+  コマンドに届くので「外」に数える
+- `idempotentHint` は導かない。再実行の安全性は静的解析では言えない
+
+仕様は「hint はサーバの申告で、信用できないサーバの hint は信用するな」と言う。
+decopin の hint は申告ではなく**解析結果**で、これが他の MCP サーバとの違い。
+ただし hint であって sandbox ではない。モジュール粒度の `none` は「その種類の
+sink が到達不能」の証明で、ホスト側の強制の代わりにはならない。
+
+**ツール名は `/` を `_` に**する (`user/show` → `user_show`)。仕様が
+`^[a-zA-Z0-9_-]{1,64}$` を求めるため。ルートコマンドはプログラム名。
+
 ## 実測メモ: この設計で踏んだ落とし穴
 
 後から同じところを踏まないために残す。

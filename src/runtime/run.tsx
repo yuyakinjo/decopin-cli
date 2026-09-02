@@ -28,6 +28,7 @@ import { EXIT_CODE } from './exit.ts';
 import { handleError, toCliError } from './handle-error.tsx';
 import { CommandList, Help } from './help.tsx';
 import { applyLayouts } from './layout.tsx';
+import { serveMcp } from './mcp.ts';
 import { ErrorMessage } from './messages.tsx';
 import { runMiddleware } from './middleware.ts';
 import { NotFound } from './not-found.tsx';
@@ -37,6 +38,7 @@ import {
   COMPLETE_COMMAND,
   HELP_FLAGS,
   JSON_FLAG,
+  MCP_COMMAND,
   NO_COLOR_FLAG,
   VERSION_FLAG,
 } from './reserved.ts';
@@ -279,6 +281,25 @@ export async function run(
       // 候補なし扱い。シェル側がファイル補完に落ちる
     }
     return EXIT_CODE.success;
+  }
+
+  // MCP サーバ (ADR 33)。`__complete` と同じく機械が読むので描画は通さない。
+  // 2 語目まで見るのも同じ理由 (ルートコマンドが `__mcp` を引数に取れるように)。
+  // 入力は届いた順に読む。全文を待つと initialize に応答できない
+  if (rawArgv[0] === MCP_COMMAND && rawArgv.length === 1) {
+    const source = options.stdin ?? processStdin();
+    const input =
+      source.stream?.() ??
+      (async function* () {
+        yield await source.read();
+      })();
+    return serveMcp(
+      table,
+      options,
+      run,
+      input,
+      options.targets?.stdout ?? process.stdout
+    );
   }
 
   const noColorFlag = findFlag(rawArgv, [NO_COLOR_FLAG]);

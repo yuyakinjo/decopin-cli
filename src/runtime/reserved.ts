@@ -20,6 +20,12 @@ export const HELP_FLAGS = ['--help', '-h'] as const;
  * 利用者のコマンドとこの名前が衝突することは構造的にない。
  */
 export const COMPLETE_COMMAND = '__complete';
+
+/**
+ * MCP サーバの入口 (ADR 33)。`<bin> __mcp` で stdio の JSON-RPC を話す。
+ * `__complete` と同じ理由で、利用者のコマンドとは衝突しない
+ */
+export const MCP_COMMAND = '__mcp';
 export const VERSION_FLAG = '--version';
 export const NO_COLOR_FLAG = '--no-color';
 

@@ -11,28 +11,15 @@
  */
 import { dirname, resolve } from 'node:path';
 
-/** 見張る副作用の種類 */
-export type EffectCategory =
-  | 'fs.read'
-  | 'fs.write'
-  | 'network'
-  | 'process.spawn'
-  | 'process.mutate';
+import { EFFECT_CATEGORIES } from '../types/effects.ts';
+import type {
+  EffectCategory,
+  EffectVerdicts,
+  Verdict,
+} from '../types/effects.ts';
 
-export const EFFECT_CATEGORIES: readonly EffectCategory[] = [
-  'fs.read',
-  'fs.write',
-  'network',
-  'process.spawn',
-  'process.mutate',
-];
-
-/**
- * - `none`: 到達しないことを確かめた
- * - `detected`: 到達する (経路を出せる)
- * - `unknown`: 解析を諦めた。保証しない
- */
-export type Verdict = 'none' | 'detected' | 'unknown';
+export { EFFECT_CATEGORIES };
+export type { EffectCategory, EffectVerdicts, Verdict };
 
 /** 見つけた 1 件 */
 export interface EffectSite {
@@ -51,7 +38,7 @@ export interface Escape {
 }
 
 export interface EffectReport {
-  effects: Record<EffectCategory, Verdict>;
+  effects: EffectVerdicts;
   sites: EffectSite[];
   escapes: Escape[];
   /** 歩いたファイル数 (診断用) */
@@ -421,7 +408,7 @@ export async function analyzeEffects(
       category,
       found.has(category) ? 'detected' : gaveUp ? 'unknown' : 'none',
     ])
-  ) as Record<EffectCategory, Verdict>;
+  ) as EffectVerdicts;
 
   return {
     effects,
