@@ -86,6 +86,15 @@ export type {
 } from './components/index.ts';
 
 export type { JsonValue } from './types/json.ts';
+export type {
+  EffectCategory,
+  EffectVerdicts,
+  Verdict,
+} from './types/effects.ts';
+export { argumentsSchema, toJsonSchema } from './declaration/json-schema.ts';
+export type { JsonSchema } from './declaration/json-schema.ts';
+export { annotationsFor, listTools, toolName } from './runtime/mcp.ts';
+export type { CallResult, McpTool, ToolAnnotations } from './runtime/mcp.ts';
 
 export type {
   CommandBase,

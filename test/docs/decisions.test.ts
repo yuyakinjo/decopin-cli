@@ -304,6 +304,11 @@ const GUARDS: Record<number, Guard> = {
     label: '動的な出力は AsyncIterable 駆動の島に限る',
     file: 'test/renderer/present.test.tsx',
   },
+  33: {
+    kind: 'test',
+    label: 'MCP は宣言の輸出 (annotations は none のときだけ動かす)',
+    file: 'test/runtime/mcp.test.tsx',
+  },
   32: {
     kind: 'test',
     label: '副作用はビルド時に数える (none は無いことの証明)',

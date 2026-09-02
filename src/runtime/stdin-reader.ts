@@ -16,6 +16,11 @@ export interface StdinSource {
   /** 端末に繋がっているか。パイプとリダイレクトはどちらも false */
   isTTY: boolean;
   read: () => Promise<string>;
+  /**
+   * 届いた順に少しずつ読む。MCP サーバ (ADR 33) は入力の終わりを待たずに
+   * 応答するのでこちらを使う。無ければ read() の全文を 1 回で流したものとして扱う
+   */
+  stream?: () => AsyncIterable<Uint8Array | string>;
 }
 
 function stdinError(message: string, hints: string[] = []): CliError {
@@ -31,6 +36,7 @@ export function processStdin(): StdinSource {
   return {
     isTTY: process.stdin.isTTY === true,
     read: () => Bun.stdin.text(),
+    stream: () => Bun.stdin.stream(),
   };
 }
 

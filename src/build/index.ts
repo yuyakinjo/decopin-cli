@@ -148,6 +148,21 @@ export async function generate(
   const layoutChains = chain('layout');
   const middlewareChains = chain('middleware');
 
+  // 副作用は「そのコマンドが読み込むもの全部」から数える (ADR 32)。
+  // ファイルごとの解析は使い回すので、コマンドが増えても歩き直さない
+  const cache = new Map();
+  const effects = new Map<string, EffectReport>();
+  for (const route of routes) {
+    const entries = [
+      ...Object.values(route.files),
+      ...(errorChains.get(route.name) ?? []),
+      ...(notFoundChains.get(route.name) ?? []),
+      ...(layoutChains.get(route.name) ?? []),
+      ...(middlewareChains.get(route.name) ?? []),
+    ].filter((file): file is string => file !== undefined);
+    effects.set(route.name, await analyzeEffects(entries, cache));
+  }
+
   await mkdir(workDir, { recursive: true });
   await writeIfChanged(
     files.routes,
@@ -163,6 +178,9 @@ export async function generate(
         notFound: rootFiles['not-found'],
         env: rootFiles.env,
         version: rootFiles.version,
+        effects: new Map(
+          [...effects].map(([name, report]) => [name, report.effects])
+        ),
       },
       workDir
     )
@@ -173,21 +191,6 @@ export async function generate(
     warnings.push(...stdinSchemaWarnings(file, nodes));
   }
   await writeIfChanged(files.types, types.text);
-
-  // 副作用は「そのコマンドが読み込むもの全部」から数える (ADR 32)。
-  // ファイルごとの解析は使い回すので、コマンドが増えても歩き直さない
-  const cache = new Map();
-  const effects = new Map<string, EffectReport>();
-  for (const route of routes) {
-    const entries = [
-      ...Object.values(route.files),
-      ...(errorChains.get(route.name) ?? []),
-      ...(notFoundChains.get(route.name) ?? []),
-      ...(layoutChains.get(route.name) ?? []),
-      ...(middlewareChains.get(route.name) ?? []),
-    ].filter((file): file is string => file !== undefined);
-    effects.set(route.name, await analyzeEffects(entries, cache));
-  }
 
   return { routes, evaluated, files, warnings, program, effects };
 }
