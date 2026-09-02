@@ -12,7 +12,11 @@ import { host } from '../host.ts';
 
 /** `<Shell.Cd>` */
 export interface CdProps {
-  /** 移動先。相対パスはコマンドを打った場所から解決される */
+  /**
+   * 移動先。相対パスはコマンドを打った場所から解決される。
+   * 値はそのままクォートされるので `~` や `$HOME` は展開されない。
+   * `join(homedir(), ...)` のように TypeScript 側で絶対パスにする
+   */
   to: string;
 }
 
@@ -37,7 +41,7 @@ export interface AliasProps {
 
 /** `<Shell.Source>` */
 export interface SourceProps {
-  /** `source` するファイル */
+  /** `source` するファイル。`~` / `$HOME` は展開されないので絶対パスで渡す */
   file: string;
 }
 
