@@ -57,11 +57,18 @@ export type {
 } from './components/shell/index.ts';
 export { generateShellHook, renderShell } from './runtime/shell.ts';
 export {
+  ask,
   choose,
+  confirm,
   nonInteractiveTerminal,
   processTerminal,
 } from './runtime/choose.ts';
-export type { ChooseOptions, Terminal } from './runtime/choose.ts';
+export type {
+  AskOptions,
+  ChooseOptions,
+  ConfirmOptions,
+  Terminal,
+} from './runtime/choose.ts';
 export type {
   Candidate,
   Completer,
