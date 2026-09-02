@@ -266,6 +266,22 @@ export function importedNames(
 
 const JS_LIKE = /\.(m|c)?(t|j)sx?$/;
 
+/**
+ * そのコマンドが `unknown` を受け入れると宣言しているか (ADR 34)。
+ *
+ * `export const unsafeEval = true` を command.tsx に書く。Next.js の
+ * route segment config と同じ形で、`skipLayout` と並ぶ。モジュールを評価
+ * せず文面で見るのは、ビルド時にコマンドの本体を実行しないため
+ */
+export async function acceptsUnknown(commandFile: string): Promise<boolean> {
+  try {
+    const source = stripLiterals(await Bun.file(commandFile).text());
+    return /\bexport\s+const\s+unsafeEval\s*=\s*true\b/.test(source);
+  } catch {
+    return false;
+  }
+}
+
 /** 1 ファイルだけを見た結果。経路は入口ごとに違うので、集計のときに付ける */
 interface FileAnalysis {
   sites: Omit<EffectSite, 'path'>[];

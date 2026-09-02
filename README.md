@@ -747,6 +747,14 @@ Effects reachable (? = analysis gave up):
     fs.read: app/publish/data.tsx -> Bun.which
 ```
 
+To turn the analysis into a guarantee, build with `--strict-effects`: any
+command the analysis had to give up on (`eval`, `new Function`, an import
+Bun cannot resolve) fails the build, with the chain that led there. A
+command that genuinely needs one of those can opt out by exporting
+`unsafeEval = true` from its `command.tsx`, the same way `skipLayout` works.
+It still builds, its verdicts stay `unknown`, and it gets no hints. There is
+no way to declare effects by hand: the point is that nobody has to.
+
 The server has no dependencies: it is a few hundred lines of newline-delimited
 JSON-RPC, because that is all stdio MCP needs.
 
