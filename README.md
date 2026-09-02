@@ -5,17 +5,17 @@ types that come from your declarations. TypeScript + Bun.
 
 The four channels of a shell map one-to-one onto file names.
 
-| File          | What it is in the shell | Required |
-| ------------- | ----------------------- | -------- |
-| `command.tsx` | stdout (fd 1)           | yes      |
-| `argv.tsx`    | command line arguments  | no       |
-| `stdin.tsx`   | standard input (fd 0)   | no       |
-| `error.tsx`   | stderr (fd 2)           | no       |
+| File        | What it is in the shell | Required |
+| ----------- | ----------------------- | -------- |
+| `cmd.tsx`   | stdout (fd 1)           | yes      |
+| `argv.tsx`  | command line arguments  | no       |
+| `stdin.tsx` | standard input (fd 0)   | no       |
+| `error.tsx` | stderr (fd 2)           | no       |
 
 Output is JSX. There is no React — decopin ships its own small renderer.
 
 ```tsx
-// app/hello/command.tsx
+// app/hello/cmd.tsx
 import { Line, Text, type CommandProps } from 'decopin-cli';
 
 export default function Command({ args, options }: CommandProps<'hello'>) {
@@ -174,7 +174,7 @@ Options:
 
 ## Separating data from the view
 
-A command can split in two: `data.tsx` computes, `command.tsx` displays. The
+A command can split in two: `data.tsx` computes, `cmd.tsx` displays. The
 return value of `data.tsx` arrives as the `data` prop, fully typed — no
 annotation needed, because the generated types read it back through
 TypeScript's own inference.
@@ -190,7 +190,7 @@ export default function Data({ options }: CommandProps<'stats'>) {
 ```
 
 ```tsx
-// app/stats/command.tsx
+// app/stats/cmd.tsx
 import { KeyValue, List, type CommandProps } from 'decopin-cli';
 
 export default function Command({ data }: CommandProps<'stats'>) {
@@ -381,7 +381,7 @@ for, it goes to stderr with exit 2, matching how the framework already treats
 misuse.
 
 ```tsx
-// app/deploy/command.tsx
+// app/deploy/cmd.tsx
 import { help, Success, type CommandProps } from 'decopin-cli';
 
 export default function Command({ args, options }: CommandProps<'deploy'>) {
@@ -412,7 +412,7 @@ Anywhere else (a pipe, an agent) it fails with exit 2 and the `hint`, so the
 same command asks a person and instructs a machine:
 
 ```tsx
-// app/deploy/command.tsx
+// app/deploy/cmd.tsx
 import { choose, help, Success, type CommandProps } from 'decopin-cli';
 
 const TARGETS = ['web', 'api', 'worker'] as const;
@@ -535,7 +535,7 @@ Errors go to stderr by default. The exit code follows `error.kind`, and
 | Code | Meaning                                                               |
 | ---- | --------------------------------------------------------------------- |
 | 0    | success                                                               |
-| 1    | runtime error (a throw inside `command.tsx`)                          |
+| 1    | runtime error (a throw inside `cmd.tsx`)                              |
 | 2    | usage error (validation, unknown command, missing env, missing stdin) |
 | 130  | Ctrl+C                                                                |
 
@@ -583,7 +583,7 @@ trick without writing shell: declare what should happen, and the framework
 writes the shell code with the quoting done.
 
 ```tsx
-// app/go/shell.tsx — receives the same props as command.tsx
+// app/go/shell.tsx — receives the same props as cmd.tsx
 import { Shell, type CommandProps } from 'decopin-cli';
 
 export default function ShellChanges({ data }: CommandProps<'go'>) {
@@ -627,12 +627,12 @@ export default function ShellChanges() {
 
 ## Subcommands
 
-The directory tree is the subcommand tree. A directory without a `command.tsx`
+The directory tree is the subcommand tree. A directory without a `cmd.tsx`
 is a group, and it lists what is under it.
 
 ```
-app/user/list/command.tsx     → cli user list
-app/user/import/command.tsx   → cli user import
+app/user/list/cmd.tsx     → cli user list
+app/user/import/cmd.tsx   → cli user import
 ```
 
 ```sh
@@ -903,7 +903,7 @@ To turn the analysis into a guarantee, build with `--strict-effects`: any
 command the analysis had to give up on (`eval`, `new Function`, an import
 Bun cannot resolve) fails the build, with the chain that led there. A
 command that genuinely needs one of those can opt out by exporting
-`unsafeEval = true` from its `command.tsx`, the same way `skipLayout` works.
+`unsafeEval = true` from its `cmd.tsx`, the same way `skipLayout` works.
 It still builds, its verdicts stay `unknown`, and it gets no hints. There is
 no way to declare effects by hand: the point is that nobody has to.
 
@@ -1009,6 +1009,13 @@ Instead:
 - `decopin build` warns when your code uses something deprecated, and tells you
   what to use instead and by when
 - every GitHub Release lists breaking changes and pending removals at the top
+
+Currently deprecated:
+
+| Deprecated    | Use instead                                                            | Removed after |
+| ------------- | ---------------------------------------------------------------------- | ------------- |
+| `Type.Date`   | `<Type.Instant/>` for a moment, `<Type.PlainDate/>` for a calendar day | 2027-08-29    |
+| `command.tsx` | `cmd.tsx` (`command.ts` → `cmd.ts`)                                    | 2027-09-02    |
 
 ## Releasing
 

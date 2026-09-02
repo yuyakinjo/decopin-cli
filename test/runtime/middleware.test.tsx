@@ -46,7 +46,7 @@ describe('middleware.tsx', () => {
       };
     const table: RouteTable = {
       x: {
-        command: loader(() => {
+        cmd: loader(() => {
           trace.push('command');
           return <Line>body</Line>;
         }),
@@ -69,7 +69,7 @@ describe('middleware.tsx', () => {
     let called = false;
     const table: RouteTable = {
       x: {
-        command: loader(() => {
+        cmd: loader(() => {
           called = true;
           return <Line>body</Line>;
         }),
@@ -85,7 +85,7 @@ describe('middleware.tsx', () => {
     const seen: Record<string, unknown>[] = [];
     const table: RouteTable = {
       x: {
-        command: loader(() => <Line>body</Line>),
+        cmd: loader(() => <Line>body</Line>),
         argv: loader(() => (
           <Argv>
             <Option name="loud" type="boolean" default={false} />
@@ -107,7 +107,7 @@ describe('middleware.tsx', () => {
     let entered = false;
     const table: RouteTable = {
       x: {
-        command: loader(() => <Line>body</Line>),
+        cmd: loader(() => <Line>body</Line>),
         argv: loader(() => (
           <Argv>
             <Option name="loud" type="boolean" default={false} />
@@ -129,7 +129,7 @@ describe('middleware.tsx', () => {
   test('出力に足すことができる (可能だが非推奨)', async () => {
     const table: RouteTable = {
       x: {
-        command: loader(() => <Line>body</Line>),
+        cmd: loader(() => <Line>body</Line>),
         middlewares: [
           loader(async ({ next }: MiddlewareProps) => (
             <>
@@ -149,7 +149,7 @@ describe('middleware.tsx', () => {
 
   test('middleware の throw は error.tsx に流れる', async () => {
     const failing: RouteLoaders = {
-      command: loader(() => <Line>body</Line>),
+      cmd: loader(() => <Line>body</Line>),
       middlewares: [
         loader(() => {
           throw new Error('middleware failed');
@@ -165,7 +165,7 @@ describe('middleware.tsx', () => {
   test('コマンドの throw を middleware で捕まえられる', async () => {
     const table: RouteTable = {
       x: {
-        command: loader(() => {
+        cmd: loader(() => {
           throw new Error('boom');
         }),
         middlewares: [
@@ -187,7 +187,7 @@ describe('middleware.tsx', () => {
   test('default export が関数でなければ分かるエラーになる', async () => {
     const table: RouteTable = {
       x: {
-        command: loader(() => <Line>body</Line>),
+        cmd: loader(() => <Line>body</Line>),
         middlewares: [loader('not a function')],
       },
     };
@@ -203,7 +203,7 @@ describe('middleware と layout の関係', () => {
   test('layout は middleware が返した出力を包む', async () => {
     const table: RouteTable = {
       x: {
-        command: loader(() => <Line>body</Line>),
+        cmd: loader(() => <Line>body</Line>),
         middlewares: [
           loader(async ({ next }: MiddlewareProps) => (
             <>

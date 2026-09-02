@@ -9,7 +9,8 @@ import type { EffectVerdicts } from '../types/effects.ts';
 
 /** 1 コマンド分の読み込み関数。ファイルが無い規約は undefined */
 export interface RouteLoaders {
-  command: () => Promise<unknown>;
+  /** cmd.tsx。唯一の必須ファイル */
+  cmd: () => Promise<unknown>;
   argv?: () => Promise<unknown>;
   stdin?: () => Promise<unknown>;
   /** data.tsx。表示の前にデータだけを用意する (ADR 25) */
@@ -42,7 +43,7 @@ export type RouteTable = Record<string, RouteLoaders>;
  * argv が何を指しているか。表は test/contract/routing.test.tsx。
  *
  * - `command`: 実行すべきコマンドが決まった
- * - `group`: `command.tsx` を持たないディレクトリ (子コマンドを持つ)
+ * - `group`: `cmd.tsx` を持たないディレクトリ (子コマンドを持つ)
  * - `root`: 語が 1 つも無く、ルートコマンドも無い
  * - `unknown`: どれにも当たらない
  */
@@ -87,7 +88,7 @@ export function resolveRoute(
     }
   }
 
-  // ルートコマンド (app/command.tsx) があれば引数をそのまま渡す
+  // ルートコマンド (app/cmd.tsx) があれば引数をそのまま渡す
   if (Object.hasOwn(table, '')) {
     return { name: '', rest: argv };
   }
@@ -98,7 +99,7 @@ export function resolveRoute(
  * argv を {@link Target} に解決する。判定順が挙動を決める:
  *
  * 1. 最長一致するコマンド
- * 2. ルートコマンド (`app/command.tsx`) — 単一コマンドの CLI を壊さないため
+ * 2. ルートコマンド (`app/cmd.tsx`) — 単一コマンドの CLI を壊さないため
  * 3. 語が 0 個 → ルート help
  * 4. 語の全部がコマンド名の前方一致プレフィックス → グループ help
  * 5. それ以外 → 未知のコマンド

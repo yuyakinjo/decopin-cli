@@ -75,11 +75,11 @@ const modeArgv = () => (
 );
 
 const table: RouteTable = {
-  hello: { command: loader(() => <Line>hi</Line>) },
-  deploy: { command: loader(() => <Line>ok</Line>), argv: loader(deployArgv) },
-  mode: { command: loader(() => <Line>ok</Line>), argv: loader(modeArgv) },
-  'user/list': { command: loader(() => <Line>ok</Line>) },
-  'user/create': { command: loader(() => <Line>ok</Line>) },
+  hello: { cmd: loader(() => <Line>hi</Line>) },
+  deploy: { cmd: loader(() => <Line>ok</Line>), argv: loader(deployArgv) },
+  mode: { cmd: loader(() => <Line>ok</Line>), argv: loader(modeArgv) },
+  'user/list': { cmd: loader(() => <Line>ok</Line>) },
+  'user/create': { cmd: loader(() => <Line>ok</Line>) },
 };
 
 describe('サブコマンドの補完', () => {
@@ -179,7 +179,7 @@ describe('complete.tsx: 実行時に決まる候補 (ADR 38)', () => {
           </Option>
         </Argv>
       )),
-      command: loader(() => <Line>unused</Line>),
+      cmd: loader(() => <Line>unused</Line>),
       complete: loader((props: unknown) => {
         seen.push(props);
         const { name } = props as { name: string };
@@ -195,7 +195,7 @@ describe('complete.tsx: 実行時に決まる候補 (ADR 38)', () => {
           <Arg name="x" type="string" required />
         </Argv>
       )),
-      command: loader(() => <Line>unused</Line>),
+      cmd: loader(() => <Line>unused</Line>),
       complete: loader(() => new Promise(() => {})),
     },
     broken: {
@@ -204,7 +204,7 @@ describe('complete.tsx: 実行時に決まる候補 (ADR 38)', () => {
           <Arg name="x" type="string" required />
         </Argv>
       )),
-      command: loader(() => <Line>unused</Line>),
+      cmd: loader(() => <Line>unused</Line>),
       complete: loader(() => {
         throw new Error('boom');
       }),
@@ -315,7 +315,7 @@ describe('プロトコルの入口', () => {
     // `__complete` という文字列がその入力空間を奪ってはいけない
     const rootTable: RouteTable = {
       '': {
-        command: loader(({ argv }: { argv: readonly string[] }) => (
+        cmd: loader(({ argv }: { argv: readonly string[] }) => (
           <Line>{argv.join(',')}</Line>
         )),
       },
@@ -337,7 +337,7 @@ describe('壊れていても補完は落ちない', () => {
   test('argv.tsx が壊れていても exit 0 で空を返す', async () => {
     const broken: RouteTable = {
       boom: {
-        command: loader(() => <Line>ok</Line>),
+        cmd: loader(() => <Line>ok</Line>),
         argv: async () => {
           throw new Error('broken declaration');
         },

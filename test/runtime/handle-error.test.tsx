@@ -40,7 +40,7 @@ function failing(
   thrown: unknown = new Error('boom')
 ): RouteLoaders {
   return {
-    command: async () => ({
+    cmd: async () => ({
       default: () => {
         throw thrown;
       },
@@ -110,7 +110,7 @@ describe('フォールバック順', () => {
     const result = await invoke(
       {
         x: {
-          command: async () => ({
+          cmd: async () => ({
             default: () => {
               throw new Error('boom');
             },
@@ -170,7 +170,7 @@ describe('error.tsx の props と出力先', () => {
     );
     const table: RouteTable = {
       x: {
-        command: async () => ({ default: () => <Line>ok</Line> }),
+        cmd: async () => ({ default: () => <Line>ok</Line> }),
         argv: async () => ({
           default: () => null,
         }),

@@ -137,7 +137,7 @@ const table: RouteTable = {
         </Type.Object>
       </Output>
     )),
-    command: loader(() => <Line>unused</Line>),
+    cmd: loader(() => <Line>unused</Line>),
     effects: NONE,
   },
   greet: {
@@ -147,7 +147,7 @@ const table: RouteTable = {
         <Option name="times" type="number" default={1} />
       </Argv>
     )),
-    command: loader(
+    cmd: loader(
       ({
         args,
         options,
@@ -161,11 +161,11 @@ const table: RouteTable = {
   count: {
     stdin: loader(() => <Stdin mode="lines" required />),
     data: loader(({ stdin }: { stdin: string[] }) => ({ lines: stdin.length })),
-    command: loader(() => <Line>unused</Line>),
+    cmd: loader(() => <Line>unused</Line>),
     effects: { ...NONE, 'fs.write': 'unknown' },
   },
   bare: {
-    command: loader(() => <Line>bare</Line>),
+    cmd: loader(() => <Line>bare</Line>),
   },
 };
 

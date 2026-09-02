@@ -53,7 +53,7 @@ describe('layout.tsx', () => {
   test('外側 = 上位ディレクトリの順に包む', async () => {
     const table: RouteTable = {
       x: {
-        command: loader(() => <Line>body</Line>),
+        cmd: loader(() => <Line>body</Line>),
         layouts: [loader(wrapper('root')), loader(wrapper('inner'))],
       },
     };
@@ -63,7 +63,7 @@ describe('layout.tsx', () => {
 
   test('layout が無ければそのまま出す', async () => {
     const table: RouteTable = {
-      x: { command: loader(() => <Line>body</Line>) },
+      x: { cmd: loader(() => <Line>body</Line>) },
     };
     expect((await invoke(table, ['x'])).stdout).toBe('body\n');
   });
@@ -80,7 +80,7 @@ describe('layout.tsx', () => {
     };
     const table: RouteTable = {
       x: {
-        command: loader(() => <Line>body</Line>),
+        cmd: loader(() => <Line>body</Line>),
         layouts: [loader(asyncLayout)],
       },
     };
@@ -90,17 +90,17 @@ describe('layout.tsx', () => {
   test('children を使わない layout はコマンドの出力を捨てる', async () => {
     const table: RouteTable = {
       x: {
-        command: loader(() => <Line>body</Line>),
+        cmd: loader(() => <Line>body</Line>),
         layouts: [loader(() => <Line>only layout</Line>)],
       },
     };
     expect((await invoke(table, ['x'])).stdout).toBe('only layout\n');
   });
 
-  test('command.tsx が skipLayout を宣言すれば包まない', async () => {
+  test('cmd.tsx が skipLayout を宣言すれば包まない', async () => {
     const table: RouteTable = {
       x: {
-        command: loader(() => <Line>body</Line>, { skipLayout: true }),
+        cmd: loader(() => <Line>body</Line>, { skipLayout: true }),
         layouts: [loader(wrapper('root'))],
       },
     };
@@ -110,7 +110,7 @@ describe('layout.tsx', () => {
   test('default export がコンポーネントでない layout は分かるエラーになる', async () => {
     const table: RouteTable = {
       x: {
-        command: loader(() => <Line>body</Line>),
+        cmd: loader(() => <Line>body</Line>),
         layouts: [loader('not a component')],
       },
     };
@@ -124,7 +124,7 @@ describe('layout.tsx', () => {
 
 describe('layout.tsx とエラー表示', () => {
   const failing: RouteLoaders = {
-    command: loader(() => {
+    cmd: loader(() => {
       throw new Error('boom');
     }),
     errors: [loader(({ error }: ErrorProps) => <Line>{error.message}</Line>)],
@@ -162,7 +162,7 @@ describe('layout.tsx とエラー表示', () => {
     const result = await invoke(
       {
         x: {
-          command: loader(() => {
+          cmd: loader(() => {
             throw new Error('boom');
           }),
           layouts: [loader(wrapper('root'))],
@@ -178,7 +178,7 @@ describe('layout.tsx とエラー表示', () => {
     const result = await invoke(
       {
         x: {
-          command: loader(() => {
+          cmd: loader(() => {
             throw new Error('boom');
           }),
           errors: [

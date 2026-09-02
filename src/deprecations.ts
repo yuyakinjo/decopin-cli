@@ -6,7 +6,14 @@
  * いて、過ぎるとテストが落ちる。忘れたまま残り続けることがない
  */
 export interface Deprecation {
-  /** 何が非推奨になったか。ビルド時にソースをこの文字列で探す */
+  /**
+   * `what` の探し方。
+   *
+   * - `source`: ファイルの中身をこの文字列で部分一致検索する (`Type.Date` など)
+   * - `filename`: 規約ファイルの旧名。scan がファイル名で見つける (`command.tsx`)
+   */
+  kind: 'source' | 'filename';
+  /** 何が非推奨になったか */
   what: string;
   /** 非推奨にした日 (UTC) */
   since: string;
@@ -18,11 +25,19 @@ export interface Deprecation {
 
 export const DEPRECATIONS: readonly Deprecation[] = [
   {
+    kind: 'source',
     what: 'Type.Date',
     since: '2026-08-29',
     removeAfter: '2027-08-29',
     migration:
       'use <Type.Instant/> for a moment (2026-08-28T14:30:00Z) or <Type.PlainDate/> for a calendar day (2026-08-28)',
+  },
+  {
+    kind: 'filename',
+    what: 'command.tsx',
+    since: '2026-09-02',
+    removeAfter: '2027-09-02',
+    migration: 'replace command.tsx with cmd.tsx (command.ts with cmd.ts)',
   },
 ];
 

@@ -310,6 +310,11 @@ const GUARDS: Record<number, Guard> = {
     label: '実行時に決まる補完候補は complete.tsx (壊れても遅くても落ちない)',
     file: 'test/runtime/complete.test.tsx',
   },
+  39: {
+    kind: 'test',
+    label: 'コマンドの本体は cmd.tsx (旧名 command.tsx も 1 年は受ける)',
+    file: 'test/build/scanner.test.ts',
+  },
   37: {
     kind: 'test',
     label: '--dry-run は渡すだけ (差し替えは実測で断念)',

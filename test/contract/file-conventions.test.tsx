@@ -40,7 +40,7 @@ const NOOP = 'export default function X() {\n  return null;\n}\n';
 describe('置ける場所', () => {
   test('コマンドのディレクトリに置けるファイル', () => {
     expect([...CONVENTION_FILES]).toEqual([
-      'command',
+      'cmd',
       'argv',
       'stdin',
       'data',
@@ -78,7 +78,7 @@ describe('置ける場所', () => {
 describe('command ファイルの有無', () => {
   test('command があるディレクトリだけがコマンドになる', async () => {
     const dir = await appDir({
-      'hello/command.tsx': NOOP,
+      'hello/cmd.tsx': NOOP,
       'only-argv/argv.tsx': NOOP,
     });
     const { routes } = await scan(dir);
@@ -87,20 +87,20 @@ describe('command ファイルの有無', () => {
 
   test('.tsx が無ければ .ts でもよい (.tsx を優先)', async () => {
     const dir = await appDir({
-      'a/command.ts': NOOP,
-      'b/command.ts': NOOP,
-      'b/command.tsx': NOOP,
+      'a/cmd.ts': NOOP,
+      'b/cmd.ts': NOOP,
+      'b/cmd.tsx': NOOP,
     });
     const { routes } = await scan(dir);
-    expect(routes[0]?.files.command).toContain('a/command.ts');
-    expect(routes[1]?.files.command).toContain('b/command.tsx');
+    expect(routes[0]?.files.cmd).toContain('a/cmd.ts');
+    expect(routes[1]?.files.cmd).toContain('b/cmd.tsx');
   });
 
   test('_ と . で始まるディレクトリは対象外', async () => {
     const dir = await appDir({
-      'ok/command.tsx': NOOP,
-      '_shared/command.tsx': NOOP,
-      '.hidden/command.tsx': NOOP,
+      'ok/cmd.tsx': NOOP,
+      '_shared/cmd.tsx': NOOP,
+      '.hidden/cmd.tsx': NOOP,
     });
     const { routes } = await scan(dir);
     expect(routes.map((route) => route.name)).toEqual(['ok']);
@@ -108,8 +108,8 @@ describe('command ファイルの有無', () => {
 
   test('ディレクトリの階層がコマンド名になる (ルートは空文字)', async () => {
     const dir = await appDir({
-      'command.tsx': NOOP,
-      'user/create/command.tsx': NOOP,
+      'cmd.tsx': NOOP,
+      'user/create/cmd.tsx': NOOP,
     });
     const { routes } = await scan(dir);
     expect(routes.map((route) => route.name)).toEqual(['', 'user/create']);
@@ -121,7 +121,7 @@ describe('継承', () => {
     const dir = await appDir({
       'error.tsx': NOOP,
       'user/error.tsx': NOOP,
-      'user/list/command.tsx': NOOP,
+      'user/list/cmd.tsx': NOOP,
     });
     const { inherited } = await scan(dir);
     const chain = inheritedChain(inherited, 'user/list', 'error');
@@ -133,7 +133,7 @@ describe('継承', () => {
   test('command を持たないディレクトリの継承ファイルも拾う', async () => {
     const dir = await appDir({
       'user/layout.tsx': NOOP,
-      'user/list/command.tsx': NOOP,
+      'user/list/cmd.tsx': NOOP,
     });
     const { inherited, routes } = await scan(dir);
     expect(routes.map((route) => route.name)).toEqual(['user/list']);
@@ -144,7 +144,7 @@ describe('継承', () => {
     const dir = await appDir({
       'help.tsx': NOOP,
       'user/help.tsx': NOOP,
-      'user/list/command.tsx': NOOP,
+      'user/list/cmd.tsx': NOOP,
     });
     const { helpFiles } = await scan(dir);
     expect([...helpFiles.keys()].sort()).toEqual(['', 'user']);

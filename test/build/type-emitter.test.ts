@@ -288,7 +288,7 @@ describe('generateTypes', () => {
         route: {
           name: 'x',
           dir: 'x',
-          files: { command: 'app/x/command.tsx', stdin: 'app/x/stdin.tsx' },
+          files: { cmd: 'app/x/cmd.tsx', stdin: 'app/x/stdin.tsx' },
         },
         spec: { args: [], options: [] },
         stdin: {

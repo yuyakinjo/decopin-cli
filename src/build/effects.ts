@@ -319,7 +319,7 @@ const JS_LIKE = /\.(m|c)?(t|j)sx?$/;
 /**
  * そのコマンドが `unknown` を受け入れると宣言しているか (ADR 34)。
  *
- * `export const unsafeEval = true` を command.tsx に書く。Next.js の
+ * `export const unsafeEval = true` を cmd.tsx に書く。Next.js の
  * route segment config と同じ形で、`skipLayout` と並ぶ。モジュールを評価
  * せず文面で見るのは、ビルド時にコマンドの本体を実行しないため
  */

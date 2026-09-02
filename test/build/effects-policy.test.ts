@@ -3,7 +3,7 @@
  *
  * 申告はさせない (ADR 32)。あるのは strict だけで、解析が `none` を名乗れない
  * (`unknown`) コマンドをビルドエラーにする。受け入れるコマンドは
- * `export const unsafeEval = true` を command.tsx に書く。
+ * `export const unsafeEval = true` を cmd.tsx に書く。
  */
 import { afterAll, beforeAll, describe, expect, test } from 'bun:test';
 import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
@@ -19,7 +19,7 @@ let workDir: string;
 
 async function command(name: string, source: string) {
   await mkdir(join(appDir, name), { recursive: true });
-  await writeFile(join(appDir, name, 'command.tsx'), source);
+  await writeFile(join(appDir, name, 'cmd.tsx'), source);
 }
 
 beforeAll(async () => {
@@ -58,7 +58,7 @@ describe('strict', () => {
     expect(failure).toContain('Effects could not be verified:');
     expect(failure).toContain('sneaky: analysis gave up');
     expect(failure).toContain('eval: ');
-    expect(failure).toContain('command.tsx -> ');
+    expect(failure).toContain('cmd.tsx -> ');
     expect(failure).toContain('evil.ts');
     expect(failure).toContain('export const unsafeEval = true');
     // 問題のないコマンドは名指ししない

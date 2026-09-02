@@ -5,13 +5,14 @@ import { inheritedChain, scan } from '../../src/build/scanner.ts';
 const FIXTURE = 'test/fixtures/scan-app';
 
 describe('scan', () => {
-  test('command ファイルを持つディレクトリだけをコマンドにする', async () => {
+  test('cmd ファイルを持つディレクトリだけをコマンドにする', async () => {
     const { routes } = await scan(FIXTURE);
     const names = routes.map((route) => route.name);
     expect(names).toEqual([
-      '', // ルートコマンド (app/command.tsx)
+      '', // ルートコマンド (app/cmd.tsx)
       'both',
       'cmd-a',
+      'legacy',
       'nested/deep',
       'only-ts',
     ]);
@@ -20,9 +21,7 @@ describe('scan', () => {
   test('ディレクトリの階層がそのままコマンド名になる', async () => {
     const { routes } = await scan(FIXTURE);
     const deep = routes.find((route) => route.name === 'nested/deep');
-    expect(deep?.files.command).toBe(
-      'test/fixtures/scan-app/nested/deep/command.tsx'
-    );
+    expect(deep?.files.cmd).toBe('test/fixtures/scan-app/nested/deep/cmd.tsx');
   });
 
   test('_ と . で始まるディレクトリは対象外', async () => {
@@ -32,7 +31,7 @@ describe('scan', () => {
     expect(names).not.toContain('.dot');
   });
 
-  test('command 以外の規約ファイルも記録する', async () => {
+  test('cmd 以外の規約ファイルも記録する', async () => {
     const { routes } = await scan(FIXTURE);
     const cmdA = routes.find((route) => route.name === 'cmd-a');
     expect(cmdA?.files.argv).toBe('test/fixtures/scan-app/cmd-a/argv.tsx');
@@ -43,15 +42,13 @@ describe('scan', () => {
   test('JSX を使わないコマンドのために .ts も許す', async () => {
     const { routes } = await scan(FIXTURE);
     const onlyTs = routes.find((route) => route.name === 'only-ts');
-    expect(onlyTs?.files.command).toBe(
-      'test/fixtures/scan-app/only-ts/command.ts'
-    );
+    expect(onlyTs?.files.cmd).toBe('test/fixtures/scan-app/only-ts/cmd.ts');
   });
 
   test('.tsx と .ts が両方あれば .tsx を選ぶ', async () => {
     const { routes } = await scan(FIXTURE);
     const both = routes.find((route) => route.name === 'both');
-    expect(both?.files.command).toBe('test/fixtures/scan-app/both/command.tsx');
+    expect(both?.files.cmd).toBe('test/fixtures/scan-app/both/cmd.tsx');
   });
 
   test('ルート直下だけに置けるファイルを分けて拾う', async () => {
@@ -64,6 +61,31 @@ describe('scan', () => {
   test('argv.tsx だけのディレクトリはコマンドにならない', async () => {
     const { routes } = await scan(FIXTURE);
     expect(routes.map((route) => route.name)).not.toContain('no-command');
+  });
+
+  test('旧名 (command.tsx) でもコマンドとして拾う (ADR 20)', async () => {
+    const { routes } = await scan(FIXTURE);
+    const legacy = routes.find((route) => route.name === 'legacy');
+    expect(legacy?.files.cmd).toBe('test/fixtures/scan-app/legacy/command.tsx');
+  });
+
+  test('旧名で見つかったものは deprecatedFiles に載せる', async () => {
+    const { deprecatedFiles } = await scan(FIXTURE);
+    expect(deprecatedFiles).toEqual([
+      {
+        file: 'test/fixtures/scan-app/legacy/command.tsx',
+        legacy: 'command.tsx',
+        current: 'cmd.tsx',
+      },
+    ]);
+  });
+
+  test('新名があれば旧名は見ない', async () => {
+    // both/ には cmd.tsx と cmd.ts があるだけなので、旧名の警告は出ない
+    const { deprecatedFiles } = await scan(FIXTURE);
+    expect(deprecatedFiles.map((d) => d.file)).not.toContain(
+      'test/fixtures/scan-app/both/command.tsx'
+    );
   });
 
   test('継承されるファイルはコマンドでないディレクトリからも拾う', async () => {

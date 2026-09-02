@@ -37,15 +37,15 @@ async function invoke(table: RouteTable, argv: string[]) {
 
 /** hello と user 配下 2 つ。`user` 自身は command を持たない */
 const TABLE: RouteTable = {
-  hello: { command: loader(() => <Line>hello</Line>) },
-  'user/list': { command: loader(() => <Line>alice</Line>) },
-  'user/import': { command: loader(() => <Line>imported</Line>) },
+  hello: { cmd: loader(() => <Line>hello</Line>) },
+  'user/list': { cmd: loader(() => <Line>alice</Line>) },
+  'user/import': { cmd: loader(() => <Line>imported</Line>) },
 };
 
 /** ルートコマンドを持つ CLI (単一コマンドの形) */
 const WITH_ROOT: RouteTable = {
   ...TABLE,
-  '': { command: loader(() => <Line>root</Line>) },
+  '': { cmd: loader(() => <Line>root</Line>) },
 };
 
 interface Expectation {
@@ -87,7 +87,7 @@ const MATRIX: [
     { fd: 'stdout', code: 0, contains: 'Usage: cli <command> [options]' },
   ],
   [
-    'cli user (command.tsx なし・子あり)',
+    'cli user (cmd.tsx なし・子あり)',
     TABLE,
     ['user'],
     { fd: 'stderr', code: 2, contains: 'Usage: cli user <command> [options]' },

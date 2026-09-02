@@ -60,7 +60,7 @@ describe('stdin.tsx とライフサイクル', () => {
   test('宣言があれば読んでコマンドに渡す', async () => {
     const table: RouteTable = {
       x: {
-        command: loader(showStdin),
+        cmd: loader(showStdin),
         stdin: loader(() => <Stdin mode="lines" required />),
       },
     };
@@ -71,7 +71,7 @@ describe('stdin.tsx とライフサイクル', () => {
   });
 
   test('宣言がなければ stdin に一切触らない', async () => {
-    const table: RouteTable = { x: { command: loader(showStdin) } };
+    const table: RouteTable = { x: { cmd: loader(showStdin) } };
     const piped = source('a\nb\n');
     const result = await invoke(table, ['x'], piped.stdin);
     expect(result.stdout).toBe('\n');
@@ -82,7 +82,7 @@ describe('stdin.tsx とライフサイクル', () => {
   test('端末で required なら exit 2', async () => {
     const table: RouteTable = {
       x: {
-        command: loader(showStdin),
+        cmd: loader(showStdin),
         stdin: loader(() => <Stdin mode="text" required />),
       },
     };
@@ -96,7 +96,7 @@ describe('stdin.tsx とライフサイクル', () => {
   test('端末で required でなければ undefined が渡る', async () => {
     const table: RouteTable = {
       x: {
-        command: loader(showStdin),
+        cmd: loader(showStdin),
         stdin: loader(() => <Stdin mode="text" />),
       },
     };
@@ -109,7 +109,7 @@ describe('stdin.tsx とライフサイクル', () => {
   test('middleware が next を呼ばなければ stdin を消費しない', async () => {
     const table: RouteTable = {
       x: {
-        command: loader(showStdin),
+        cmd: loader(showStdin),
         stdin: loader(() => <Stdin mode="text" required />),
         middlewares: [loader(() => <Line>short circuit</Line>)],
       },
@@ -124,7 +124,7 @@ describe('stdin.tsx とライフサイクル', () => {
     const seen: string[] = [];
     const table: RouteTable = {
       x: {
-        command: loader(showStdin),
+        cmd: loader(showStdin),
         stdin: loader(() => <Stdin mode="text" required />),
         middlewares: [
           loader(async (props: MiddlewareProps) => {
@@ -149,7 +149,7 @@ describe('stdin.tsx とライフサイクル', () => {
   test('stdin.tsx が <Stdin> を返していなければ分かるエラーになる', async () => {
     const table: RouteTable = {
       x: {
-        command: loader(showStdin),
+        cmd: loader(showStdin),
         stdin: loader(() => <Br />),
       },
     };
@@ -161,7 +161,7 @@ describe('stdin.tsx とライフサイクル', () => {
   test('--help は stdin を読まない', async () => {
     const table: RouteTable = {
       x: {
-        command: loader(showStdin),
+        cmd: loader(showStdin),
         stdin: loader(() => <Stdin mode="text" required />),
       },
     };

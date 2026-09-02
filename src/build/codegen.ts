@@ -42,7 +42,7 @@ function toSpecifier(outDir: string, file: string): string {
 
 /** ルートに書き出す規約ファイル。Phase が進むごとに増える */
 const WIRED_FILES = [
-  'command',
+  'cmd',
   'argv',
   'stdin',
   'data',
@@ -81,8 +81,8 @@ export interface RoutesInput {
 
 export function generateRoutes(input: RoutesInput, outDir: string): string {
   const entries = input.routes.map((route) => {
-    if (route.files.command === undefined) {
-      throw new Error(`Route "${route.name}" has no command file`);
+    if (route.files.cmd === undefined) {
+      throw new Error(`Route "${route.name}" has no cmd file`);
     }
     const loaders = WIRED_FILES.flatMap((kind) => {
       const file = route.files[kind];

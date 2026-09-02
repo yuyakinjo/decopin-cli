@@ -43,7 +43,7 @@ const loader = (value: unknown) => async () => ({ default: value });
 
 const table: RouteTable = {
   pick: {
-    command: loader(async () => {
+    cmd: loader(async () => {
       const color = await choose('Which?', ['red', 'green', 'blue'] as const, {
         hint: 'Pass it: pick <color>',
       });
@@ -115,7 +115,7 @@ describe('choose()', () => {
     await run(
       {
         pick: {
-          command: loader(async () => (
+          cmd: loader(async () => (
             <Line>{await choose('Many?', many, { window: 5 })}</Line>
           )),
         },
@@ -180,7 +180,7 @@ describe('choose()', () => {
     const code = await run(
       {
         empty: {
-          command: loader(async () => <Line>{await choose('?', [])}</Line>),
+          cmd: loader(async () => <Line>{await choose('?', [])}</Line>),
         },
       },
       {
@@ -199,7 +199,7 @@ describe('choose()', () => {
 describe('ask()', () => {
   const askTable: RouteTable = {
     port: {
-      command: loader(async () => {
+      cmd: loader(async () => {
         const port = await ask('Local port?', {
           default: '8888',
           validate: (v) => (/^\d+$/.test(v) ? undefined : 'digits only'),
@@ -251,7 +251,7 @@ describe('ask()', () => {
 describe('confirm()', () => {
   const table: RouteTable = {
     go: {
-      command: loader(async () => (
+      cmd: loader(async () => (
         <Line>{String(await confirm('Retry?', { default: true }))}</Line>
       )),
     },

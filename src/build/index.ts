@@ -7,6 +7,7 @@ import {
   checkDeprecations,
   checkPurity,
   checkTsConfig,
+  deprecatedFileWarnings,
   stdinSchemaWarnings,
 } from './checker.ts';
 import type { Warning } from './checker.ts';
@@ -33,7 +34,7 @@ export interface GenerateOptions {
   program?: string;
   /**
    * 副作用の解析が諦めた (`unknown`) コマンドをビルドエラーにする (ADR 34)。
-   * command.tsx が `export const unsafeEval = true` を持つコマンドは通す
+   * cmd.tsx が `export const unsafeEval = true` を持つコマンドは通す
    */
   strictEffects?: boolean;
 }
@@ -99,10 +100,11 @@ export async function generate(
   const appDir = options.appDir ?? 'app';
   const workDir = options.workDir ?? '.decopin';
 
-  const { routes, rootFiles, inherited, helpFiles } = await scan(appDir);
+  const { routes, rootFiles, inherited, helpFiles, deprecatedFiles } =
+    await scan(appDir);
   if (routes.length === 0) {
     throw new Error(
-      `No commands found in ${appDir}/. Create ${appDir}/<name>/command.tsx`
+      `No commands found in ${appDir}/. Create ${appDir}/<name>/cmd.tsx`
     );
   }
 
@@ -131,7 +133,9 @@ export async function generate(
     // 宣言ファイルが実行時の状態に依存していないか (test/contract/argv-parsing.test.ts)
     ...(await checkPurity(declarationFiles)),
     // 非推奨のものを使っていないか (ADR 20)
-    ...(await checkDeprecations(declarationFiles))
+    ...(await checkDeprecations(declarationFiles)),
+    // 旧名の規約ファイル (command.tsx) を使っていないか (ADR 20)
+    ...deprecatedFileWarnings(deprecatedFiles)
   );
   const program = options.program ?? (await readProgramName());
   // 名前は help 用の program ではなく package.json の bin のキーから取る
@@ -179,8 +183,8 @@ export async function generate(
     for (const route of routes) {
       const report = effects.get(route.name);
       if (report === undefined || report.escapes.length === 0) continue;
-      if (await acceptsUnknown(route.files.command as string)) continue;
-      const where = route.files.command as string;
+      if (await acceptsUnknown(route.files.cmd as string)) continue;
+      const where = route.files.cmd as string;
       const reasons = report.escapes
         .map(
           (escape) =>

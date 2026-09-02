@@ -1,7 +1,7 @@
 /**
  * 宣言から `.decopin/types.d.ts` を書く (ADR 9 の emit)。
  *
- * `command.tsx` は `CommandProps<'hello'>` でこの型を引く。
+ * `cmd.tsx` は `CommandProps<'hello'>` でこの型を引く。
  * JSX 式は型引数を運べない (ADR 9) ので、型はここを通してしか届かない。
  */
 import { relative } from 'node:path';
@@ -130,7 +130,7 @@ export function stdinTypeText(stdin: StdinSpec | undefined): string {
  *
  * argv と違って中身を評価できない (I/O を伴う) ので、**TypeScript の推論を
  * 借りる**。生成した型に `import()` を書いておけば、data.tsx の戻り値が
- * そのまま `command.tsx` の props に届く。Compiler API は要らない
+ * そのまま `cmd.tsx` の props に届く。Compiler API は要らない
  */
 export function dataTypeText(
   file: string | undefined,

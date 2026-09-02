@@ -1,7 +1,7 @@
 /**
  * `data.tsx` と `--json` (ADR 25)。
  *
- * データは表示より先に確定し、`command.tsx` は props で受けるだけ。
+ * データは表示より先に確定し、`cmd.tsx` は props で受けるだけ。
  * `--json` は view を呼ばずにデータをそのまま出す
  */
 import { describe, expect, test } from 'bun:test';
@@ -39,7 +39,7 @@ function withData(
   view: unknown,
   extra: Partial<RouteLoaders> = {}
 ): RouteLoaders {
-  return { command: loader(view), data: loader(provide), ...extra };
+  return { cmd: loader(view), data: loader(provide), ...extra };
 }
 
 const table: RouteTable = {
@@ -60,7 +60,7 @@ const table: RouteTable = {
       <Line>{String(data.ready)}</Line>
     )
   ),
-  plain: { command: loader(() => <Line>no data here</Line>) },
+  plain: { cmd: loader(() => <Line>no data here</Line>) },
   broken: withData('not a function', () => <Line>never</Line>),
   failing: withData(
     () => {
@@ -71,7 +71,7 @@ const table: RouteTable = {
 };
 
 describe('data.tsx', () => {
-  test('command.tsx は data を props で受ける', async () => {
+  test('cmd.tsx は data を props で受ける', async () => {
     const result = await invoke(table, ['users']);
     expect(result).toEqual({ code: 0, stdout: '2: alice, bob\n', stderr: '' });
   });
