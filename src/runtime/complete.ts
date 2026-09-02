@@ -55,7 +55,7 @@ export type Completer = (
 ) => Promise<readonly (string | Candidate)[]> | readonly (string | Candidate)[];
 
 /** 補完はユーザーの打鍵を待たせるので、これ以上かかる候補は諦める */
-const COMPLETER_TIMEOUT_MS = 5000;
+export const COMPLETER_TIMEOUT_MS = 5000;
 
 /**
  * complete.tsx を呼ぶ。壊れていても、遅くても、補完を止めない (空を返す)。
@@ -63,7 +63,8 @@ const COMPLETER_TIMEOUT_MS = 5000;
  */
 async function dynamicValues(
   loader: (() => Promise<unknown>) | undefined,
-  props: CompleteProps
+  props: CompleteProps,
+  timeoutMs: number
 ): Promise<Candidate[]> {
   if (loader === undefined) return [];
   try {
@@ -73,7 +74,7 @@ async function dynamicValues(
     const timeout = new Promise<never>((_, reject) => {
       setTimeout(
         () => reject(new Error('completion timed out')),
-        COMPLETER_TIMEOUT_MS
+        timeoutMs
       ).unref?.();
     });
     const result = await Promise.race([
@@ -133,7 +134,12 @@ function findOption(spec: ArgvSpec, token: string): OptionSpec | undefined {
 export async function completionCandidates(
   table: RouteTable,
   words: readonly string[],
-  context: { env?: Record<string, string | undefined>; cwd?: string } = {}
+  context: {
+    env?: Record<string, string | undefined>;
+    cwd?: string;
+    /** complete.tsx を待つ上限 (テストから短くする)。既定 5 秒 */
+    timeoutMs?: number;
+  } = {}
 ): Promise<Candidate[]> {
   const current = words[words.length - 1] ?? '';
   const prior = words.slice(0, -1);
@@ -194,6 +200,7 @@ export async function completionCandidates(
   const probe = tokenize([...rest, PROBE], spec);
 
   // 実行時に決まる候補 (complete.tsx)。打った分は生の文字列で渡す
+  const timeout = context.timeoutMs ?? COMPLETER_TIMEOUT_MS;
   const completeProps = (name: string, partial: string): CompleteProps => ({
     name,
     partial,
@@ -214,7 +221,8 @@ export async function completionCandidates(
     candidates.push(
       ...(await dynamicValues(
         route.complete,
-        completeProps(pending.name, current)
+        completeProps(pending.name, current),
+        timeout
       ))
     );
     return candidates;
@@ -237,7 +245,8 @@ export async function completionCandidates(
         }
         for (const item of await dynamicValues(
           route.complete,
-          completeProps(option.name, partial)
+          completeProps(option.name, partial),
+          timeout
         )) {
           candidates.push({ ...item, value: `${flag}=${item.value}` });
         }
@@ -271,7 +280,11 @@ export async function completionCandidates(
       if (value.startsWith(current)) candidates.push({ value });
     }
     candidates.push(
-      ...(await dynamicValues(route.complete, completeProps(arg.name, current)))
+      ...(await dynamicValues(
+        route.complete,
+        completeProps(arg.name, current),
+        timeout
+      ))
     );
   }
   return candidates;

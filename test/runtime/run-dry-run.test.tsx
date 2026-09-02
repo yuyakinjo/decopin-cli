@@ -103,6 +103,13 @@ describe('--dry-run', () => {
     expect(JSON.parse(result.stdout)).toEqual({ what: 'v1', dryRun: true });
   });
 
+  test('--help には並べない (従っていないコマンドで嘘になる)', async () => {
+    const result = await invoke(['ship', '--help']);
+    expect(result.code).toBe(0);
+    expect(result.stdout).toContain('--help');
+    expect(result.stdout).not.toContain('--dry-run');
+  });
+
   test('-- より後ろの --dry-run は位置引数 (予約語として扱わない)', async () => {
     const result = await invoke(['ship', '--', '--dry-run']);
     expect(result.stdout).toBe('shipped\n');

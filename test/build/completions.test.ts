@@ -44,6 +44,15 @@ describe('zsh 補完シム', () => {
     expect(scoped).not.toContain('@scope');
   });
 
+  test('生成したシムは zsh がそのまま読める (手元に zsh があるとき)', async () => {
+    if (Bun.which('zsh') === null) return;
+    const proc = Bun.spawn(['zsh', '-n'], {
+      stdin: new Blob([generateZshCompletion('my-cli')]),
+      stderr: 'pipe',
+    });
+    expect(await proc.exited).toBe(0);
+  });
+
   test('zsh の関数名に使えない文字は潰す', () => {
     const odd = generateZshCompletion('my.cli');
     expect(odd).toContain('_my_cli() {');

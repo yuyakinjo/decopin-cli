@@ -10,6 +10,8 @@ import { describe, expect, test } from 'bun:test';
 import { Arg, Argv, Line, Option, run, Type } from 'decopin-cli';
 import type { RouteTable } from 'decopin-cli';
 
+import { completionCandidates } from '../../src/runtime/complete.ts';
+
 function recorder() {
   const chunks: string[] = [];
   return {
@@ -250,10 +252,19 @@ describe('complete.tsx: 実行時に決まる候補 (ADR 38)', () => {
     });
   });
 
-  test('投げても、返ってこなくても、補完は空で済む', async () => {
+  test('投げたら空で済む', async () => {
     const broken = await complete(dynamicTable, ['broken', 'x']);
     expect(broken.code).toBe(0);
     expect(broken.stdout).toBe('');
+  });
+
+  test('返ってこなければ諦めて空 (打鍵を待たせない)', async () => {
+    const started = performance.now();
+    const candidates = await completionCandidates(dynamicTable, ['slow', 'x'], {
+      timeoutMs: 50,
+    });
+    expect(candidates).toEqual([]);
+    expect(performance.now() - started).toBeLessThan(1000);
   });
 });
 
