@@ -35,6 +35,11 @@ export interface CommandBase {
   cwd: string;
   /** `app/env.tsx` から検証済みの環境変数 (無ければ空) */
   env: EnvVars;
+  /**
+   * `--dry-run` が付いているか (ADR 37)。真なら何も変えず、何をするつもり
+   * だったかを見せる。枠組みは差し替えをしないので、従うのはコマンドの責任
+   */
+  dryRun: boolean;
 }
 
 /** 型が未生成のときの緩いフォールバック */

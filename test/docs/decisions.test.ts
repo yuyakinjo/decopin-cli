@@ -305,6 +305,11 @@ const GUARDS: Record<number, Guard> = {
     label: '動的な出力は AsyncIterable 駆動の島に限る',
     file: 'test/renderer/present.test.tsx',
   },
+  37: {
+    kind: 'test',
+    label: '--dry-run は渡すだけ (差し替えは実測で断念)',
+    file: 'test/runtime/run-dry-run.test.tsx',
+  },
   36: {
     kind: 'test',
     label: '対話は端末とだけ (choose は関数、パイプでは exit 2)',

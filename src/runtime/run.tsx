@@ -43,6 +43,7 @@ import { present } from './override.ts';
 import {
   COMPLETE_COMMAND,
   HELP_FLAGS,
+  DRY_RUN_FLAG,
   JSON_FLAG,
   MCP_COMMAND,
   NO_COLOR_FLAG,
@@ -83,6 +84,8 @@ export interface CommandContext {
   /** コマンド名として消費されなかった生の argv */
   argv: readonly string[];
   cwd: string;
+  /** `--dry-run` が付いているか (ADR 37) */
+  dryRun: boolean;
 }
 
 /**
@@ -409,6 +412,8 @@ export async function run(
 
   // --json はコマンドに依らないので、失敗しても同じ判断ができるよう先に見る
   const jsonRequested = findFlag(argv, [JSON_FLAG]);
+  // --dry-run も同じ。値はコマンドに渡すだけ (ADR 37)
+  const dryRun = findFlag(argv, [DRY_RUN_FLAG]);
 
   // choose() は利用者のコードから呼ばれるので、端末はここで差し込む (ADR 36)
   setTerminal(
@@ -546,6 +551,7 @@ export async function run(
       ...HELP_FLAGS,
       VERSION_FLAG,
       JSON_FLAG,
+      DRY_RUN_FLAG,
     ]);
     let args: Record<string, unknown> = {};
     let commandOptions: Record<string, unknown> = {};
@@ -592,6 +598,7 @@ export async function run(
           stdin: stdinValue,
           argv: rest,
           cwd,
+          dryRun,
         };
         // データは表示より先に確定する。--json のときは view を呼ばない
         const data = await validateData(
@@ -617,7 +624,7 @@ export async function run(
           context
         )) as Renderable;
       },
-      { env, args, options: commandOptions, argv: rest, cwd }
+      { env, args, options: commandOptions, argv: rest, cwd, dryRun }
     );
 
     const declared = await withLayout(output, skipLayout);

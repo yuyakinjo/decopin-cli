@@ -60,6 +60,7 @@ const CASES: Record<string, { argv: string[]; stdin?: StdinSource }> = {
   'user/list': { argv: ['user', 'list'] },
   // 環境が整っていない経路も stdout は空のまま (ADR 31)
   publish: { argv: ['publish'] },
+  'publish --dry-run': { argv: ['publish', '--dry-run'] },
   'user/show': { argv: ['user', 'show', 'alice'] },
   // notFound() の経路も stdout は空のまま (ADR 30)
   'user/show (見つからない)': { argv: ['user', 'show', 'nope'] },

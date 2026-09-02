@@ -740,8 +740,26 @@ when the terminal is not UTF-8.
 
 ## Reserved options
 
-`--help`, `-h`, `--version` and `--no-color` are handled by the framework.
-Declaring any of them in `argv.tsx` is a build error.
+`--help`, `-h`, `--version`, `--no-color`, `--json` and `--dry-run` are handled
+by the framework. Declaring any of them in `argv.tsx` is a build error.
+
+`--dry-run` is the honest kind: the framework strips the flag and hands every
+command, `data.tsx` and middleware a `dryRun: boolean`. It does not intercept
+file writes or network calls for you. We measured: a static
+`import { writeFile } from 'node:fs/promises'` binds at link time and never
+sees a runtime patch, and Bun's bundler never lets a plugin redirect a builtin,
+so any "automatic" dry run would silently miss the most common write API. A
+flag that is trusted and then writes anyway is worse than no flag, so honouring
+it is the command's job:
+
+```tsx
+// app/publish/data.tsx
+import type { CommandProps } from 'decopin-cli';
+
+export default function Data({ dryRun }: CommandProps<'publish'>) {
+  return { published: !dryRun, dryRun };
+}
+```
 
 ## Shell completion
 
