@@ -137,6 +137,39 @@ describe('カテゴリごとの検出', () => {
     expect(report.sites[0]?.file).toContain('spawner.ts');
   });
 
+  test('入口からの経路を言える (なぜ届くのかが分からないと直せない)', async () => {
+    await writeFile(
+      join(dir, 'via.ts'),
+      "export { go } from './spawner.ts';\n"
+    );
+    const report = await verdicts(
+      "import { go } from './via.ts';\nexport default go;",
+      'entry.tsx'
+    );
+    const site = report.sites[0];
+    expect(site?.path.map((file) => file.split('/').at(-1))).toEqual([
+      'entry.tsx',
+      'via.ts',
+      'spawner.ts',
+    ]);
+    expect(site?.via).toBe('Bun.spawn');
+  });
+
+  test('escape にも経路が付く', async () => {
+    await writeFile(
+      join(dir, 'evil.ts'),
+      "export const e = () => eval('1');\n"
+    );
+    const report = await verdicts(
+      "import { e } from './evil.ts';\nexport default e;",
+      'entry-evil.tsx'
+    );
+    expect(report.escapes[0]?.path.map((f) => f.split('/').at(-1))).toEqual([
+      'entry-evil.tsx',
+      'evil.ts',
+    ]);
+  });
+
   test('触っていない依存は none を汚さない', async () => {
     const report = await verdicts(
       "import { n } from './pure.ts';\nexport default () => n;"

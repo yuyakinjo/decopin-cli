@@ -28,6 +28,11 @@ export interface EffectSite {
   via: string;
   /** どのファイルで */
   file: string;
+  /**
+   * 入口からそのファイルまでの import の並び (入口が先頭、`file` が末尾)。
+   * 「なぜこのコマンドが network に届くのか」を答えるためのもの
+   */
+  path: string[];
 }
 
 /** 解析を諦めた 1 件 */
@@ -35,6 +40,8 @@ export interface Escape {
   /** 何に当たったか (`eval`, `dynamic import`) */
   via: string;
   file: string;
+  /** 入口からそのファイルまでの import の並び */
+  path: string[];
 }
 
 export interface EffectReport {
@@ -259,22 +266,42 @@ export function importedNames(
 
 const JS_LIKE = /\.(m|c)?(t|j)sx?$/;
 
+/**
+ * そのコマンドが `unknown` を受け入れると宣言しているか (ADR 34)。
+ *
+ * `export const unsafeEval = true` を command.tsx に書く。Next.js の
+ * route segment config と同じ形で、`skipLayout` と並ぶ。モジュールを評価
+ * せず文面で見るのは、ビルド時にコマンドの本体を実行しないため
+ */
+export async function acceptsUnknown(commandFile: string): Promise<boolean> {
+  try {
+    const source = stripLiterals(await Bun.file(commandFile).text());
+    return /\bexport\s+const\s+unsafeEval\s*=\s*true\b/.test(source);
+  } catch {
+    return false;
+  }
+}
+
+/** 1 ファイルだけを見た結果。経路は入口ごとに違うので、集計のときに付ける */
+interface FileAnalysis {
+  sites: Omit<EffectSite, 'path'>[];
+  escapes: Omit<Escape, 'path'>[];
+  deps: string[];
+}
+
 interface WalkState {
   sites: EffectSite[];
   escapes: Escape[];
   visited: Set<string>;
   /** 解析済みファイルの使い回し (node_modules を何度も歩かない) */
-  cache: Map<
-    string,
-    { sites: EffectSite[]; escapes: Escape[]; deps: string[] }
-  >;
+  cache: Map<string, FileAnalysis>;
 }
 
 /** 1 ファイルを見て、直接の sink と依存先を返す */
 async function analyzeFile(
   file: string,
   cache: WalkState['cache']
-): Promise<{ sites: EffectSite[]; escapes: Escape[]; deps: string[] }> {
+): Promise<FileAnalysis> {
   const cached = cache.get(file);
   if (cached !== undefined) return cached;
 
@@ -287,8 +314,8 @@ async function analyzeFile(
     return empty;
   }
 
-  const sites: EffectSite[] = [];
-  const escapes: Escape[] = [];
+  const sites: FileAnalysis['sites'] = [];
+  const escapes: FileAnalysis['escapes'] = [];
   const deps: string[] = [];
   const code = stripLiterals(source);
 
@@ -389,15 +416,38 @@ export async function analyzeEffects(
     cache,
   };
 
+  // 誰が最初にそのファイルを import したか。幅優先なので、入口からの
+  // 最短の経路になる (同じファイルに 2 本の道があれば短い方を言う)
+  const parents = new Map<string, string | undefined>(
+    entries.map((entry) => [entry, undefined])
+  );
+  const pathTo = (file: string): string[] => {
+    const path: string[] = [];
+    for (
+      let at: string | undefined = file;
+      at !== undefined;
+      at = parents.get(at)
+    ) {
+      path.unshift(at);
+    }
+    return path;
+  };
+
   const queue = [...entries];
   while (queue.length > 0) {
     const file = queue.shift() as string;
     if (state.visited.has(file)) continue;
     state.visited.add(file);
     const analyzed = await analyzeFile(file, state.cache);
-    state.sites.push(...analyzed.sites);
-    state.escapes.push(...analyzed.escapes);
-    queue.push(...analyzed.deps);
+    const path = pathTo(file);
+    state.sites.push(...analyzed.sites.map((site) => ({ ...site, path })));
+    state.escapes.push(
+      ...analyzed.escapes.map((escape) => ({ ...escape, path }))
+    );
+    for (const dep of analyzed.deps) {
+      if (!parents.has(dep)) parents.set(dep, file);
+      queue.push(dep);
+    }
   }
 
   const found = new Set(state.sites.map((site) => site.category));

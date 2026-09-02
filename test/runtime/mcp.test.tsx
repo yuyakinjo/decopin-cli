@@ -13,6 +13,7 @@ import { join } from 'node:path';
 import {
   annotationsFor,
   Arg,
+  EFFECTS_META_KEY,
   Argv,
   Line,
   Option,
@@ -295,6 +296,16 @@ describe('tools/list', () => {
     // network に届くものは read-only とも closed-world とも言わない
     expect(byName.greet?.annotations).toBeUndefined();
     expect(byName.count?.annotations).toBeUndefined();
+  });
+
+  test('_meta には生の判定が載る。hint が無い理由はここで読める', () => {
+    const byName = Object.fromEntries(tools.map((tool) => [tool.name, tool]));
+    expect(byName.greet?._meta).toEqual({
+      [EFFECTS_META_KEY]: { ...NONE, network: 'detected' },
+    });
+    expect(byName.count?._meta?.[EFFECTS_META_KEY]['fs.write']).toBe('unknown');
+    // 手書きの表 (判定なし) なら _meta も無い
+    expect(byName.bare?._meta).toBeUndefined();
   });
 });
 
