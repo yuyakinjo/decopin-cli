@@ -30,6 +30,64 @@ export interface Candidate {
   description?: string;
 }
 
+/**
+ * `complete.tsx` が受け取るもの (ADR 38)。
+ *
+ * 値が実行時にしか決まらない (クラスタ名、ブランチ名 ...) ものは宣言に書けない。
+ * Tab のたびにこの関数が呼ばれ、返した候補が `Type.Enum` の値と同じ扱いになる
+ */
+export interface CompleteProps {
+  /** 補完しようとしている位置引数 / オプションの名前 */
+  name: string;
+  /** 打ちかけの文字。候補の前方一致は枠組みがやるので、全部返してよい */
+  partial: string;
+  /** ここまでに打たれたオプション (生の文字列。array は並び、boolean は true) */
+  options: Record<string, readonly (string | true)[]>;
+  /** ここまでに打たれた位置引数 (生の文字列) */
+  args: readonly string[];
+  env: Record<string, string | undefined>;
+  cwd: string;
+}
+
+/** complete.tsx の default export の形。文字列だけでも、説明つきでもよい */
+export type Completer = (
+  props: CompleteProps
+) => Promise<readonly (string | Candidate)[]> | readonly (string | Candidate)[];
+
+/** 補完はユーザーの打鍵を待たせるので、これ以上かかる候補は諦める */
+const COMPLETER_TIMEOUT_MS = 5000;
+
+/**
+ * complete.tsx を呼ぶ。壊れていても、遅くても、補完を止めない (空を返す)。
+ * 候補の前方一致はここで揃える (宣言の enum と同じ振る舞いにするため)
+ */
+async function dynamicValues(
+  loader: (() => Promise<unknown>) | undefined,
+  props: CompleteProps
+): Promise<Candidate[]> {
+  if (loader === undefined) return [];
+  try {
+    const loaded = (await loader()) as { default?: unknown };
+    const completer = loaded.default;
+    if (typeof completer !== 'function') return [];
+    const timeout = new Promise<never>((_, reject) => {
+      setTimeout(
+        () => reject(new Error('completion timed out')),
+        COMPLETER_TIMEOUT_MS
+      ).unref?.();
+    });
+    const result = await Promise.race([
+      Promise.resolve((completer as Completer)(props)),
+      timeout,
+    ]);
+    return result
+      .map((item) => (typeof item === 'string' ? { value: item } : item))
+      .filter((item) => item.value.startsWith(props.partial));
+  } catch {
+    return [];
+  }
+}
+
 /** 値そのものを提案できるのは enum だけ。array / oneOf は中身を見る */
 function enumValues(type: TypeNode): string[] {
   if (type.kind === 'enum') return type.values;
@@ -74,7 +132,8 @@ function findOption(spec: ArgvSpec, token: string): OptionSpec | undefined {
  */
 export async function completionCandidates(
   table: RouteTable,
-  words: readonly string[]
+  words: readonly string[],
+  context: { env?: Record<string, string | undefined>; cwd?: string } = {}
 ): Promise<Candidate[]> {
   const current = words[words.length - 1] ?? '';
   const prior = words.slice(0, -1);
@@ -134,6 +193,16 @@ export async function completionCandidates(
   const typed = tokenize(rest, spec);
   const probe = tokenize([...rest, PROBE], spec);
 
+  // 実行時に決まる候補 (complete.tsx)。打った分は生の文字列で渡す
+  const completeProps = (name: string, partial: string): CompleteProps => ({
+    name,
+    partial,
+    options: Object.fromEntries(typed.options),
+    args: typed.positionals,
+    env: context.env ?? process.env,
+    cwd: context.cwd ?? process.cwd(),
+  });
+
   // 2. 直前の語が値を待っているオプションなら、その値の候補
   const pending = spec.options.find((option) =>
     probe.options.get(option.name)?.includes(PROBE)
@@ -142,6 +211,12 @@ export async function completionCandidates(
     for (const value of enumValues(pending.type)) {
       if (value.startsWith(current)) candidates.push({ value });
     }
+    candidates.push(
+      ...(await dynamicValues(
+        route.complete,
+        completeProps(pending.name, current)
+      ))
+    );
     return candidates;
   }
 
@@ -159,6 +234,12 @@ export async function completionCandidates(
           if (value.startsWith(partial)) {
             candidates.push({ value: `${flag}=${value}` });
           }
+        }
+        for (const item of await dynamicValues(
+          route.complete,
+          completeProps(option.name, partial)
+        )) {
+          candidates.push({ ...item, value: `${flag}=${item.value}` });
         }
       }
       return candidates;
@@ -189,6 +270,9 @@ export async function completionCandidates(
     for (const value of enumValues(arg.type)) {
       if (value.startsWith(current)) candidates.push({ value });
     }
+    candidates.push(
+      ...(await dynamicValues(route.complete, completeProps(arg.name, current)))
+    );
   }
   return candidates;
 }

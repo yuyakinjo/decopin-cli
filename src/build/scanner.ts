@@ -20,6 +20,7 @@ export const CONVENTION_FILES = [
   'middleware',
   'help',
   'shell',
+  'complete',
 ] as const;
 
 export type ConventionFile = (typeof CONVENTION_FILES)[number];

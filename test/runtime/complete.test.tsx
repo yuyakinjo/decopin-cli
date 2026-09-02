@@ -164,6 +164,99 @@ describe('値の補完', () => {
   });
 });
 
+describe('complete.tsx: 実行時に決まる候補 (ADR 38)', () => {
+  const seen: unknown[] = [];
+  const dynamicTable: RouteTable = {
+    branch: {
+      argv: loader(() => (
+        <Argv>
+          <Arg name="name" type="string" required />
+          <Option name="remote" type="string" default="origin" />
+          <Option name="kind" default="feature">
+            <Type.Enum values={['feature', 'fix']} />
+          </Option>
+        </Argv>
+      )),
+      command: loader(() => <Line>unused</Line>),
+      complete: loader((props: unknown) => {
+        seen.push(props);
+        const { name } = props as { name: string };
+        if (name === 'name')
+          return ['main', 'feat/a', { value: 'fix/b', description: 'bugfix' }];
+        if (name === 'remote') return ['origin', 'upstream'];
+        return [];
+      }),
+    },
+    slow: {
+      argv: loader(() => (
+        <Argv>
+          <Arg name="x" type="string" required />
+        </Argv>
+      )),
+      command: loader(() => <Line>unused</Line>),
+      complete: loader(() => new Promise(() => {})),
+    },
+    broken: {
+      argv: loader(() => (
+        <Argv>
+          <Arg name="x" type="string" required />
+        </Argv>
+      )),
+      command: loader(() => <Line>unused</Line>),
+      complete: loader(() => {
+        throw new Error('boom');
+      }),
+    },
+  };
+
+  test('位置引数の候補を返し、前方一致と説明を揃える', async () => {
+    seen.length = 0;
+    const result = await complete(dynamicTable, ['branch', 'f']);
+    expect(result.stdout).toBe('feat/a\nfix/b\tbugfix\n');
+    expect(seen[0]).toMatchObject({ name: 'name', partial: 'f', args: [] });
+  });
+
+  test('オプションの値も補完し、宣言の enum と共存する', async () => {
+    const remote = await complete(dynamicTable, [
+      'branch',
+      'main',
+      '--remote',
+      'up',
+    ]);
+    expect(remote.stdout).toBe('upstream\n');
+    const inline = await complete(dynamicTable, [
+      'branch',
+      'main',
+      '--remote=or',
+    ]);
+    expect(inline.stdout).toBe('--remote=origin\n');
+    // enum は宣言から、complete.tsx は呼ばれても空を返す。両方が並ぶ
+    const kind = await complete(dynamicTable, [
+      'branch',
+      'main',
+      '--kind',
+      'f',
+    ]);
+    expect(kind.stdout).toBe('feature\nfix\n');
+  });
+
+  test('打った分は生の文字列で渡る', async () => {
+    seen.length = 0;
+    await complete(dynamicTable, ['branch', '--remote', 'upstream', 'ma']);
+    expect(seen[0]).toMatchObject({
+      name: 'name',
+      partial: 'ma',
+      options: { remote: ['upstream'] },
+    });
+  });
+
+  test('投げても、返ってこなくても、補完は空で済む', async () => {
+    const broken = await complete(dynamicTable, ['broken', 'x']);
+    expect(broken.code).toBe(0);
+    expect(broken.stdout).toBe('');
+  });
+});
+
 describe('解釈は実行時のトークナイザと同じ (tokens.ts)', () => {
   test('`--name=` の形でも値を補完する (語全体を返す)', async () => {
     const result = await complete(table, ['deploy', '--env=']);

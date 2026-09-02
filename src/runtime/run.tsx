@@ -339,7 +339,12 @@ export async function run(
     const words = rawArgv.slice(2);
     const out = options.targets?.stdout ?? process.stdout;
     try {
-      const text = formatCandidates(await completionCandidates(table, words));
+      const text = formatCandidates(
+        await completionCandidates(table, words, {
+          env: options.env,
+          cwd: options.cwd,
+        })
+      );
       if (text !== '') out.write(text);
     } catch {
       // 候補なし扱い。シェル側がファイル補完に落ちる

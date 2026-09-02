@@ -531,6 +531,7 @@ Errors go to stderr by default. The exit code follows `error.kind`, and
 | `middleware.tsx` | wraps the execution. Nothing inside runs until you call `next()` |
 | `help.tsx`       | overrides `--help`. Per directory                                |
 | `shell.tsx`      | what the parent shell should do afterwards (`cd`, `export`)      |
+| `complete.tsx`   | completion candidates that only exist at run time                |
 | `not-found.tsx`  | the view for an unknown command                                  |
 | `env.tsx`        | declares environment variables, validated once at startup        |
 | `version.tsx`    | what `--version` prints                                          |
@@ -798,6 +799,35 @@ add or remove commands — rebuilding the CLI is enough, and zsh's
 completion cache never goes stale. `__complete` is reserved by the
 framework and hidden from help. When there are no candidates, completion
 falls back to filenames.
+
+### Candidates that only exist at run time
+
+`Type.Enum` values complete from the declaration. For names that only exist
+at run time (a cluster, a branch, a user) add `complete.tsx` next to the
+command. It receives which argument is being completed and what has been
+typed so far, and returns candidates; the framework filters by prefix and
+shows the description next to each value:
+
+```tsx
+// app/deploy/complete.tsx
+import type { CompleteProps } from 'decopin-cli';
+
+export default async function Complete({ name, options }: CompleteProps) {
+  if (name !== 'target') return [];
+  // whatever is true right now: an API call, a git command, a directory listing
+  const region = options.region?.[0] ?? 'ap-northeast-1';
+  const targets = await listTargets(String(region));
+  return targets.map((t) => ({ value: t.name, description: t.status }));
+}
+
+declare function listTargets(
+  region: string
+): Promise<{ name: string; status: string }[]>;
+```
+
+It runs only when Tab is pressed, so heavy imports (an AWS SDK, say) stay
+out of `argv.tsx`. If it throws or takes longer than five seconds, completion
+falls back to no candidates rather than an error at the prompt.
 
 ## Exposing commands as MCP tools
 
