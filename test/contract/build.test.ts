@@ -79,7 +79,7 @@ describe('routes.ts', () => {
 });
 
 describe('entry.ts', () => {
-  const code = generateEntry('mycli');
+  const code = generateEntry('mycli', 'mycli');
 
   test('SIGINT を 130 で終わらせる (Bun はハンドラなしだと 0 で終わる)', () => {
     expect(code).toContain("process.on('SIGINT', () => process.exit(130))");

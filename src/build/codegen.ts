@@ -19,7 +19,14 @@ function toSpecifier(outDir: string, file: string): string {
 }
 
 /** ルートに書き出す規約ファイル。Phase が進むごとに増える */
-const WIRED_FILES = ['command', 'argv', 'stdin', 'data', 'output'] as const;
+const WIRED_FILES = [
+  'command',
+  'argv',
+  'stdin',
+  'data',
+  'output',
+  'shell',
+] as const;
 
 function importer(outDir: string, file: string): string {
   return `() => import(${JSON.stringify(toSpecifier(outDir, file))})`;
@@ -116,7 +123,7 @@ ${single('versionFile', input.version)}
 `;
 }
 
-export function generateEntry(program: string): string {
+export function generateEntry(program: string, bin: string): string {
   return `${HEADER}
 import { run } from 'decopin-cli';
 import {
@@ -137,6 +144,7 @@ process.on('SIGINT', () => process.exit(130));
 // rejection path here only catches bugs in the framework.
 run(routes, {
   program: ${JSON.stringify(program)},
+  bin: ${JSON.stringify(bin)},
   globalError,
   notFound,
   helps,

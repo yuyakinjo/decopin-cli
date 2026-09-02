@@ -304,6 +304,11 @@ const GUARDS: Record<number, Guard> = {
     label: '動的な出力は AsyncIterable 駆動の島に限る',
     file: 'test/renderer/present.test.tsx',
   },
+  35: {
+    kind: 'test',
+    label: 'shell.tsx: 親シェルへの指示はファイル経由、成功時だけ',
+    file: 'test/runtime/shell.test.tsx',
+  },
   34: {
     kind: 'test',
     label: 'ポリシーは strict だけ (申告させない、unsafeEval で opt-out)',

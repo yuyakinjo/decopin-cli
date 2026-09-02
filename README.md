@@ -494,6 +494,7 @@ Errors go to stderr by default. The exit code follows `error.kind`, and
 | `layout.tsx`     | wraps the output. Inherited from parent directories              |
 | `middleware.tsx` | wraps the execution. Nothing inside runs until you call `next()` |
 | `help.tsx`       | overrides `--help`. Per directory                                |
+| `shell.tsx`      | what the parent shell should do afterwards (`cd`, `export`)      |
 | `not-found.tsx`  | the view for an unknown command                                  |
 | `env.tsx`        | declares environment variables, validated once at startup        |
 | `version.tsx`    | what `--version` prints                                          |
@@ -520,6 +521,41 @@ export default async function Middleware({ next, options }: MiddlewareProps) {
 ```
 
 Directories starting with `_` never become commands (put shared code there).
+
+### Changing the parent shell
+
+A child process cannot `cd` for its parent or `export` into it. That is why
+`z`, `direnv` and friends are shell functions. `shell.tsx` gives you the same
+trick without writing shell: declare what should happen, and the framework
+writes the shell code with the quoting done.
+
+```tsx
+// app/go/shell.tsx — receives the same props as command.tsx
+import { Shell, type CommandProps } from 'decopin-cli';
+
+export default function ShellChanges({ data }: CommandProps<'go'>) {
+  return (
+    <>
+      <Shell.Cd to={data.path} />
+      <Shell.Export name="DECOPIN_LAST_PLACE" value={data.place} />
+    </>
+  );
+}
+```
+
+Install the hook once in your rc file, the way `zoxide init` works:
+
+```sh
+eval "$(mycli __shell zsh)"   # or bash
+```
+
+The hook is a function with the CLI's name. It runs the real binary with a
+temp file path in `DECOPIN_SHELL_FILE`, and if the command succeeded and
+wrote to it, sources the file. stdout and stderr are untouched, so pipes
+keep working. Without the hook, the command still runs; it just tells you on
+stderr that the shell changes were not applied. `Shell.Cd`, `Shell.Export`,
+`Shell.Unset`, `Shell.Alias` and `Shell.Source` quote their values;
+`Shell.Raw` passes code through verbatim when you need something else.
 
 ## Subcommands
 
@@ -775,6 +811,7 @@ JSON-RPC, because that is all stdio MCP needs.
 | [`app/publish`](app/publish)         | `authRequired()` / `missingTool()` with fix hints                     |
 | [`app/stats`](app/stats)             | `data.tsx` split from the view, and `--json`                          |
 | [`app/crash`](app/crash)             | `error.tsx` and `<Exit>`                                              |
+| [`app/go`](app/go)                   | `shell.tsx`: `cd` and `export` in the parent shell                    |
 
 ## Startup cost
 

@@ -448,6 +448,7 @@ describe('ビルドした app/ から', () => {
       'count',
       'crash',
       'deploy',
+      'go',
       'hello',
       'publish',
       'stats',

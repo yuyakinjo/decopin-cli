@@ -87,7 +87,14 @@ export type DeclarationHostKind =
   | 'type.object'
   | 'type.field'
   | 'type.oneOf'
-  | 'type.custom';
+  | 'type.custom'
+  // 親シェルへの指示 (shell.tsx。ADR 35)
+  | 'shell.cd'
+  | 'shell.export'
+  | 'shell.unset'
+  | 'shell.alias'
+  | 'shell.source'
+  | 'shell.raw';
 
 /** レンダラー / 宣言の評価器が解釈する組み込みコンポーネントの種類 */
 export type HostKind = OutputHostKind | DeclarationHostKind;

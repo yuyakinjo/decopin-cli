@@ -46,6 +46,17 @@ export type {
   VersionProps,
 } from './components/input/index.ts';
 export { Type } from './components/type/index.ts';
+export { Shell } from './components/shell/index.ts';
+export type {
+  AliasProps,
+  CdProps,
+  ExportProps,
+  RawProps,
+  SourceProps,
+  UnsetProps,
+} from './components/shell/index.ts';
+export { generateShellHook, renderShell } from './runtime/shell.ts';
+export type { ShellName } from './runtime/shell.ts';
 export { CliError } from './runtime/errors.ts';
 export type { ErrorKind, ErrorProps } from './runtime/errors.ts';
 export { DeclarationError } from './declaration/errors.ts';
