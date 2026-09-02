@@ -709,12 +709,18 @@ Color turns itself off when it should: piped or redirected output, `NO_COLOR`,
 `--no-color`, or `TERM=dumb` (`FORCE_COLOR` forces it back on). `<Line>` never
 wraps on its own, so line-oriented consumers downstream keep working.
 
-## Dynamic regions
+## Partial Repainting (PPR)
 
 Output is static by default. When part of it should update over time — a
 progress display, a step counter — opt in with `<Dynamic>`. Time is passed
 as a stream of values: hand it an async generator, and render a frame from
 the latest value.
+
+We call this **Partial Repainting**: the document streams, and dynamic
+islands repaint in place. It is the CLI counterpart of Next.js Partial
+Prerendering — same acronym, same "static by default, dynamic opt-in"
+stance — but a terminal has no build-time render, and the island is redrawn
+many times rather than filled once, so the P stands for repainting.
 
 ```tsx
 import { Dynamic, Line, ProgressBar, Spinner } from 'decopin-cli';

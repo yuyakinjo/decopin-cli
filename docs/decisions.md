@@ -356,6 +356,10 @@ name は decopin-cli、コマンドは decopin)。補完はコマンド名に付
 ## ADR 22: 動的な出力は AsyncIterable 駆動の島に限る
 
 Next.js の PPR と同じ向きで、**静的がデフォルト、動的はオプトイン**。
+この方式を **Partial Repainting (PPR)** と呼ぶ。頭字語は Next.js の
+Partial Prerendering から借りるが、CLI にはビルド時レンダーが無く、島は
+一度埋めるのではなく何度も描き直すので、P は Repainting。README や
+リリースノートでは "Prerendering" とは書かない。
 `<Dynamic source={asyncIterable}>{(value) => JSX}</Dynamic>` だけが時間で
 書き換わり、それ以外は従来どおり静的に流れる。ドキュメントは上から順に
 flush され (ストリーミング)、島に当たったら source が尽きるまで領域を
