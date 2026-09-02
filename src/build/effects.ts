@@ -167,6 +167,56 @@ const FACTS: Record<string, readonly EffectCategory[]> = {
 };
 
 /**
+ * よく使われるパッケージの fact (パッケージ名で引く。サブパスも同じ判定)。
+ *
+ * 歩けば分かるものは載せない。載せるのは**歩くと `unknown` に落ちるもの**
+ * (`require(変数)` を中に持つ) と、歩くのが無駄に重いもの。実測 (2026-09):
+ * axios / fs-extra / zx / lodash-es / yaml は計算された require で unknown、
+ * lodash-es は 641 ファイル。判定は各パッケージの公開された役割から
+ */
+const PACKAGE_FACTS: Record<string, readonly EffectCategory[]> = {
+  axios: ['network'],
+  got: ['network'],
+  ky: ['network'],
+  'fs-extra': ['fs.read', 'fs.write'],
+  'graceful-fs': ['fs.read', 'fs.write'],
+  execa: ['process.spawn'],
+  'cross-spawn': ['process.spawn'],
+  zx: ['process.spawn', 'fs.read', 'fs.write', 'network'],
+  lodash: [],
+  'lodash-es': [],
+  yaml: [],
+  zod: [],
+  valibot: [],
+  chalk: [],
+  picocolors: [],
+  dayjs: [],
+};
+
+/**
+ * Bun が自前で持つモジュール。`Bun.resolveSync` は**指定子をそのまま返す**
+ * (ファイルに解決しない) ので、歩けない。放っておくと network のパッケージが
+ * `none` を名乗ってしまう (実測: node-fetch / undici が 1 ファイルで all none)
+ */
+const BUN_BUILTINS: Record<string, readonly EffectCategory[]> = {
+  bun: [],
+  'bun:test': [],
+  'bun:jsc': [],
+  'bun:sqlite': ['fs.read', 'fs.write'],
+  'node-fetch': ['network'],
+  undici: ['network'],
+  ws: ['network'],
+};
+
+/** `@scope/name/sub` → `@scope/name`、`name/sub` → `name` */
+export function packageName(specifier: string): string {
+  const parts = specifier.split('/');
+  return specifier.startsWith('@')
+    ? parts.slice(0, 2).join('/')
+    : (parts[0] as string);
+}
+
+/**
  * JSX の変換が**勝手に足す** import。書いた人の依存ではないので数えない。
  * (Bun.Transpiler は tsconfig を読まないので `react` を仮定して足す)
  */
@@ -347,7 +397,7 @@ async function analyzeFile(
 
     if (isInjectedJsxRuntime(specifier)) continue;
 
-    const fact = FACTS[specifier];
+    const fact = FACTS[specifier] ?? PACKAGE_FACTS[packageName(specifier)];
     if (fact !== undefined) {
       for (const category of fact) {
         sites.push({ category, via: specifier, file });
@@ -382,13 +432,32 @@ async function analyzeFile(
       }
       continue;
     }
-    if (specifier.startsWith('node:') || specifier === 'bun') continue;
+    if (specifier.startsWith('node:')) continue;
+
+    // Bun 組み込み (`bun:*` と、Bun が自前実装で置き換えるパッケージ)。
+    // ファイルに解決しないので表で決める。表に無ければ保証しない
+    const builtin = BUN_BUILTINS[specifier];
+    if (builtin !== undefined) {
+      for (const category of builtin) {
+        sites.push({ category, via: specifier, file });
+      }
+      continue;
+    }
+    if (specifier.startsWith('bun:')) {
+      escapes.push({ via: `unknown Bun module ${specifier}`, file });
+      continue;
+    }
 
     try {
       // resolveSync は絶対パスのディレクトリを要求する。相対のまま渡すと
       // 素の相対 import まで「解決できない」に落ちる (実測)
       const resolved = Bun.resolveSync(specifier, resolve(dirname(file)));
-      if (JS_LIKE.test(resolved)) deps.push(resolved);
+      if (resolved === specifier) {
+        // ファイルに解決しなかった = Bun が自前で持つモジュール。上の表に無い
+        escapes.push({ via: `unknown Bun module ${specifier}`, file });
+      } else if (JS_LIKE.test(resolved)) {
+        deps.push(resolved);
+      }
     } catch {
       // 解決できない import はその先が見えない
       escapes.push({ via: `unresolved import ${specifier}`, file });

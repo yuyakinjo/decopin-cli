@@ -14,6 +14,7 @@ import {
   EFFECT_CATEGORIES,
   importedNames,
   stripLiterals,
+  packageName,
 } from '../../src/build/effects.ts';
 import type { EffectCategory, Verdict } from '../../src/build/effects.ts';
 
@@ -175,6 +176,51 @@ describe('カテゴリごとの検出', () => {
       "import { n } from './pure.ts';\nexport default () => n;"
     );
     expect(notable(report.effects)).toEqual([]);
+  });
+});
+
+describe('fact: 歩かずに決めるもの', () => {
+  test('よく使われるパッケージはサブパスでも同じ判定', () => {
+    expect(packageName('axios')).toBe('axios');
+    expect(packageName('axios/lib/adapters/http.js')).toBe('axios');
+    expect(packageName('@scope/pkg/sub')).toBe('@scope/pkg');
+  });
+
+  test('Bun が自前で持つモジュールはファイルに解決しないので表で決める', async () => {
+    // node-fetch / undici は Bun の resolveSync が指定子をそのまま返す。
+    // 放っておくと network のパッケージが none を名乗る (実測で見つけた穴)
+    const fetching = await verdicts(
+      "import fetch from 'node-fetch';\nexport default () => fetch('http://x');"
+    );
+    expect(notable(fetching.effects)).toEqual(['network=detected']);
+    const db = await verdicts(
+      "import { Database } from 'bun:sqlite';\nexport default () => new Database(':memory:');"
+    );
+    expect(notable(db.effects).sort()).toEqual([
+      'fs.read=detected',
+      'fs.write=detected',
+    ]);
+    // 表に無い bun: モジュールは保証しない
+    const ffi = await verdicts(
+      "import { dlopen } from 'bun:ffi';\nexport default dlopen;"
+    );
+    expect(ffi.effects.network).toBe('unknown');
+    expect(ffi.escapes[0]?.via).toBe('unknown Bun module bun:ffi');
+  });
+});
+
+describe('静的な import() は追う (遅延させても届く先は届く)', () => {
+  test('import() の先の副作用も数える', async () => {
+    await writeFile(
+      join(dir, 'lazy-target.ts'),
+      "export const go = () => fetch('http://x');\n"
+    );
+    const report = await verdicts(
+      "export default async () => (await import('./lazy-target.ts')).go();",
+      'lazy.tsx'
+    );
+    expect(notable(report.effects)).toEqual(['network=detected']);
+    expect(report.escapes).toEqual([]);
   });
 });
 
