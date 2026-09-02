@@ -14,6 +14,8 @@ export type ErrorKind =
   | 'auth'
   /** 必要な外部コマンドが無い (ADR 31) */
   | 'missing-tool'
+  /** 使い方の誤り全般 (端末が要る場面でパイプから呼ばれた、など) */
+  | 'usage'
   | 'unknown';
 
 export interface CliErrorOptions {

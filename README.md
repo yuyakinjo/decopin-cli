@@ -403,6 +403,41 @@ Deploy a target, or everything with --all.
 ...
 ```
 
+## Asking in the terminal, and only there
+
+`choose()` lets a command ask for one of a few values. It talks to the
+terminal only: when stdin and stderr are both a TTY it draws the list on
+stderr and returns the pick, typed as the literal union of what you passed.
+Anywhere else (a pipe, an agent) it fails with exit 2 and the `hint`, so the
+same command asks a person and instructs a machine:
+
+```tsx
+// app/deploy/command.tsx
+import { choose, help, Success, type CommandProps } from 'decopin-cli';
+
+const TARGETS = ['web', 'api', 'worker'] as const;
+
+export default async function Command({ args }: CommandProps<'deploy'>) {
+  let target = args.target;
+  if (target === undefined) {
+    try {
+      target = await choose('Deploy which target?', TARGETS, {
+        hint: 'Pass it as the first argument: deploy <target>',
+      });
+      //     ^? 'web' | 'api' | 'worker'
+    } catch (error) {
+      if (error instanceof Error) help({ message: 'give a target' });
+      throw error;
+    }
+  }
+  return <Success>deploying {target}</Success>;
+}
+```
+
+Arrow keys, `j`/`k` and digits move; Enter selects; Esc or Ctrl+C exits with
+130 and prints nothing. stdout is never touched, so `deploy web | cat` and
+`deploy | cat` both behave.
+
 ## When the environment is not ready
 
 Two shapes every CLI ends up needing, both saying what is missing **and the
