@@ -6,7 +6,7 @@
  */
 import { describe, expect, test } from 'bun:test';
 
-import { choose, Line, run } from 'decopin-cli';
+import { ask, choose, confirm, Line, run } from 'decopin-cli';
 import type { RouteTable, Terminal } from 'decopin-cli';
 
 const ESC = String.fromCharCode(27);
@@ -193,5 +193,95 @@ describe('choose()', () => {
     );
     expect(code).toBe(1);
     expect(stderr.text).toContain('was given no values');
+  });
+});
+
+describe('ask()', () => {
+  const askTable: RouteTable = {
+    port: {
+      command: loader(async () => {
+        const port = await ask('Local port?', {
+          default: '8888',
+          validate: (v) => (/^\d+$/.test(v) ? undefined : 'digits only'),
+        });
+        return <Line>{port}</Line>;
+      }),
+    },
+  };
+  const BS = String.fromCharCode(127);
+
+  async function type(keys: string[], interactive = true) {
+    const { terminal, written } = scripted(keys, interactive);
+    const stdout = recorder();
+    const stderr = recorder();
+    const code = await run(askTable, {
+      argv: ['port'],
+      program: 'cli',
+      env: {},
+      targets: { stdout, stderr },
+      terminal,
+    });
+    return { code, stdout: stdout.text, stderr: stderr.text, written };
+  }
+
+  test('打った文字を返す。Backspace で消せる', async () => {
+    const result = await type(['3', '0', '0', '7', BS, '6', '\r']);
+    expect(result.stdout).toBe('3006\n');
+    expect(result.written.at(-1)).toContain('Local port? 3006');
+  });
+
+  test('空で Enter なら default', async () => {
+    expect((await type(['\r'])).stdout).toBe('8888\n');
+  });
+
+  test('validate に落ちたら理由を見せて聞き直す', async () => {
+    const result = await type(['a', 'b', '\r', BS, BS, '1', '\r']);
+    expect(result.stdout).toBe('1\n');
+    expect(result.written.some((w) => w.includes('digits only'))).toBe(true);
+  });
+
+  test('Esc は 130、端末が無ければ exit 2', async () => {
+    expect((await type([ESC])).code).toBe(130);
+    const result = await type([], false);
+    expect(result.code).toBe(2);
+    expect(result.stderr).toContain('needs a terminal to type an answer');
+  });
+});
+
+describe('confirm()', () => {
+  const table: RouteTable = {
+    go: {
+      command: loader(async () => (
+        <Line>{String(await confirm('Retry?', { default: true }))}</Line>
+      )),
+    },
+  };
+  async function answer(keys: string[], interactive = true) {
+    const { terminal } = scripted(keys, interactive);
+    const stdout = recorder();
+    const stderr = recorder();
+    const code = await run(table, {
+      argv: ['go'],
+      program: 'cli',
+      env: {},
+      targets: { stdout, stderr },
+      terminal,
+    });
+    return { code, stdout: stdout.text, stderr: stderr.text };
+  }
+
+  test('y / n で即決、Enter は default', async () => {
+    expect((await answer(['n'])).stdout).toBe('false\n');
+    expect((await answer(['Y'])).stdout).toBe('true\n');
+    expect((await answer(['\r'])).stdout).toBe('true\n');
+    // 関係ない打鍵は無視して待つ
+    expect((await answer(['x', 'n'])).stdout).toBe('false\n');
+  });
+
+  test('Esc は 130、端末が無ければ exit 2', async () => {
+    expect((await answer([ESC])).code).toBe(130);
+    const result = await answer([], false);
+    expect(result.code).toBe(2);
+    expect(result.stderr).toContain('needs a terminal to answer yes or no');
   });
 });

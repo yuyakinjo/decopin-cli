@@ -236,3 +236,135 @@ export async function choose<const T extends readonly string[]>(
   terminal.write(erase());
   interrupt();
 }
+
+/** `ask()` の追加設定 */
+export interface AskOptions {
+  /** Enter だけで返す値。表示にも出る */
+  default?: string;
+  /** 受け付けない入力に対して、何が悪いかを返す。`undefined` なら通す */
+  validate?: (value: string) => string | undefined;
+  /** 端末が無いときの一行 (choose と同じ) */
+  hint?: string;
+  /** 入力を伏せる (パスワードなど)。打った文字数だけ `*` を出す */
+  secret?: boolean;
+}
+
+/**
+ * 一行の入力を求める (ADR 36 の範囲内: 端末とだけ対話し、stderr に描く)。
+ *
+ * ```tsx
+ * const port = await ask('Local port?', { default: '8888', validate: (v) => (/^\d+$/.test(v) ? undefined : 'digits only') });
+ * ```
+ *
+ * Backspace で消し、Enter で確定。空で Enter なら default。Esc / Ctrl+C は 130
+ */
+export async function ask(
+  prompt: string,
+  options: AskOptions = {}
+): Promise<string> {
+  const terminal = current ?? processTerminal();
+  if (!terminal.interactive) {
+    throw new CliError(`"${prompt}" needs a terminal to type an answer`, {
+      kind: 'usage',
+      exitCode: EXIT_CODE.usage,
+      hints: [
+        options.hint ?? 'Not a terminal, so pass the value as an argument',
+      ],
+    });
+  }
+  const sgr = (code: string, text: string) =>
+    terminal.colors ? `${ESC}[${code}m${text}${ESC}[0m` : text;
+  let value = '';
+  let problem: string | undefined;
+  let drawn = 0;
+  const erase = () => (drawn === 0 ? '' : `${ESC}[${drawn}A${ESC}[J`);
+  const draw = () => {
+    const shown = options.secret ? '*'.repeat(value.length) : value;
+    const fallback =
+      options.default === undefined || value !== ''
+        ? ''
+        : ` ${sgr('2', `(${options.default})`)}`;
+    const lines = [
+      `${sgr('1', prompt)}${fallback} ${shown}${sgr('2', '|')}`,
+      ...(problem === undefined ? [] : [sgr('31', `  ${problem}`)]),
+    ];
+    terminal.write(`${erase()}${lines.join('\n')}\n`);
+    drawn = lines.length;
+  };
+
+  draw();
+  for await (const key of terminal.keys()) {
+    if (key === '\r' || key === '\n') {
+      const answer = value === '' ? (options.default ?? '') : value;
+      problem = options.validate?.(answer);
+      if (problem !== undefined) {
+        draw();
+        continue;
+      }
+      terminal.write(
+        `${erase()}${sgr('2', prompt)} ${options.secret ? '*'.repeat(answer.length) : answer}\n`
+      );
+      return answer;
+    }
+    if (key === ESC || key === CTRL_C) {
+      terminal.write(erase());
+      interrupt();
+    }
+    if (key === BACKSPACE || key === CTRL_H) value = value.slice(0, -1);
+    else if (isPrintable(key)) value += key;
+    else continue;
+    problem = undefined;
+    draw();
+  }
+  terminal.write(erase());
+  interrupt();
+}
+
+/** `confirm()` の追加設定 */
+export interface ConfirmOptions {
+  /** Enter だけのときの答え (既定 true) */
+  default?: boolean;
+  /** 端末が無いときの一行 */
+  hint?: string;
+}
+
+/**
+ * はい / いいえを聞く。`y` / `n` で即決、Enter は default。
+ * 端末が無ければ exit 2 (choose と同じ)。Esc / Ctrl+C は 130
+ */
+export async function confirm(
+  prompt: string,
+  options: ConfirmOptions = {}
+): Promise<boolean> {
+  const terminal = current ?? processTerminal();
+  if (!terminal.interactive) {
+    throw new CliError(`"${prompt}" needs a terminal to answer yes or no`, {
+      kind: 'usage',
+      exitCode: EXIT_CODE.usage,
+      hints: [options.hint ?? 'Not a terminal, so pass the decision as a flag'],
+    });
+  }
+  const sgr = (code: string, text: string) =>
+    terminal.colors ? `${ESC}[${code}m${text}${ESC}[0m` : text;
+  const fallback = options.default ?? true;
+  terminal.write(
+    `${sgr('1', prompt)} ${sgr('2', fallback ? '(Y/n)' : '(y/N)')}\n`
+  );
+  const finish = (answer: boolean) => {
+    terminal.write(
+      `${ESC}[1A${ESC}[J${sgr('2', prompt)} ${answer ? 'yes' : 'no'}\n`
+    );
+    return answer;
+  };
+  for await (const key of terminal.keys()) {
+    if (key === 'y' || key === 'Y') return finish(true);
+    if (key === 'n' || key === 'N') return finish(false);
+    if (key === '\r' || key === '\n') return finish(fallback);
+    if (key === ESC || key === CTRL_C) {
+      terminal.write(`${ESC}[1A${ESC}[J`);
+      interrupt();
+    }
+  }
+  terminal.write(`${ESC}[1A${ESC}[J`);
+  interrupt();
+}

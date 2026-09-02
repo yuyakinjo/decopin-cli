@@ -439,6 +439,22 @@ selects; Esc or Ctrl+C exits with 130 and prints nothing. Long lists show a
 window around the selection (`window`, default 10). stdout is never touched,
 so `deploy web | cat` and `deploy | cat` both behave.
 
+`ask()` and `confirm()` follow the same rules for a typed answer and a
+yes/no:
+
+```tsx
+import { ask, confirm, Line } from 'decopin-cli';
+
+export default async function Command() {
+  const port = await ask('Local port?', {
+    default: '8888',
+    validate: (value) => (/^\d+$/.test(value) ? undefined : 'digits only'),
+  });
+  const retry = await confirm('Retry?', { default: true });
+  return <Line>{`${port} ${String(retry)}`}</Line>;
+}
+```
+
 ## When the environment is not ready
 
 Two shapes every CLI ends up needing, both saying what is missing **and the
