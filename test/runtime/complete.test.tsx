@@ -257,6 +257,13 @@ describe('complete.tsx: 実行時に決まる候補 (ADR 38)', () => {
   });
 });
 
+describe('短縮形に = を付けた形', () => {
+  test('-e=pr は --env の値として補完する', async () => {
+    const result = await complete(table, ['deploy', 'web', '-e=pr']);
+    expect(result.stdout).toBe('-e=prod\n');
+  });
+});
+
 describe('解釈は実行時のトークナイザと同じ (tokens.ts)', () => {
   test('`--name=` の形でも値を補完する (語全体を返す)', async () => {
     const result = await complete(table, ['deploy', '--env=']);

@@ -22,6 +22,8 @@ export async function bundle(options: BundleOptions): Promise<BundleResult> {
     target: 'bun',
     minify: options.minify ?? false,
     banner: '#!/usr/bin/env bun',
+    // Bun 1.2 以降は既定で投げる。ログを自分の文面で並べたいので返してもらう
+    throw: false,
   });
 
   if (!built.success) {

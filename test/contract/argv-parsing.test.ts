@@ -179,3 +179,34 @@ describe('argv のパース規則', () => {
     });
   }
 });
+
+describe('variadic の失敗', () => {
+  const spec: ArgvSpec = {
+    args: [
+      {
+        name: 'ports',
+        required: true,
+        variadic: true,
+        type: { kind: 'number' },
+      },
+    ],
+    options: [],
+  };
+
+  test('1 つでも変換できなければ、その値を名指しする', () => {
+    const result = validateArgv(spec, ['80', 'eighty']);
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.issues).toEqual([
+        'ports: expected a number, received "eighty"',
+      ]);
+    }
+  });
+
+  test('必須なのに 1 つも無ければ Missing required argument', () => {
+    const result = validateArgv(spec, []);
+    expect(result.ok).toBe(false);
+    if (!result.ok)
+      expect(result.issues).toEqual(['Missing required argument: ports']);
+  });
+});

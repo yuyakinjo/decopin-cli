@@ -61,6 +61,14 @@ function options(
   };
 }
 
+describe('Promise のノード', () => {
+  test('解決を待ってから描く', async () => {
+    const io = channels();
+    await present(Promise.resolve('later'), options(io));
+    expect(textOf(io.log, 'out')).toBe('later\n');
+  });
+});
+
 describe('非 TTY (パイプ / CI)', () => {
   test('静的 → 島 → 静的 の順に flush され、島は最終フレームだけ', async () => {
     const io = channels();
