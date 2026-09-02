@@ -41,7 +41,7 @@ const showEnv = ({ env }: { env: Record<string, unknown> }) => (
   <Line>{JSON.stringify(env)}</Line>
 );
 
-const table: RouteTable = { x: { command: loader(showEnv) } };
+const table: RouteTable = { x: { cmd: loader(showEnv) } };
 
 const envFile = loader(() => (
   <Env>
@@ -88,7 +88,7 @@ describe('env.tsx', () => {
     const seen: unknown[] = [];
     const withMiddleware: RouteTable = {
       x: {
-        command: loader(showEnv),
+        cmd: loader(showEnv),
         middlewares: [
           loader(
             async (props: {

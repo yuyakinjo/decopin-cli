@@ -7,24 +7,20 @@ const routes: Route[] = [
   {
     name: 'hello',
     dir: 'hello',
-    files: { command: 'app/hello/command.tsx' },
+    files: { cmd: 'app/hello/cmd.tsx' },
   },
   {
     name: 'user/create',
     dir: 'user/create',
-    files: { command: 'app/user/create/command.tsx' },
+    files: { cmd: 'app/user/create/cmd.tsx' },
   },
 ];
 
 describe('generateRoutes', () => {
   test('ルートごとに動的 import を並べる', () => {
     const code = generateRoutes({ routes }, '.decopin');
-    expect(code).toContain(
-      'command: () => import("../app/hello/command.tsx"),'
-    );
-    expect(code).toContain(
-      'command: () => import("../app/user/create/command.tsx"),'
-    );
+    expect(code).toContain('cmd: () => import("../app/hello/cmd.tsx"),');
+    expect(code).toContain('cmd: () => import("../app/user/create/cmd.tsx"),');
   });
 
   test('argv.tsx があれば一緒に配線する', () => {
@@ -35,7 +31,7 @@ describe('generateRoutes', () => {
             name: 'hello',
             dir: 'hello',
             files: {
-              command: 'app/hello/command.tsx',
+              cmd: 'app/hello/cmd.tsx',
               argv: 'app/hello/argv.tsx',
             },
           },
@@ -57,13 +53,13 @@ describe('generateRoutes', () => {
     );
   });
 
-  test('command のないルートは作れない', () => {
+  test('cmd のないルートは作れない', () => {
     expect(() =>
       generateRoutes(
         { routes: [{ name: 'x', dir: 'x', files: {} }] },
         '.decopin'
       )
-    ).toThrow(/has no command file/);
+    ).toThrow(/has no cmd file/);
   });
 
   test('埋め込む値の危険な文字を Unicode エスケープする', () => {
@@ -74,7 +70,7 @@ describe('generateRoutes', () => {
           {
             name: unsafe,
             dir: unsafe,
-            files: { command: `app/${unsafe}/command.tsx` },
+            files: { cmd: `app/${unsafe}/cmd.tsx` },
           },
         ],
         helpFiles: new Map([[unsafe, `app/${unsafe}/help.tsx`]]),
@@ -90,12 +86,10 @@ describe('generateRoutes', () => {
     expect(routeName).toBeDefined();
     expect(JSON.parse(routeName ?? '')).toBe(unsafe);
     const commandSpecifier = code.match(
-      /^    command: \(\) => import\((.+)\),$/m
+      /^    cmd: \(\) => import\((.+)\),$/m
     )?.[1];
     expect(commandSpecifier).toBeDefined();
-    expect(JSON.parse(commandSpecifier ?? '')).toBe(
-      `../app/${unsafe}/command.tsx`
-    );
+    expect(JSON.parse(commandSpecifier ?? '')).toBe(`../app/${unsafe}/cmd.tsx`);
   });
 });
 

@@ -53,7 +53,7 @@ const table: RouteTable = {
         <Arg name="to" type="string" required />
       </Argv>
     )),
-    command: loader(({ args }: { args: { to: string } }) => (
+    cmd: loader(({ args }: { args: { to: string } }) => (
       <Line>{`cd ${args.to}`}</Line>
     )),
     shell: loader(({ args }: { args: { to: string } }) => (
@@ -64,11 +64,11 @@ const table: RouteTable = {
     )),
   },
   fail: {
-    command: loader(() => <Exit code={3} />),
+    cmd: loader(() => <Exit code={3} />),
     shell: loader(() => <Shell.Cd to="/never" />),
   },
   quiet: {
-    command: loader(() => <Line>nothing to do</Line>),
+    cmd: loader(() => <Line>nothing to do</Line>),
     shell: loader(() => null),
   },
 };

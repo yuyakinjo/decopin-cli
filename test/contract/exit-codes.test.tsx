@@ -43,14 +43,14 @@ async function codeOf(
 describe('終了コードの規約', () => {
   test('0: 成功', async () => {
     expect(
-      await codeOf({ x: { command: loader(() => <Line>ok</Line>) } }, ['x'])
+      await codeOf({ x: { cmd: loader(() => <Line>ok</Line>) } }, ['x'])
     ).toBe(EXIT_CODE.success);
   });
 
   test('1: command 内の throw (実行時エラー)', async () => {
     const table: RouteTable = {
       x: {
-        command: loader(() => {
+        cmd: loader(() => {
           throw new Error('boom');
         }),
       },
@@ -61,7 +61,7 @@ describe('終了コードの規約', () => {
   test('2: 引数の検証失敗', async () => {
     const table: RouteTable = {
       x: {
-        command: loader(() => <Line>ok</Line>),
+        cmd: loader(() => <Line>ok</Line>),
         argv: loader(() => (
           <Argv>
             <Option name="n" type="number" required />
@@ -73,19 +73,19 @@ describe('終了コードの規約', () => {
   });
 
   test('2: 未知のコマンド', async () => {
-    const table: RouteTable = { x: { command: loader(() => null) } };
+    const table: RouteTable = { x: { cmd: loader(() => null) } };
     expect(await codeOf(table, ['nope'])).toBe(EXIT_CODE.usage);
   });
 
   test('2: サブコマンド未指定 (グループ)', async () => {
-    const table: RouteTable = { 'user/list': { command: loader(() => null) } };
+    const table: RouteTable = { 'user/list': { cmd: loader(() => null) } };
     expect(await codeOf(table, ['user'])).toBe(EXIT_CODE.usage);
   });
 
   test('2: 未知のオプション', async () => {
     const table: RouteTable = {
       x: {
-        command: loader(() => <Line>ok</Line>),
+        cmd: loader(() => <Line>ok</Line>),
         argv: loader(() => <Argv />),
       },
     };
@@ -93,7 +93,7 @@ describe('終了コードの規約', () => {
   });
 
   test('2: env が足りない', async () => {
-    const table: RouteTable = { x: { command: loader(() => null) } };
+    const table: RouteTable = { x: { cmd: loader(() => null) } };
     expect(
       await codeOf(table, ['x'], {
         envFile: loader(() => (
@@ -108,7 +108,7 @@ describe('終了コードの規約', () => {
   test('2: stdin が必須なのに端末で実行された', async () => {
     const table: RouteTable = {
       x: {
-        command: loader(() => <Line>ok</Line>),
+        cmd: loader(() => <Line>ok</Line>),
         stdin: loader(() => <Stdin mode="text" required />),
       },
     };
@@ -121,7 +121,7 @@ describe('終了コードの規約', () => {
 
   test('任意: <Exit code={n} />', async () => {
     const table: RouteTable = {
-      x: { command: loader(() => <Exit code={42} />) },
+      x: { cmd: loader(() => <Exit code={42} />) },
     };
     expect(await codeOf(table, ['x'])).toBe(42);
   });
@@ -129,7 +129,7 @@ describe('終了コードの規約', () => {
   test('任意: CliError の exitCode', async () => {
     const table: RouteTable = {
       x: {
-        command: loader(() => {
+        cmd: loader(() => {
           throw new CliError('nope', { exitCode: 7 });
         }),
       },

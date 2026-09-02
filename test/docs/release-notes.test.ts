@@ -70,6 +70,7 @@ describe('breakingChanges', () => {
 
 describe('releaseNotes', () => {
   const deprecation: Deprecation = {
+    kind: 'source',
     what: 'Type.Date',
     since: '2026-08-29',
     removeAfter: '2027-08-29',

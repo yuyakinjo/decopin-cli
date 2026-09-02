@@ -50,7 +50,7 @@ const shape = () => (
 
 function route(data: unknown, output?: unknown): RouteLoaders {
   return {
-    command: loader(({ data: value }: { data: { name: string } }) => (
+    cmd: loader(({ data: value }: { data: { name: string } }) => (
       <Line>{value.name}</Line>
     )),
     data: loader(data),
@@ -77,7 +77,7 @@ const table: RouteTable = {
     )
   ),
   empty: {
-    command: loader(() => <Line>hi</Line>),
+    cmd: loader(() => <Line>hi</Line>),
     data: loader(() => ({ counted: 1, name: 'x' })),
     output: loader(() => <Output />),
   },

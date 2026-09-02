@@ -411,10 +411,10 @@ describe('シグナルでの後始末', () => {
 });
 
 describe('run() を通した配線', () => {
-  test('command.tsx が返した島も同じ契約で動く', async () => {
+  test('cmd.tsx が返した島も同じ契約で動く', async () => {
     const table: RouteTable = {
       deploy: {
-        command: async () => ({
+        cmd: async () => ({
           default: () => (
             <>
               <Line>deploying</Line>
@@ -441,7 +441,7 @@ describe('run() を通した配線', () => {
   test('targets を差し替えたら、isTTY を明示しない限り非 TTY として扱う', async () => {
     const table: RouteTable = {
       go: {
-        command: async () => ({
+        cmd: async () => ({
           default: () => (
             <Dynamic source={three()}>{(step) => <Line>{step}</Line>}</Dynamic>
           ),
@@ -462,7 +462,7 @@ describe('run() を通した配線', () => {
   test('isTTY を明示すれば run() からも領域描画になる', async () => {
     const table: RouteTable = {
       go: {
-        command: async () => ({
+        cmd: async () => ({
           default: () => (
             <Dynamic source={three()}>{(step) => <Line>{step}</Line>}</Dynamic>
           ),

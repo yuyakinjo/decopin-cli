@@ -38,8 +38,8 @@ function loader(value: unknown, extra: Record<string, unknown> = {}) {
 }
 
 const table: RouteTable = {
-  hello: { command: loader(() => <Line>hello</Line>) },
-  'user/list': { command: loader(() => <Line>alice</Line>) },
+  hello: { cmd: loader(() => <Line>hello</Line>) },
+  'user/list': { cmd: loader(() => <Line>alice</Line>) },
 };
 
 describe('組み込みの表示', () => {

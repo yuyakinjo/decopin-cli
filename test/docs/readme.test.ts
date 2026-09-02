@@ -229,7 +229,7 @@ describe('README のシェル実行例', () => {
     );
     expect(referenced.length).toBeGreaterThan(5);
     for (const path of referenced) {
-      expect(await Bun.file(join(path, 'command.tsx')).exists()).toBe(
+      expect(await Bun.file(join(path, 'cmd.tsx')).exists()).toBe(
         // app/user のようなグループはコマンドを持たない
         path !== 'app/user'
       );

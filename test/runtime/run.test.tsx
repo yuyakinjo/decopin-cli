@@ -13,9 +13,9 @@ function recorder() {
   };
 }
 
-/** command.tsx だけを持つルート */
+/** cmd.tsx だけを持つルート */
 function route(component: unknown): RouteLoaders {
-  return { command: async () => ({ default: component }) };
+  return { cmd: async () => ({ default: component }) };
 }
 
 /** run を呼び、終了コードと fd ごとの出力をまとめて返す */
@@ -101,7 +101,7 @@ describe('run', () => {
     expect(result.stderr).toContain('Did you mean: hello');
   });
 
-  test('グループ (command.tsx を持たないディレクトリ) は配下の一覧を出す', async () => {
+  test('グループ (cmd.tsx を持たないディレクトリ) は配下の一覧を出す', async () => {
     const result = await invoke(table, ['user']);
     expect(result.code).toBe(2);
     expect(result.stdout).toBe('');

@@ -52,7 +52,7 @@ const farView = loader(({ what }: NotFoundProps) => <Line>FAR {what}</Line>);
 
 const table: RouteTable = {
   show: {
-    command: loader(() => <Line>never</Line>),
+    cmd: loader(() => <Line>never</Line>),
     data: loader(({ argv }: { argv: readonly string[] }) => {
       const name = argv[0] ?? '';
       if (!USERS.includes(name)) {
@@ -62,17 +62,17 @@ const table: RouteTable = {
     }),
   },
   bare: {
-    command: loader(() => {
+    cmd: loader(() => {
       notFound();
     }),
   },
   coded: {
-    command: loader(() => {
+    cmd: loader(() => {
       notFound({ what: 'branch', requested: 'main', exitCode: 4 });
     }),
   },
   'nested/deep': {
-    command: loader(() => {
+    cmd: loader(() => {
       notFound({ what: 'thing' });
     }),
     notFounds: [nearView, farView],
@@ -181,7 +181,7 @@ describe('<DidYouMean>', () => {
 describe('help()', () => {
   const usage: RouteTable = {
     deploy: {
-      command: loader(({ args }: { args: { target?: string } }) => {
+      cmd: loader(({ args }: { args: { target?: string } }) => {
         if (args.target === undefined) {
           help({ message: 'give a target' });
         }
@@ -194,17 +194,17 @@ describe('help()', () => {
       )),
     },
     quiet: {
-      command: loader(() => {
+      cmd: loader(() => {
         help();
       }),
     },
     zero: {
-      command: loader(() => {
+      cmd: loader(() => {
         help({ exitCode: 0 });
       }),
     },
     overridden: {
-      command: loader(() => {
+      cmd: loader(() => {
         help();
       }),
     },
@@ -256,22 +256,22 @@ describe('help()', () => {
 describe('環境が整っていないときの形 (ADR 31)', () => {
   const setup: RouteTable = {
     'needs-auth': {
-      command: loader(() => {
+      cmd: loader(() => {
         authRequired({ service: 'GitHub', fix: 'gh auth login' });
       }),
     },
     expired: {
-      command: loader(() => {
+      cmd: loader(() => {
         authRequired({ service: 'AWS', expired: true, fix: 'aws sso login' });
       }),
     },
     bare: {
-      command: loader(() => {
+      cmd: loader(() => {
         authRequired();
       }),
     },
     'needs-tool': {
-      command: loader(() => {
+      cmd: loader(() => {
         missingTool({
           tool: 'git',
           reason: 'to clone the repository',
@@ -280,7 +280,7 @@ describe('環境が整っていないときの形 (ADR 31)', () => {
       }),
     },
     'tool-only': {
-      command: loader(() => {
+      cmd: loader(() => {
         missingTool({ tool: 'jq' });
       }),
     },
@@ -319,7 +319,7 @@ describe('環境が整っていないときの形 (ADR 31)', () => {
   test('--json では code と hints が出る (次の一手を機械が決められる)', async () => {
     const withData: RouteTable = {
       'needs-auth': {
-        command: loader(() => <Line>never</Line>),
+        cmd: loader(() => <Line>never</Line>),
         data: loader(() => {
           authRequired({ service: 'GitHub', fix: 'gh auth login' });
         }),
@@ -337,7 +337,7 @@ describe('環境が整っていないときの形 (ADR 31)', () => {
   test('kind で error.tsx が場合分けできる', async () => {
     const branching: RouteTable = {
       'needs-tool': {
-        command: loader(() => {
+        cmd: loader(() => {
           missingTool({ tool: 'git' });
         }),
         errors: [

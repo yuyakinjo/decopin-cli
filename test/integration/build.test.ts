@@ -1,5 +1,5 @@
 /**
- * Phase 2 の完了条件: `app/hello/command.tsx` が `dist/index.js hello` で動く。
+ * Phase 2 の完了条件: `app/hello/cmd.tsx` が `dist/index.js hello` で動く。
  * 実際にビルドして、生成された 1 ファイルを別プロセスで実行して確かめる。
  */
 import { afterAll, beforeAll, describe, expect, test } from 'bun:test';

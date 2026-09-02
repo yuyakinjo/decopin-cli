@@ -25,12 +25,12 @@ beforeAll(async () => {
   await mkdir(join(appDir, 'quiet'), { recursive: true });
   await mkdir(join(appDir, 'noisy'), { recursive: true });
   await writeFile(
-    join(appDir, 'quiet', 'command.tsx'),
+    join(appDir, 'quiet', 'cmd.tsx'),
     "export default () => 'quiet';\n"
   );
   // モジュールを評価した時点で印を残す (トップレベルの副作用)
   await writeFile(
-    join(appDir, 'noisy', 'command.tsx'),
+    join(appDir, 'noisy', 'cmd.tsx'),
     `await Bun.write(${JSON.stringify(marker)}, 'evaluated');\nexport default () => 'noisy';\n`
   );
   const result = await build({

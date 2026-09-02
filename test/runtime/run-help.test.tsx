@@ -39,9 +39,9 @@ function loader(value: unknown, extra: Record<string, unknown> = {}) {
 }
 
 const table: RouteTable = {
-  hello: { command: loader(() => <Line>hello</Line>) },
-  'user/list': { command: loader(() => <Line>alice</Line>) },
-  'user/import': { command: loader(() => <Line>imported</Line>) },
+  hello: { cmd: loader(() => <Line>hello</Line>) },
+  'user/list': { cmd: loader(() => <Line>alice</Line>) },
+  'user/import': { cmd: loader(() => <Line>imported</Line>) },
 };
 
 describe('help.tsx による上書き', () => {
@@ -144,7 +144,7 @@ describe('help.tsx と layout', () => {
 
   const withLayout: RouteTable = {
     hello: {
-      command: loader(() => <Line>hello</Line>),
+      cmd: loader(() => <Line>hello</Line>),
       layouts: [layout],
     },
   };

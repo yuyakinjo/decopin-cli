@@ -25,7 +25,7 @@ Options:
   --strict-effects
                  fail the build when the effects analysis gives up on a
                  command (eval, unresolved import). Opt a command out with
-                 export const unsafeEval = true in its command.tsx
+                 export const unsafeEval = true in its cmd.tsx
   -h, --help     show this help
 `;
 

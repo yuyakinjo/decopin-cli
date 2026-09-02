@@ -41,7 +41,7 @@ const table: RouteTable = {
       seen.push({ where: 'data', dryRun });
       return { what: args.what, dryRun };
     }),
-    command: loader(({ dryRun, data }: CommandContext) => {
+    cmd: loader(({ dryRun, data }: CommandContext) => {
       seen.push({ where: 'command', dryRun });
       return (
         <Line>
@@ -53,9 +53,7 @@ const table: RouteTable = {
     }),
   },
   plain: {
-    command: loader(({ dryRun }: CommandContext) => (
-      <Line>{String(dryRun)}</Line>
-    )),
+    cmd: loader(({ dryRun }: CommandContext) => <Line>{String(dryRun)}</Line>),
   },
 };
 

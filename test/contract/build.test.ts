@@ -14,7 +14,7 @@ const routes: Route[] = [
     name: 'hello',
     dir: 'hello',
     files: {
-      command: 'app/hello/command.tsx',
+      cmd: 'app/hello/cmd.tsx',
       argv: 'app/hello/argv.tsx',
       stdin: 'app/hello/stdin.tsx',
     },
@@ -41,7 +41,7 @@ describe('routes.ts', () => {
   );
 
   test('ルートごとに動的 import を並べる (実行しないコマンドを評価しない)', () => {
-    for (const kind of ['command', 'argv', 'stdin']) {
+    for (const kind of ['cmd', 'argv', 'stdin']) {
       expect(code).toContain(
         `${kind}: () => import("../app/hello/${kind}.tsx")`
       );

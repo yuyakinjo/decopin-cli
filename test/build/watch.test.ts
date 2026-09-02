@@ -56,7 +56,7 @@ describe('watchApp', () => {
     // コマンドを増やすと、生成物にも増える
     await mkdir(ADDED, { recursive: true });
     await writeFile(
-      join(ADDED, 'command.tsx'),
+      join(ADDED, 'cmd.tsx'),
       'export default function Command() {\n  return null;\n}\n'
     );
 

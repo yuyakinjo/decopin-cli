@@ -69,7 +69,7 @@ import {
 import { processStdin, readStdin } from './stdin-reader.ts';
 import type { StdinSource } from './stdin-reader.ts';
 
-/** Phase 3 で command.tsx が受け取るもの。型は Phase 3.5 の codegen で配る */
+/** Phase 3 で cmd.tsx が受け取るもの。型は Phase 3.5 の codegen で配る */
 export interface CommandContext {
   /** 検証済みの環境変数 */
   env: Record<string, unknown>;
@@ -307,7 +307,7 @@ async function describeCommands(
   return Object.fromEntries(entries);
 }
 
-/** shell.tsx を読む。command.tsx と同じ props を受けて Shell.* を返す関数 */
+/** shell.tsx を読む。cmd.tsx と同じ props を受けて Shell.* を返す関数 */
 async function loadShell(
   loader: () => Promise<unknown>
 ): Promise<(props: CommandContext) => RenderInput> {
@@ -595,16 +595,16 @@ export async function run(
       commandOptions = validated.value.options;
     }
 
-    // command.tsx が layout を外したいと宣言している場合に使う
+    // cmd.tsx が layout を外したいと宣言している場合に使う
     let skipLayout = false;
-    // shell.tsx に渡す、command.tsx と同じ props (ADR 35)
+    // shell.tsx に渡す、cmd.tsx と同じ props (ADR 35)
     let shellContext: CommandContext | undefined;
 
     // middleware は検証済みの入力を受け取り、コマンドの実行を包む (ADR 11)
     const output = await runMiddleware(
       route.middlewares ?? [],
       async () => {
-        const loaded = (await route.command()) as {
+        const loaded = (await route.cmd()) as {
           default?: unknown;
           skipLayout?: unknown;
         };

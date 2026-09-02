@@ -6,7 +6,10 @@
  */
 import { describe, expect, test } from 'bun:test';
 
-import { checkDeprecations } from '../../src/build/checker.ts';
+import {
+  checkDeprecations,
+  deprecatedFileWarnings,
+} from '../../src/build/checker.ts';
 import {
   DEPRECATIONS,
   type Deprecation,
@@ -24,6 +27,7 @@ describe('削除期限', () => {
   test('期限を過ぎれば拾う (当日はまだ残してよい)', () => {
     const one: Deprecation[] = [
       {
+        kind: 'source',
         what: 'x',
         since: '2026-08-29',
         removeAfter: '2027-08-29',
@@ -53,10 +57,19 @@ describe('削除期限', () => {
 describe('checkDeprecations', () => {
   const sample: Deprecation[] = [
     {
+      kind: 'source',
       what: 'Type.Date',
       since: '2026-08-29',
       removeAfter: '2027-08-29',
       migration: 'use <Type.Instant/>',
+    },
+    {
+      // ファイル名の非推奨はソースの中身に出てこないので、ここでは拾わない
+      kind: 'filename',
+      what: 'command.tsx',
+      since: '2026-09-02',
+      removeAfter: '2027-09-02',
+      migration: 'replace command.tsx with cmd.tsx',
     },
   ];
 
@@ -80,5 +93,49 @@ describe('checkDeprecations', () => {
 
   test('読めないファイルは飛ばす', async () => {
     expect(await checkDeprecations(['/nope/missing.tsx'], sample)).toEqual([]);
+  });
+
+  test('ファイル名の非推奨は中身の検索では拾わない', async () => {
+    // command.tsx という文字列がソースに出てきても、それは使用ではない
+    expect(await warn('// see app/hello/command.tsx')).toEqual([]);
+  });
+});
+
+describe('deprecatedFileWarnings', () => {
+  const found = [
+    {
+      file: 'app/hello/command.tsx',
+      legacy: 'command.tsx',
+      current: 'cmd.tsx',
+    },
+  ];
+
+  test('旧名を使っていたら、期限と新しい名前を伝える', () => {
+    const warnings = deprecatedFileWarnings(found);
+    expect(warnings).toHaveLength(1);
+    expect(warnings[0]?.message).toBe(
+      'app/hello/command.tsx: command.tsx is deprecated and will be removed after 2027-09-02'
+    );
+    expect(warnings[0]?.hint).toContain('cmd.tsx');
+  });
+
+  test('拡張子が違っても同じ非推奨として扱う', () => {
+    const warnings = deprecatedFileWarnings([
+      { file: 'app/go/command.ts', legacy: 'command.ts', current: 'cmd.ts' },
+    ]);
+    expect(warnings).toHaveLength(1);
+    expect(warnings[0]?.message).toContain('command.ts is deprecated');
+  });
+
+  test('旧名が無ければ何も言わない', () => {
+    expect(deprecatedFileWarnings([])).toEqual([]);
+  });
+
+  test('登録されていない旧名は黙って飛ばす', () => {
+    expect(
+      deprecatedFileWarnings([
+        { file: 'app/x/old.tsx', legacy: 'old.tsx', current: 'new.tsx' },
+      ])
+    ).toEqual([]);
   });
 });

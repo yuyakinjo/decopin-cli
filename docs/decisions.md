@@ -33,7 +33,7 @@ JSX を再帰的に ANSI 文字列へ変換するだけで足りる。Ink は yo
 
 ## ADR 3: ファイル名は POSIX 用語で統一する
 
-`argv.tsx` / `stdin.tsx` / `command.tsx` (stdout) / `error.tsx` (stderr) が
+`argv.tsx` / `stdin.tsx` / `cmd.tsx` (stdout) / `error.tsx` (stderr) が
 シェルの入出力と 1:1 対応する。シェルを学びながら書く人にとって、
 「今書いているファイルはシェルのどの口か」が名前で分かる利点が大きい。
 
@@ -84,7 +84,7 @@ const a = <Option name="loud" type={true as boolean} />;
 props 方式でも children 方式でも同じなので、**JSX で型を運ぶ設計は選択肢にならない**。
 
 代わりに Next.js の typed routes と同じく、ビルド時に `.decopin/types.d.ts` を生成し、
-module augmentation で `Routes` / `EnvVars` を埋める。`command.tsx` は
+module augmentation で `Routes` / `EnvVars` を埋める。`cmd.tsx` は
 `CommandProps<'hello'>` で引く。
 
 **代償**: `decopin dev` を回していないと型が古い。未生成のときは緩い型に
@@ -436,13 +436,13 @@ base 欠損時の振る舞いも、ランナーの上で動かさずにテスト
 ## ADR 25: データは `data.tsx` で、表示と分ける
 
 入力は宣言済み (argv / stdin / env) なのに出力は暗黙、という非対称を解く。
-`data.tsx` がデータだけを作り (Remix の loader 相当)、`command.tsx` は
+`data.tsx` がデータだけを作り (Remix の loader 相当)、`cmd.tsx` は
 `data` を props で受けて表示に専念する。
 
 **型は TypeScript の推論を借りる**。argv と違って `data.tsx` の中身は
 ビルド時に評価できない (I/O を伴う)。そこで生成する型に
 `Awaited<ReturnType<typeof import('../app/x/data.tsx').default>>` を書き、
-戻り値の型が `command.tsx` の props にそのまま届くようにした。
+戻り値の型が `cmd.tsx` の props にそのまま届くようにした。
 TS Compiler API は要らない (JSON Schema の生成には必要になる。それは別の話)。
 
 **`--json` は予約オプション**。`data.tsx` があるコマンドで付けると、
@@ -538,7 +538,7 @@ test/contract/pipe-safety.test.tsx が **app/ の全コマンドを掃く**。
 `data.tsx` の戻り値の形を `Type.*` で宣言できるようにした。あれば
 **その宣言が正**で、2 つのことが起きる:
 
-- `command.tsx` の `data` の型は、推論ではなく宣言から作る
+- `cmd.tsx` の `data` の型は、推論ではなく宣言から作る
 - 実行時に data を検証し、外れたら表示にも `--json` にも流さない
 
 **自分のコードなのに検証するのはなぜか**。`data.tsx` が
@@ -565,7 +565,7 @@ ADR 10 のとおりだが、逃げ道が無いと表現力で詰まる。
 stderr に `{ "error": { code, message, exitCode, issues? } }` で出す。
 
 **`error.tsx` は通さない**。あれは人が読むための表示なので、JSON を
-求められた場面では飛ばす。`command.tsx` を飛ばすのと同じ理由。
+求められた場面では飛ばす。`cmd.tsx` を飛ばすのと同じ理由。
 
 **stdout は空のまま**。失敗時に stdout へ書かないのは元からの約束で、
 test/contract/pipe-safety.test.tsx が失敗する `--json` も掃いて固定した。
@@ -754,7 +754,7 @@ import (exports map の癖、ネイティブモジュール) でも出る。既�
 落とすと、利用者の依存の都合で枠組みが使えなくなる。保証が欲しい人が
 フラグで求める。
 
-**opt-out は `export const unsafeEval = true`** を command.tsx に書く。
+**opt-out は `export const unsafeEval = true`** を cmd.tsx に書く。
 Next.js の route segment config、この枠組みでは `skipLayout` と同じ形。
 副作用の**種類**は書かない (それは申告になる)。「このコマンドは unknown で
 よい」と言うだけで、判定は `unknown` のまま、MCP の hint も出ない
@@ -782,7 +782,7 @@ Next.js の route segment config、この枠組みでは `skipLayout` と同じ�
 
 **フックが無いときは stderr で言う**。黙って何も起きないのが一番分かりにくい。
 
-**shell.tsx は command.tsx と同じ props を受ける**。data.tsx を分けていれば、
+**shell.tsx は cmd.tsx と同じ props を受ける**。data.tsx を分けていれば、
 表示と shell の両方が同じデータから決まる (ADR 25 の分離がここでも効く)。
 
 ## ADR 36: 対話は端末とだけ。choose() は関数で、パイプの中では exit 2
@@ -860,6 +860,31 @@ AWS SDK のような重い import や副作用を持ち込ませたくない。�
 **渡すのは生の文字列**。ここまでに打たれたオプションと位置引数は検証も変換も
 していない (途中なので検証は通らない)。`--cluster` を見て task を絞る、といった
 使い方には十分。
+
+## ADR 39: コマンドの本体は cmd.tsx。command.tsx は旧名として 1 年受ける
+
+規約ファイルは `argv.tsx` / `stdin.tsx` / `data.tsx` / `help.tsx` / `shell.tsx` と
+短い名前で揃っているのに、いちばん多く書く本体だけが `command.tsx` で長かった。
+`cmd.tsx` に短縮して、ファイル名の並びを揃えた。
+
+**キーもファイル名に揃える**。`route.files.cmd`、生成される
+`cmd: () => import(...)`、`RouteLoaders.cmd` まで一斉に変えた。「ファイル名が
+そのまま機能の名前」(ADR 1) が崩れると、`cmd.tsx` を探して `command` を grep する
+ことになる。二重名称を作らないほうが安い。
+
+**旧名は 1 年受ける** (ADR 20)。`scan` は `cmd.tsx` → `cmd.ts` → `command.tsx` →
+`command.ts` の順に探し、旧名で見つけたら `deprecatedFiles` に載せる。
+`decopin build` が新しい名前と削除期限を警告する。**新名が常に勝つ**ので、
+移行中に両方置いても挙動は決まる。
+
+**旧名の非推奨は既存の仕組みに乗せた**。`DEPRECATIONS` (ADR 20) に
+`kind: 'filename'` を足しただけで、削除期限の見張りとリリースノートは
+そのまま効く。`checkDeprecations` はソースの中身を検索するので、
+ファイル名は `deprecatedFileWarnings` が別に見る。
+
+**フィクスチャを 1 つ旧名のまま残す** (`test/fixtures/scan-app/legacy/command.tsx`)。
+リポジトリ内の `command.tsx` を全部リネームすると、フォールバックが黙って
+壊れても誰も気付かない。
 
 ---
 

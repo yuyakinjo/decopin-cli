@@ -5,6 +5,7 @@
  * 誤りは evaluator が集める。
  */
 import { DEPRECATIONS, type Deprecation } from '../deprecations.ts';
+import type { DeprecatedFile } from './scanner.ts';
 import type { UnsupportedNode } from './schema-introspect.ts';
 
 export interface Warning {
@@ -94,6 +95,7 @@ export async function checkDeprecations(
       continue;
     }
     for (const deprecation of deprecations) {
+      if (deprecation.kind !== 'source') continue;
       if (!source.includes(deprecation.what)) continue;
       warnings.push({
         message: `${file}: ${deprecation.what} is deprecated and will be removed after ${deprecation.removeAfter}`,
@@ -102,6 +104,35 @@ export async function checkDeprecations(
     }
   }
   return warnings;
+}
+
+/** `command.tsx` / `command.ts` のどちらでも `command` に揃えて照合する */
+function stem(name: string): string {
+  return name.replace(/\.tsx?$/, '');
+}
+
+/**
+ * 旧名の規約ファイルを使っていたら、新しい名前と削除期限を伝える (ADR 20)。
+ *
+ * `checkDeprecations` はソースの中身を読むので、ファイル名の非推奨は拾えない。
+ * こちらは scan が見つけた旧名 (scanner.ts の LEGACY_FILE_NAMES) を受け取る
+ */
+export function deprecatedFileWarnings(
+  found: readonly DeprecatedFile[],
+  deprecations: readonly Deprecation[] = DEPRECATIONS
+): Warning[] {
+  return found.flatMap((entry) => {
+    const deprecation = deprecations.find(
+      (d) => d.kind === 'filename' && stem(d.what) === stem(entry.legacy)
+    );
+    if (deprecation === undefined) return [];
+    return [
+      {
+        message: `${entry.file}: ${entry.legacy} is deprecated and will be removed after ${deprecation.removeAfter}`,
+        hint: deprecation.migration,
+      },
+    ];
+  });
 }
 
 interface TsConfig {

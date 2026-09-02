@@ -8,7 +8,7 @@ import {
 } from '../../src/runtime/router.ts';
 import type { RouteTable } from '../../src/runtime/router.ts';
 
-const load = { command: async () => ({ default: () => null }) };
+const load = { cmd: async () => ({ default: () => null }) };
 
 const table: RouteTable = {
   hello: load,
@@ -95,7 +95,7 @@ describe('resolveTarget', () => {
     expect(resolveTarget(table, ['--help'])).toEqual({ kind: 'root' });
   });
 
-  test('command.tsx を持たないディレクトリは group', () => {
+  test('cmd.tsx を持たないディレクトリは group', () => {
     const withoutParent: RouteTable = {
       'user/create': load,
       'user/list': load,
@@ -106,7 +106,7 @@ describe('resolveTarget', () => {
     });
   });
 
-  test('command.tsx を持つディレクトリは group ではなく command', () => {
+  test('cmd.tsx を持つディレクトリは group ではなく command', () => {
     expect(resolveTarget(table, ['user'])).toEqual({
       kind: 'command',
       name: 'user',

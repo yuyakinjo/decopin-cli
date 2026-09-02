@@ -38,16 +38,14 @@ const humanView = loader(() => <Line>HUMAN VIEW</Line>);
 
 const table: RouteTable = {
   boom: {
-    command: loader(() => <Line>never</Line>),
+    cmd: loader(() => <Line>never</Line>),
     data: loader(() => {
       throw new Error('database is down');
     }),
     errors: [humanView],
   },
   strict: {
-    command: loader(({ data }: { data: { n: number } }) => (
-      <Line>{data.n}</Line>
-    )),
+    cmd: loader(({ data }: { data: { n: number } }) => <Line>{data.n}</Line>),
     data: loader(() => ({ n: 1 })),
     argv: loader(() => (
       <Argv>
@@ -57,7 +55,7 @@ const table: RouteTable = {
       </Argv>
     )),
   },
-  plain: { command: loader(() => <Line>hi</Line>) },
+  plain: { cmd: loader(() => <Line>hi</Line>) },
 };
 
 /** stderr の JSON を読む */
@@ -105,7 +103,7 @@ describe('--json のときの失敗', () => {
   test('理由が複数あるときは issues に並ぶ', async () => {
     const many: RouteTable = {
       two: {
-        command: loader(() => <Line>never</Line>),
+        cmd: loader(() => <Line>never</Line>),
         data: loader(() => ({ n: 1 })),
         argv: loader(() => (
           <Argv>

@@ -54,7 +54,7 @@ export interface UntypedCommandProps extends CommandBase {
 export type RouteName = [keyof Routes] extends [never] ? string : keyof Routes;
 
 /**
- * `command.tsx` の props。
+ * `cmd.tsx` の props。
  *
  * ```tsx
  * export default function Command({ args, options }: CommandProps<'hello'>) {}
