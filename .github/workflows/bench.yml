@@ -1,7 +1,8 @@
 name: bench
 
 # 起動時間は README に貼った時点で朽ちるので、PR ごとに測って貼り直す。
-# 落とすためのゲートではない (ランナーが騒がしく、閾値を置くと嘘になる)
+# 落とすためのゲートではない (ランナーが騒がしく、閾値を置くと嘘になる)。
+# 同じジョブで最小 CLI (test/fixtures/hello-app) のバンドルサイズも測る
 on:
   pull_request:
 
@@ -44,6 +45,15 @@ jobs:
           bun run build
           bun build --compile --bytecode .decopin/entry.ts --outfile "$RUNNER_TEMP/head"
 
+      # フレームワークだけの重さを見るための最小 CLI。作業ディレクトリは
+      # リポジトリの中に置く (`decopin-cli` の自己参照はパッケージ内からしか解けない)
+      - name: measure the bundle size of this branch
+        run: |
+          bun src/cli/bin.ts build --minify \
+            --app test/fixtures/hello-app --work .decopin-size \
+            --out "$RUNNER_TEMP/size-head"
+          echo "BENCH_BYTES_HEAD=$(stat -c %s "$RUNNER_TEMP/size-head/index.js")" >> "$GITHUB_ENV"
+
       # base が壊れていても PR の数字は出す。比較だけ諦める
       - name: build the base branch
         id: base
@@ -54,6 +64,19 @@ jobs:
           bun install --frozen-lockfile
           bun run build
           bun build --compile --bytecode .decopin/entry.ts --outfile "$RUNNER_TEMP/base"
+
+      # fixture は PR 側のものを使う (base に無くても比べられるように)。
+      # 失敗しても PR 側の数字は出す
+      - name: measure the bundle size of the base branch
+        continue-on-error: true
+        run: |
+          cd "$RUNNER_TEMP/base-src"
+          rm -rf test/fixtures/hello-app
+          cp -R "$GITHUB_WORKSPACE/test/fixtures/hello-app" test/fixtures/hello-app
+          bun src/cli/bin.ts build --minify \
+            --app test/fixtures/hello-app --work .decopin-size \
+            --out "$RUNNER_TEMP/size-base"
+          echo "BENCH_BYTES_BASE=$(stat -c %s "$RUNNER_TEMP/size-base/index.js")" >> "$GITHUB_ENV"
 
       # ランタイムの固定費。合計から引くと decopin の取り分が出る
       - name: build the runtime floor

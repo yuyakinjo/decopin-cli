@@ -9,6 +9,7 @@ import { describe, expect, test } from 'bun:test';
 import {
   MARKER,
   benchReport,
+  readBytes,
   readMeasurement,
 } from '../../scripts/bench-report.ts';
 import type { ReportInput } from '../../scripts/bench-report.ts';
@@ -57,6 +58,58 @@ describe('benchReport', () => {
 
   test('ノイズの読み方を添える (落とすためのゲートではない)', () => {
     expect(benchReport(input())).toContain('noise');
+  });
+
+  test('サイズを渡さなければサイズの節は出ない', () => {
+    expect(benchReport(input())).not.toContain('Bundle size');
+  });
+});
+
+describe('benchReport の bundle size', () => {
+  // 最小 CLI を minify した実測が 75.3 KB 前後 (2026-09)
+  const bundle = { head: 77_107, base: 75_000 };
+
+  test('最小 CLI のサイズを KB で出す', () => {
+    const report = benchReport(input({ bundle }));
+    expect(report).toContain('## Bundle size');
+    expect(report).toContain('75.3 KB');
+    expect(report).toContain('hello-app');
+  });
+
+  test('増えたら + で、比率も出す', () => {
+    // 2107 bytes = 2.1 KB, 2107 / 75000 = 2.8%
+    expect(benchReport(input({ bundle }))).toContain('+2.1 KB (+2.8%)');
+  });
+
+  test('減ったら - で出る', () => {
+    const report = benchReport(
+      input({ bundle: { head: 73_000, base: 75_000 } })
+    );
+    expect(report).toContain('-2.0 KB (-2.7%)');
+  });
+
+  test('base が無ければ PR 側の数字だけ出す', () => {
+    const report = benchReport(input({ bundle: { head: 77_107 } }));
+    expect(report).toContain('75.3 KB');
+    expect(report).toContain('not built');
+    expect(report).not.toContain('KB (+');
+  });
+
+  test('バイト数は決定的なのでノイズ扱いしないと書く', () => {
+    expect(benchReport(input({ bundle }))).toContain('deterministic');
+  });
+});
+
+describe('readBytes', () => {
+  test('環境変数の数字を読む', () => {
+    expect(readBytes('77107')).toBe(77_107);
+  });
+
+  test('空・数字以外・0 は「無い」扱い (0 KB として通さない)', () => {
+    expect(readBytes(undefined)).toBeUndefined();
+    expect(readBytes('')).toBeUndefined();
+    expect(readBytes('abc')).toBeUndefined();
+    expect(readBytes('0')).toBeUndefined();
   });
 });
 

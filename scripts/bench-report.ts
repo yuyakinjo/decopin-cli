@@ -1,17 +1,26 @@
 #!/usr/bin/env bun
 /**
- * 起動時間の計測結果を PR コメントの本文にする (ADR 24)。
+ * 起動時間とバンドルサイズの計測結果を PR コメントの本文にする (ADR 24)。
  *
  *   bun scripts/bench-report.ts head.json base.json floor.json > report.md
  *
- * 数字を出すのは hyperfine。ここは**組み立てだけ**を持つ純粋な関数なので、
- * ランナーの上で動かさなくてもテストできる。
+ * バンドルサイズは環境変数 BENCH_BYTES_HEAD / BENCH_BYTES_BASE (バイト数) で渡す。
+ *
+ * 数字を出すのは hyperfine と `decopin build`。ここは**組み立てだけ**を持つ
+ * 純粋な関数なので、ランナーの上で動かさなくてもテストできる。
  */
 
 /** hyperfine の JSON から使う分だけ。時間は秒 */
 export interface Measurement {
   mean: number;
   stddev: number;
+}
+
+/** 最小の CLI (test/fixtures/hello-app) を minify してビルドしたバイト数 */
+export interface BundleSize {
+  head: number;
+  /** base のビルドに失敗したときは undefined */
+  base?: number;
 }
 
 export interface ReportInput {
@@ -24,6 +33,8 @@ export interface ReportInput {
   /** 比較対象のブランチ名 (表示用) */
   baseRef: string;
   runs: number;
+  /** 省略時はサイズの節を出さない (計測を足す前のジョブでも本文が出る) */
+  bundle?: BundleSize;
 }
 
 /** PR コメントを毎回作らず書き換えるための目印 */
@@ -34,12 +45,28 @@ function ms(seconds: number): string {
   return `${(seconds * 1000).toFixed(1)} ms`;
 }
 
+/** バイト → KB の表示 */
+function kb(bytes: number): string {
+  return `${(bytes / 1024).toFixed(1)} KB`;
+}
+
 /** 差を符号付きで。改善も退行も同じ形で読めるようにする */
-function delta(head: number, base: number): string {
-  const diff = (head - base) * 1000;
-  const percent = base === 0 ? 0 : ((head - base) / base) * 100;
+function signed(
+  diff: number,
+  base: number,
+  unit: (n: number) => string
+): string {
+  const percent = base === 0 ? 0 : (diff / base) * 100;
   const sign = diff >= 0 ? '+' : '-';
-  return `${sign}${Math.abs(diff).toFixed(1)} ms (${sign}${Math.abs(percent).toFixed(1)}%)`;
+  return `${sign}${unit(Math.abs(diff))} (${sign}${Math.abs(percent).toFixed(1)}%)`;
+}
+
+function delta(head: number, base: number): string {
+  return signed(head - base, base, ms);
+}
+
+function deltaBytes(head: number, base: number): string {
+  return signed(head - base, base, kb);
 }
 
 /**
@@ -49,7 +76,7 @@ function delta(head: number, base: number): string {
  * 速さと Bun の起動が混ざるため。固定費を引いた差だけがこの PR の責任
  */
 export function benchReport(input: ReportInput): string {
-  const { head, base, floor, baseRef, runs } = input;
+  const { head, base, floor, baseRef, runs, bundle } = input;
   const ownHead = head.mean - floor.mean;
 
   const rows = [
@@ -88,7 +115,41 @@ export function benchReport(input: ReportInput): string {
     );
   }
 
+  if (bundle !== undefined) {
+    lines.push('', ...bundleSection(bundle, baseRef));
+  }
+
   return `${lines.join('\n')}\n`;
+}
+
+/**
+ * バンドルサイズの節。対象は 1 コマンドで `<Line>` しか使わない最小の CLI
+ * なので、ここが増えたらフレームワーク側が増えたということ。
+ * 起動時間と違ってバイト数は決定的で、差が出たらそれはノイズではない
+ */
+function bundleSection(bundle: BundleSize, baseRef: string): string[] {
+  const lines = [
+    '## Bundle size',
+    '',
+    'Minimal CLI (`test/fixtures/hello-app`: one command, `<Line>` only),',
+    '`decopin build --minify`. Framework code is all of it, so growth here is',
+    'framework growth.',
+    '',
+    '| Build | Size |',
+    '| --- | --- |',
+    `| this PR | ${kb(bundle.head)} |`,
+    bundle.base === undefined
+      ? `| ${baseRef} | not built |`
+      : `| ${baseRef} | ${kb(bundle.base)} |`,
+    '',
+  ];
+  if (bundle.base !== undefined) {
+    lines.push(
+      `**Difference: ${deltaBytes(bundle.head, bundle.base)}** against \`${baseRef}\`.`,
+      'Bytes are deterministic: any difference is real, not runner noise.'
+    );
+  }
+  return lines;
 }
 
 /** hyperfine の --export-json を読む。最初の 1 件だけ使う */
@@ -104,6 +165,13 @@ export function readMeasurement(json: string): Measurement {
     mean: first.mean,
     stddev: typeof first.stddev === 'number' ? first.stddev : 0,
   };
+}
+
+/** 環境変数のバイト数。空や数字以外は「無い」扱い (0 KB として通さない) */
+export function readBytes(value: string | undefined): number | undefined {
+  if (value === undefined || value.trim() === '') return undefined;
+  const bytes = Number(value);
+  return Number.isInteger(bytes) && bytes > 0 ? bytes : undefined;
 }
 
 if (import.meta.main) {
@@ -128,6 +196,12 @@ if (import.meta.main) {
     }
   }
 
+  const bytesHead = readBytes(process.env['BENCH_BYTES_HEAD']);
+  const bundle: BundleSize | undefined =
+    bytesHead === undefined
+      ? undefined
+      : { head: bytesHead, base: readBytes(process.env['BENCH_BYTES_BASE']) };
+
   console.log(
     benchReport({
       head: await read(headPath),
@@ -135,6 +209,7 @@ if (import.meta.main) {
       floor: await read(floorPath),
       baseRef: process.env['BENCH_BASE_REF'] ?? 'base',
       runs: Number(process.env['BENCH_RUNS'] ?? 50),
+      bundle,
     })
   );
 }

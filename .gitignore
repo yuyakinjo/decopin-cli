@@ -185,3 +185,5 @@ test/fixtures/watch-app/added/
 
 # bun build --compile が残す一時ファイル
 *.bun-build
+# bench の bundle size 計測が使う作業ディレクトリ (ADR 24)
+.decopin-size/
