@@ -766,9 +766,10 @@ decoration (like curl and cargo), so `cli deploy | tee log` stays clean:
 stdout carries only the static document. When stderr is not a TTY (pipes,
 CI), intermediate frames are skipped entirely and only the final frame is
 written once.
-Frames taller than the terminal are trimmed to fit, keeping the tail (the
-latest lines) and replacing the dropped head with a single `… (N more lines)`
-marker.
+While the island is live, frames taller than the terminal are trimmed to fit,
+keeping the tail (the latest lines) and replacing the dropped head with a
+single `… (N more lines)` marker. Once the source settles, the final frame is
+written in full, so the settled output matches what a pipe would receive.
 
 `<Dynamic>` must sit at the top level of the command output — not inside
 `<Line>`, `<Box>`, `<Columns>`, or `<Indent>`.

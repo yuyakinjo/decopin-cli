@@ -13,13 +13,14 @@
 import { isElement, isHost } from '../jsx/types.ts';
 import type { AnyComponent, Renderable, RenderInput } from '../jsx/types.ts';
 import { serialize } from './ansi.ts';
+import type { ColorDepth } from './color.ts';
 import { RenderError } from './errors.ts';
 import { evaluate } from './evaluate.ts';
 import { layout } from './layout.ts';
 import type { RenderNode } from './node.ts';
 import { colorDepthFor, renderTree, supportsUnicode } from './render.ts';
 import type { RenderOptions } from './render.ts';
-import { displayWidth, terminalWidth } from './width.ts';
+import { displayWidth, graphemes, terminalWidth } from './width.ts';
 import { write } from './writer.ts';
 import type { WritableLike, WriteTargets } from './writer.ts';
 
@@ -128,13 +129,16 @@ function terminalHeight(rows?: number): number {
   return rows !== undefined && rows > 0 ? rows : 24;
 }
 
-/** 表示幅が columns に収まるまで末尾を落とす (省略行を 1 物理行に留めるため) */
+/**
+ * 表示幅が columns に収まるまで末尾を落とす (省略行を 1 物理行に留めるため)。
+ * 書記素単位で落とす。code unit で切るとサロゲートペアや結合文字を割る
+ */
 function fitWidth(text: string, columns: number): string {
-  let fitted = text;
-  while (fitted.length > 0 && displayWidth(fitted) > columns) {
-    fitted = fitted.slice(0, -1);
+  const units = graphemes(text);
+  while (units.length > 0 && displayWidth(units.join('')) > columns) {
+    units.pop();
   }
-  return fitted;
+  return units.join('');
 }
 
 /**
@@ -145,13 +149,16 @@ function fitWidth(text: string, columns: number): string {
  * それも予算に含める。カーソル行を 1 行残すのは、最終行の改行で画面が
  * スクロールして消去の数学が崩れないようにするため。
  * 端末より高いフレームは `ESC[nA` が最上段で止まってスクロールアウトした
- * 行に届かず、repaint のたびに前フレームの頭がスクロールバックに堆積する
+ * 行に届かず、repaint のたびに前フレームの頭がスクロールバックに堆積する。
+ * 既知の限界: 1 論理行だけで予算を超えるときはその 1 行を予算超過のまま残す
+ * (何も描かないよりは崩れが小さい)
  */
 function clampFrame(
   text: string,
   columns: number,
   rows: number,
-  unicode = true
+  unicode: boolean,
+  depth: ColorDepth
 ): string {
   const budget = Math.max(1, rows - 1);
   if (frameRows(text, columns) <= budget) return text;
@@ -172,11 +179,16 @@ function clampFrame(
   }
 
   const dropped = lines.length - kept.length;
+  // 幅はプレーンな文字列で決め、装飾は後から。省略行は本文と見分けるため dim
   const marker = fitWidth(
     `${unicode ? '…' : '...'} (${dropped} more line${dropped === 1 ? '' : 's'})`,
     columns
   );
-  return `${marker}\n${kept.join('\n')}\n`;
+  const styled = serialize(
+    [{ fd: 2, text: marker, style: { dim: true } }],
+    depth
+  );
+  return `${styled}\n${kept.join('\n')}\n`;
 }
 
 /** 島を駆動する。source が尽きるまで描き、最後のフレームを残す */
@@ -222,10 +234,14 @@ async function driveIsland(
   let tickError: unknown;
   /** 進行中の repaint。島を閉じる前に必ず合流する */
   let inflight: Promise<void> = Promise.resolve();
+  /** 直前に描いたフレームが切り詰められたか。決着後に完全形へ描き直す判断に使う */
+  let clamped = false;
 
   const paint = async (value: unknown): Promise<void> => {
     // 端末より高いフレームは末尾を優先して切り詰める。消去の行数も切り詰め後で数える
-    const text = clampFrame(await frameText(value), columns, rows, unicode);
+    const full = await frameText(value);
+    const text = clampFrame(full, columns, rows, unicode, depth);
+    clamped = text !== full;
     tick += 1;
     err.write(`${eraseSequence(previousRows)}${text}`);
     previousRows = frameRows(text, columns);
@@ -333,9 +349,16 @@ async function driveIsland(
     await inflight;
     if (tickError !== undefined) throw tickError;
 
-    // 非 TTY は最終フレームだけを 1 回。TTY は最後に描いたものがそのまま残る
-    if (!isTTY && latest !== undefined) {
+    // 決着したフレームは誰も消さないので、切り詰めは要らない (ADR 40)。
+    // TTY で切り詰めていたなら完全形に描き直す。スクロールしてもそれはもう
+    // 静的な出力で、パイプに残る形と一致する。非 TTY は最終フレームだけを 1 回
+    if (latest === undefined) return;
+    if (!isTTY) {
       err.write(await frameText(latest.value));
+    } else if (clamped) {
+      err.write(
+        `${eraseSequence(previousRows)}${await frameText(latest.value)}`
+      );
     }
   } finally {
     closed = true;
