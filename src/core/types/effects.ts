@@ -1,7 +1,7 @@
 /**
  * 副作用の到達判定の語彙 (ADR 32)。
  *
- * 判定そのものはビルド時 (`src/build/effects.ts`) に行うが、結果は
+ * 判定そのものはビルド時 (`src/core/build/effects.ts`) に行うが、結果は
  * `routes.ts` に焼き込まれて実行時にも読まれる (MCP の annotations に
  * 変わる。ADR 33)。両側が同じ語彙を見るので、型はここに置く。
  */

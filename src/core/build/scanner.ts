@@ -69,7 +69,7 @@ const EXTENSIONS = ['.tsx', '.ts'] as const;
 /**
  * 規約ファイルの旧名。新名を優先し、旧名で見つかったら非推奨警告を出す (ADR 20)。
  *
- * 期限は src/deprecations.ts が持っている。旧名を消すときは、ここと合わせて消す
+ * 期限は src/core/deprecations.ts が持っている。旧名を消すときは、ここと合わせて消す
  */
 export const LEGACY_FILE_NAMES: Partial<Record<ConventionFile, string>> = {
   cmd: LEGACY_CMD_FILE,

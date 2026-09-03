@@ -3,7 +3,7 @@ import type { Renderable } from '../../jsx/types.ts';
  * 型宣言コンポーネント `Type.*`。
  *
  * 利用者が valibot の書き方を覚えなくて済むように、型と制約を JSX で組む。
- * valibot への変換は `src/validation/` に閉じ込める (ADR 10)。
+ * valibot への変換は `src/core/validation/` に閉じ込める (ADR 10)。
  */
 import { host } from '../host.ts';
 

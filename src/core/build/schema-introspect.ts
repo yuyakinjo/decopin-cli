@@ -5,7 +5,7 @@
  * JSX は型を運べない (ADR 9) ので、渡された**実オブジェクト**を読む。
  *
  * valibot を import しないのは意図的で、`type` 文字列で分岐するだけで足りる。
- * これにより valibot への依存は src/validation/ に閉じたままになる (ADR 10)。
+ * これにより valibot への依存は src/core/validation/ に閉じたままになる (ADR 10)。
  */
 import { quoteKey, wrapUnion } from '../types/type-text.ts';
 

@@ -82,7 +82,7 @@ export function toTypeNode(node: HostNode): TypeNode {
       }
       return { kind: 'enum', values: values as string[] };
     }
-    // 非推奨。src/deprecations.ts に削除期限がある
+    // 非推奨。src/core/deprecations.ts に削除期限がある
     case 'type.date':
       return {
         kind: 'date',
