@@ -27,6 +27,11 @@ import type { WritableLike, WriteTargets } from './writer.ts';
 export interface PresentOptions extends RenderOptions {
   /** 書き出し先 (テストから差し替えるため) */
   targets?: WriteTargets;
+  /**
+   * 端末の行数 (省略時は process.stderr.rows、無ければ 24)。
+   * `<Dynamic>` のフレームがこれより高いと末尾を優先して切り詰める (ADR 40)
+   */
+  rows?: number;
 }
 
 type DynamicNode = Extract<RenderNode, { kind: 'dynamic' }>;
@@ -118,6 +123,62 @@ function eraseSequence(rows: number): string {
   return `${ESC}[${rows}A\r${ESC}[0J`;
 }
 
+/** 端末の行数。取得できなければ 24 (terminalWidth の 80 と同じ、VT100 の既定) */
+function terminalHeight(rows?: number): number {
+  return rows !== undefined && rows > 0 ? rows : 24;
+}
+
+/** 表示幅が columns に収まるまで末尾を落とす (省略行を 1 物理行に留めるため) */
+function fitWidth(text: string, columns: number): string {
+  let fitted = text;
+  while (fitted.length > 0 && displayWidth(fitted) > columns) {
+    fitted = fitted.slice(0, -1);
+  }
+  return fitted;
+}
+
+/**
+ * フレームを端末の高さに収める (ADR 40)。
+ *
+ * 物理行が `rows - 1` を超えるなら**先頭の論理行から捨てて末尾を残す**。
+ * 進捗系は最新の情報が末尾に来るため。捨てた分は省略行 1 行で示し、
+ * それも予算に含める。カーソル行を 1 行残すのは、最終行の改行で画面が
+ * スクロールして消去の数学が崩れないようにするため。
+ * 端末より高いフレームは `ESC[nA` が最上段で止まってスクロールアウトした
+ * 行に届かず、repaint のたびに前フレームの頭がスクロールバックに堆積する
+ */
+function clampFrame(
+  text: string,
+  columns: number,
+  rows: number,
+  unicode = true
+): string {
+  const budget = Math.max(1, rows - 1);
+  if (frameRows(text, columns) <= budget) return text;
+
+  const lines = text.split('\n');
+  if (lines[lines.length - 1] === '') lines.pop();
+
+  // 末尾から予算に収まるだけ拾う。省略行のぶん 1 行は必ず空けておく
+  const kept: string[] = [];
+  let used = 0;
+  for (let index = lines.length - 1; index >= 0; index -= 1) {
+    const line = lines[index] as string;
+    const physical = frameRows(`${line}\n`, columns);
+    // 最後の 1 行は予算を超えても残す (何も描かないよりは崩れが小さい)
+    if (kept.length > 0 && used + physical + 1 > budget) break;
+    kept.unshift(line);
+    used += physical;
+  }
+
+  const dropped = lines.length - kept.length;
+  const marker = fitWidth(
+    `${unicode ? '…' : '...'} (${dropped} more line${dropped === 1 ? '' : 's'})`,
+    columns
+  );
+  return `${marker}\n${kept.join('\n')}\n`;
+}
+
 /** 島を駆動する。source が尽きるまで描き、最後のフレームを残す */
 async function driveIsland(
   island: DynamicNode,
@@ -131,6 +192,10 @@ async function driveIsland(
   const explicitColumns = options.columns !== undefined;
   let columns = terminalWidth(
     options.columns ?? process.stderr.columns ?? process.stdout.columns
+  );
+  const explicitRows = options.rows !== undefined;
+  let rows = terminalHeight(
+    options.rows ?? process.stderr.rows ?? process.stdout.rows
   );
 
   /** 描き直しの回数。<Spinner> のコマを進める (ADR 23) */
@@ -159,7 +224,8 @@ async function driveIsland(
   let inflight: Promise<void> = Promise.resolve();
 
   const paint = async (value: unknown): Promise<void> => {
-    const text = await frameText(value);
+    // 端末より高いフレームは末尾を優先して切り詰める。消去の行数も切り詰め後で数える
+    const text = clampFrame(await frameText(value), columns, rows, unicode);
     tick += 1;
     err.write(`${eraseSequence(previousRows)}${text}`);
     previousRows = frameRows(text, columns);
@@ -194,6 +260,9 @@ async function driveIsland(
     // 明示された幅は文書全体の前提なので、リサイズでも動かさない
     if (!explicitColumns) {
       columns = terminalWidth(process.stderr.columns ?? process.stdout.columns);
+    }
+    if (!explicitRows) {
+      rows = terminalHeight(process.stderr.rows ?? process.stdout.rows);
     }
     repaint();
   };
