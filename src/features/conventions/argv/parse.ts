@@ -1,19 +1,19 @@
+import type { HostNode } from '../../../jsx/resolve.ts';
+import { isReservedAlias, isReservedName } from '../../../runtime/reserved.ts';
 /**
  * 宣言ノードの木を {@link ArgvSpec} にする。ここが `argv.tsx` の意味を決める場所。
  *
  * ADR 5 の check に相当する検証もここで行う。ビルド時 (型生成) と実行時の
  * どちらから呼んでも同じ結果になるよう、副作用を持たせない。
  */
-import { DeclarationError } from '../../../declaration/errors.ts';
+import { DeclarationError } from '../../errors.ts';
 import {
   presence,
   readBoolean,
   readString,
   requireName,
   resolveType,
-} from '../../../declaration/parse-helpers.ts';
-import type { HostNode } from '../../../declaration/resolve.ts';
-import { isReservedAlias, isReservedName } from '../../../runtime/reserved.ts';
+} from '../../parse-helpers.ts';
 import type { ArgSpec, ArgvSpec, OptionSpec } from './spec.ts';
 
 export function parseArgvSpec(hosts: HostNode[]): ArgvSpec {

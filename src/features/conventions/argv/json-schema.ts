@@ -1,8 +1,5 @@
-import {
-  compactJsonSchema,
-  toJsonSchema,
-} from '../../../declaration/json-schema-core.ts';
-import type { JsonSchema } from '../../../declaration/json-schema-core.ts';
+import { compactJsonSchema, toJsonSchema } from '../../../types/json-schema.ts';
+import type { JsonSchema } from '../../../types/json-schema.ts';
 import type { StdinSpec } from '../stdin/spec.ts';
 import type { ArgvSpec } from './spec.ts';
 

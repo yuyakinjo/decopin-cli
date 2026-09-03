@@ -1,3 +1,4 @@
+import { DeclarationError } from '../features/errors.ts';
 /**
  * 宣言用の JSX ツリーを、組み込みノードの木にする。
  *
@@ -5,14 +6,13 @@
  * 「宣言の構造」を取り出す。関数コンポーネントを呼び、Fragment と配列を
  * 平らにするので、`_` 配下の共有コンポーネントもそのまま展開される (test/contract/argv-parsing.test.ts)。
  */
-import { isElement, isHost } from '../jsx/types.ts';
+import { isElement, isHost } from './types.ts';
 import type {
   AnyComponent,
   HostKind,
   Renderable,
   RenderInput,
-} from '../jsx/types.ts';
-import { DeclarationError } from './errors.ts';
+} from './types.ts';
 
 export interface HostNode {
   kind: HostKind;

@@ -3,8 +3,8 @@
  * 宣言を唯一の情報源にすることで、スキーマと help の二重管理が起きない。
  */
 import { Br, Line, Text } from '../../../components/index.ts';
-import { typeLabel } from '../../../declaration/type-node.ts';
 import type { Renderable } from '../../../jsx/types.ts';
+import { typeLabel } from '../../../types/type-node.ts';
 import { loadArgvSpec } from '../argv/runtime.ts';
 import type { ArgSpec, ArgvSpec, OptionSpec } from '../argv/spec.ts';
 import type { RouteTable } from '../cmd/router.ts';

@@ -1,4 +1,4 @@
-import { quoteKey, toTypeText } from '../../../declaration/type-text.ts';
+import { quoteKey, toTypeText } from '../../../types/type-text.ts';
 import type { EnvSpec } from './spec.ts';
 
 /** `env.tsx` の宣言から EnvVars の型を作る */

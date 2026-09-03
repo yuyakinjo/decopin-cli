@@ -2,7 +2,7 @@ import {
   schemaToTypeText,
   type SchemaTypeResult,
 } from '../../../build/schema-introspect.ts';
-import { toTypeText } from '../../../declaration/type-text.ts';
+import { toTypeText } from '../../../types/type-text.ts';
 import type { StdinSpec } from './spec.ts';
 
 /** stdin.tsx の宣言から、command が受け取る値の型を決める (ADR 2) */

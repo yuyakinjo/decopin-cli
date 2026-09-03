@@ -2,13 +2,9 @@ import {
   isAsyncSchema,
   isValibotSchema,
 } from '../../../build/schema-introspect.ts';
-import { DeclarationError } from '../../../declaration/errors.ts';
-import {
-  onlyType,
-  readBoolean,
-  readString,
-} from '../../../declaration/parse-helpers.ts';
-import type { HostNode } from '../../../declaration/resolve.ts';
+import type { HostNode } from '../../../jsx/resolve.ts';
+import { DeclarationError } from '../../errors.ts';
+import { onlyType, readBoolean, readString } from '../../parse-helpers.ts';
 import type { StdinSpec } from './spec.ts';
 
 /** `stdin.tsx` の宣言を読む (ADR 2) */

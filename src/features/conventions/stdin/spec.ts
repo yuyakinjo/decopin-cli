@@ -1,4 +1,4 @@
-import type { TypeNode } from '../../../declaration/type-node.ts';
+import type { TypeNode } from '../../../types/type-node.ts';
 
 /** 標準入力の読み方 (ADR 2) */
 export type StdinMode = 'text' | 'lines' | 'json';

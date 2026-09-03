@@ -1,11 +1,11 @@
-import { DeclarationError } from '../../../declaration/errors.ts';
+import type { HostNode } from '../../../jsx/resolve.ts';
+import { DeclarationError } from '../../errors.ts';
 import {
   presence,
   readString,
   requireName,
   resolveType,
-} from '../../../declaration/parse-helpers.ts';
-import type { HostNode } from '../../../declaration/resolve.ts';
+} from '../../parse-helpers.ts';
 import type { EnvSpec, VarSpec } from './spec.ts';
 
 /** `env.tsx` の宣言を読む */

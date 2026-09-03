@@ -1,20 +1,3 @@
-/**
- * コマンドを MCP のツールとして出す (ADR 33)。
- *
- * `<bin> __mcp` で起動すると stdio で JSON-RPC 2.0 を話す。宣言は全部
- * 既にある: argv.tsx が `inputSchema`、output.tsx が `outputSchema`、
- * data.tsx の戻り値が `structuredContent`、ビルド時の副作用の判定が
- * `annotations`。ここでは変換だけをして、新しい宣言は要求しない。
- *
- * 公式 SDK は使わない。stdio で必要なのは改行区切りの JSON と 4 つの
- * メソッドだけで、SDK の 4.3MB / 17 依存 (express, zod, ajv ...) と釣り合わない。
- *
- * ツールの実行は `run()` をそのまま呼ぶ。引数を argv に戻して `--json` を
- * 付けるので、検証・middleware・output.tsx の検査・エラーの構造化 (ADR 29)
- * がすべて CLI と同じ経路を通る。MCP のためだけの経路を持たない
- */
-import { toJsonSchema } from '../declaration/json-schema-core.ts';
-import type { JsonSchema } from '../declaration/json-schema-core.ts';
 import {
   argumentsSchema,
   STDIN_ARGUMENT,
@@ -31,6 +14,23 @@ import { loadStdinSpec } from '../features/conventions/stdin/runtime.ts';
 import type { StdinSpec } from '../features/conventions/stdin/spec.ts';
 import { loadVersionSpec } from '../features/root-only/version/runtime.ts';
 import type { EffectVerdicts } from '../types/effects.ts';
+/**
+ * コマンドを MCP のツールとして出す (ADR 33)。
+ *
+ * `<bin> __mcp` で起動すると stdio で JSON-RPC 2.0 を話す。宣言は全部
+ * 既にある: argv.tsx が `inputSchema`、output.tsx が `outputSchema`、
+ * data.tsx の戻り値が `structuredContent`、ビルド時の副作用の判定が
+ * `annotations`。ここでは変換だけをして、新しい宣言は要求しない。
+ *
+ * 公式 SDK は使わない。stdio で必要なのは改行区切りの JSON と 4 つの
+ * メソッドだけで、SDK の 4.3MB / 17 依存 (express, zod, ajv ...) と釣り合わない。
+ *
+ * ツールの実行は `run()` をそのまま呼ぶ。引数を argv に戻して `--json` を
+ * 付けるので、検証・middleware・output.tsx の検査・エラーの構造化 (ADR 29)
+ * がすべて CLI と同じ経路を通る。MCP のためだけの経路を持たない
+ */
+import { toJsonSchema } from '../types/json-schema.ts';
+import type { JsonSchema } from '../types/json-schema.ts';
 import { EXIT_CODE } from './exit.ts';
 import { JSON_FLAG } from './reserved.ts';
 import type { RunOptions } from './run.tsx';

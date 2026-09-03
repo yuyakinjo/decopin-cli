@@ -1,6 +1,6 @@
-import { DeclarationError } from '../../../declaration/errors.ts';
-import { readString } from '../../../declaration/parse-helpers.ts';
-import type { HostNode } from '../../../declaration/resolve.ts';
+import type { HostNode } from '../../../jsx/resolve.ts';
+import { DeclarationError } from '../../errors.ts';
+import { readString } from '../../parse-helpers.ts';
 import type { VersionSpec } from './spec.ts';
 
 /** `version.tsx` の宣言を読む */

@@ -4,7 +4,7 @@
  * 検証 (valibot) の前に行う。ここで直せない場合は
  * 「--count には数値を渡してください」のように、何を渡すべきかを伝える。
  */
-import type { TypeNode } from '../declaration/type-node.ts';
+import type { TypeNode } from '../types/type-node.ts';
 
 /** argv から取り出した生の値。`true` はフラグとして現れたことを表す */
 export type RawValue = string | true;

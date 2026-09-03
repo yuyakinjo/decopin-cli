@@ -5,7 +5,7 @@
  * 端末で実行したときに入力待ちでフリーズする、という最頻出の事故を
  * 構造的に起こせないようにしている。
  */
-import { resolveHosts } from '../../../declaration/resolve.ts';
+import { resolveHosts } from '../../../jsx/resolve.ts';
 import type { Renderable } from '../../../jsx/types.ts';
 import { EXIT_CODE } from '../../../runtime/exit.ts';
 import { toSchema, validateValue } from '../../../validation/schema.ts';

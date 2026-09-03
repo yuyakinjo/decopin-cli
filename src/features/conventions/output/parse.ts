@@ -2,9 +2,9 @@ import {
   isAsyncSchema,
   isValibotSchema,
 } from '../../../build/schema-introspect.ts';
-import { DeclarationError } from '../../../declaration/errors.ts';
-import { onlyType } from '../../../declaration/parse-helpers.ts';
-import type { HostNode } from '../../../declaration/resolve.ts';
+import type { HostNode } from '../../../jsx/resolve.ts';
+import { DeclarationError } from '../../errors.ts';
+import { onlyType } from '../../parse-helpers.ts';
 import type { OutputSpec } from './spec.ts';
 
 /**
