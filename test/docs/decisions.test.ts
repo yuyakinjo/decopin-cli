@@ -310,6 +310,11 @@ const GUARDS: Record<number, Guard> = {
     label: '実行時に決まる補完候補は complete.tsx (壊れても遅くても落ちない)',
     file: 'test/runtime/complete.test.tsx',
   },
+  40: {
+    kind: 'test',
+    label: '端末より高い <Dynamic> のフレームは末尾を優先して切り詰める',
+    file: 'test/renderer/present.test.tsx',
+  },
   39: {
     kind: 'test',
     label: 'コマンドの本体は cmd.tsx (旧名 command.tsx も 1 年は受ける)',

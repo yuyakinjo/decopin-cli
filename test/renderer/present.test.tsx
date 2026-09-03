@@ -310,6 +310,126 @@ describe('repaint のライフサイクル', () => {
   });
 });
 
+describe('端末の高さへの切り詰め (ADR 40)', () => {
+  const tty = { isTTY: { stdout: false, stderr: true } };
+  const HEIGHT = 60;
+  const tall = Array.from({ length: HEIGHT }, (_, index) => index);
+
+  async function* twice() {
+    yield 1;
+    yield 2;
+  }
+
+  /** 60 行の論理行を持つフレーム。末尾が最新情報という進捗系の形 */
+  const TallFrame = () => (
+    <>
+      {tall.map((index) => (
+        <Line key={index}>row {index}</Line>
+      ))}
+    </>
+  );
+
+  /** 消去列 `ESC[nA` の n を出現順に */
+  // oxlint-disable-next-line no-control-regex -- エスケープ列を拾うのが目的
+  const CURSOR_UP = /\u001b\[(\d+)A/g;
+  const eraseCounts = (text: string): number[] =>
+    [...text.matchAll(CURSOR_UP)].map((match) => Number(match[1]));
+
+  /** エスケープ列を落とした、最後に描いたフレームの行 */
+  const lastFrameLines = (text: string): string[] => {
+    const frames = text.split(`\r${ESC}[0J`);
+    const last = frames[frames.length - 1] as string;
+    return last
+      .replace(SHOW, '')
+      .split('\n')
+      .filter((line) => line !== '');
+  };
+
+  test('端末より高いフレームは rows - 1 に収め、末尾を残して先頭を捨てる', async () => {
+    const io = channels();
+    await present(
+      <Dynamic source={twice()}>{() => <TallFrame />}</Dynamic>,
+      options(io, { ...tty, columns: 80, rows: 24 })
+    );
+    const err = textOf(io.log, 'err');
+    const erases = eraseCounts(err);
+    expect(erases).toHaveLength(1);
+    expect(erases[0]).toBeLessThanOrEqual(23);
+
+    const lines = lastFrameLines(err);
+    expect(lines.length).toBeLessThanOrEqual(23);
+    expect(lines[lines.length - 1]).toBe('row 59');
+    expect(lines).not.toContain('row 0');
+    const markers = lines.filter((line) => /more lines/.test(line));
+    expect(markers).toHaveLength(1);
+    expect(markers[0]).toBe(lines[0]);
+  });
+
+  test('折り返しと合成しても物理行の予算に収まる', async () => {
+    const wide = ['a', 'b', 'c', 'd'].map((letter) => letter.repeat(25));
+    async function* once() {
+      yield 1;
+      yield 2;
+    }
+    const io = channels();
+    await present(
+      <Dynamic source={once()}>
+        {() => (
+          <>
+            {wide.map((text) => (
+              <Line key={text}>{text}</Line>
+            ))}
+          </>
+        )}
+      </Dynamic>,
+      options(io, { ...tty, columns: 10, rows: 5 })
+    );
+    const err = textOf(io.log, 'err');
+    // 幅 25 は 10 桁で 3 物理行。予算 4 行には省略行 1 + 論理行 1 (3 行) しか入らない
+    expect(eraseCounts(err)).toEqual([4]);
+    const lines = lastFrameLines(err);
+    expect(lines[lines.length - 1]).toBe('d'.repeat(25));
+    expect(frameRows(`${lines.join('\n')}\n`, 10)).toBeLessThanOrEqual(4);
+  });
+
+  test('非 TTY では切り詰めない (最終出力は完全な形で残る)', async () => {
+    const io = channels();
+    await present(
+      <Dynamic source={twice()}>{() => <TallFrame />}</Dynamic>,
+      options(io, { rows: 5 })
+    );
+    const lines = textOf(io.log, 'err')
+      .split('\n')
+      .filter((l) => l !== '');
+    expect(lines).toHaveLength(HEIGHT);
+    expect(lines[0]).toBe('row 0');
+    expect(lines[HEIGHT - 1]).toBe('row 59');
+  });
+
+  test('rows を明示しないと process.stderr.rows を読む', async () => {
+    const stream = process.stderr as unknown as { rows?: number };
+    const original = Object.getOwnPropertyDescriptor(process.stderr, 'rows');
+    Object.defineProperty(process.stderr, 'rows', {
+      value: 10,
+      configurable: true,
+      writable: true,
+    });
+    try {
+      const io = channels();
+      await present(
+        <Dynamic source={twice()}>{() => <TallFrame />}</Dynamic>,
+        options(io, { ...tty, columns: 80 })
+      );
+      const err = textOf(io.log, 'err');
+      expect(eraseCounts(err)).toEqual([9]);
+      expect(lastFrameLines(err)).toHaveLength(9);
+    } finally {
+      if (original === undefined) delete stream.rows;
+      else Object.defineProperty(process.stderr, 'rows', original);
+    }
+  });
+});
+
 describe('フレームの内容の契約', () => {
   test('<Exit> はフレームの中に置けない', async () => {
     async function* once() {
