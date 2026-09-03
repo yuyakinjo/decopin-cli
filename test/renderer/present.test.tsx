@@ -10,6 +10,7 @@ import { describe, expect, test } from 'bun:test';
 
 import {
   Box,
+  displayWidth,
   Dynamic,
   Exit,
   frameRows,
@@ -314,6 +315,8 @@ describe('端末の高さへの切り詰め (ADR 40)', () => {
   const tty = { isTTY: { stdout: false, stderr: true } };
   const HEIGHT = 60;
   const tall = Array.from({ length: HEIGHT }, (_, index) => index);
+  const sleep = (ms: number) =>
+    new Promise((resolve) => setTimeout(resolve, ms));
 
   async function* twice() {
     yield 1;
@@ -335,34 +338,119 @@ describe('端末の高さへの切り詰め (ADR 40)', () => {
   const eraseCounts = (text: string): number[] =>
     [...text.matchAll(CURSOR_UP)].map((match) => Number(match[1]));
 
-  /** エスケープ列を落とした、最後に描いたフレームの行 */
+  /** 消去列 `ESC[nA CR ESC[0J` */
+  // oxlint-disable-next-line no-control-regex -- エスケープ列を拾うのが目的
+  const ERASE = /\u001b\[\d+A\r\u001b\[0J/;
+
+  /** 消去列で区切った、描いた順のフレーム (カーソル制御は落とす) */
+  const frameLines = (text: string): string[][] =>
+    text.split(ERASE).map((frame) =>
+      frame
+        .replace(HIDE, '')
+        .replace(SHOW, '')
+        .split('\n')
+        .filter((line) => line !== '')
+    );
+
+  /** 最後に描いたフレーム。決着後に画面へ残る形 */
   const lastFrameLines = (text: string): string[] => {
-    const frames = text.split(`\r${ESC}[0J`);
-    const last = frames[frames.length - 1] as string;
-    return last
-      .replace(SHOW, '')
-      .split('\n')
-      .filter((line) => line !== '');
+    const frames = frameLines(text);
+    return frames[frames.length - 1] as string[];
   };
 
-  test('端末より高いフレームは rows - 1 に収め、末尾を残して先頭を捨てる', async () => {
+  /** 決着の直前に描いた中間フレーム。まだ次の消去を待っている形 */
+  const liveFrameLines = (text: string): string[] => {
+    const frames = frameLines(text);
+    return frames[frames.length - 2] as string[];
+  };
+
+  /** process.stderr.rows を差し替えて body を走らせ、必ず元に戻す */
+  async function withStderrRows(
+    rows: number,
+    body: (set: (next: number) => void) => Promise<void>
+  ): Promise<void> {
+    const stream = process.stderr as unknown as { rows?: number };
+    const original = Object.getOwnPropertyDescriptor(process.stderr, 'rows');
+    const set = (next: number): void => {
+      Object.defineProperty(process.stderr, 'rows', {
+        value: next,
+        configurable: true,
+        writable: true,
+      });
+    };
+    set(rows);
+    try {
+      await body(set);
+    } finally {
+      if (original === undefined) delete stream.rows;
+      else Object.defineProperty(process.stderr, 'rows', original);
+    }
+  }
+
+  test('端末より高いフレームは進行中 rows - 1 に収め、末尾を残して先頭を捨てる', async () => {
     const io = channels();
     await present(
       <Dynamic source={twice()}>{() => <TallFrame />}</Dynamic>,
       options(io, { ...tty, columns: 80, rows: 24 })
     );
     const err = textOf(io.log, 'err');
-    const erases = eraseCounts(err);
-    expect(erases).toHaveLength(1);
-    expect(erases[0]).toBeLessThanOrEqual(23);
+    // 2 回目の描画と、決着後の完全形への描き直しで 2 回消す。どちらも切り詰めた高さ
+    expect(eraseCounts(err)).toEqual([23, 23]);
 
-    const lines = lastFrameLines(err);
+    const lines = liveFrameLines(err);
     expect(lines.length).toBeLessThanOrEqual(23);
     expect(lines[lines.length - 1]).toBe('row 59');
     expect(lines).not.toContain('row 0');
     const markers = lines.filter((line) => /more lines/.test(line));
     expect(markers).toHaveLength(1);
     expect(markers[0]).toBe(lines[0]);
+  });
+
+  test('島が決着すると最終フレームは切り詰めずに完全形で残る', async () => {
+    const io = channels();
+    await present(
+      <Dynamic source={twice()}>{() => <TallFrame />}</Dynamic>,
+      options(io, { ...tty, columns: 80, rows: 24 })
+    );
+    const err = textOf(io.log, 'err');
+    const lines = lastFrameLines(err);
+    expect(lines).toHaveLength(HEIGHT);
+    expect(lines[0]).toBe('row 0');
+    expect(lines[HEIGHT - 1]).toBe('row 59');
+    expect(lines.some((line) => /more lines/.test(line))).toBe(false);
+
+    // パイプに残る形と一致する
+    const piped = channels();
+    await present(
+      <Dynamic source={twice()}>{() => <TallFrame />}</Dynamic>,
+      options(piped, { columns: 80, rows: 24 })
+    );
+    expect(lines.join('\n')).toBe(
+      textOf(piped.log, 'err')
+        .split('\n')
+        .filter((line) => line !== '')
+        .join('\n')
+    );
+  });
+
+  test('切り詰めが起きなかった島は決着後に描き直さない', async () => {
+    const io = channels();
+    await present(
+      <Dynamic source={twice()}>
+        {(value) => (
+          <>
+            <Line>step {value}</Line>
+            <Line>a</Line>
+            <Line>b</Line>
+          </>
+        )}
+      </Dynamic>,
+      options(io, { ...tty, columns: 80, rows: 24 })
+    );
+    const err = textOf(io.log, 'err');
+    expect(eraseCounts(err)).toEqual([3]);
+    expect(frameLines(err)).toHaveLength(2);
+    expect(lastFrameLines(err)).toEqual(['step 2', 'a', 'b']);
   });
 
   test('折り返しと合成しても物理行の予算に収まる', async () => {
@@ -386,10 +474,35 @@ describe('端末の高さへの切り詰め (ADR 40)', () => {
     );
     const err = textOf(io.log, 'err');
     // 幅 25 は 10 桁で 3 物理行。予算 4 行には省略行 1 + 論理行 1 (3 行) しか入らない
-    expect(eraseCounts(err)).toEqual([4]);
-    const lines = lastFrameLines(err);
+    expect(eraseCounts(err)).toEqual([4, 4]);
+    const lines = liveFrameLines(err);
     expect(lines[lines.length - 1]).toBe('d'.repeat(25));
     expect(frameRows(`${lines.join('\n')}\n`, 10)).toBeLessThanOrEqual(4);
+    expect(lastFrameLines(err)).toEqual(wide);
+  });
+
+  test('省略行は幅が足りなくても書記素の途中で切れない', async () => {
+    const io = channels();
+    await present(
+      <Dynamic source={twice()}>{() => <TallFrame />}</Dynamic>,
+      options(io, { ...tty, columns: 3, rows: 5 })
+    );
+    const marker = liveFrameLines(textOf(io.log, 'err'))[0] as string;
+    expect(displayWidth(marker)).toBeLessThanOrEqual(3);
+    expect(marker.startsWith('…')).toBe(true);
+    expect('… (59 more lines)'.startsWith(marker)).toBe(true);
+  });
+
+  test('省略行は dim で描く (本文と見分けるため)', async () => {
+    const io = channels();
+    await present(
+      <Dynamic source={twice()}>{() => <TallFrame />}</Dynamic>,
+      options(io, { ...tty, env: { FORCE_COLOR: '1' }, columns: 80, rows: 24 })
+    );
+    const err = textOf(io.log, 'err');
+    expect(err).toContain(`${ESC}[2m… (38 more lines)`);
+    // 装飾は幅の数学を変えない
+    expect(eraseCounts(err)).toEqual([23, 23]);
   });
 
   test('非 TTY では切り詰めない (最終出力は完全な形で残る)', async () => {
@@ -407,26 +520,61 @@ describe('端末の高さへの切り詰め (ADR 40)', () => {
   });
 
   test('rows を明示しないと process.stderr.rows を読む', async () => {
-    const stream = process.stderr as unknown as { rows?: number };
-    const original = Object.getOwnPropertyDescriptor(process.stderr, 'rows');
-    Object.defineProperty(process.stderr, 'rows', {
-      value: 10,
-      configurable: true,
-      writable: true,
-    });
-    try {
+    await withStderrRows(10, async () => {
       const io = channels();
       await present(
         <Dynamic source={twice()}>{() => <TallFrame />}</Dynamic>,
         options(io, { ...tty, columns: 80 })
       );
       const err = textOf(io.log, 'err');
-      expect(eraseCounts(err)).toEqual([9]);
-      expect(lastFrameLines(err)).toHaveLength(9);
-    } finally {
-      if (original === undefined) delete stream.rows;
-      else Object.defineProperty(process.stderr, 'rows', original);
+      expect(eraseCounts(err)).toEqual([9, 9]);
+      expect(liveFrameLines(err)).toHaveLength(9);
+    });
+  });
+
+  test('SIGWINCH が来ても明示した rows は変わらない', async () => {
+    async function* wait() {
+      yield 1;
+      await sleep(30);
     }
+    await withStderrRows(10, async () => {
+      const io = channels();
+      const timer = setTimeout(() => {
+        (process as unknown as { emit(event: string): void }).emit('SIGWINCH');
+      }, 10);
+      await present(
+        <Dynamic source={wait()}>{() => <TallFrame />}</Dynamic>,
+        options(io, { ...tty, columns: 80, rows: 24 })
+      );
+      clearTimeout(timer);
+      const erases = eraseCounts(textOf(io.log, 'err'));
+      // リサイズの repaint と決着後の描き直しの両方が、明示した 24 行基準で消している
+      expect(erases).toEqual([23, 23]);
+    });
+  });
+
+  test('明示しない rows は SIGWINCH で追従する', async () => {
+    async function* wait() {
+      yield 1;
+      await sleep(30);
+    }
+    await withStderrRows(24, async (set) => {
+      const io = channels();
+      const timer = setTimeout(() => {
+        set(10);
+        (process as unknown as { emit(event: string): void }).emit('SIGWINCH');
+      }, 10);
+      await present(
+        <Dynamic source={wait()}>{() => <TallFrame />}</Dynamic>,
+        options(io, { ...tty, columns: 80 })
+      );
+      clearTimeout(timer);
+      const err = textOf(io.log, 'err');
+      // 23 行のフレームを消して 9 行で描き直し、決着後はその 9 行を消して完全形を描く
+      expect(eraseCounts(err)).toEqual([23, 9]);
+      expect(liveFrameLines(err)).toHaveLength(9);
+      expect(lastFrameLines(err)).toHaveLength(HEIGHT);
+    });
   });
 });
 
