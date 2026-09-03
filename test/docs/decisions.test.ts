@@ -378,6 +378,36 @@ const GUARDS: Record<number, Guard> = {
     label: '--json に出せるかを実行前に見る',
     file: 'test/runtime/serializable.test.ts',
   },
+  41: {
+    kind: 'lint',
+    label: 'core は features を呼ばない (ディスパッチする 6 ファイルを除く)',
+    check: async () => {
+      // 規約をディスパッチする側。ここだけは features を知ってよい
+      const dispatchers = (file: string) =>
+        file === 'src/core/runtime/run.tsx' ||
+        file === 'src/core/runtime/mcp.ts' ||
+        file.startsWith('src/core/build/');
+      const statement =
+        /(?:^|\n)\s*(import|export)\b[\s\S]*?from\s*(['"])([^'"]+)\2/g;
+      const offenders: string[] = [];
+      for (const [file, source] of srcSources) {
+        if (!file.startsWith('src/core/') || dispatchers(file)) continue;
+        for (const match of source.matchAll(statement)) {
+          if (!(match[3] as string).includes('/features/')) continue;
+          // 再エクスポートだけの窓口は振る舞いを持たないので許す
+          if (match[1] === 'export') continue;
+          offenders.push(`${file} → ${match[3]}`);
+        }
+        // 遅延読み込みで抜け道を作らない
+        for (const match of source.matchAll(/\bimport\(\s*(['"])([^'"]+)\1/g)) {
+          if ((match[2] as string).includes('/features/')) {
+            offenders.push(`${file} → ${match[2]} (dynamic)`);
+          }
+        }
+      }
+      return offenders;
+    },
+  },
   26: {
     kind: 'test',
     label: 'パイプを壊さないことを全コマンドで掃いて確かめる',
