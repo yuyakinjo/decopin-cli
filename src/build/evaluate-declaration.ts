@@ -1,6 +1,6 @@
 import { resolve } from 'node:path';
 
-import { resolveHosts } from '../declaration/resolve.ts';
+import { resolveHosts } from '../jsx/resolve.ts';
 import type { Renderable } from '../jsx/types.ts';
 
 export interface EvaluationProblem {

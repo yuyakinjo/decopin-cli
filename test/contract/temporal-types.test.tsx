@@ -8,13 +8,13 @@ import { describe, expect, test } from 'bun:test';
 
 import { Arg, Argv, Option, render, Type } from 'decopin-cli';
 
-import { resolveHosts } from '../../src/declaration/resolve.ts';
-import type { TypeNode } from '../../src/declaration/type-node.ts';
-import { typeLabel } from '../../src/declaration/type-node.ts';
 import { parseArgvSpec } from '../../src/features/conventions/argv/parse.ts';
 import type { ArgvSpec } from '../../src/features/conventions/argv/spec.ts';
 import { validateArgv } from '../../src/features/conventions/argv/validation.ts';
 import { Help } from '../../src/features/conventions/help/runtime.tsx';
+import { resolveHosts } from '../../src/jsx/resolve.ts';
+import type { TypeNode } from '../../src/types/type-node.ts';
+import { typeLabel } from '../../src/types/type-node.ts';
 
 const spec = await (async () =>
   parseArgvSpec(

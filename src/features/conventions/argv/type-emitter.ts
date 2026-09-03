@@ -1,8 +1,4 @@
-import {
-  quoteKey,
-  toTypeText,
-  wrapUnion,
-} from '../../../declaration/type-text.ts';
+import { quoteKey, toTypeText, wrapUnion } from '../../../types/type-text.ts';
 import type { ArgSpec, ArgvSpec, OptionSpec } from './spec.ts';
 
 /** 省略できるキーは `?` を付ける (既定値があれば必ず入るので付けない) */

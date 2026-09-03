@@ -1,4 +1,4 @@
-import type { TypeNode } from '../../../declaration/type-node.ts';
+import type { TypeNode } from '../../../types/type-node.ts';
 import { coerce, coerceAll } from '../../../validation/coerce.ts';
 import {
   toSchema,

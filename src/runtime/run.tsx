@@ -5,7 +5,6 @@
  * 読み込み・検証・表示は `src/features/` の該当ディレクトリが担当する。
  */
 import { Json, Line, Stderr } from '../components/index.ts';
-import { resolveHosts } from '../declaration/resolve.ts';
 import { loadArgvSpec } from '../features/conventions/argv/runtime.ts';
 import { validateArgv } from '../features/conventions/argv/validation.ts';
 import type { CommandContext } from '../features/conventions/cmd/context.ts';
@@ -61,6 +60,7 @@ import { loadEnv } from '../features/root-only/env/runtime.ts';
 import { withGlobalError } from '../features/root-only/global-error/runtime.ts';
 import { presentRootNotFound } from '../features/root-only/not-found/runtime.ts';
 import { loadVersionSpec } from '../features/root-only/version/runtime.ts';
+import { resolveHosts } from '../jsx/resolve.ts';
 import type { Renderable, RenderInput } from '../jsx/types.ts';
 import { present as presentDocument } from '../renderer/present.ts';
 import type { WriteTargets } from '../renderer/writer.ts';

@@ -22,7 +22,7 @@ import {
 } from 'decopin-cli';
 import type { RouteTable } from 'decopin-cli';
 
-import { resolveHosts } from '../../src/declaration/resolve.ts';
+import { resolveHosts } from '../../src/jsx/resolve.ts';
 
 let dir: string;
 beforeAll(async () => {

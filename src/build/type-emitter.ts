@@ -17,7 +17,7 @@ import { envShape } from '../features/root-only/env/type-emitter.ts';
 import type { EvaluatedRoute } from './evaluator.ts';
 import type { UnsupportedNode } from './schema-introspect.ts';
 
-export { toTypeText } from '../declaration/type-text.ts';
+export { toTypeText } from '../types/type-text.ts';
 export { dataTypeText } from '../features/conventions/data/type-emitter.ts';
 export {
   stdinType,

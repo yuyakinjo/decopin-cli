@@ -6,7 +6,7 @@
  */
 import * as v from 'valibot';
 
-import type { TypeNode } from '../declaration/type-node.ts';
+import type { TypeNode } from '../types/type-node.ts';
 
 type Schema = v.GenericSchema;
 

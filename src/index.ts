@@ -80,14 +80,14 @@ export type {
   ErrorKind,
   ErrorProps,
 } from './features/conventions/error/errors.ts';
-export { DeclarationError } from './declaration/errors.ts';
+export { DeclarationError } from './features/errors.ts';
 export type {
   ArgSpec,
   ArgvSpec,
   OptionSpec,
 } from './features/conventions/argv/spec.ts';
 export type { OutputSpec } from './features/conventions/output/spec.ts';
-export type { TypeNode } from './declaration/type-node.ts';
+export type { TypeNode } from './types/type-node.ts';
 export {
   RESERVED_OPTION_ALIASES,
   RESERVED_OPTION_NAMES,
@@ -123,8 +123,8 @@ export type {
   EffectVerdicts,
   Verdict,
 } from './types/effects.ts';
-export { toJsonSchema } from './declaration/json-schema-core.ts';
-export type { JsonSchema } from './declaration/json-schema-core.ts';
+export { toJsonSchema } from './types/json-schema.ts';
+export type { JsonSchema } from './types/json-schema.ts';
 export { argumentsSchema } from './features/conventions/argv/json-schema.ts';
 export {
   annotationsFor,

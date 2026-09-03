@@ -1,4 +1,4 @@
-import { resolveHosts } from '../../../declaration/resolve.ts';
+import { resolveHosts } from '../../../jsx/resolve.ts';
 import type { Renderable } from '../../../jsx/types.ts';
 import { CliError } from '../../conventions/error/errors.ts';
 import { parseVersionSpec } from './parse.ts';
