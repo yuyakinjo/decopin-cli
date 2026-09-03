@@ -1,11 +1,11 @@
+import type { Renderable } from '../jsx/types.ts';
 /**
  * CLI で毎回書くことになる形の詰め合わせ (ADR 30)。
  *
  * 「型を用意したので自分で組んでください」ではなく、**よくある形が既に
  * 正しく用意されている**状態を目指す置き場。増えるたびにここへ足す。
  */
-import { closest } from '../../features/conventions/cmd/router.ts';
-import type { Renderable } from '../jsx/types.ts';
+import { closest } from '../text.ts';
 import { Line, Text } from './index.ts';
 
 /** 打ち間違いの提案 */

@@ -1,3 +1,4 @@
+import { supportsUnicode } from '../renderer/render.ts';
 /**
  * 端末で候補から 1 つ選ばせる `choose()` (ADR 36)。
  *
@@ -9,8 +10,7 @@
  * `<Choose>` という JSX ではなく関数なのは、JSX 式が型引数を運べないため
  * (ADR 9)。`values` を `as const` で渡せば戻り値はその literal union になる
  */
-import { CliError } from '../../features/conventions/error/errors.ts';
-import { supportsUnicode } from '../renderer/render.ts';
+import { CliError } from './errors.ts';
 import { EXIT_CODE } from './exit.ts';
 import { interrupt } from './signals.ts';
 

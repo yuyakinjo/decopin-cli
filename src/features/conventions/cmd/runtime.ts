@@ -1,5 +1,5 @@
 import type { RenderInput } from '../../../core/jsx/types.ts';
-import { CliError } from '../error/errors.ts';
+import { CliError } from '../../../core/runtime/errors.ts';
 import type { CommandContext } from './context.ts';
 
 /** 読み込んだ cmd.tsx の実行関数とファイル単位の設定。 */

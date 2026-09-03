@@ -6,7 +6,7 @@
  * する・例外を捕まえる、ができる。名前を分けているのはこの違いのため。
  */
 import type { Renderable } from '../../../core/jsx/types.ts';
-import { CliError } from '../error/errors.ts';
+import { CliError } from '../../../core/runtime/errors.ts';
 
 export type MiddlewareLoader = () => Promise<unknown>;
 

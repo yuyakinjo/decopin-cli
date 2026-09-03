@@ -1,5 +1,3 @@
-import type { HostNode } from '../../../core/jsx/resolve.ts';
-import type { RenderInput } from '../../../core/jsx/types.ts';
 /**
  * `shell.tsx` の宣言をシェルコードにし、親シェルに届ける (ADR 35)。
  *
@@ -7,9 +5,11 @@ import type { RenderInput } from '../../../core/jsx/types.ts';
  * CLI はそこに書く。関数は CLI の終了後にそのファイルを source する。
  * stdout / stderr には一切触らないので、パイプの約束 (ADR 26) はそのまま
  */
-import { DeclarationError } from '../../errors.ts';
+import { DeclarationError } from '../../../core/errors.ts';
+import type { HostNode } from '../../../core/jsx/resolve.ts';
+import type { RenderInput } from '../../../core/jsx/types.ts';
+import { CliError } from '../../../core/runtime/errors.ts';
 import type { CommandContext } from '../cmd/context.ts';
-import { CliError } from '../error/errors.ts';
 
 /** shell.tsx を読み、cmd.tsx と同じ props を受ける関数として返す。 */
 export async function loadShell(

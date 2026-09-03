@@ -1,7 +1,7 @@
 import { resolveHosts } from '../../../core/jsx/resolve.ts';
 import type { Renderable } from '../../../core/jsx/types.ts';
+import { CliError } from '../../../core/runtime/errors.ts';
 import { EXIT_CODE } from '../../../core/runtime/exit.ts';
-import { CliError } from '../../conventions/error/errors.ts';
 import { parseEnvSpec } from './parse.ts';
 import { validateEnv } from './validation.ts';
 

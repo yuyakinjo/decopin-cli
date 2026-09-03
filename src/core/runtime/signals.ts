@@ -6,7 +6,7 @@
  * 終了コードを決めたりする必要はなく、**よくある形が既に用意されている**
  * という状態にするのが狙い。
  */
-import { CliError } from '../../features/conventions/error/errors.ts';
+import { CliError } from './errors.ts';
 import { EXIT_CODE } from './exit.ts';
 
 export { help, isHelpSignal } from '../../features/conventions/help/signal.ts';

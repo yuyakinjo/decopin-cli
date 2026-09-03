@@ -13,10 +13,6 @@ import {
 } from '../../features/conventions/complete/runtime.ts';
 import { loadData } from '../../features/conventions/data/runtime.ts';
 import { findNotSerializable } from '../../features/conventions/data/serializable.ts';
-import {
-  CliError,
-  validationError,
-} from '../../features/conventions/error/errors.ts';
 import { ErrorMessage } from '../../features/conventions/error/messages.tsx';
 import {
   CommandList,
@@ -70,6 +66,7 @@ import {
   setTerminal,
 } from './choose.ts';
 import type { Terminal } from './choose.ts';
+import { CliError, validationError } from './errors.ts';
 import { EXIT_CODE } from './exit.ts';
 import { serveMcp } from './mcp.ts';
 import { present } from './override.ts';

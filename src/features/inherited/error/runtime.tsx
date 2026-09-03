@@ -6,8 +6,8 @@
  * エラーを出そうとして落ちる、が一番困る事故なので。
  */
 import type { Renderable, RenderInput } from '../../../core/jsx/types.ts';
-import { CliError } from '../../conventions/error/errors.ts';
-import type { ErrorProps } from '../../conventions/error/errors.ts';
+import { CliError } from '../../../core/runtime/errors.ts';
+import type { ErrorProps } from '../../../core/runtime/errors.ts';
 import { ErrorMessage } from '../../conventions/error/messages.tsx';
 
 export type ErrorHandlerLoader = () => Promise<unknown>;

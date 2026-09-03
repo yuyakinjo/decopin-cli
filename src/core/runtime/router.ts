@@ -1,6 +1,6 @@
 /** cmd.tsx のルート解決を公開する互換エントリ。 */
+export { closest } from '../text.ts';
 export {
-  closest,
   commandsUnder,
   resolveRoute,
   resolveTarget,

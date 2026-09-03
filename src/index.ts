@@ -75,12 +75,9 @@ export type {
   CompleteProps,
 } from './features/conventions/complete/runtime.ts';
 export type { ShellName } from './features/conventions/shell/runtime.ts';
-export { CliError } from './features/conventions/error/errors.ts';
-export type {
-  ErrorKind,
-  ErrorProps,
-} from './features/conventions/error/errors.ts';
-export { DeclarationError } from './features/errors.ts';
+export { CliError } from './core/runtime/errors.ts';
+export type { ErrorKind, ErrorProps } from './core/runtime/errors.ts';
+export { DeclarationError } from './core/errors.ts';
 export type {
   ArgSpec,
   ArgvSpec,
@@ -184,8 +181,8 @@ export {
 } from './features/conventions/stdin/runtime.ts';
 export type { StdinSource } from './features/conventions/stdin/runtime.ts';
 export { validateEnv } from './features/root-only/env/validation.ts';
+export { closest } from './core/text.ts';
 export {
-  closest,
   commandsUnder,
   resolveRoute,
   resolveTarget,

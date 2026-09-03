@@ -6,7 +6,7 @@
  */
 import { jsx } from '../../../core/jsx/jsx-runtime.ts';
 import type { AnyElementType, Renderable } from '../../../core/jsx/types.ts';
-import { CliError } from '../error/errors.ts';
+import { CliError } from '../../../core/runtime/errors.ts';
 
 export type LayoutLoader = () => Promise<unknown>;
 

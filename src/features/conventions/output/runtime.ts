@@ -1,8 +1,8 @@
 import { resolveHosts } from '../../../core/jsx/resolve.ts';
 import type { Renderable } from '../../../core/jsx/types.ts';
+import { CliError } from '../../../core/runtime/errors.ts';
 import { EXIT_CODE } from '../../../core/runtime/exit.ts';
 import { toSchema, validateValue } from '../../../core/validation/schema.ts';
-import { CliError } from '../error/errors.ts';
 import { parseOutputSpec } from './parse.ts';
 import type { OutputSpec } from './spec.ts';
 

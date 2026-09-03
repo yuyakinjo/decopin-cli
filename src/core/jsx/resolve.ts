@@ -1,4 +1,4 @@
-import { DeclarationError } from '../../features/errors.ts';
+import { DeclarationError } from '../errors.ts';
 /**
  * 宣言用の JSX ツリーを、組み込みノードの木にする。
  *
