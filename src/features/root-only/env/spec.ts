@@ -1,4 +1,4 @@
-import type { TypeNode } from '../../../types/type-node.ts';
+import type { TypeNode } from '../../../core/types/type-node.ts';
 
 /** 環境変数 1 つの宣言 */
 export interface VarSpec {

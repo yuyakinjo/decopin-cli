@@ -157,7 +157,7 @@ const GUARDS: Record<number, Guard> = {
     check: async () =>
       importersOf(/node:readline(\/.*)?/).concat(
         [...srcSources]
-          .filter(([file]) => file !== 'src/runtime/choose.ts')
+          .filter(([file]) => file !== 'src/core/runtime/choose.ts')
           .filter(([, source]) => source.includes('setRawMode'))
           .map(([file]) => file)
       ),
@@ -196,10 +196,10 @@ const GUARDS: Record<number, Guard> = {
   },
   10: {
     kind: 'lint',
-    label: 'valibot への依存を src/validation/ に閉じ込める',
+    label: 'valibot への依存を src/core/validation/ に閉じ込める',
     check: async () =>
       importersOf(/valibot/).filter(
-        (file) => !file.startsWith('src/validation/')
+        (file) => !file.startsWith('src/core/validation/')
       ),
   },
   11: {
@@ -211,8 +211,8 @@ const GUARDS: Record<number, Guard> = {
     kind: 'lint',
     label: '単一ファイルで配る (--splitting は使わない)',
     check: async () => {
-      const bundler = srcSources.get('src/build/bundler.ts') ?? '';
-      return bundler.includes('splitting') ? ['src/build/bundler.ts'] : [];
+      const bundler = srcSources.get('src/core/build/bundler.ts') ?? '';
+      return bundler.includes('splitting') ? ['src/core/build/bundler.ts'] : [];
     },
   },
   13: {
@@ -378,6 +378,65 @@ const GUARDS: Record<number, Guard> = {
     label: '--json に出せるかを実行前に見る',
     file: 'test/runtime/serializable.test.ts',
   },
+  41: {
+    kind: 'lint',
+    label: 'core は features を呼ばない (ディスパッチする 6 ファイルを除く)',
+    check: async () => {
+      // 規約をディスパッチする側。ここだけは features を知ってよい
+      const dispatchers = (file: string) =>
+        file === 'src/core/runtime/run.tsx' ||
+        file === 'src/core/runtime/mcp.ts' ||
+        file.startsWith('src/core/build/');
+      const statement =
+        /(?:^|\n)\s*(import|export)\b[\s\S]*?from\s*(['"])([^'"]+)\2/g;
+      const offenders: string[] = [];
+      for (const [file, source] of srcSources) {
+        if (!file.startsWith('src/core/') || dispatchers(file)) continue;
+        for (const match of source.matchAll(statement)) {
+          if (!(match[3] as string).includes('/features/')) continue;
+          // 再エクスポートだけの窓口は振る舞いを持たないので許す
+          if (match[1] === 'export') continue;
+          offenders.push(`${file} → ${match[3]}`);
+        }
+        // 遅延読み込みで抜け道を作らない
+        for (const match of source.matchAll(/\bimport\(\s*(['"])([^'"]+)\1/g)) {
+          if ((match[2] as string).includes('/features/')) {
+            offenders.push(`${file} → ${match[2]} (dynamic)`);
+          }
+        }
+      }
+      return offenders;
+    },
+  },
+  42: {
+    kind: 'lint',
+    label: 'エラーの見分けは印で行う (instanceof に頼らない)',
+    check: async () => {
+      const offenders: string[] = [];
+      for (const [file, source] of srcSources) {
+        // 出自を問う判定。コピーや realm をまたぐと静かに false になる
+        for (const match of source.matchAll(
+          /\binstanceof\s+(CliError|DeclarationError|Error)\b/g
+        )) {
+          const name = match[1] as string;
+          const use = name === 'Error' ? 'Error.isError()' : `is${name}()`;
+          offenders.push(`${file}: instanceof ${name} (${use} を使う)`);
+        }
+      }
+      // 印そのものが外れていないか
+      const branded: [string, string][] = [
+        ['src/core/runtime/errors.ts', 'decopin.CliError'],
+        ['src/core/errors.ts', 'decopin.DeclarationError'],
+      ];
+      for (const [file, key] of branded) {
+        const source = srcSources.get(file) ?? '';
+        if (!source.includes(`Symbol.for('${key}')`)) {
+          offenders.push(`${file}: ${key} の印が無い`);
+        }
+      }
+      return offenders;
+    },
+  },
   26: {
     kind: 'test',
     label: 'パイプを壊さないことを全コマンドで掃いて確かめる',
@@ -400,8 +459,8 @@ const GUARDS: Record<number, Guard> = {
       [...srcSources]
         .filter(
           ([file, source]) =>
-            (file.startsWith('src/renderer/') ||
-              file.startsWith('src/components/')) &&
+            (file.startsWith('src/core/renderer/') ||
+              file.startsWith('src/core/components/')) &&
             /\b(?:Date\.now|performance\.now|new Date)\b/.test(source)
         )
         .map(([file]) => file),

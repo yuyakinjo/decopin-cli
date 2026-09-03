@@ -1,5 +1,5 @@
-import { host } from '../../../components/host.ts';
-import type { Renderable } from '../../../jsx/types.ts';
+import { host } from '../../../core/components/host.ts';
+import type { Renderable } from '../../../core/jsx/types.ts';
 
 /** 型の短縮形。制約が要らない場合はこれで足りる */
 export type ShorthandType = 'string' | 'number' | 'boolean';

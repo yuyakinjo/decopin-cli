@@ -7,7 +7,7 @@ import {
   padStart,
   terminalWidth,
   truncate,
-} from '../../src/renderer/width.ts';
+} from '../../src/core/renderer/width.ts';
 
 describe('displayWidth', () => {
   test('ASCII は 1 文字 1 桁', () => {

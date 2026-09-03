@@ -5,8 +5,8 @@
  * `next` は**関数**。呼ばないと中が走らないので、時間を測る・後片付けを
  * する・例外を捕まえる、ができる。名前を分けているのはこの違いのため。
  */
-import type { Renderable } from '../../../jsx/types.ts';
-import { CliError } from '../error/errors.ts';
+import type { Renderable } from '../../../core/jsx/types.ts';
+import { CliError } from '../../../core/runtime/errors.ts';
 
 export type MiddlewareLoader = () => Promise<unknown>;
 

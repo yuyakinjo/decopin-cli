@@ -13,7 +13,7 @@ import {
   isAsyncSchema,
   isValibotSchema,
   schemaToTypeText,
-} from '../../src/build/schema-introspect.ts';
+} from '../../src/core/build/schema-introspect.ts';
 
 function text(schema: unknown): string {
   return schemaToTypeText(schema).text;

@@ -4,8 +4,8 @@
  *   bun run bench            既定の 30 回
  *   bun scripts/benchmark-startup.ts --runs 100
  */
-import { build } from '../src/build/index.ts';
-import { displayWidth } from '../src/renderer/width.ts';
+import { build } from '../src/core/build/index.ts';
+import { displayWidth } from '../src/core/renderer/width.ts';
 
 const runsIndex = process.argv.indexOf('--runs');
 const runs = runsIndex === -1 ? 30 : Number(process.argv[runsIndex + 1] ?? 30);

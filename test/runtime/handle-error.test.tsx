@@ -4,7 +4,15 @@
  */
 import { describe, expect, test } from 'bun:test';
 
-import { CliError, Exit, Line, run, Stdout, Text } from 'decopin-cli';
+import {
+  CliError,
+  Exit,
+  isCliError,
+  Line,
+  run,
+  Stdout,
+  Text,
+} from 'decopin-cli';
 import type { ErrorProps, RouteLoaders, RouteTable } from 'decopin-cli';
 
 function recorder() {
@@ -219,5 +227,48 @@ describe('終了コード', () => {
       ['x']
     );
     expect(result.code).toBe(7);
+  });
+});
+
+describe('エラーの見分けは印で行う (ADR 42)', () => {
+  /**
+   * 別実体の CliError を模す。node_modules に decopin-cli が 2 つ入ると
+   * 起きる状態で、`instanceof` は false になるが印は残っている
+   */
+  function foreignCliError(message: string): unknown {
+    return Object.assign(new Error(message), {
+      [Symbol.for('decopin.CliError')]: true,
+      kind: 'validation',
+      exitCode: 2,
+      issues: [message],
+      hints: [],
+    });
+  }
+
+  test('別実体でも isCliError() は当たる (instanceof は外れる)', () => {
+    const foreign = foreignCliError('--name is required');
+    expect(foreign instanceof CliError).toBe(false);
+    expect(isCliError(foreign)).toBe(true);
+  });
+
+  test('自前の CliError はもちろん当たる', () => {
+    expect(isCliError(new CliError('boom'))).toBe(true);
+  });
+
+  test('ただの Error や印の無いものは当たらない', () => {
+    expect(isCliError(new Error('boom'))).toBe(false);
+    expect(isCliError({ message: 'boom' })).toBe(false);
+    expect(isCliError(undefined)).toBe(false);
+  });
+
+  test('別実体の CliError は kind と exitCode を保ったまま扱われる', async () => {
+    const result = await invoke(
+      { x: failing([], foreignCliError('--name is required')) },
+      ['x']
+    );
+    // 包み直されていれば kind が runtime に落ちて exit 1 になる。
+    // 印で見分けられていれば validation のまま exit 2
+    expect(result.code).toBe(2);
+    expect(result.stderr).toContain('--name is required');
   });
 });

@@ -12,7 +12,7 @@ import {
   parseLog,
   releaseNotes,
 } from '../../scripts/release-notes.ts';
-import type { Deprecation } from '../../src/deprecations.ts';
+import type { Deprecation } from '../../src/core/deprecations.ts';
 
 describe('breakingChanges', () => {
   const cases: [string, Commit, string | undefined][] = [

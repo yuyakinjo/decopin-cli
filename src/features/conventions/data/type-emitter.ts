@@ -1,7 +1,7 @@
 import { relative } from 'node:path';
 
-import { schemaToTypeText } from '../../../build/schema-introspect.ts';
-import { toTypeText } from '../../../types/type-text.ts';
+import { schemaToTypeText } from '../../../core/build/schema-introspect.ts';
+import { toTypeText } from '../../../core/types/type-text.ts';
 import type { OutputSpec } from '../output/spec.ts';
 
 /**

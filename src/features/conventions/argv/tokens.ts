@@ -9,7 +9,7 @@
  * 短縮形の結合 (`-lv`) は **boolean の alias だけ**束ねられる (test/contract/argv-parsing.test.ts)。
  * 値を取る alias が混ざる形は解釈しない (どの alias に値が付くのか曖昧なため)。
  */
-import type { RawValue } from '../../../validation/coerce.ts';
+import type { RawValue } from '../../../core/validation/coerce.ts';
 import type { ArgvSpec, OptionSpec } from './spec.ts';
 
 export interface TokenizeResult {

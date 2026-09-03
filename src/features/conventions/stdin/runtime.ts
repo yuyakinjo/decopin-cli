@@ -5,12 +5,12 @@
  * 端末で実行したときに入力待ちでフリーズする、という最頻出の事故を
  * 構造的に起こせないようにしている。
  */
-import { resolveHosts } from '../../../jsx/resolve.ts';
-import type { Renderable } from '../../../jsx/types.ts';
-import { EXIT_CODE } from '../../../runtime/exit.ts';
-import { toSchema, validateValue } from '../../../validation/schema.ts';
-import type { GenericSchema } from '../../../validation/schema.ts';
-import { CliError } from '../error/errors.ts';
+import { resolveHosts } from '../../../core/jsx/resolve.ts';
+import type { Renderable } from '../../../core/jsx/types.ts';
+import { CliError } from '../../../core/runtime/errors.ts';
+import { EXIT_CODE } from '../../../core/runtime/exit.ts';
+import { toSchema, validateValue } from '../../../core/validation/schema.ts';
+import type { GenericSchema } from '../../../core/validation/schema.ts';
 import { parseStdinSpec } from './parse.ts';
 import type { StdinSpec } from './spec.ts';
 
@@ -100,7 +100,7 @@ export async function readStdin(
     parsed = JSON.parse(raw);
   } catch (error) {
     throw stdinError('stdin is not valid JSON', [
-      error instanceof Error ? error.message : String(error),
+      Error.isError(error) ? error.message : String(error),
     ]);
   }
 

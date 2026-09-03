@@ -1,6 +1,6 @@
-import type { HostNode } from '../jsx/resolve.ts';
-import type { ObjectField, TypeNode } from '../types/type-node.ts';
-import { DeclarationError } from './errors.ts';
+import { DeclarationError } from '../core/errors.ts';
+import type { HostNode } from '../core/jsx/resolve.ts';
+import type { ObjectField, TypeNode } from '../core/types/type-node.ts';
 
 type Shorthand = 'string' | 'number' | 'boolean';
 
@@ -82,7 +82,7 @@ export function toTypeNode(node: HostNode): TypeNode {
       }
       return { kind: 'enum', values: values as string[] };
     }
-    // 非推奨。src/deprecations.ts に削除期限がある
+    // 非推奨。src/core/deprecations.ts に削除期限がある
     case 'type.date':
       return {
         kind: 'date',

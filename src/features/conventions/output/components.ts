@@ -1,5 +1,5 @@
-import { host } from '../../../components/host.ts';
-import type { Renderable } from '../../../jsx/types.ts';
+import { host } from '../../../core/components/host.ts';
+import type { Renderable } from '../../../core/jsx/types.ts';
 
 /**
  * `data.tsx` が返す形の宣言 (ADR 28)。`Type.*` の子で組むか、

@@ -4,7 +4,7 @@ import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
-import { bundle } from '../../src/build/bundler.ts';
+import { bundle } from '../../src/core/build/bundler.ts';
 
 let dir: string;
 beforeAll(async () => {

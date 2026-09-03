@@ -12,7 +12,7 @@
  * ときにどちらが残るかが保証されておらず、破壊的変更が黙って落ちうるため。
  */
 
-import { DEPRECATIONS, type Deprecation } from '../src/deprecations.ts';
+import { DEPRECATIONS, type Deprecation } from '../src/core/deprecations.ts';
 
 export interface Commit {
   /** 1 行目 */

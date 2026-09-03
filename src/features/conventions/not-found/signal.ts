@@ -1,4 +1,4 @@
-import { closest } from '../cmd/router.ts';
+import { closest } from '../../../core/text.ts';
 
 /** `notFound()` に渡せるもの。全部省略できる */
 export interface NotFoundInput {

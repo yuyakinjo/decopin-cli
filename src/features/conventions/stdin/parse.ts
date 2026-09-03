@@ -1,9 +1,9 @@
 import {
   isAsyncSchema,
   isValibotSchema,
-} from '../../../build/schema-introspect.ts';
-import type { HostNode } from '../../../jsx/resolve.ts';
-import { DeclarationError } from '../../errors.ts';
+} from '../../../core/build/schema-introspect.ts';
+import { DeclarationError } from '../../../core/errors.ts';
+import type { HostNode } from '../../../core/jsx/resolve.ts';
 import { onlyType, readBoolean, readString } from '../../parse-helpers.ts';
 import type { StdinSpec } from './spec.ts';
 

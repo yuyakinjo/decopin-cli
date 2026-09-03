@@ -5,9 +5,9 @@
  * 組み込みの既定表示。**表示係が自分で失敗しても、次の候補に進む** —
  * エラーを出そうとして落ちる、が一番困る事故なので。
  */
-import type { Renderable, RenderInput } from '../../../jsx/types.ts';
-import { CliError } from '../../conventions/error/errors.ts';
-import type { ErrorProps } from '../../conventions/error/errors.ts';
+import type { Renderable, RenderInput } from '../../../core/jsx/types.ts';
+import { CliError, isCliError } from '../../../core/runtime/errors.ts';
+import type { ErrorProps } from '../../../core/runtime/errors.ts';
 import { ErrorMessage } from '../../conventions/error/messages.tsx';
 
 export type ErrorHandlerLoader = () => Promise<unknown>;
@@ -81,10 +81,9 @@ export async function handleError({
       const declared = await emit(produced, loaded.skipLayout === true);
       return { exitCode: declared ?? error.exitCode };
     } catch (handlerError) {
-      const message =
-        handlerError instanceof Error
-          ? handlerError.message
-          : String(handlerError);
+      const message = Error.isError(handlerError)
+        ? handlerError.message
+        : String(handlerError);
       failures.push(`An error handler itself failed: ${message}`);
     }
   }
@@ -96,8 +95,8 @@ export async function handleError({
 
 /** 例外を CliError に揃える */
 export function toCliError(error: unknown): CliError {
-  if (error instanceof CliError) return error;
-  return new CliError(error instanceof Error ? error.message : String(error), {
+  if (isCliError(error)) return error;
+  return new CliError(Error.isError(error) ? error.message : String(error), {
     cause: error,
   });
 }

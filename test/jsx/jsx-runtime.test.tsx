@@ -2,8 +2,8 @@ import { describe, expect, test } from 'bun:test';
 
 import { Line, Text } from 'decopin-cli';
 
-import { Fragment, jsx } from '../../src/jsx/jsx-runtime.ts';
-import { isElement } from '../../src/jsx/types.ts';
+import { Fragment, jsx } from '../../src/core/jsx/jsx-runtime.ts';
+import { isElement } from '../../src/core/jsx/types.ts';
 
 describe('jsx-runtime', () => {
   test('JSX 式が要素データになる', () => {

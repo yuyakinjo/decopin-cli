@@ -54,16 +54,16 @@ const manifest = {
   exports: {
     '.': { types: './lib/index.d.ts', import: './lib/index.js' },
     './jsx/jsx-runtime': {
-      types: './lib/jsx/jsx-runtime.d.ts',
-      import: './lib/jsx/jsx-runtime.js',
+      types: './lib/core/jsx/jsx-runtime.d.ts',
+      import: './lib/core/jsx/jsx-runtime.js',
     },
     './jsx/jsx-dev-runtime': {
-      types: './lib/jsx/jsx-dev-runtime.d.ts',
-      import: './lib/jsx/jsx-dev-runtime.js',
+      types: './lib/core/jsx/jsx-dev-runtime.d.ts',
+      import: './lib/core/jsx/jsx-dev-runtime.js',
     },
     './build': {
-      types: './lib/build/index.d.ts',
-      import: './lib/build/index.js',
+      types: './lib/core/build/index.d.ts',
+      import: './lib/core/build/index.js',
     },
   },
   bin: { decopin: './lib/cli/bin.js' },

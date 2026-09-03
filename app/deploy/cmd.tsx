@@ -19,7 +19,7 @@ export default async function Command({
     } catch (error) {
       // 端末が無い (exit 2 の CliError) ときだけ使い方に切り替える。
       // Esc / Ctrl+C の打ち切りはそのまま上へ
-      if (error instanceof Error) {
+      if (Error.isError(error)) {
         help({ message: 'give a target, or pass --all' });
       }
       throw error;

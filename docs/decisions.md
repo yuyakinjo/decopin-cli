@@ -18,7 +18,7 @@ JSX を再帰的に ANSI 文字列へ変換するだけで足りる。Ink は yo
 
 **代償**: 対話的 UI (プロンプト・スピナー) は自前で作ることになる。v1 では扱わない。
 
-**関連**: `src/renderer/`。パイプラインは 評価 → レイアウト → 直列化 → 書き出し の 4 段。
+**関連**: `src/core/renderer/`。パイプラインは 評価 → レイアウト → 直列化 → 書き出し の 4 段。
 
 ## ADR 2: argv と stdin をファイルで分ける
 
@@ -94,7 +94,7 @@ module augmentation で `Routes` / `EnvVars` を埋める。`cmd.tsx` は
 
 利用者が valibot の書き方を覚えなくて済むようにする。`Type.Array` のように
 型が再帰する場合に children の入れ子が自然に効く。valibot への依存は
-`src/validation/` に閉じ込める。
+`src/core/validation/` に閉じ込める。
 
 **valibot に変換層を寄せなかった理由** (実測):
 
@@ -297,7 +297,7 @@ Temporal は例外を投げる。読めない値が「読めたつもり」で�
 番号で伝えられない分、時間で埋め合わせる。
 
 **忘れないための仕組み**が要る。「あとで消す」は忘れるので、期限を
-`src/deprecations.ts` にデータとして置き、test/docs/deprecations.test.ts が
+`src/core/deprecations.ts` にデータとして置き、test/docs/deprecations.test.ts が
 見張る。期限を過ぎるとテストが落ち、消すまで CI が通らない。
 期限を延ばすのは決め直しなので、この ADR を書き換えることになる。
 
@@ -364,7 +364,7 @@ Partial Prerendering から借りるが、CLI にはビルド時レンダーが�
 書き換わり、それ以外は従来どおり静的に流れる。ドキュメントは上から順に
 flush され (ストリーミング)、島に当たったら source が尽きるまで領域を
 描き換え、最後のフレームを残して続きが流れる。駆動は `present()`
-(`src/renderer/present.ts`)。
+(`src/core/renderer/present.ts`)。
 
 **なぜ hooks ではないか**: `useState` 方式はレンダラーに再実行スケジューラを
 要求し、コンポーネントが「呼ばれて JSX を返すだけの純粋なデータ」(ADR 1)
@@ -937,6 +937,68 @@ source が尽きたら、切り詰めて描いていた TTY でも最後の中�
 だけで予算を超えるとき (columns=80, rows=5 に幅 400 の 1 行など) は「予算を
 余らせる」のではなく、その 1 行を予算超過のまま残す。何も描かないよりは
 崩れが小さい。
+
+## ADR 41: core は features を呼ばない。呼んでよいのはディスパッチする 6 ファイルだけ
+
+`src/` は **features (規約) / core (基盤) / cli (入口)** の 3 つに分けている
+(ADR 1 の「ファイル名がそのまま機能の名前」を、ディレクトリの粒度でも守る)。
+名前で分けただけでは境界は保たない。誰でも `core` から `features` を
+import できてしまい、少しずつ「どちらでもいいもの」が増える。
+
+**向きは features → core の一方向**。core は「規約が何であるか」を知らずに
+成り立つ部品 (レンダラー、JSX、バリデーション、ビルド基盤) の置き場で、
+features は規約 1 つ 1 つの実装。逆向きの依存が増えると、規約を 1 つ足すたびに
+core を編集することになり、規約の追加・削除が局所で済まなくなる。
+
+**例外は 6 ファイル**: `runtime/run.tsx`、`runtime/mcp.ts`、`build/` の 4 つ。
+core が規約をディスパッチする以上、この 6 つは features を知らざるを得ない。
+消すにはレジストリへの反転が要るが、`run.tsx` を上から読めば実行順が全部
+分かるという可読性を失う。**規模に対して割に合わない**ので、例外として
+明示するほうを選んだ。
+
+**再エクスポートだけの窓口は許す**。`core/runtime/help.tsx` のように
+`export { Help } from '../../features/...'` だけのファイルは、公開 API の
+置き場であって振る舞いを持たない。lint は文が `import` か `export` かを見て
+区別する。`import()` での遅延読み込みも抜け道になるので同じく禁じる。
+
+**置き場所が間違っているだけのものは core に移した**。`DeclarationError`、
+`CliError` (もともと `core/runtime/exit.ts` の `EXIT_CODE` に依存していた)、
+`closest()` (規約を知らない文字列の道具) は features にあったが、どの規約にも
+属していなかった。共有フォルダを作ったり両側で重複させたりせずに済む。
+とくに前 2 つは公開 API のクラスなので、重複させると利用者の `instanceof` が
+静かに false になる。
+
+## ADR 42: エラーの見分けは出自ではなく印で行う
+
+`instanceof` は「そのクラスが _どのファイルから来たか_」を問う。同じコードでも
+実体が 2 つあれば false になり、しかも**壊れ方が静かな false** になる。
+`toCliError()` が取り逃すと `kind` / `exitCode` / `issues` / `hints` を落として
+包み直すので、「使い方の誤りは exit 2」(ADR 30) が exit 1 に化ける。例外が
+飛んだわけでもログが出るわけでもないので、気付く手がかりが無い。
+
+**テストでは守れない**。テストは `CliError` を 1 回 import して投げる側と受ける側の
+両方に渡すため、2 つの実体が出会う配線を再現しない。契約テストは全部通ったまま
+本番だけが壊れる。バグがコードではなく**モジュールグラフ**にあるから。
+
+**そこで `Symbol.for` で印を付ける**。`Symbol.for('decopin.CliError')` は
+グローバルな登録簿から引くので、実体が 2 つあっても realm が違っても同じ
+シンボルになる。`isCliError()` / `isDeclarationError()` はこの印を見る。
+React が要素を `Symbol.for('react.element')` で見分けるのと同じ手口。
+
+**いつ 2 つになるか**: 利用者の `node_modules` に decopin-cli が 2 バージョン
+入るとき (decopin 製のライブラリを併用する等)。今日は起きないが、公開
+フレームワークとしては想定内で、起きたときに直すのは難しい部類のバグになる。
+印を付ける費用は 1 行なので、先に払っておく。
+
+**`instanceof` も引き続き動く**。クラスは残っているので、利用者の
+`catch (e) { if (e instanceof CliError) }` は壊れない。`isCliError()` は
+それより広く当たる版として公開する。
+
+**`Error.isError()` を使う** (Bun 1.4 / TS 7 で利用可)。`error instanceof Error`
+は `Object.create(Error.prototype)` に騙され、realm をまたぐと取り逃す。
+`Error.isError` は内部スロットを見るのでどちらも正しい。`Array.isArray` と
+同じ立ち位置。ただし**種類は区別しない**ので、`CliError` かどうかの判定は
+印と併用する。
 
 ---
 

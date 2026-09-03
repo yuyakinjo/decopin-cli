@@ -4,7 +4,7 @@ import {
   colorCodes,
   nearestColorName,
   parseHex,
-} from '../../src/renderer/color.ts';
+} from '../../src/core/renderer/color.ts';
 
 describe('parseHex', () => {
   test('#rrggbb', () => {

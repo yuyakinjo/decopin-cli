@@ -8,7 +8,7 @@
  * 補完はユーザーの入力の途中で走るので、宣言が壊れていても決して投げない。
  * 候補が無ければ黙って空を返し、シェル側がファイル補完に落ちる。
  */
-import type { TypeNode } from '../../../types/type-node.ts';
+import type { TypeNode } from '../../../core/types/type-node.ts';
 import { loadArgvSpec } from '../argv/runtime.ts';
 import { EMPTY_ARGV_SPEC } from '../argv/spec.ts';
 import type { ArgvSpec, OptionSpec } from '../argv/spec.ts';

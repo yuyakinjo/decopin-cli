@@ -7,9 +7,9 @@
  */
 import { relative } from 'node:path';
 
-import { build } from '../build/index.ts';
-import { watchApp } from '../build/watch.ts';
-import { EXIT_CODE } from '../runtime/exit.ts';
+import { build } from '../core/build/index.ts';
+import { watchApp } from '../core/build/watch.ts';
+import { EXIT_CODE } from '../core/runtime/exit.ts';
 
 const USAGE = `Usage: decopin <command> [options]
 
@@ -113,7 +113,7 @@ function runDev(argv: string[]): Promise<number> {
         );
       },
       onError: (error) => {
-        const message = error instanceof Error ? error.message : String(error);
+        const message = Error.isError(error) ? error.message : String(error);
         process.stderr.write(`[decopin] ${message}\n`);
       },
     });

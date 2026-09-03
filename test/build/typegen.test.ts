@@ -5,7 +5,7 @@
 import { beforeAll, describe, expect, test } from 'bun:test';
 import { rm, writeFile } from 'node:fs/promises';
 
-import { generate } from '../../src/build/index.ts';
+import { generate } from '../../src/core/build/index.ts';
 
 /**
  * 型が効いていることを確かめる当て木。

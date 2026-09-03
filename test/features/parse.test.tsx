@@ -11,8 +11,8 @@ import {
 } from 'decopin-cli';
 import type { RenderInput } from 'decopin-cli';
 
+import { resolveHosts } from '../../src/core/jsx/resolve.ts';
 import { parseArgvSpec } from '../../src/features/conventions/argv/parse.ts';
-import { resolveHosts } from '../../src/jsx/resolve.ts';
 
 /** 宣言 JSX を ArgvSpec にする */
 async function spec(node: RenderInput) {

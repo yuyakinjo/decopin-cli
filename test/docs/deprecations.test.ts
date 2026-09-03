@@ -9,12 +9,12 @@ import { describe, expect, test } from 'bun:test';
 import {
   checkDeprecations,
   deprecatedFileWarnings,
-} from '../../src/build/checker.ts';
+} from '../../src/core/build/checker.ts';
 import {
   DEPRECATIONS,
   type Deprecation,
   overdue,
-} from '../../src/deprecations.ts';
+} from '../../src/core/deprecations.ts';
 
 describe('削除期限', () => {
   test('期限を過ぎたものが残っていない', () => {

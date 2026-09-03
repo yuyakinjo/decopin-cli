@@ -10,8 +10,8 @@ import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
-import { acceptsUnknown } from '../../src/build/effects.ts';
-import { generate } from '../../src/build/index.ts';
+import { acceptsUnknown } from '../../src/core/build/effects.ts';
+import { generate } from '../../src/core/build/index.ts';
 
 let root: string;
 let appDir: string;

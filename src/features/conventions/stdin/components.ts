@@ -1,5 +1,5 @@
-import { host } from '../../../components/host.ts';
-import type { Renderable } from '../../../jsx/types.ts';
+import { host } from '../../../core/components/host.ts';
+import type { Renderable } from '../../../core/jsx/types.ts';
 
 /** 標準入力の読み方 */
 export interface StdinProps {

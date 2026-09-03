@@ -19,7 +19,7 @@ import {
 } from 'decopin-cli';
 import type { RouteTable } from 'decopin-cli';
 
-import { EXIT_CODE } from '../../src/runtime/exit.ts';
+import { EXIT_CODE } from '../../src/core/runtime/exit.ts';
 
 function loader(value: unknown) {
   return async () => ({ default: value });

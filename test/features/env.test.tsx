@@ -3,9 +3,9 @@ import { describe, expect, test } from 'bun:test';
 import { DeclarationError, Env, Type, Var, Version } from 'decopin-cli';
 import type { RenderInput } from 'decopin-cli';
 
+import { resolveHosts } from '../../src/core/jsx/resolve.ts';
 import { parseEnvSpec } from '../../src/features/root-only/env/parse.ts';
 import { parseVersionSpec } from '../../src/features/root-only/version/parse.ts';
-import { resolveHosts } from '../../src/jsx/resolve.ts';
 
 async function env(node: RenderInput) {
   return parseEnvSpec(await resolveHosts(node));

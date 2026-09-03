@@ -1,5 +1,5 @@
-import type { HostNode } from '../../../jsx/resolve.ts';
-import { DeclarationError } from '../../errors.ts';
+import { DeclarationError } from '../../../core/errors.ts';
+import type { HostNode } from '../../../core/jsx/resolve.ts';
 import {
   presence,
   readString,

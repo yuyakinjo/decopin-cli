@@ -21,7 +21,7 @@ import { join } from 'node:path';
 import { run } from 'decopin-cli';
 import type { RouteTable, StdinSource } from 'decopin-cli';
 
-import { build } from '../../src/build/index.ts';
+import { build } from '../../src/core/build/index.ts';
 
 const ESC = String.fromCharCode(27);
 /** 色や装飾の指定 (SGR)。これは端末かどうかで変わってよい */

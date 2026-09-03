@@ -962,7 +962,7 @@ share is around 6 ms.
 
 `--bytecode` is worth taking: it costs 1 MB and removes a fifth of the startup
 time. It refuses any module with a top-level await, so the generated entry
-avoids one — see [`src/build/codegen.ts`](src/build/codegen.ts).
+avoids one — see [`src/core/build/codegen.ts`](src/core/build/codegen.ts).
 
 Compiling barely beats running the bundle (13.8 ms vs 14.3 ms). Compile for
 distribution — one file, no Bun required on the target machine — not for speed.

@@ -1,5 +1,5 @@
+import { CliError } from '../../../core/runtime/errors.ts';
 import type { CommandContext } from '../cmd/context.ts';
-import { CliError } from '../error/errors.ts';
 
 /** data.tsx を呼び、表示より先にデータを作る。 */
 export async function loadData(
