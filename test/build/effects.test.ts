@@ -15,8 +15,8 @@ import {
   importedNames,
   stripLiterals,
   packageName,
-} from '../../src/build/effects.ts';
-import type { EffectCategory, Verdict } from '../../src/build/effects.ts';
+} from '../../src/core/build/effects.ts';
+import type { EffectCategory, Verdict } from '../../src/core/build/effects.ts';
 
 let dir: string;
 

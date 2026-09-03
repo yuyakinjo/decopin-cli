@@ -1,10 +1,10 @@
-import type { TypeNode } from '../../../types/type-node.ts';
-import { coerce, coerceAll } from '../../../validation/coerce.ts';
+import type { TypeNode } from '../../../core/types/type-node.ts';
+import { coerce, coerceAll } from '../../../core/validation/coerce.ts';
 import {
   toSchema,
   validateValue,
   withDefault,
-} from '../../../validation/schema.ts';
+} from '../../../core/validation/schema.ts';
 import type { ArgSpec, ArgvSpec, OptionSpec } from './spec.ts';
 import { tokenize } from './tokens.ts';
 

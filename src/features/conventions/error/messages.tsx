@@ -2,8 +2,8 @@
  * フレームワーク自身が出すメッセージ。
  * `error.tsx` / `global-error.tsx` がない場合や、表示に失敗した場合の既定表示。
  */
-import { Line, Stderr, Text } from '../../../components/index.ts';
-import type { Renderable } from '../../../jsx/types.ts';
+import { Line, Stderr, Text } from '../../../core/components/index.ts';
+import type { Renderable } from '../../../core/jsx/types.ts';
 
 export function ErrorMessage({
   message,

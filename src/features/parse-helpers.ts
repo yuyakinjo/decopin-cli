@@ -1,5 +1,5 @@
-import type { HostNode } from '../jsx/resolve.ts';
-import type { ObjectField, TypeNode } from '../types/type-node.ts';
+import type { HostNode } from '../core/jsx/resolve.ts';
+import type { ObjectField, TypeNode } from '../core/types/type-node.ts';
 import { DeclarationError } from './errors.ts';
 
 type Shorthand = 'string' | 'number' | 'boolean';

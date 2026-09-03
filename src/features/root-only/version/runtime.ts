@@ -1,5 +1,5 @@
-import { resolveHosts } from '../../../jsx/resolve.ts';
-import type { Renderable } from '../../../jsx/types.ts';
+import { resolveHosts } from '../../../core/jsx/resolve.ts';
+import type { Renderable } from '../../../core/jsx/types.ts';
 import { CliError } from '../../conventions/error/errors.ts';
 import { parseVersionSpec } from './parse.ts';
 import type { VersionSpec } from './spec.ts';

@@ -1,5 +1,5 @@
-import { resolveHosts } from '../../../jsx/resolve.ts';
-import type { Renderable } from '../../../jsx/types.ts';
+import { resolveHosts } from '../../../core/jsx/resolve.ts';
+import type { Renderable } from '../../../core/jsx/types.ts';
 import { CliError } from '../error/errors.ts';
 import { parseArgvSpec } from './parse.ts';
 import { EMPTY_ARGV_SPEC } from './spec.ts';

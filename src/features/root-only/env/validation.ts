@@ -4,12 +4,12 @@
  * argv と同じく「文字列で届く → 型に直す → 検証する」の順。
  * 失敗は `kind: 'env'` で exit 2 (設定の誤りは使い方の誤りに含める)。
  */
-import { coerce } from '../../../validation/coerce.ts';
+import { coerce } from '../../../core/validation/coerce.ts';
 import {
   toSchema,
   validateValue,
   withDefault,
-} from '../../../validation/schema.ts';
+} from '../../../core/validation/schema.ts';
 import type { EnvSpec } from './spec.ts';
 
 export type EnvResult =

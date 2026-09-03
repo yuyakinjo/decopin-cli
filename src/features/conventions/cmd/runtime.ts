@@ -1,4 +1,4 @@
-import type { RenderInput } from '../../../jsx/types.ts';
+import type { RenderInput } from '../../../core/jsx/types.ts';
 import { CliError } from '../error/errors.ts';
 import type { CommandContext } from './context.ts';
 

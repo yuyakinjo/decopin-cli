@@ -2,14 +2,14 @@ import { describe, expect, test } from 'bun:test';
 
 import * as v from 'valibot';
 
-import type { EvaluatedRoute } from '../../src/build/evaluator.ts';
-import { generateTypes } from '../../src/build/type-emitter.ts';
+import type { EvaluatedRoute } from '../../src/core/build/evaluator.ts';
+import { generateTypes } from '../../src/core/build/type-emitter.ts';
+import { toTypeText } from '../../src/core/types/type-text.ts';
 import type { ArgvSpec } from '../../src/features/conventions/argv/spec.ts';
 import {
   stdinType,
   stdinTypeText,
 } from '../../src/features/conventions/stdin/type-emitter.ts';
-import { toTypeText } from '../../src/types/type-text.ts';
 
 describe('toTypeText', () => {
   test('基本の型', () => {

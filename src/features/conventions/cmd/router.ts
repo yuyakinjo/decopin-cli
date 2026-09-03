@@ -4,7 +4,7 @@
  * ディレクトリの階層がそのままサブコマンドなので、`user create` のように
  * 語が続く場合は「最も長く一致するもの」を選ぶ。
  */
-import type { EffectVerdicts } from '../../../types/effects.ts';
+import type { EffectVerdicts } from '../../../core/types/effects.ts';
 
 /** 1 コマンド分の読み込み関数。ファイルが無い規約は undefined */
 export interface RouteLoaders {

@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 
-import { resolveColorDepth } from '../../src/renderer/capabilities.ts';
+import { resolveColorDepth } from '../../src/core/renderer/capabilities.ts';
 
 describe('色を落とす条件 (test/renderer/capabilities.test.ts)', () => {
   test('端末なら 16 色', () => {

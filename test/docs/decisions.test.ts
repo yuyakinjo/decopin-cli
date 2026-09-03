@@ -157,7 +157,7 @@ const GUARDS: Record<number, Guard> = {
     check: async () =>
       importersOf(/node:readline(\/.*)?/).concat(
         [...srcSources]
-          .filter(([file]) => file !== 'src/runtime/choose.ts')
+          .filter(([file]) => file !== 'src/core/runtime/choose.ts')
           .filter(([, source]) => source.includes('setRawMode'))
           .map(([file]) => file)
       ),
@@ -196,10 +196,10 @@ const GUARDS: Record<number, Guard> = {
   },
   10: {
     kind: 'lint',
-    label: 'valibot への依存を src/validation/ に閉じ込める',
+    label: 'valibot への依存を src/core/validation/ に閉じ込める',
     check: async () =>
       importersOf(/valibot/).filter(
-        (file) => !file.startsWith('src/validation/')
+        (file) => !file.startsWith('src/core/validation/')
       ),
   },
   11: {
@@ -211,8 +211,8 @@ const GUARDS: Record<number, Guard> = {
     kind: 'lint',
     label: '単一ファイルで配る (--splitting は使わない)',
     check: async () => {
-      const bundler = srcSources.get('src/build/bundler.ts') ?? '';
-      return bundler.includes('splitting') ? ['src/build/bundler.ts'] : [];
+      const bundler = srcSources.get('src/core/build/bundler.ts') ?? '';
+      return bundler.includes('splitting') ? ['src/core/build/bundler.ts'] : [];
     },
   },
   13: {
@@ -400,8 +400,8 @@ const GUARDS: Record<number, Guard> = {
       [...srcSources]
         .filter(
           ([file, source]) =>
-            (file.startsWith('src/renderer/') ||
-              file.startsWith('src/components/')) &&
+            (file.startsWith('src/core/renderer/') ||
+              file.startsWith('src/core/components/')) &&
             /\b(?:Date\.now|performance\.now|new Date)\b/.test(source)
         )
         .map(([file]) => file),

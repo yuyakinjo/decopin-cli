@@ -8,7 +8,7 @@
  * 文字列でシェルコードを組まず部品で宣言するのは、値のクォートを枠組みが
  * 引き受けるため。`Shell.Raw` だけは例外で、書いた人がクォートに責任を持つ
  */
-import { host } from '../../../components/host.ts';
+import { host } from '../../../core/components/host.ts';
 
 /** `<Shell.Cd>` */
 export interface CdProps {

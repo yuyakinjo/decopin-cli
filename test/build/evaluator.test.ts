@@ -1,8 +1,8 @@
 import { describe, expect, test } from 'bun:test';
 
-import { evaluateRoutes } from '../../src/build/evaluator.ts';
-import { scan } from '../../src/build/scanner.ts';
-import { generateTypes } from '../../src/build/type-emitter.ts';
+import { evaluateRoutes } from '../../src/core/build/evaluator.ts';
+import { scan } from '../../src/core/build/scanner.ts';
+import { generateTypes } from '../../src/core/build/type-emitter.ts';
 
 const FIXTURE = 'test/fixtures/eval-app';
 

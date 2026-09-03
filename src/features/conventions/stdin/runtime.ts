@@ -5,11 +5,11 @@
  * 端末で実行したときに入力待ちでフリーズする、という最頻出の事故を
  * 構造的に起こせないようにしている。
  */
-import { resolveHosts } from '../../../jsx/resolve.ts';
-import type { Renderable } from '../../../jsx/types.ts';
-import { EXIT_CODE } from '../../../runtime/exit.ts';
-import { toSchema, validateValue } from '../../../validation/schema.ts';
-import type { GenericSchema } from '../../../validation/schema.ts';
+import { resolveHosts } from '../../../core/jsx/resolve.ts';
+import type { Renderable } from '../../../core/jsx/types.ts';
+import { EXIT_CODE } from '../../../core/runtime/exit.ts';
+import { toSchema, validateValue } from '../../../core/validation/schema.ts';
+import type { GenericSchema } from '../../../core/validation/schema.ts';
 import { CliError } from '../error/errors.ts';
 import { parseStdinSpec } from './parse.ts';
 import type { StdinSpec } from './spec.ts';

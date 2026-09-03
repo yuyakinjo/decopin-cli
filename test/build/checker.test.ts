@@ -8,7 +8,7 @@ import {
   checkTsConfig,
   stdinSchemaWarnings,
   stripJsonc,
-} from '../../src/build/checker.ts';
+} from '../../src/core/build/checker.ts';
 
 const dirs: string[] = [];
 

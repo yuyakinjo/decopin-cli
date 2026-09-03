@@ -25,7 +25,7 @@ import {
 } from 'decopin-cli';
 import type { EffectVerdicts, McpTool, RouteTable } from 'decopin-cli';
 
-import { build } from '../../src/build/index.ts';
+import { build } from '../../src/core/build/index.ts';
 
 function recorder() {
   const chunks: string[] = [];

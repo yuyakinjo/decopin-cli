@@ -4,11 +4,11 @@
  * ルートが決まっていない時点の話なので `error.tsx` の連鎖は通らない。
  * 「どの error.tsx を使うべきか」もまだ決まっていないため。
  */
-import { Line, Text } from '../../../components/index.ts';
-import { DidYouMean } from '../../../components/patterns.tsx';
-import type { Renderable } from '../../../jsx/types.ts';
-import { present } from '../../../runtime/override.ts';
-import type { Presentation } from '../../../runtime/override.ts';
+import { Line, Text } from '../../../core/components/index.ts';
+import { DidYouMean } from '../../../core/components/patterns.tsx';
+import type { Renderable } from '../../../core/jsx/types.ts';
+import { present } from '../../../core/runtime/override.ts';
+import type { Presentation } from '../../../core/runtime/override.ts';
 
 /**
  * `not-found.tsx` が受け取る props。

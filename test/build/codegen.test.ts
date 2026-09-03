@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 
-import { generateEntry, generateRoutes } from '../../src/build/codegen.ts';
-import type { Route } from '../../src/build/scanner.ts';
+import { generateEntry, generateRoutes } from '../../src/core/build/codegen.ts';
+import type { Route } from '../../src/core/build/scanner.ts';
 import { createNotFoundChains } from '../../src/features/inherited/not-found/build.ts';
 
 const routes: Route[] = [

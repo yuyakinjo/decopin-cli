@@ -2,9 +2,9 @@
  * `--help` を argv.tsx の宣言から組み立てる (ADR 8)。
  * 宣言を唯一の情報源にすることで、スキーマと help の二重管理が起きない。
  */
-import { Br, Line, Text } from '../../../components/index.ts';
-import type { Renderable } from '../../../jsx/types.ts';
-import { typeLabel } from '../../../types/type-node.ts';
+import { Br, Line, Text } from '../../../core/components/index.ts';
+import type { Renderable } from '../../../core/jsx/types.ts';
+import { typeLabel } from '../../../core/types/type-node.ts';
 import { loadArgvSpec } from '../argv/runtime.ts';
 import type { ArgSpec, ArgvSpec, OptionSpec } from '../argv/spec.ts';
 import type { RouteTable } from '../cmd/router.ts';

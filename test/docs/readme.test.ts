@@ -9,7 +9,7 @@ import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
-import { build } from '../../src/build/index.ts';
+import { build } from '../../src/core/build/index.ts';
 
 interface Block {
   lang: string;
@@ -237,7 +237,7 @@ describe('README のシェル実行例', () => {
   });
 
   test('README が挙げている終了コードが実装と一致する', async () => {
-    const { EXIT_CODE } = await import('../../src/runtime/exit.ts');
+    const { EXIT_CODE } = await import('../../src/core/runtime/exit.ts');
     expect(documented('| 130 | Ctrl+C')).toBe(true);
     expect(EXIT_CODE.interrupted).toBe(130);
     expect(EXIT_CODE.usage).toBe(2);

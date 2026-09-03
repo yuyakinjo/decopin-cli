@@ -1,4 +1,4 @@
-import type { TypeNode } from '../../../types/type-node.ts';
+import type { TypeNode } from '../../../core/types/type-node.ts';
 
 /** `output.tsx` を評価した結果 (ADR 28) */
 export interface OutputSpec {

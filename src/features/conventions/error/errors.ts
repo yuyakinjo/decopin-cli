@@ -2,7 +2,7 @@
  * 実行時のエラー分類。
  * `error.tsx` はこの `kind` を見て表示を切り替える。
  */
-import { EXIT_CODE } from '../../../runtime/exit.ts';
+import { EXIT_CODE } from '../../../core/runtime/exit.ts';
 
 /** エラーの分類。`error.tsx` はこれを見て表示を切り替える */
 export type ErrorKind =

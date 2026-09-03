@@ -3,9 +3,9 @@ import { mkdtemp, mkdir, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
-import type { GenerateResult } from '../../src/build/index.ts';
-import { watchApp } from '../../src/build/watch.ts';
-import type { WatchBackend, Watcher } from '../../src/build/watch.ts';
+import type { GenerateResult } from '../../src/core/build/index.ts';
+import { watchApp } from '../../src/core/build/watch.ts';
+import type { WatchBackend, Watcher } from '../../src/core/build/watch.ts';
 
 const NOOP = 'export default function Command() {\n  return null;\n}\n';
 

@@ -23,7 +23,7 @@ export {
   Table,
   Text,
   Warn,
-} from './components/index.ts';
+} from './core/components/index.ts';
 export { Arg, Argv, Option } from './features/conventions/argv/components.ts';
 export type {
   ArgProps,
@@ -42,7 +42,7 @@ export type {
 } from './features/root-only/env/components.ts';
 export { Version } from './features/root-only/version/components.ts';
 export type { VersionProps } from './features/root-only/version/components.ts';
-export { Type } from './components/type/index.ts';
+export { Type } from './core/components/type/index.ts';
 export { Shell } from './features/conventions/shell/components.ts';
 export type {
   AliasProps,
@@ -62,13 +62,13 @@ export {
   confirm,
   nonInteractiveTerminal,
   processTerminal,
-} from './runtime/choose.ts';
+} from './core/runtime/choose.ts';
 export type {
   AskOptions,
   ChooseOptions,
   ConfirmOptions,
   Terminal,
-} from './runtime/choose.ts';
+} from './core/runtime/choose.ts';
 export type {
   Candidate,
   Completer,
@@ -87,11 +87,11 @@ export type {
   OptionSpec,
 } from './features/conventions/argv/spec.ts';
 export type { OutputSpec } from './features/conventions/output/spec.ts';
-export type { TypeNode } from './types/type-node.ts';
+export type { TypeNode } from './core/types/type-node.ts';
 export {
   RESERVED_OPTION_ALIASES,
   RESERVED_OPTION_NAMES,
-} from './runtime/reserved.ts';
+} from './core/runtime/reserved.ts';
 export type {
   Align,
   BlockProps,
@@ -115,24 +115,28 @@ export type {
   SymbolProps,
   TableProps,
   TextProps,
-} from './components/index.ts';
+} from './core/components/index.ts';
 
 export type { JsonValue } from './features/conventions/data/types.ts';
 export type {
   EffectCategory,
   EffectVerdicts,
   Verdict,
-} from './types/effects.ts';
-export { toJsonSchema } from './types/json-schema.ts';
-export type { JsonSchema } from './types/json-schema.ts';
+} from './core/types/effects.ts';
+export { toJsonSchema } from './core/types/json-schema.ts';
+export type { JsonSchema } from './core/types/json-schema.ts';
 export { argumentsSchema } from './features/conventions/argv/json-schema.ts';
 export {
   annotationsFor,
   EFFECTS_META_KEY,
   listTools,
   toolName,
-} from './runtime/mcp.ts';
-export type { CallResult, McpTool, ToolAnnotations } from './runtime/mcp.ts';
+} from './core/runtime/mcp.ts';
+export type {
+  CallResult,
+  McpTool,
+  ToolAnnotations,
+} from './core/runtime/mcp.ts';
 
 export type {
   CommandBase,
@@ -144,22 +148,26 @@ export type {
 } from './features/conventions/cmd/types.ts';
 export type { EnvVars } from './features/root-only/env/types.ts';
 
-export { run } from './runtime/run.tsx';
+export { run } from './core/runtime/run.tsx';
 export type { CommandContext } from './features/conventions/cmd/context.ts';
-export type { RunOptions } from './runtime/run.tsx';
-export { EXIT_CODE } from './runtime/exit.ts';
-export type { ExitCode } from './runtime/exit.ts';
+export type { RunOptions } from './core/runtime/run.tsx';
+export { EXIT_CODE } from './core/runtime/exit.ts';
+export type { ExitCode } from './core/runtime/exit.ts';
 export { CommandList, Help } from './features/conventions/help/runtime.tsx';
 export type { HelpProps } from './features/conventions/help/runtime.tsx';
 export { NotFound } from './features/conventions/not-found/runtime.tsx';
-export { authRequired, missingTool, interrupt } from './runtime/signals.ts';
+export {
+  authRequired,
+  missingTool,
+  interrupt,
+} from './core/runtime/signals.ts';
 export { help } from './features/conventions/help/signal.ts';
 export { notFound } from './features/conventions/not-found/signal.ts';
 export type {
   AuthRequiredInput,
   MissingToolInput,
   InterruptSignal,
-} from './runtime/signals.ts';
+} from './core/runtime/signals.ts';
 export type { HelpInput } from './features/conventions/help/signal.ts';
 export type { NotFoundInput } from './features/conventions/not-found/signal.ts';
 export type { NotFoundProps } from './features/conventions/not-found/runtime.tsx';
@@ -190,13 +198,13 @@ export type {
   Target,
 } from './features/conventions/cmd/router.ts';
 
-export { render } from './renderer/render.ts';
-export type { RenderOptions, RenderResult } from './renderer/render.ts';
-export { frameRows, present } from './renderer/present.ts';
-export type { PresentOptions } from './renderer/present.ts';
-export { write } from './renderer/writer.ts';
-export type { WritableLike, WriteTargets } from './renderer/writer.ts';
-export { RenderError } from './renderer/errors.ts';
+export { render } from './core/renderer/render.ts';
+export type { RenderOptions, RenderResult } from './core/renderer/render.ts';
+export { frameRows, present } from './core/renderer/present.ts';
+export type { PresentOptions } from './core/renderer/present.ts';
+export { write } from './core/renderer/writer.ts';
+export type { WritableLike, WriteTargets } from './core/renderer/writer.ts';
+export { RenderError } from './core/renderer/errors.ts';
 
 export type {
   Color,
@@ -205,6 +213,10 @@ export type {
   Renderable,
   RenderInput,
   Style,
-} from './jsx/types.ts';
-export type { ColorDepth } from './renderer/color.ts';
-export { displayWidth, terminalWidth, truncate } from './renderer/width.ts';
+} from './core/jsx/types.ts';
+export type { ColorDepth } from './core/renderer/color.ts';
+export {
+  displayWidth,
+  terminalWidth,
+  truncate,
+} from './core/renderer/width.ts';

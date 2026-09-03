@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 
-import { scan } from '../../src/build/scanner.ts';
+import { scan } from '../../src/core/build/scanner.ts';
 import { inheritedChain } from '../../src/features/inherited/chain.ts';
 
 const FIXTURE = 'test/fixtures/scan-app';

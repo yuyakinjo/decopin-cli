@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 
-import { write } from '../../src/renderer/writer.ts';
+import { write } from '../../src/core/renderer/writer.ts';
 
 function recorder() {
   const calls: string[] = [];

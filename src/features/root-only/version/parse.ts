@@ -1,4 +1,4 @@
-import type { HostNode } from '../../../jsx/resolve.ts';
+import type { HostNode } from '../../../core/jsx/resolve.ts';
 import { DeclarationError } from '../../errors.ts';
 import { readString } from '../../parse-helpers.ts';
 import type { VersionSpec } from './spec.ts';

@@ -1,5 +1,8 @@
-import type { HostNode } from '../../../jsx/resolve.ts';
-import { isReservedAlias, isReservedName } from '../../../runtime/reserved.ts';
+import type { HostNode } from '../../../core/jsx/resolve.ts';
+import {
+  isReservedAlias,
+  isReservedName,
+} from '../../../core/runtime/reserved.ts';
 /**
  * 宣言ノードの木を {@link ArgvSpec} にする。ここが `argv.tsx` の意味を決める場所。
  *

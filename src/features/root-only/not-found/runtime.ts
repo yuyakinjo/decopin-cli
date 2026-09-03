@@ -1,4 +1,4 @@
-import type { Presentation } from '../../../runtime/override.ts';
+import type { Presentation } from '../../../core/runtime/override.ts';
 import {
   presentNotFound,
   type NotFoundProps,

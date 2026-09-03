@@ -18,7 +18,7 @@ JSX を再帰的に ANSI 文字列へ変換するだけで足りる。Ink は yo
 
 **代償**: 対話的 UI (プロンプト・スピナー) は自前で作ることになる。v1 では扱わない。
 
-**関連**: `src/renderer/`。パイプラインは 評価 → レイアウト → 直列化 → 書き出し の 4 段。
+**関連**: `src/core/renderer/`。パイプラインは 評価 → レイアウト → 直列化 → 書き出し の 4 段。
 
 ## ADR 2: argv と stdin をファイルで分ける
 
@@ -94,7 +94,7 @@ module augmentation で `Routes` / `EnvVars` を埋める。`cmd.tsx` は
 
 利用者が valibot の書き方を覚えなくて済むようにする。`Type.Array` のように
 型が再帰する場合に children の入れ子が自然に効く。valibot への依存は
-`src/validation/` に閉じ込める。
+`src/core/validation/` に閉じ込める。
 
 **valibot に変換層を寄せなかった理由** (実測):
 
@@ -297,7 +297,7 @@ Temporal は例外を投げる。読めない値が「読めたつもり」で�
 番号で伝えられない分、時間で埋め合わせる。
 
 **忘れないための仕組み**が要る。「あとで消す」は忘れるので、期限を
-`src/deprecations.ts` にデータとして置き、test/docs/deprecations.test.ts が
+`src/core/deprecations.ts` にデータとして置き、test/docs/deprecations.test.ts が
 見張る。期限を過ぎるとテストが落ち、消すまで CI が通らない。
 期限を延ばすのは決め直しなので、この ADR を書き換えることになる。
 
@@ -364,7 +364,7 @@ Partial Prerendering から借りるが、CLI にはビルド時レンダーが�
 書き換わり、それ以外は従来どおり静的に流れる。ドキュメントは上から順に
 flush され (ストリーミング)、島に当たったら source が尽きるまで領域を
 描き換え、最後のフレームを残して続きが流れる。駆動は `present()`
-(`src/renderer/present.ts`)。
+(`src/core/renderer/present.ts`)。
 
 **なぜ hooks ではないか**: `useState` 方式はレンダラーに再実行スケジューラを
 要求し、コンポーネントが「呼ばれて JSX を返すだけの純粋なデータ」(ADR 1)

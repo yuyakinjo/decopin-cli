@@ -7,7 +7,7 @@ import { mkdtemp, rm, stat } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
-import { build } from '../../src/build/index.ts';
+import { build } from '../../src/core/build/index.ts';
 
 let workspace: string;
 /**

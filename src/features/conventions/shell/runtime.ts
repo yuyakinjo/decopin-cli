@@ -1,5 +1,5 @@
-import type { HostNode } from '../../../jsx/resolve.ts';
-import type { RenderInput } from '../../../jsx/types.ts';
+import type { HostNode } from '../../../core/jsx/resolve.ts';
+import type { RenderInput } from '../../../core/jsx/types.ts';
 /**
  * `shell.tsx` の宣言をシェルコードにし、親シェルに届ける (ADR 35)。
  *

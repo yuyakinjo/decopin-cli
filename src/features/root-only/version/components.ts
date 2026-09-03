@@ -1,4 +1,4 @@
-import { host } from '../../../components/host.ts';
+import { host } from '../../../core/components/host.ts';
 
 /** `--version` で出す内容 */
 export interface VersionProps {

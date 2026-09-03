@@ -9,7 +9,7 @@ import { mkdir, mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
-import { scan } from '../../src/build/scanner.ts';
+import { scan } from '../../src/core/build/scanner.ts';
 import { CONVENTION_FILES } from '../../src/features/conventions/index.ts';
 import { inheritedChain } from '../../src/features/inherited/chain.ts';
 import { INHERITED_FILES } from '../../src/features/inherited/index.ts';

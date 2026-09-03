@@ -1,8 +1,8 @@
 import {
   evaluationProblem,
   loadHosts,
-} from '../../../build/evaluate-declaration.ts';
-import type { EvaluationProblem } from '../../../build/evaluate-declaration.ts';
+} from '../../../core/build/evaluate-declaration.ts';
+import type { EvaluationProblem } from '../../../core/build/evaluate-declaration.ts';
 import { parseArgvSpec } from './parse.ts';
 import { EMPTY_ARGV_SPEC } from './spec.ts';
 import type { ArgvSpec } from './spec.ts';

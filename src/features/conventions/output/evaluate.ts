@@ -1,8 +1,8 @@
 import {
   evaluationProblem,
   loadHosts,
-} from '../../../build/evaluate-declaration.ts';
-import type { EvaluationProblem } from '../../../build/evaluate-declaration.ts';
+} from '../../../core/build/evaluate-declaration.ts';
+import type { EvaluationProblem } from '../../../core/build/evaluate-declaration.ts';
 import { parseOutputSpec } from './parse.ts';
 import type { OutputSpec } from './spec.ts';
 

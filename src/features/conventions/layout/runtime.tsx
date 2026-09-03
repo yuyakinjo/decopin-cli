@@ -4,8 +4,8 @@
  * `children` は React と同じく**値**。レンダラーが評価するまで中身は走らない。
  * 包む順は「外側 = 上位ディレクトリ」なので、内側から順に組み立てる。
  */
-import { jsx } from '../../../jsx/jsx-runtime.ts';
-import type { AnyElementType, Renderable } from '../../../jsx/types.ts';
+import { jsx } from '../../../core/jsx/jsx-runtime.ts';
+import type { AnyElementType, Renderable } from '../../../core/jsx/types.ts';
 import { CliError } from '../error/errors.ts';
 
 export type LayoutLoader = () => Promise<unknown>;
