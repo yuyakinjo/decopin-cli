@@ -7,7 +7,7 @@
  * valibot を import しないのは意図的で、`type` 文字列で分岐するだけで足りる。
  * これにより valibot への依存は src/validation/ に閉じたままになる (ADR 10)。
  */
-import { quoteKey, wrapUnion } from './ts-text.ts';
+import { quoteKey, wrapUnion } from '../declaration/type-text.ts';
 
 /** unknown に落ちた箇所 */
 export interface UnsupportedNode {

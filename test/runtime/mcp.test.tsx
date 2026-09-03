@@ -212,6 +212,18 @@ describe('handshake', () => {
     expect(responses[0]?.result?.protocolVersion).toBe('2025-11-25');
   });
 
+  test('version.tsx が壊れていれば従来どおり 0.0.0 に戻す', async () => {
+    const { responses } = await talk(
+      table,
+      [{ jsonrpc: '2.0', id: 1, method: 'initialize' }],
+      { versionFile: loader('not a function') }
+    );
+    const serverInfo = responses[0]?.result?.serverInfo as
+      | { version: string }
+      | undefined;
+    expect(serverInfo?.version).toBe('0.0.0');
+  });
+
   test('壊れた行・形の違うリクエスト・知らないメソッドは JSON-RPC のエラー', async () => {
     const { code, responses } = await talk(table, [
       'not json',
@@ -284,6 +296,25 @@ describe('tools/list', () => {
     expect(bare.outputSchema).toBeUndefined();
     // effects が無い (手書きの表) なら hint も無い
     expect(bare.annotations).toBeUndefined();
+  });
+
+  test('default export が関数でない宣言は従来の文面で通知する', async () => {
+    for (const [kind, message] of [
+      ['argv', 'argv.tsx must default-export a function'],
+      ['stdin', 'stdin.tsx must default-export a function'],
+      ['output', 'output.tsx must default-export a function'],
+    ] as const) {
+      const broken: RouteTable = {
+        broken: {
+          cmd: loader(() => <Line>unused</Line>),
+          [kind]: loader('not a function'),
+        },
+      };
+      const { responses } = await talk(broken, [
+        { jsonrpc: '2.0', id: 1, method: 'tools/list' },
+      ]);
+      expect(responses[0]?.error).toEqual({ code: -32603, message });
+    }
   });
 
   test('annotations は副作用の判定から。unknown があれば何も言わない', () => {

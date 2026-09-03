@@ -3,13 +3,13 @@ import { describe, expect, test } from 'bun:test';
 import * as v from 'valibot';
 
 import type { EvaluatedRoute } from '../../src/build/evaluator.ts';
+import { generateTypes } from '../../src/build/type-emitter.ts';
+import { toTypeText } from '../../src/declaration/type-text.ts';
+import type { ArgvSpec } from '../../src/features/conventions/argv/spec.ts';
 import {
-  generateTypes,
   stdinType,
   stdinTypeText,
-  toTypeText,
-} from '../../src/build/type-emitter.ts';
-import type { ArgvSpec } from '../../src/declaration/spec.ts';
+} from '../../src/features/conventions/stdin/type-emitter.ts';
 
 describe('toTypeText', () => {
   test('基本の型', () => {

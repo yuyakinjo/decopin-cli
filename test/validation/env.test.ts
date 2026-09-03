@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 
-import type { EnvSpec } from '../../src/declaration/spec.ts';
-import { validateEnv } from '../../src/validation/env.ts';
+import type { EnvSpec } from '../../src/features/root-only/env/spec.ts';
+import { validateEnv } from '../../src/features/root-only/env/validation.ts';
 
 const spec: EnvSpec = {
   vars: [

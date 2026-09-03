@@ -7,12 +7,12 @@
  */
 import { describe, expect, test } from 'bun:test';
 
-import { rejectObjectFor } from '../../src/declaration/parse.ts';
-import type { StdinSpec } from '../../src/declaration/spec.ts';
+import { rejectObjectFor } from '../../src/declaration/parse-helpers.ts';
 import type { TypeNode } from '../../src/declaration/type-node.ts';
-import { readStdin } from '../../src/runtime/stdin-reader.ts';
-import { validateEnv } from '../../src/validation/env.ts';
-import { validateArgv } from '../../src/validation/validate.ts';
+import { validateArgv } from '../../src/features/conventions/argv/validation.ts';
+import { readStdin } from '../../src/features/conventions/stdin/runtime.ts';
+import type { StdinSpec } from '../../src/features/conventions/stdin/spec.ts';
+import { validateEnv } from '../../src/features/root-only/env/validation.ts';
 
 /** argv のオプション 1 つとして検証する */
 function fromArgv(type: TypeNode, tokens: string[]) {

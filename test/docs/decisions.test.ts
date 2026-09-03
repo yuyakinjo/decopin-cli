@@ -133,8 +133,10 @@ const GUARDS: Record<number, Guard> = {
     kind: 'lint',
     label: 'app/ のファイル名が規約に含まれる (綴り違いは黙って無視されるため)',
     check: async () => {
-      const { CONVENTION_FILES, ROOT_ONLY_FILES } =
-        await import('../../src/build/scanner.ts');
+      const { CONVENTION_FILES } =
+        await import('../../src/features/conventions/index.ts');
+      const { ROOT_ONLY_FILES } =
+        await import('../../src/features/root-only/index.ts');
       const allowed = new Set<string>([
         ...CONVENTION_FILES,
         ...ROOT_ONLY_FILES,
@@ -217,7 +219,8 @@ const GUARDS: Record<number, Guard> = {
     kind: 'lint',
     label: 'middleware は children ではなく next を受け取る',
     check: async () => {
-      const middleware = srcSources.get('src/runtime/middleware.ts') ?? '';
+      const middleware =
+        srcSources.get('src/features/conventions/middleware/runtime.ts') ?? '';
       const props = /export interface MiddlewareProps[^}]*}/.exec(middleware);
       if (props === null) return ['MiddlewareProps が見つからない'];
       return props[0].includes('children')

@@ -1,82 +1,18 @@
-/** `argv.tsx` を評価した結果 (test/contract/argv-parsing.test.ts) */
-import type { TypeNode } from './type-node.ts';
-
-/** `<Arg>` を評価した結果 */
-export interface ArgSpec {
-  name: string;
-  description?: string;
-  /** 省略できないか */
-  required: boolean;
-  /** 省略時の値。required とは同時に指定できない */
-  defaultValue?: unknown;
-  /** 位置引数を複数取るか (最後の 1 つだけに付けられる) */
-  variadic: boolean;
-  type: TypeNode;
-}
-
-/** `<Option>` を評価した結果 */
-export interface OptionSpec {
-  name: string;
-  /** 1 文字の短縮形 */
-  alias?: string;
-  description?: string;
-  required: boolean;
-  defaultValue?: unknown;
-  /** help に出さない */
-  hidden: boolean;
-  type: TypeNode;
-}
-
-/** `argv.tsx` 全体を評価した結果。検証・help・型生成の元になる */
-export interface ArgvSpec {
-  /** コマンドの説明 (help の 1 行目に出る) */
-  description?: string;
-  args: ArgSpec[];
-  options: OptionSpec[];
-}
-
-export const EMPTY_ARGV_SPEC: ArgvSpec = { args: [], options: [] };
-
-/** 環境変数 1 つの宣言 */
-export interface VarSpec {
-  name: string;
-  description?: string;
-  required: boolean;
-  defaultValue?: unknown;
-  type: TypeNode;
-}
-
-export interface EnvSpec {
-  vars: VarSpec[];
-}
-
-export const EMPTY_ENV_SPEC: EnvSpec = { vars: [] };
-
-/** `output.tsx` を評価した結果 (ADR 28) */
-export interface OutputSpec {
-  /** `Type.*` で組んだ形 */
-  type?: TypeNode;
-  /** valibot スキーマを直接渡した場合。type とは排他 */
-  schema?: unknown;
-}
-
-/** `--version` の内容 */
-export interface VersionSpec {
-  version: string;
-  name?: string;
-}
-
-/** 標準入力の読み方 (ADR 2) */
-export type StdinMode = 'text' | 'lines' | 'json';
-
-export interface StdinSpec {
-  mode: StdinMode;
-  /** 真なら、パイプされていない (端末) 場合にエラーにする */
-  required: boolean;
-  /** 末尾の空白と改行を落とす (mode="text" のときだけ意味がある) */
-  trim: boolean;
-  /** mode="json" のときの構造 (省略時は unknown) */
-  type?: TypeNode;
-  /** valibot スキーマを直接渡した場合 (ADR 9)。type とは排他 */
-  schema?: unknown;
-}
+/**
+ * 宣言 spec の互換 façade。
+ * 実装は規約ファイルごとの feature ディレクトリに置く。
+ */
+export { EMPTY_ARGV_SPEC } from '../features/conventions/argv/spec.ts';
+export type {
+  ArgSpec,
+  ArgvSpec,
+  OptionSpec,
+} from '../features/conventions/argv/spec.ts';
+export type { OutputSpec } from '../features/conventions/output/spec.ts';
+export type {
+  StdinMode,
+  StdinSpec,
+} from '../features/conventions/stdin/spec.ts';
+export { EMPTY_ENV_SPEC } from '../features/root-only/env/spec.ts';
+export type { EnvSpec, VarSpec } from '../features/root-only/env/spec.ts';
+export type { VersionSpec } from '../features/root-only/version/spec.ts';

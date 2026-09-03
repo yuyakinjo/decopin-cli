@@ -20,42 +20,66 @@ export interface Watcher {
   close: () => void;
 }
 
-export function watchApp(options: WatchOptions = {}): Watcher {
+/** OS のディレクトリ監視。テストでは通知だけを決定的に差し替える。 */
+export interface WatchBackend {
+  watch: (directory: string, onChange: () => void) => Watcher;
+}
+
+const NODE_WATCH_BACKEND: WatchBackend = {
+  watch: (directory, onChange) =>
+    watch(directory, { recursive: true }, onChange),
+};
+
+export function watchApp(
+  options: WatchOptions = {},
+  backend: WatchBackend = NODE_WATCH_BACKEND
+): Watcher {
   const appDir = options.appDir ?? 'app';
   const debounceMs = options.debounceMs ?? 50;
   let timer: ReturnType<typeof setTimeout> | undefined;
   let running = false;
   let pending = false;
+  let closed = false;
 
   const run = async (): Promise<void> => {
+    if (closed) return;
     if (running) {
       pending = true;
       return;
     }
     running = true;
     try {
-      options.onGenerate?.(await generate(options));
+      const result = await generate(options);
+      if (!closed) options.onGenerate?.(result);
     } catch (error) {
-      options.onError?.(error);
+      if (!closed) options.onError?.(error);
     } finally {
       running = false;
-      if (pending) {
+      if (pending && !closed) {
         pending = false;
         void run();
       }
     }
   };
 
-  void run();
-
-  const watcher = watch(appDir, { recursive: true }, () => {
+  const watcher = backend.watch(appDir, () => {
+    if (closed) return;
     // エディタは 1 回の保存で複数のイベントを出すのでまとめる
     if (timer !== undefined) clearTimeout(timer);
-    timer = setTimeout(() => void run(), debounceMs);
+    timer = setTimeout(() => {
+      timer = undefined;
+      void run();
+    }, debounceMs);
   });
+
+  // 監視を先に始め、初回生成中の変更も取りこぼさないようにする。
+  void run();
 
   return {
     close: () => {
+      if (closed) return;
+      closed = true;
+      pending = false;
       if (timer !== undefined) clearTimeout(timer);
       watcher.close();
     },

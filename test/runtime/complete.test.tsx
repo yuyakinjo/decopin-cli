@@ -10,7 +10,7 @@ import { describe, expect, test } from 'bun:test';
 import { Arg, Argv, Line, Option, run, Type } from 'decopin-cli';
 import type { RouteTable } from 'decopin-cli';
 
-import { completionCandidates } from '../../src/runtime/complete.ts';
+import { completionCandidates } from '../../src/features/conventions/complete/runtime.ts';
 
 function recorder() {
   const chunks: string[] = [];

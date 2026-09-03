@@ -5,8 +5,8 @@ import {
   resolveRoute,
   resolveTarget,
   suggest,
-} from '../../src/runtime/router.ts';
-import type { RouteTable } from '../../src/runtime/router.ts';
+} from '../../src/features/conventions/cmd/router.ts';
+import type { RouteTable } from '../../src/features/conventions/cmd/router.ts';
 
 const load = { cmd: async () => ({ default: () => null }) };
 

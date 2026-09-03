@@ -281,7 +281,7 @@ README に書いてある。読みやすさも落ちる (`2026.828.1430` は一�
 
 **副産物**: `new Date("nope")` は Invalid Date を返して先に進んでしまうが、
 Temporal は例外を投げる。読めない値が「読めたつもり」で通らない。
-`min` / `max` もビルド時 (`src/declaration/parse.ts`) に解釈して弾く。
+`min` / `max` もビルド時 (`src/features/conventions/argv/parse.ts`) に解釈して弾く。
 
 **valibot 1.1.0 に Temporal 対応は無い**。`v.instance()` で受け、境界は
 `v.minValue` ではなくその型の `compare` で見る (Temporal の値を `<` で
@@ -314,7 +314,7 @@ Temporal は例外を投げる。読めない値が「読めたつもり」で�
 
 zsh の補完は 2 つの部品で実現する。ビルドが生成する薄いシム
 (`dist/completions/_<bin>`) と、ランタイムの予約コマンド `__complete`
-(`src/runtime/complete.ts`)。Tab のたびにシムが
+(`src/features/conventions/complete/runtime.ts`)。Tab のたびにシムが
 `<bin> __complete -- <words...>` を実行し、CLI が候補を stdout に
 1 行 1 つ (`値<TAB>説明`) で返す。最後の語が「補完中の語」。
 
@@ -337,9 +337,9 @@ name は decopin-cli、コマンドは decopin)。補完はコマンド名に付
 
 **語の解釈はトークナイザを共有する**: 単独の `-` (位置引数)、`--name=value`、
 束ねた alias (`-lv`)、`--no-flag` の扱いを補完側で再実装すると必ずずれる。
-確定済みの語は `src/validation/tokens.ts` の `tokenize` に渡し、「補完中の語が
-どの位置に落ちるか」は実入力に現れない印 (`\0`) を差し込んで同じトークナイザに
-聞く (probe 方式)。
+確定済みの語は `src/features/conventions/argv/tokens.ts` の `tokenize` に渡し、
+「補完中の語がどの位置に落ちるか」は実入力に現れない印 (`\0`) を差し込んで
+同じトークナイザに聞く (probe 方式)。
 
 **名前の衝突は起きない**: scanner は `_` 始まりのディレクトリを共有コードの
 置き場として無視する (ADR 3) ので、`app/__complete/` がルートになることはない。
@@ -504,7 +504,8 @@ test/contract/pipe-safety.test.tsx が **app/ の全コマンドを掃く**。
 `{}` になり、`NaN` は `null` になる。投げるのは `bigint` だけ。`Date` /
 `Temporal` は文字列になるので、宣言した型と JSON の中身が食い違う。
 どれも「出してみたら欠けていた」で気づく類なので、`--json` の直前に見て
-**どの経路が悪いか**を名指しして止める (`src/runtime/serializable.ts`)。
+**どの経路が悪いか**を名指しして止める
+(`src/features/conventions/data/serializable.ts`)。
 
 **型検査には頼らない**。当初は生成した `types.d.ts` に
 `AssertJsonData<CheckJsonData<...>>` を書いて型エラーにする実装を入れたが、

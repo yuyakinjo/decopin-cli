@@ -5,7 +5,7 @@
  * (`unknown`) コマンドをビルドエラーにする。受け入れるコマンドは
  * `export const unsafeEval = true` を cmd.tsx に書く。
  */
-import { afterAll, beforeAll, describe, expect, test } from 'bun:test';
+import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
 import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -22,7 +22,7 @@ async function command(name: string, source: string) {
   await writeFile(join(appDir, name, 'cmd.tsx'), source);
 }
 
-beforeAll(async () => {
+beforeEach(async () => {
   root = await mkdtemp(join(tmpdir(), 'decopin-policy-'));
   appDir = join(root, 'app');
   workDir = join(root, '.decopin');
@@ -34,7 +34,7 @@ beforeAll(async () => {
   );
 });
 
-afterAll(async () => {
+afterEach(async () => {
   await rm(root, { recursive: true, force: true });
 });
 

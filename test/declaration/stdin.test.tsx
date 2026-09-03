@@ -4,8 +4,8 @@ import { DeclarationError, Stdin, Type } from 'decopin-cli';
 import type { RenderInput } from 'decopin-cli';
 import * as v from 'valibot';
 
-import { parseStdinSpec } from '../../src/declaration/parse.ts';
 import { resolveHosts } from '../../src/declaration/resolve.ts';
+import { parseStdinSpec } from '../../src/features/conventions/stdin/parse.ts';
 
 async function spec(node: RenderInput) {
   return parseStdinSpec(await resolveHosts(node));

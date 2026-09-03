@@ -1,9 +1,3 @@
-import {
-  argumentsSchema,
-  STDIN_ARGUMENT,
-  toJsonSchema,
-} from '../declaration/json-schema.ts';
-import type { JsonSchema } from '../declaration/json-schema.ts';
 /**
  * コマンドを MCP のツールとして出す (ADR 33)。
  *
@@ -19,20 +13,26 @@ import type { JsonSchema } from '../declaration/json-schema.ts';
  * 付けるので、検証・middleware・output.tsx の検査・エラーの構造化 (ADR 29)
  * がすべて CLI と同じ経路を通る。MCP のためだけの経路を持たない
  */
+import { toJsonSchema } from '../declaration/json-schema-core.ts';
+import type { JsonSchema } from '../declaration/json-schema-core.ts';
 import {
-  parseArgvSpec,
-  parseStdinSpec,
-  parseVersionSpec,
-} from '../declaration/parse.ts';
-import { parseOutputSpec } from '../declaration/parse.ts';
-import { resolveHosts } from '../declaration/resolve.ts';
-import { EMPTY_ARGV_SPEC } from '../declaration/spec.ts';
-import type { ArgvSpec, OutputSpec, StdinSpec } from '../declaration/spec.ts';
-import type { Renderable } from '../jsx/types.ts';
+  argumentsSchema,
+  STDIN_ARGUMENT,
+} from '../features/conventions/argv/json-schema.ts';
+import { loadArgvSpec } from '../features/conventions/argv/runtime.ts';
+import type { ArgvSpec } from '../features/conventions/argv/spec.ts';
+import type {
+  RouteLoaders,
+  RouteTable,
+} from '../features/conventions/cmd/router.ts';
+import { loadOutputSpec } from '../features/conventions/output/runtime.ts';
+import type { OutputSpec } from '../features/conventions/output/spec.ts';
+import { loadStdinSpec } from '../features/conventions/stdin/runtime.ts';
+import type { StdinSpec } from '../features/conventions/stdin/spec.ts';
+import { loadVersionSpec } from '../features/root-only/version/runtime.ts';
 import type { EffectVerdicts } from '../types/effects.ts';
 import { EXIT_CODE } from './exit.ts';
 import { JSON_FLAG } from './reserved.ts';
-import type { RouteLoaders, RouteTable } from './router.ts';
 import type { RunOptions } from './run.tsx';
 
 /** 対応しているプロトコル改訂。相手が挙げたものが無ければ先頭を返す */
@@ -143,13 +143,8 @@ export function toolName(route: string, program: string): string {
   return raw.replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 64) || 'root';
 }
 
-async function declared(loader: () => Promise<unknown>, expected: string) {
-  const loaded = (await loader()) as { default?: unknown };
-  const declare = loaded.default;
-  if (typeof declare !== 'function') {
-    throw new Error(`${expected} must default-export a function`);
-  }
-  return resolveHosts((declare as () => Renderable)() as Renderable);
+function invalidDefaultExport(expected: string): () => Error {
+  return () => new Error(`${expected} must default-export a function`);
 }
 
 interface Declarations {
@@ -160,18 +155,12 @@ interface Declarations {
 
 async function loadDeclarations(route: RouteLoaders): Promise<Declarations> {
   return {
-    argv:
-      route.argv === undefined
-        ? EMPTY_ARGV_SPEC
-        : parseArgvSpec(await declared(route.argv, 'argv.tsx')),
-    stdin:
-      route.stdin === undefined
-        ? undefined
-        : parseStdinSpec(await declared(route.stdin, 'stdin.tsx')),
-    output:
-      route.output === undefined
-        ? undefined
-        : parseOutputSpec(await declared(route.output, 'output.tsx')),
+    argv: await loadArgvSpec(route.argv, invalidDefaultExport('argv.tsx')),
+    stdin: await loadStdinSpec(route.stdin, invalidDefaultExport('stdin.tsx')),
+    output: await loadOutputSpec(
+      route.output,
+      invalidDefaultExport('output.tsx')
+    ),
   };
 }
 
@@ -390,8 +379,12 @@ export async function callTool(
 async function serverVersion(options: RunOptions): Promise<string> {
   if (options.versionFile === undefined) return '0.0.0';
   try {
-    return parseVersionSpec(await declared(options.versionFile, 'version.tsx'))
-      .version;
+    return (
+      await loadVersionSpec(
+        options.versionFile,
+        invalidDefaultExport('version.tsx')
+      )
+    ).version;
   } catch {
     return '0.0.0';
   }

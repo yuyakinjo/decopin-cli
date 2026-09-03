@@ -1,44 +1,77 @@
 /**
  * 実行ライフサイクル。argv の解決から書き出しまでを 1 本で通す。
  *
- * 通っているのは 1 (ルート解決) → 2 (--help / --version) → 4 (argv 検証)
- * → 7 (command 実行) → 9 (書き出し) → 10 (終了コード)。
- * env (3)、middleware (5)、stdin (6)、error.tsx は後続フェーズで足す。
+ * ここは各 feature を実行順に接続する composition root。個々の規約ファイルの
+ * 読み込み・検証・表示は `src/features/` の該当ディレクトリが担当する。
  */
 import { Json, Line, Stderr } from '../components/index.ts';
-import { parseArgvSpec } from '../declaration/parse.ts';
-import {
-  parseEnvSpec,
-  parseOutputSpec,
-  parseStdinSpec,
-  parseVersionSpec,
-} from '../declaration/parse.ts';
 import { resolveHosts } from '../declaration/resolve.ts';
-import { EMPTY_ARGV_SPEC } from '../declaration/spec.ts';
-import type { ArgvSpec, StdinSpec } from '../declaration/spec.ts';
+import { loadArgvSpec } from '../features/conventions/argv/runtime.ts';
+import { validateArgv } from '../features/conventions/argv/validation.ts';
+import type { CommandContext } from '../features/conventions/cmd/context.ts';
+import {
+  commandsUnder,
+  resolveTarget,
+  type RouteTable,
+} from '../features/conventions/cmd/router.ts';
+import { loadCommand } from '../features/conventions/cmd/runtime.ts';
+import {
+  completionCandidates,
+  formatCandidates,
+} from '../features/conventions/complete/runtime.ts';
+import { loadData } from '../features/conventions/data/runtime.ts';
+import { findNotSerializable } from '../features/conventions/data/serializable.ts';
+import {
+  CliError,
+  validationError,
+} from '../features/conventions/error/errors.ts';
+import { ErrorMessage } from '../features/conventions/error/messages.tsx';
+import {
+  CommandList,
+  describeCommands,
+  Help,
+} from '../features/conventions/help/runtime.tsx';
+import { isHelpSignal } from '../features/conventions/help/signal.ts';
+import { applyLayouts } from '../features/conventions/layout/runtime.tsx';
+import { runMiddleware } from '../features/conventions/middleware/runtime.ts';
+import type { NotFoundProps } from '../features/conventions/not-found/runtime.tsx';
+import { isNotFoundSignal } from '../features/conventions/not-found/signal.ts';
+import { validateData } from '../features/conventions/output/runtime.ts';
+import {
+  binaryName,
+  generateShellHook,
+  isShellName,
+  loadShell,
+  renderShell,
+  SHELL_FILE_ENV,
+  SHELLS,
+} from '../features/conventions/shell/runtime.ts';
+import {
+  loadStdinSpec,
+  processStdin,
+  readStdin,
+} from '../features/conventions/stdin/runtime.ts';
+import type { StdinSource } from '../features/conventions/stdin/runtime.ts';
+import {
+  handleError,
+  toCliError,
+} from '../features/inherited/error/runtime.tsx';
+import { presentInheritedNotFound } from '../features/inherited/not-found/runtime.ts';
+import { loadEnv } from '../features/root-only/env/runtime.ts';
+import { withGlobalError } from '../features/root-only/global-error/runtime.ts';
+import { presentRootNotFound } from '../features/root-only/not-found/runtime.ts';
+import { loadVersionSpec } from '../features/root-only/version/runtime.ts';
 import type { Renderable, RenderInput } from '../jsx/types.ts';
 import { present as presentDocument } from '../renderer/present.ts';
 import type { WriteTargets } from '../renderer/writer.ts';
-import { validateEnv } from '../validation/env.ts';
-import { toSchema, validateValue } from '../validation/schema.ts';
-import { validateArgv } from '../validation/validate.ts';
 import {
   nonInteractiveTerminal,
   processTerminal,
   setTerminal,
 } from './choose.ts';
 import type { Terminal } from './choose.ts';
-import { completionCandidates, formatCandidates } from './complete.ts';
-import { CliError, validationError } from './errors.ts';
 import { EXIT_CODE } from './exit.ts';
-import { handleError, toCliError } from './handle-error.tsx';
-import { CommandList, Help } from './help.tsx';
-import { applyLayouts } from './layout.tsx';
 import { serveMcp } from './mcp.ts';
-import { ErrorMessage } from './messages.tsx';
-import { runMiddleware } from './middleware.ts';
-import { NotFound } from './not-found.tsx';
-import type { NotFoundProps } from './not-found.tsx';
 import { present } from './override.ts';
 import {
   COMPLETE_COMMAND,
@@ -50,43 +83,9 @@ import {
   SHELL_COMMAND,
   VERSION_FLAG,
 } from './reserved.ts';
-import { commandsUnder, resolveTarget } from './router.ts';
-import type { RouteTable } from './router.ts';
-import { findNotSerializable } from './serializable.ts';
-import {
-  binaryName,
-  generateShellHook,
-  isShellName,
-  renderShell,
-  SHELL_FILE_ENV,
-  SHELLS,
-} from './shell.ts';
-import {
-  isHelpSignal,
-  isInterruptSignal,
-  isNotFoundSignal,
-} from './signals.ts';
-import { processStdin, readStdin } from './stdin-reader.ts';
-import type { StdinSource } from './stdin-reader.ts';
+import { isInterruptSignal } from './signals.ts';
 
-/** Phase 3 で cmd.tsx が受け取るもの。型は Phase 3.5 の codegen で配る */
-export interface CommandContext {
-  /** 検証済みの環境変数 */
-  env: Record<string, unknown>;
-  /** 検証済みの位置引数 */
-  args: Record<string, unknown>;
-  /** 検証済みのオプション */
-  options: Record<string, unknown>;
-  /** stdin.tsx があれば読み取った値。無ければ undefined */
-  stdin: unknown;
-  /** data.tsx の戻り値。無ければ undefined (ADR 25) */
-  data: unknown;
-  /** コマンド名として消費されなかった生の argv */
-  argv: readonly string[];
-  cwd: string;
-  /** `--dry-run` が付いているか (ADR 37) */
-  dryRun: boolean;
-}
+export type { CommandContext } from '../features/conventions/cmd/context.ts';
 
 /**
  * `run()` に渡すもの。生成された `entry.ts` が規約ファイルの
@@ -195,132 +194,6 @@ function withoutFlags(
   return kept;
 }
 
-/** argv.tsx を読んで宣言を組み立てる。無ければ空の宣言 */
-async function loadArgvSpec(
-  loader: (() => Promise<unknown>) | undefined
-): Promise<ArgvSpec> {
-  if (loader === undefined) return EMPTY_ARGV_SPEC;
-  const loaded = (await loader()) as { default?: unknown };
-  const declare = loaded.default;
-  if (typeof declare !== 'function') {
-    throw new CliError(
-      'argv.tsx must default-export a function that returns <Argv>'
-    );
-  }
-  const hosts = await resolveHosts(
-    (declare as () => Renderable)() as Renderable
-  );
-  return parseArgvSpec(hosts);
-}
-
-/** 宣言ファイルの default export を呼んで、組み込みノードの並びにする */
-async function declaredHosts(loader: () => Promise<unknown>, expected: string) {
-  const loaded = (await loader()) as { default?: unknown };
-  const declare = loaded.default;
-  if (typeof declare !== 'function') {
-    throw new CliError(
-      `${expected} must default-export a function that returns <${expected}>`
-    );
-  }
-  return resolveHosts((declare as () => Renderable)() as Renderable);
-}
-
-/** stdin.tsx を読んで宣言を組み立てる。無ければ undefined */
-async function loadStdinSpec(
-  loader: (() => Promise<unknown>) | undefined
-): Promise<StdinSpec | undefined> {
-  if (loader === undefined) return undefined;
-  const loaded = (await loader()) as { default?: unknown };
-  const declare = loaded.default;
-  if (typeof declare !== 'function') {
-    throw new CliError(
-      'stdin.tsx must default-export a function that returns <Stdin>'
-    );
-  }
-  const hosts = await resolveHosts(
-    (declare as () => Renderable)() as Renderable
-  );
-  return parseStdinSpec(hosts);
-}
-
-/**
- * output.tsx があれば data を検証する (ADR 28)。
- *
- * 自分のコードが返した値でも、外の API から来たものは型の宣言どおりとは
- * 限らない。境界で確かめておくと、壊れた形のまま表示や --json に流れない
- */
-async function validateData(
-  loader: (() => Promise<unknown>) | undefined,
-  data: unknown
-): Promise<unknown> {
-  if (loader === undefined) return data;
-  const spec = parseOutputSpec(await declaredHosts(loader, 'Output'));
-  const schema =
-    spec.schema !== undefined
-      ? (spec.schema as Parameters<typeof validateValue>[0])
-      : toSchema(spec.type as NonNullable<typeof spec.type>);
-  const result = validateValue(schema, data);
-  if (!result.ok) {
-    throw new CliError(`data does not match output.tsx`, {
-      kind: 'validation',
-      exitCode: EXIT_CODE.runtime,
-      issues: result.messages,
-    });
-  }
-  return result.value;
-}
-
-/** data.tsx を呼んでデータを作る。無ければ undefined (ADR 25) */
-async function loadData(
-  loader: (() => Promise<unknown>) | undefined,
-  context: Omit<CommandContext, 'data'>
-): Promise<unknown> {
-  if (loader === undefined) return undefined;
-  const loaded = (await loader()) as { default?: unknown };
-  const provide = loaded.default;
-  if (typeof provide !== 'function') {
-    throw new CliError('data.tsx must default-export a function');
-  }
-  return await (provide as (props: Omit<CommandContext, 'data'>) => unknown)(
-    context
-  );
-}
-
-/**
- * 一覧に添える説明を argv.tsx から集める。help のときだけ通る道なので、
- * コマンド数ぶん読み込んでも気にならない。壊れた argv.tsx は説明なしで済ませる
- * (一覧そのものが出ないほうが困る)
- */
-async function describeCommands(
-  table: RouteTable,
-  commands: readonly string[]
-): Promise<Record<string, string | undefined>> {
-  const entries = await Promise.all(
-    commands.map(async (name) => {
-      try {
-        return [name, (await loadArgvSpec(table[name]?.argv)).description];
-      } catch {
-        return [name, undefined];
-      }
-    })
-  );
-  return Object.fromEntries(entries);
-}
-
-/** shell.tsx を読む。cmd.tsx と同じ props を受けて Shell.* を返す関数 */
-async function loadShell(
-  loader: () => Promise<unknown>
-): Promise<(props: CommandContext) => RenderInput> {
-  const loaded = (await loader()) as { default?: unknown };
-  const declare = loaded.default;
-  if (typeof declare !== 'function') {
-    throw new CliError(
-      'shell.tsx must default-export a function that returns Shell.* components'
-    );
-  }
-  return declare as (props: CommandContext) => RenderInput;
-}
-
 /**
  * @returns 終了コード。呼び出し側が process.exit に渡す
  */
@@ -412,9 +285,7 @@ export async function run(
       return EXIT_CODE.usage;
     }
     try {
-      const spec = parseVersionSpec(
-        await declaredHosts(options.versionFile, 'Version')
-      );
+      const spec = await loadVersionSpec(options.versionFile);
       await emit(
         <Line>
           {spec.name === undefined
@@ -459,27 +330,15 @@ export async function run(
     const commands = commandsUnder(table, group);
 
     if (target.kind === 'unknown') {
-      const shown = await present(
-        options.notFound,
-        {
-          what: 'command',
-          requested: target.requested,
-          suggestion: target.suggestion?.split('/').join(' '),
-          available: commands.map(display),
-          program,
-          argv,
-          cwd,
-        },
-        <NotFound
-          what="command"
-          requested={target.requested}
-          suggestion={target.suggestion?.split('/').join(' ')}
-          available={commands.map(display)}
-          program={program}
-          argv={argv}
-          cwd={cwd}
-        />
-      );
+      const shown = await presentRootNotFound(options.notFound, {
+        what: 'command',
+        requested: target.requested,
+        suggestion: target.suggestion?.split('/').join(' '),
+        available: commands.map(display),
+        program,
+        argv,
+        cwd,
+      });
       await emit(<Stderr>{shown.node}</Stderr>, options, noColorFlag);
       return EXIT_CODE.usage;
     }
@@ -554,20 +413,7 @@ export async function run(
       return EXIT_CODE.success;
     }
 
-    // env.tsx は起動時に一度だけ検証する
-    let env: Record<string, unknown> = {};
-    if (options.envFile !== undefined) {
-      const envSpec = parseEnvSpec(await declaredHosts(options.envFile, 'Env'));
-      const validated = validateEnv(envSpec, options.env ?? process.env);
-      if (!validated.ok) {
-        throw new CliError(validated.issues[0] ?? 'Invalid environment', {
-          kind: 'env',
-          exitCode: EXIT_CODE.usage,
-          issues: validated.issues,
-        });
-      }
-      env = validated.value;
-    }
+    const env = await loadEnv(options.envFile, options.env ?? process.env);
 
     // --json は data.tsx の結果をそのまま出す (ADR 25)
     if (jsonRequested && route.data === undefined) {
@@ -604,17 +450,11 @@ export async function run(
     const output = await runMiddleware(
       route.middlewares ?? [],
       async () => {
-        const loaded = (await route.cmd()) as {
-          default?: unknown;
-          skipLayout?: unknown;
-        };
-        const command = loaded.default;
-        if (typeof command !== 'function') {
-          throw new CliError(
-            `Command "${resolved.name}" must default-export a component`
-          );
-        }
-        skipLayout = loaded.skipLayout === true;
+        const { command, skipLayout: commandSkipsLayout } = await loadCommand(
+          route.cmd,
+          resolved.name
+        );
+        skipLayout = commandSkipsLayout;
         // stdin の読み取りは middleware の内側 (ADR 11)。middleware が next() を
         // 呼ばずに打ち切れば、標準入力を消費せずに終われる
         const stdinSpec = await loadStdinSpec(route.stdin);
@@ -651,9 +491,7 @@ export async function run(
         }
         const context: CommandContext = { ...base, data };
         shellContext = context;
-        return (await (command as (props: CommandContext) => RenderInput)(
-          context
-        )) as Renderable;
+        return (await command(context)) as Renderable;
       },
       { env, args, options: commandOptions, argv: rest, cwd, dryRun }
     );
@@ -766,11 +604,7 @@ export async function run(
         );
         return error.exitCode;
       }
-      const shown = await present(
-        route?.notFounds?.[0],
-        props,
-        <NotFound {...props} />
-      );
+      const shown = await presentInheritedNotFound(route?.notFounds, props);
       await emit(<Stderr>{shown.node}</Stderr>, options, noColorFlag);
       return error.exitCode;
     }
@@ -793,10 +627,7 @@ export async function run(
     const route = table[resolved.name];
     // 近い error.tsx → 親の error.tsx → global-error.tsx → 組み込み
     // (順序は test/runtime/handle-error.test.tsx が固定している)
-    const handlers = [
-      ...(route?.errors ?? []),
-      ...(options.globalError === undefined ? [] : [options.globalError]),
-    ];
+    const handlers = withGlobalError(route?.errors, options.globalError);
     const handled = await handleError({
       error: cliError,
       handlers,

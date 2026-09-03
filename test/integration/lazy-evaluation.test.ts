@@ -4,7 +4,15 @@
  * 生成コードに `() => import(` があることではなく、**副作用が起きないこと**で確かめる。
  * 別のコマンドを実行したときに、副作用を持つコマンドのマーカーが書かれなければよい
  */
-import { afterAll, beforeAll, describe, expect, test } from 'bun:test';
+import {
+  afterAll,
+  afterEach,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  test,
+} from 'bun:test';
 import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -45,6 +53,14 @@ beforeAll(async () => {
 afterAll(async () => {
   await rm(workspace, { recursive: true, force: true });
   await rm(workDir, { recursive: true, force: true });
+});
+
+beforeEach(async () => {
+  await rm(marker, { force: true });
+});
+
+afterEach(async () => {
+  await rm(marker, { force: true });
 });
 
 async function runCli(args: string[]) {

@@ -65,6 +65,16 @@ describe('run', () => {
     expect(result).toEqual({ code: 0, stdout: 'hello\n', stderr: '' });
   });
 
+  test('default export をメソッド化せず通常の関数として呼ぶ', async () => {
+    const bindingTable: RouteTable = {
+      binding: route(function command(this: unknown) {
+        return <Line>{this === undefined ? 'unbound' : 'bound'}</Line>;
+      }),
+    };
+    const result = await invoke(bindingTable, ['binding']);
+    expect(result.stdout).toBe('unbound\n');
+  });
+
   test('サブコマンドの階層を解決する', async () => {
     const result = await invoke(table, ['user', 'list']);
     expect(result.stdout).toBe('alice\n');

@@ -7,33 +7,23 @@
 import { readdir } from 'node:fs/promises';
 import { join } from 'node:path';
 
-/** 規約で定められたファイルの種類 */
-export const CONVENTION_FILES = [
-  'cmd',
-  'argv',
-  'stdin',
-  'data',
-  'output',
-  'error',
-  'not-found',
-  'layout',
-  'middleware',
-  'help',
-  'shell',
-  'complete',
-] as const;
+import { LEGACY_FILE_NAME as LEGACY_CMD_FILE } from '../features/conventions/cmd/definition.ts';
+import {
+  CONVENTION_FILES,
+  type ConventionFile,
+} from '../features/conventions/index.ts';
+import {
+  INHERITED_FILES,
+  type InheritedFile,
+} from '../features/inherited/index.ts';
+import {
+  ROOT_ONLY_FILES,
+  type RootOnlyFile,
+} from '../features/root-only/index.ts';
 
-export type ConventionFile = (typeof CONVENTION_FILES)[number];
-
-/** ルート直下にだけ置けるファイル */
-export const ROOT_ONLY_FILES = [
-  'global-error',
-  'not-found',
-  'env',
-  'version',
-] as const;
-
-export type RootOnlyFile = (typeof ROOT_ONLY_FILES)[number];
+export { CONVENTION_FILES, INHERITED_FILES, ROOT_ONLY_FILES };
+export { inheritedChain } from '../features/inherited/chain.ts';
+export type { ConventionFile, InheritedFile, RootOnlyFile };
 
 export interface Route {
   /** コマンド名。`hello`, `user/create`。ルートコマンドは空文字 */
@@ -43,16 +33,6 @@ export interface Route {
   /** 見つかった規約ファイル (プロジェクトルートからの相対パス) */
   files: Partial<Record<ConventionFile, string>>;
 }
-
-/** 上位ディレクトリから子コマンドに継承されるファイル (ADR 7 / ADR 13) */
-export const INHERITED_FILES = [
-  'error',
-  'not-found',
-  'layout',
-  'middleware',
-] as const;
-
-export type InheritedFile = (typeof INHERITED_FILES)[number];
 
 export interface ScanResult {
   routes: Route[];
@@ -92,7 +72,7 @@ const EXTENSIONS = ['.tsx', '.ts'] as const;
  * 期限は src/deprecations.ts が持っている。旧名を消すときは、ここと合わせて消す
  */
 export const LEGACY_FILE_NAMES: Partial<Record<ConventionFile, string>> = {
-  cmd: 'command',
+  cmd: LEGACY_CMD_FILE,
 };
 
 /** ルーティングの対象外にするディレクトリ */
@@ -195,23 +175,4 @@ export async function scan(appDir: string): Promise<ScanResult> {
   await walk('', '');
   routes.sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0));
   return { routes, rootFiles, inherited, helpFiles, deprecatedFiles };
-}
-
-/**
- * あるディレクトリから見た、継承ファイルの並び。**近い順** (自分 → 親 → ...)。
- *
- * `error.tsx` はこの順に試す (近い順)。`layout.tsx` は逆順に包む (ADR 7)。
- */
-export function inheritedChain(
-  inherited: ScanResult['inherited'],
-  dir: string,
-  kind: InheritedFile
-): string[] {
-  const chain: string[] = [];
-  const segments = dir === '' ? [] : dir.split('/');
-  for (let depth = segments.length; depth >= 0; depth -= 1) {
-    const file = inherited.get(segments.slice(0, depth).join('/'))?.[kind];
-    if (file !== undefined) chain.push(file);
-  }
-  return chain;
 }
