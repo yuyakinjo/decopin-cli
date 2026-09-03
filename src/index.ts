@@ -75,9 +75,9 @@ export type {
   CompleteProps,
 } from './features/conventions/complete/runtime.ts';
 export type { ShellName } from './features/conventions/shell/runtime.ts';
-export { CliError } from './core/runtime/errors.ts';
+export { CliError, isCliError } from './core/runtime/errors.ts';
 export type { ErrorKind, ErrorProps } from './core/runtime/errors.ts';
-export { DeclarationError } from './core/errors.ts';
+export { DeclarationError, isDeclarationError } from './core/errors.ts';
 export type {
   ArgSpec,
   ArgvSpec,

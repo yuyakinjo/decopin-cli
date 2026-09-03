@@ -113,7 +113,7 @@ function runDev(argv: string[]): Promise<number> {
         );
       },
       onError: (error) => {
-        const message = error instanceof Error ? error.message : String(error);
+        const message = Error.isError(error) ? error.message : String(error);
         process.stderr.write(`[decopin] ${message}\n`);
       },
     });

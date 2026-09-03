@@ -229,7 +229,7 @@ export async function checkTsConfig(
     return [
       {
         message: `${path} could not be parsed`,
-        hint: error instanceof Error ? error.message : String(error),
+        hint: Error.isError(error) ? error.message : String(error),
       },
     ];
   }

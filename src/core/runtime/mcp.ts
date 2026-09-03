@@ -511,7 +511,7 @@ export async function serveMcp(
           ? error
           : new RpcError(
               -32603,
-              error instanceof Error ? error.message : String(error)
+              Error.isError(error) ? error.message : String(error)
             );
       respond({
         jsonrpc: '2.0',

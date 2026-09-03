@@ -100,7 +100,7 @@ export async function readStdin(
     parsed = JSON.parse(raw);
   } catch (error) {
     throw stdinError('stdin is not valid JSON', [
-      error instanceof Error ? error.message : String(error),
+      Error.isError(error) ? error.message : String(error),
     ]);
   }
 

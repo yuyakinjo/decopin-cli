@@ -29,6 +29,6 @@ export function evaluationProblem(
 ): EvaluationProblem {
   return {
     file,
-    message: error instanceof Error ? error.message : String(error),
+    message: Error.isError(error) ? error.message : String(error),
   };
 }

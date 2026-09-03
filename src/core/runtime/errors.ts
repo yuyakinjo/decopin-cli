@@ -29,11 +29,19 @@ export interface CliErrorOptions {
 }
 
 /**
+ * 出自ではなく印で見分ける (ADR 42)。
+ * `Symbol.for` はグローバルな登録簿から引くので、decopin-cli が
+ * node_modules に 2 つ入っても、realm が違っても同じ印になる。
+ */
+const CLI_ERROR = Symbol.for('decopin.CliError');
+
+/**
  * 実行時のエラー。`kind` と `exitCode` を持つ。
  * 検証の失敗のように理由が複数ある場合は `issues` に並べる
  */
 export class CliError extends Error {
   override readonly name = 'CliError';
+  readonly [CLI_ERROR] = true;
   readonly kind: ErrorKind;
   readonly exitCode: number;
   readonly issues: string[];
@@ -66,4 +74,12 @@ export function validationError(issues: string[]): CliError {
     exitCode: EXIT_CODE.usage,
     issues,
   });
+}
+
+/** {@link CliError} か。`instanceof` より広く当たる (ADR 42) */
+export function isCliError(value: unknown): value is CliError {
+  return (
+    Error.isError(value) &&
+    (value as { [CLI_ERROR]?: unknown })[CLI_ERROR] === true
+  );
 }

@@ -968,6 +968,38 @@ core が規約をディスパッチする以上、この 6 つは features を�
 とくに前 2 つは公開 API のクラスなので、重複させると利用者の `instanceof` が
 静かに false になる。
 
+## ADR 42: エラーの見分けは出自ではなく印で行う
+
+`instanceof` は「そのクラスが _どのファイルから来たか_」を問う。同じコードでも
+実体が 2 つあれば false になり、しかも**壊れ方が静かな false** になる。
+`toCliError()` が取り逃すと `kind` / `exitCode` / `issues` / `hints` を落として
+包み直すので、「使い方の誤りは exit 2」(ADR 30) が exit 1 に化ける。例外が
+飛んだわけでもログが出るわけでもないので、気付く手がかりが無い。
+
+**テストでは守れない**。テストは `CliError` を 1 回 import して投げる側と受ける側の
+両方に渡すため、2 つの実体が出会う配線を再現しない。契約テストは全部通ったまま
+本番だけが壊れる。バグがコードではなく**モジュールグラフ**にあるから。
+
+**そこで `Symbol.for` で印を付ける**。`Symbol.for('decopin.CliError')` は
+グローバルな登録簿から引くので、実体が 2 つあっても realm が違っても同じ
+シンボルになる。`isCliError()` / `isDeclarationError()` はこの印を見る。
+React が要素を `Symbol.for('react.element')` で見分けるのと同じ手口。
+
+**いつ 2 つになるか**: 利用者の `node_modules` に decopin-cli が 2 バージョン
+入るとき (decopin 製のライブラリを併用する等)。今日は起きないが、公開
+フレームワークとしては想定内で、起きたときに直すのは難しい部類のバグになる。
+印を付ける費用は 1 行なので、先に払っておく。
+
+**`instanceof` も引き続き動く**。クラスは残っているので、利用者の
+`catch (e) { if (e instanceof CliError) }` は壊れない。`isCliError()` は
+それより広く当たる版として公開する。
+
+**`Error.isError()` を使う** (Bun 1.4 / TS 7 で利用可)。`error instanceof Error`
+は `Object.create(Error.prototype)` に騙され、realm をまたぐと取り逃す。
+`Error.isError` は内部スロットを見るのでどちらも正しい。`Array.isArray` と
+同じ立ち位置。ただし**種類は区別しない**ので、`CliError` かどうかの判定は
+印と併用する。
+
 ---
 
 ## 未決 / 保留

@@ -408,6 +408,35 @@ const GUARDS: Record<number, Guard> = {
       return offenders;
     },
   },
+  42: {
+    kind: 'lint',
+    label: 'エラーの見分けは印で行う (instanceof に頼らない)',
+    check: async () => {
+      const offenders: string[] = [];
+      for (const [file, source] of srcSources) {
+        // 出自を問う判定。コピーや realm をまたぐと静かに false になる
+        for (const match of source.matchAll(
+          /\binstanceof\s+(CliError|DeclarationError|Error)\b/g
+        )) {
+          const name = match[1] as string;
+          const use = name === 'Error' ? 'Error.isError()' : `is${name}()`;
+          offenders.push(`${file}: instanceof ${name} (${use} を使う)`);
+        }
+      }
+      // 印そのものが外れていないか
+      const branded: [string, string][] = [
+        ['src/core/runtime/errors.ts', 'decopin.CliError'],
+        ['src/core/errors.ts', 'decopin.DeclarationError'],
+      ];
+      for (const [file, key] of branded) {
+        const source = srcSources.get(file) ?? '';
+        if (!source.includes(`Symbol.for('${key}')`)) {
+          offenders.push(`${file}: ${key} の印が無い`);
+        }
+      }
+      return offenders;
+    },
+  },
   26: {
     kind: 'test',
     label: 'パイプを壊さないことを全コマンドで掃いて確かめる',
