@@ -9,13 +9,11 @@ import { mkdir, mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
-import {
-  CONVENTION_FILES,
-  INHERITED_FILES,
-  ROOT_ONLY_FILES,
-  inheritedChain,
-  scan,
-} from '../../src/build/scanner.ts';
+import { scan } from '../../src/build/scanner.ts';
+import { CONVENTION_FILES } from '../../src/features/conventions/index.ts';
+import { inheritedChain } from '../../src/features/inherited/chain.ts';
+import { INHERITED_FILES } from '../../src/features/inherited/index.ts';
+import { ROOT_ONLY_FILES } from '../../src/features/root-only/index.ts';
 
 const dirs: string[] = [];
 
@@ -72,6 +70,28 @@ describe('置ける場所', () => {
       'layout',
       'middleware',
     ]);
+  });
+
+  test('各ファイル種別の実装入口をカテゴリ別の同名フォルダに置く', async () => {
+    const categories = [
+      ['conventions', CONVENTION_FILES],
+      ['root-only', ROOT_ONLY_FILES],
+      ['inherited', INHERITED_FILES],
+    ] as const;
+
+    for (const [category, files] of categories) {
+      for (const file of files) {
+        const path = join(
+          process.cwd(),
+          'src/features',
+          category,
+          file,
+          'definition.ts'
+        );
+        expect(await Bun.file(path).exists()).toBe(true);
+        expect((await import(path)).FILE_NAME).toBe(file);
+      }
+    }
   });
 });
 

@@ -6,8 +6,8 @@ import { describe, expect, test } from 'bun:test';
 import { CliError } from 'decopin-cli';
 import * as v from 'valibot';
 
-import type { StdinSpec } from '../../src/declaration/spec.ts';
-import { readStdin } from '../../src/runtime/stdin-reader.ts';
+import { readStdin } from '../../src/features/conventions/stdin/runtime.ts';
+import type { StdinSpec } from '../../src/features/conventions/stdin/spec.ts';
 
 /** パイプされている状態 */
 function piped(text: string) {

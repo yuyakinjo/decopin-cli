@@ -2,6 +2,7 @@ import { describe, expect, test } from 'bun:test';
 
 import { generateEntry, generateRoutes } from '../../src/build/codegen.ts';
 import type { Route } from '../../src/build/scanner.ts';
+import { createNotFoundChains } from '../../src/features/inherited/not-found/build.ts';
 
 const routes: Route[] = [
   {
@@ -145,6 +146,34 @@ describe('generateRoutes — error.tsx の連鎖', () => {
     expect(generateRoutes({ routes }, '.decopin')).toContain(
       'export const globalError = undefined;'
     );
+  });
+});
+
+describe('generateRoutes — not-found.tsx の連鎖', () => {
+  test('近い順に not-found.tsx を並べる', () => {
+    const notFoundChains = createNotFoundChains(
+      routes,
+      new Map([
+        ['user/create', { 'not-found': 'app/user/create/not-found.tsx' }],
+        ['user', { 'not-found': 'app/user/not-found.tsx' }],
+      ])
+    );
+    const code = generateRoutes(
+      {
+        routes,
+        notFoundChains,
+      },
+      '.decopin'
+    );
+    const notFounds = code.slice(code.indexOf('notFounds: ['));
+    expect(notFounds.indexOf('user/create/not-found.tsx')).toBeLessThan(
+      notFounds.indexOf('user/not-found.tsx')
+    );
+  });
+
+  test('not-found.tsx が無いルートには notFounds を書かない', () => {
+    const code = generateRoutes({ routes }, '.decopin');
+    expect(code).not.toContain('notFounds:');
   });
 });
 

@@ -1,28 +1,23 @@
 /**
- * `argv.tsx` をビルド時に評価して宣言を取り出す (ADR 5 の evaluate)。
+ * 規約ファイルをビルド時に評価して宣言を取り出す (ADR 5 の evaluate)。
  *
  * AST 解析ではなく「import して呼ぶ」方式なので、`_` 配下の共有
- * コンポーネントもそのまま展開される (ADR 9)。その代わり argv.tsx は
+ * コンポーネントもそのまま展開される (ADR 9)。その代わり宣言ファイルは
  * 純粋でなければならない (test/contract/argv-parsing.test.ts)。
  */
-import { resolve } from 'node:path';
-
-import {
-  parseArgvSpec,
-  parseEnvSpec,
-  parseOutputSpec,
-  parseStdinSpec,
-} from '../declaration/parse.ts';
-import { resolveHosts } from '../declaration/resolve.ts';
-import { EMPTY_ARGV_SPEC } from '../declaration/spec.ts';
-import type {
-  ArgvSpec,
-  EnvSpec,
-  OutputSpec,
-  StdinSpec,
-} from '../declaration/spec.ts';
-import type { Renderable } from '../jsx/types.ts';
+import { evaluateArgv } from '../features/conventions/argv/evaluate.ts';
+import type { ArgvSpec } from '../features/conventions/argv/spec.ts';
+import { evaluateOutput } from '../features/conventions/output/evaluate.ts';
+import type { OutputSpec } from '../features/conventions/output/spec.ts';
+import { evaluateStdin } from '../features/conventions/stdin/evaluate.ts';
+import type { StdinSpec } from '../features/conventions/stdin/spec.ts';
+import { evaluateEnv } from '../features/root-only/env/evaluate.ts';
+import type { EnvEvaluation } from '../features/root-only/env/evaluate.ts';
+import type { EvaluationProblem } from './evaluate-declaration.ts';
 import type { Route } from './scanner.ts';
+
+export { evaluateEnv };
+export type { EnvEvaluation, EvaluationProblem };
 
 export interface EvaluatedRoute {
   route: Route;
@@ -33,49 +28,9 @@ export interface EvaluatedRoute {
   output?: OutputSpec;
 }
 
-export interface EvaluationProblem {
-  /** どのファイルの話か */
-  file: string;
-  message: string;
-}
-
-export interface EnvEvaluation {
-  spec?: EnvSpec;
-  problem?: EvaluationProblem;
-}
-
 export interface EvaluateResult {
   evaluated: EvaluatedRoute[];
   problems: EvaluationProblem[];
-}
-
-/** 宣言ファイルを import して呼び、組み込みノードの並びにする */
-async function loadHosts(file: string, expected: string) {
-  // 絶対パスにしないと、呼び出し元の位置によって解決が変わる
-  const loaded = (await import(resolve(file))) as { default?: unknown };
-  const declare = loaded.default;
-  if (typeof declare !== 'function') {
-    throw new Error(
-      `must default-export a function that returns <${expected}>`
-    );
-  }
-  return resolveHosts((declare as () => Renderable)());
-}
-
-function messageOf(error: unknown): string {
-  return error instanceof Error ? error.message : String(error);
-}
-
-/** `app/env.tsx` を評価する (型生成と実行時の両方で同じ宣言を使う) */
-export async function evaluateEnv(
-  file: string | undefined
-): Promise<EnvEvaluation> {
-  if (file === undefined) return {};
-  try {
-    return { spec: parseEnvSpec(await loadHosts(file, 'Env')) };
-  } catch (error) {
-    return { problem: { file, message: messageOf(error) } };
-  }
 }
 
 /**
@@ -87,42 +42,23 @@ export async function evaluateRoutes(routes: Route[]): Promise<EvaluateResult> {
   const problems: EvaluationProblem[] = [];
 
   for (const route of routes) {
-    const argvFile = route.files.argv;
-    const stdinFile = route.files.stdin;
-    let failed = false;
+    const argv = await evaluateArgv(route.files.argv);
+    const stdin = await evaluateStdin(route.files.stdin);
+    const output = await evaluateOutput(route.files.output);
+    const routeProblems = [argv.problem, stdin.problem, output.problem];
 
-    let spec = EMPTY_ARGV_SPEC;
-    if (argvFile !== undefined) {
-      try {
-        spec = parseArgvSpec(await loadHosts(argvFile, 'Argv'));
-      } catch (error) {
-        problems.push({ file: argvFile, message: messageOf(error) });
-        failed = true;
-      }
+    for (const problem of routeProblems) {
+      if (problem !== undefined) problems.push(problem);
     }
 
-    let stdin: StdinSpec | undefined;
-    if (stdinFile !== undefined) {
-      try {
-        stdin = parseStdinSpec(await loadHosts(stdinFile, 'Stdin'));
-      } catch (error) {
-        problems.push({ file: stdinFile, message: messageOf(error) });
-        failed = true;
-      }
+    if (routeProblems.every((problem) => problem === undefined)) {
+      evaluated.push({
+        route,
+        spec: argv.spec,
+        stdin: stdin.spec,
+        output: output.spec,
+      });
     }
-
-    let output: OutputSpec | undefined;
-    const outputFile = route.files.output;
-    if (outputFile !== undefined) {
-      try {
-        output = parseOutputSpec(await loadHosts(outputFile, 'Output'));
-      } catch (error) {
-        problems.push({ file: outputFile, message: messageOf(error) });
-        failed = true;
-      }
-    }
-
-    if (!failed) evaluated.push({ route, spec, stdin, output });
   }
 
   return { evaluated, problems };

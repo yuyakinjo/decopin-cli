@@ -12,7 +12,7 @@ import {
   completionFileName,
   generateZshCompletion,
   resolveBinaryName,
-} from '../../src/build/completions.ts';
+} from '../../src/features/conventions/complete/build.ts';
 
 describe('zsh 補完シム', () => {
   const shim = generateZshCompletion('my-cli');

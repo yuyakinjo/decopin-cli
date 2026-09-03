@@ -6,7 +6,7 @@
  */
 import { describe, expect, test } from 'bun:test';
 
-import { findNotSerializable } from '../../src/runtime/serializable.ts';
+import { findNotSerializable } from '../../src/features/conventions/data/serializable.ts';
 
 /** 問題なしと判断されるべきもの */
 const fine: [string, unknown][] = [

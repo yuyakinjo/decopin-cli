@@ -5,22 +5,41 @@ import { join } from 'node:path';
 
 import type { GenerateResult } from '../../src/build/index.ts';
 import { watchApp } from '../../src/build/watch.ts';
-import type { Watcher } from '../../src/build/watch.ts';
+import type { WatchBackend, Watcher } from '../../src/build/watch.ts';
 
-const APP = 'test/fixtures/watch-app';
-const ADDED = join(APP, 'added');
+const NOOP = 'export default function Command() {\n  return null;\n}\n';
 
 let watcher: Watcher | undefined;
-let workDir: string | undefined;
+let workspace: string | undefined;
 
 afterEach(async () => {
   watcher?.close();
   watcher = undefined;
-  await rm(ADDED, { recursive: true, force: true });
-  if (workDir !== undefined)
-    await rm(workDir, { recursive: true, force: true });
-  workDir = undefined;
+  if (workspace !== undefined)
+    await rm(workspace, { recursive: true, force: true });
+  workspace = undefined;
 });
+
+/** OS のファイル通知に依存せず、変更通知をテストから送る。 */
+function manualWatch(): { backend: WatchBackend; change: () => void } {
+  let onChange: (() => void) | undefined;
+  return {
+    backend: {
+      watch: (_directory, listener) => {
+        onChange = listener;
+        return {
+          close: () => {
+            onChange = undefined;
+          },
+        };
+      },
+    },
+    change: () => {
+      if (onChange === undefined) throw new Error('watcher is not active');
+      onChange();
+    },
+  };
+}
 
 /** 条件が満たされるまで短い間隔で待つ (watch は非同期なので) */
 async function waitFor<T>(
@@ -38,27 +57,34 @@ async function waitFor<T>(
 
 describe('watchApp', () => {
   test('起動時に一度生成し、app/ の変化で作り直す', async () => {
-    workDir = await mkdtemp(join(tmpdir(), 'decopin-watch-'));
+    workspace = await mkdtemp(join(tmpdir(), 'decopin-watch-'));
+    const appDir = join(workspace, 'app');
+    const workDir = join(workspace, '.decopin');
+    await mkdir(join(appDir, 'probe'), { recursive: true });
+    await writeFile(join(appDir, 'probe/cmd.tsx'), NOOP);
     const results: GenerateResult[] = [];
+    const controlled = manualWatch();
 
-    watcher = watchApp({
-      appDir: APP,
-      workDir,
-      program: 'cli',
-      debounceMs: 10,
-      onGenerate: (result) => results.push(result),
-    });
+    watcher = watchApp(
+      {
+        appDir,
+        workDir,
+        program: 'cli',
+        debounceMs: 10,
+        onGenerate: (result) => results.push(result),
+      },
+      controlled.backend
+    );
 
     const first = await waitFor(() => results[0]);
     expect(first.routes.map((route) => route.name)).toEqual(['probe']);
     expect(await Bun.file(first.files.types).text()).toContain('"probe"');
 
     // コマンドを増やすと、生成物にも増える
-    await mkdir(ADDED, { recursive: true });
-    await writeFile(
-      join(ADDED, 'cmd.tsx'),
-      'export default function Command() {\n  return null;\n}\n'
-    );
+    const added = join(appDir, 'added');
+    await mkdir(added, { recursive: true });
+    await writeFile(join(added, 'cmd.tsx'), NOOP);
+    controlled.change();
 
     const updated = await waitFor(() =>
       results.find((result) =>
@@ -73,22 +99,33 @@ describe('watchApp', () => {
   }, 15_000);
 
   test('宣言の誤りは onError に渡し、watch は続ける', async () => {
-    workDir = await mkdtemp(join(tmpdir(), 'decopin-watch-'));
+    workspace = await mkdtemp(join(tmpdir(), 'decopin-watch-'));
+    const workDir = join(workspace, '.decopin');
     const errors: unknown[] = [];
     const results: GenerateResult[] = [];
+    const controlled = manualWatch();
 
-    watcher = watchApp({
-      appDir: 'test/fixtures/eval-app',
-      workDir,
-      program: 'cli',
-      debounceMs: 10,
-      onGenerate: (result) => results.push(result),
-      onError: (error) => errors.push(error),
-    });
+    watcher = watchApp(
+      {
+        appDir: 'test/fixtures/eval-app',
+        workDir,
+        program: 'cli',
+        debounceMs: 10,
+        onGenerate: (result) => results.push(result),
+        onError: (error) => errors.push(error),
+      },
+      controlled.backend
+    );
 
     const error = await waitFor(() => errors[0]);
     expect(String(error)).toContain('Invalid declarations');
     expect(String(error)).toContain('bad/argv.tsx');
+    expect(results).toEqual([]);
+
+    // 失敗後も監視を打ち切らず、次の変更を評価する。
+    controlled.change();
+    const nextError = await waitFor(() => errors[1]);
+    expect(String(nextError)).toContain('Invalid declarations');
     expect(results).toEqual([]);
   }, 15_000);
 });

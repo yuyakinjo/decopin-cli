@@ -2,8 +2,12 @@ import { describe, expect, test } from 'bun:test';
 
 import { render } from 'decopin-cli';
 
-import type { ArgvSpec, StdinSpec } from '../../src/declaration/spec.ts';
-import { CommandList, Help } from '../../src/runtime/help.tsx';
+import type { ArgvSpec } from '../../src/features/conventions/argv/spec.ts';
+import {
+  CommandList,
+  Help,
+} from '../../src/features/conventions/help/runtime.tsx';
+import type { StdinSpec } from '../../src/features/conventions/stdin/spec.ts';
 
 const plain = { color: { stdout: 0 as const, stderr: 0 as const } };
 

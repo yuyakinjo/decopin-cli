@@ -2,6 +2,16 @@
 import { mkdir } from 'node:fs/promises';
 import { join, relative } from 'node:path';
 
+import {
+  completionFileName,
+  generateZshCompletion,
+  resolveBinaryName,
+} from '../features/conventions/complete/build.ts';
+import { createErrorChains } from '../features/inherited/error/build.ts';
+import { createLayoutChains } from '../features/inherited/layout/build.ts';
+import { createMiddlewareChains } from '../features/inherited/middleware/build.ts';
+import { createNotFoundChains } from '../features/inherited/not-found/build.ts';
+import { evaluateEnv } from '../features/root-only/env/evaluate.ts';
 import { bundle } from './bundler.ts';
 import {
   checkDeprecations,
@@ -12,16 +22,11 @@ import {
 } from './checker.ts';
 import type { Warning } from './checker.ts';
 import { generateEntry, generateRoutes } from './codegen.ts';
-import {
-  completionFileName,
-  generateZshCompletion,
-  resolveBinaryName,
-} from './completions.ts';
 import { acceptsUnknown, analyzeEffects } from './effects.ts';
 import type { EffectReport } from './effects.ts';
-import { evaluateEnv, evaluateRoutes } from './evaluator.ts';
+import { evaluateRoutes } from './evaluator.ts';
 import type { EvaluatedRoute } from './evaluator.ts';
-import { inheritedChain, scan } from './scanner.ts';
+import { scan } from './scanner.ts';
 import type { Route } from './scanner.ts';
 import { generateTypes } from './type-emitter.ts';
 
@@ -146,20 +151,10 @@ export async function generate(
     types: join(workDir, 'types.d.ts'),
   };
 
-  // error.tsx / layout.tsx / middleware.tsx は上位ディレクトリから継承される
-  const chain = (kind: 'error' | 'not-found' | 'layout' | 'middleware') =>
-    new Map<string, string[]>(
-      routes.map((route) => {
-        const files = inheritedChain(inherited, route.dir, kind);
-        // error は近い順に試す。layout / middleware は外側から包む
-        const nearestFirst = kind === 'error' || kind === 'not-found';
-        return [route.name, nearestFirst ? files : [...files].reverse()];
-      })
-    );
-  const errorChains = chain('error');
-  const notFoundChains = chain('not-found');
-  const layoutChains = chain('layout');
-  const middlewareChains = chain('middleware');
+  const errorChains = createErrorChains(routes, inherited);
+  const notFoundChains = createNotFoundChains(routes, inherited);
+  const layoutChains = createLayoutChains(routes, inherited);
+  const middlewareChains = createMiddlewareChains(routes, inherited);
 
   // 副作用は「そのコマンドが読み込むもの全部」から数える (ADR 32)。
   // ファイルごとの解析は使い回すので、コマンドが増えても歩き直さない

@@ -17,8 +17,9 @@ import {
 } from 'decopin-cli';
 import type { RenderInput } from 'decopin-cli';
 
-import { parseArgvSpec, parseStdinSpec } from '../../src/declaration/parse.ts';
 import { resolveHosts } from '../../src/declaration/resolve.ts';
+import { parseArgvSpec } from '../../src/features/conventions/argv/parse.ts';
+import { parseStdinSpec } from '../../src/features/conventions/stdin/parse.ts';
 
 async function argv(node: RenderInput) {
   return parseArgvSpec(await resolveHosts(node));

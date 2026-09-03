@@ -371,14 +371,17 @@ describe('端末の高さへの切り詰め (ADR 40)', () => {
   ): Promise<void> {
     const stream = process.stderr as unknown as { rows?: number };
     const original = Object.getOwnPropertyDescriptor(process.stderr, 'rows');
+    let current = rows;
     const set = (next: number): void => {
-      Object.defineProperty(process.stderr, 'rows', {
-        value: next,
-        configurable: true,
-        writable: true,
-      });
+      current = next;
     };
-    set(rows);
+    Object.defineProperty(process.stderr, 'rows', {
+      configurable: true,
+      get: () => current,
+      // Bun は実 TTY の SIGWINCH で rows を実端末値へ同期する。
+      // テスト中はその代入を受けず、set() で指定した値だけを返す。
+      set: () => {},
+    });
     try {
       await body(set);
     } finally {

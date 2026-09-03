@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 
-import type { ArgvSpec } from '../../src/declaration/spec.ts';
-import { tokenize } from '../../src/validation/tokens.ts';
+import type { ArgvSpec } from '../../src/features/conventions/argv/spec.ts';
+import { tokenize } from '../../src/features/conventions/argv/tokens.ts';
 
 const spec: ArgvSpec = {
   args: [],
