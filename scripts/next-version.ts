@@ -65,9 +65,9 @@ if (import.meta.main) {
       manifest.replace(/"version": "[^"]*"/, `"version": "${version}"`)
     );
     // サンプルはこのリポジトリ自身の CLI なので合わせる
-    const sample = await Bun.file('app/version.tsx').text();
+    const sample = await Bun.file('demo/app/version.tsx').text();
     await Bun.write(
-      'app/version.tsx',
+      'demo/app/version.tsx',
       sample.replace(/version="[^"]*"/, `version="${version}"`)
     );
   }

@@ -150,8 +150,8 @@ out/
 examples/
 
 # App directory compiled files
-app/**/*.js
-app/**/*.js.map
+demo/app/**/*.js
+demo/app/**/*.js.map
 
 # Test coverage
 coverage/
@@ -172,7 +172,7 @@ test-app-version/
 .decopin-test-*/
 .decopin-lazy-*/
 .decopin-probe/
-# npm 公開物の出力先。ルート直下だけ (app/publish/ のようなコマンド名を巻き込まない)
+# npm 公開物の出力先。ルート直下だけ (demo/app/publish/ のようなコマンド名を巻き込まない)
 /publish/
 lib/
 .readme-check-*/

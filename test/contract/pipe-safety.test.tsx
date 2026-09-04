@@ -2,7 +2,7 @@
  * パイプを壊さないことの検査 (ADR 26)。
  *
  * `cli stats | grep README` のような使い方は、CLI が守るべき一番外側の
- * 約束なのに、機能を足すたびに壊しうる。ここは **app/ の全コマンドを掃いて**
+ * 約束なのに、機能を足すたびに壊しうる。ここは **demo/app/ の全コマンドを掃いて**
  * 不変条件を確かめるので、個別に「今回はパイプを壊していないか」を
  * 思い出す必要がない。
  *
@@ -11,7 +11,7 @@
  *   2. stdout に画面制御が出ない (カーソル移動・消去・表示切替は stderr の仕事)
  *   3. 非 TTY の stdout に ANSI が一切出ない
  *   4. stdout は改行で終わる (空なら空)
- *   5. app/ の全コマンドがこの表にある
+ *   5. demo/app/ の全コマンドがこの表にある
  */
 import { beforeAll, describe, expect, test } from 'bun:test';
 import { mkdtemp, rm } from 'node:fs/promises';
@@ -88,7 +88,7 @@ let workspace: string;
 
 beforeAll(async () => {
   workspace = await mkdtemp(join(tmpdir(), 'decopin-pipe-'));
-  await build({ appDir: 'app', workDir: '.decopin', outDir: workspace });
+  await build({ appDir: 'demo/app', workDir: '.decopin', outDir: workspace });
   const generated = (await import('../../.decopin/routes.ts')) as {
     routes: RouteTable;
   };
@@ -118,7 +118,7 @@ async function invoke(
 const names = Object.keys(CASES) as (keyof typeof CASES)[];
 
 describe('パイプを壊さない', () => {
-  test('app/ の全コマンドがこの表にある', async () => {
+  test('demo/app/ の全コマンドがこの表にある', async () => {
     const covered = new Set(
       names.map((name) => (CASES[name] as { argv: string[] }).argv.join('/'))
     );

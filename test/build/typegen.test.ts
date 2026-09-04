@@ -35,11 +35,11 @@ async function typecheck(project?: string) {
 }
 
 beforeAll(async () => {
-  await generate({ appDir: 'app', workDir: '.decopin' });
+  await generate({ appDir: 'demo/app', workDir: '.decopin' });
 });
 
 describe('生成された型', () => {
-  test('app/ 全体が生成された型で型検査を通る', async () => {
+  test('demo/app/ 全体が生成された型で型検査を通る', async () => {
     const result = await typecheck();
     expect(result.output).toBe('');
     expect(result.code).toBe(0);

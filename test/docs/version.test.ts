@@ -96,7 +96,7 @@ describe('形', () => {
     const manifest = (await Bun.file('package.json').json()) as {
       version: string;
     };
-    const sample = await Bun.file('app/version.tsx').text();
+    const sample = await Bun.file('demo/app/version.tsx').text();
     expect(sample).toContain(`version="${manifest.version}"`);
   });
 });

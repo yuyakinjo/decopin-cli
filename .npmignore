@@ -39,7 +39,7 @@ yarn-error.log*
 # Documentation development
 docs/
 examples/
-app/
+demo/
 
 # OS generated files
 .DS_Store
