@@ -1,16 +1,12 @@
 # decopin-cli
 
+[![npm version](https://img.shields.io/npm/v/decopin-cli)](https://www.npmjs.com/package/decopin-cli)
+[![License](https://img.shields.io/npm/l/decopin-cli)](https://www.npmjs.com/package/decopin-cli)
+
+## What is decopin-cli?
+
 Build CLIs the way Next.js builds web apps: file conventions, JSX output, and
 types that come from your declarations. TypeScript + Bun.
-
-The four channels of a shell map one-to-one onto file names.
-
-| File        | What it is in the shell | Required |
-| ----------- | ----------------------- | -------- |
-| `cmd.tsx`   | stdout (fd 1)           | yes      |
-| `argv.tsx`  | command line arguments  | no       |
-| `stdin.tsx` | standard input (fd 0)   | no       |
-| `error.tsx` | stderr (fd 2)           | no       |
 
 Output is JSX. There is no React — decopin ships its own small renderer.
 
@@ -40,24 +36,55 @@ hello, world
 **Bun is required.** The library calls `Bun.build` / `Bun.stdin`, and the CLI it
 generates runs under `#!/usr/bin/env bun`. It does not run on Node.
 
+The quickest way is `init`, which writes everything below into a new folder
+(`package.json`, `tsconfig.json`, `.gitignore`, `app/hello/`) and adds the
+dependencies:
+
+```sh
+bunx decopin-cli init my-cli   # or `init` alone for the current folder
+cd my-cli
+bun run build
+./dist/index.js hello          # hello, world
+```
+
+Existing files are never overwritten, so it is safe to run inside a project
+you already have. Pass `--no-install` to skip `bun add`.
+
+To set things up by hand instead:
+
 ```sh
 bun add decopin-cli
+bun add -d @types/bun
 ```
 
 Your `tsconfig.json` needs the JSX settings. **Without them TypeScript and Bun
-both look for React** and the build fails with a confusing error (`decopin build`
-warns you about this).
+both look for React** and the build fails with `Could not resolve:
+react/jsx-runtime` (`decopin build` / `decopin dev` warn you about these two
+settings, unless your tsconfig uses `extends`).
 
 ```json
 {
   "compilerOptions": {
     "jsx": "react-jsx",
     "jsxImportSource": "decopin-cli/jsx",
+    "moduleResolution": "bundler",
+    "noEmit": true,
     "allowImportingTsExtensions": true
   },
   "include": ["app/**/*", ".decopin/types.d.ts"]
 }
 ```
+
+- `jsx` / `jsxImportSource` — required. `decopin build` does not pass JSX
+  options to `Bun.build`; the tsconfig is the only place they come from.
+- `moduleResolution: "bundler"` (or `node16` / `nodenext`) — required to
+  resolve the `decopin-cli/jsx/jsx-runtime` subpath export.
+- `include: [".decopin/types.d.ts"]` — not required for the build, but without
+  it the generated `Routes` augmentation is never loaded, so command names are
+  not checked and `args` / `options` fall back to `Record<string, unknown>`.
+- `allowImportingTsExtensions` — only needed if you import with `.ts` / `.tsx`
+  extensions inside `app/` (as the demo does). TypeScript requires `noEmit`
+  alongside it.
 
 ```sh
 bunx decopin build   # scan app/ and produce dist/index.js
