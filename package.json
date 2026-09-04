@@ -1,6 +1,6 @@
 {
   "name": "decopin-cli",
-  "version": "2026.903.717",
+  "version": "2026.904.634",
   "description": "Next.js-like rule-based CLI builder for TypeScript / Bun",
   "keywords": [
     "bun",
