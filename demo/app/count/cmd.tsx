@@ -1,6 +1,6 @@
-import { Line, type CommandProps } from 'decopin-cli';
+import { Line, type CmdProps } from 'decopin-cli';
 
-export default function Command({ stdin, options }: CommandProps<'count'>) {
+export default function Command({ stdin, options }: CmdProps<'count'>) {
   const kept = options['non-empty']
     ? stdin.filter((line) => line.trim() !== '')
     : stdin;

@@ -1,9 +1,9 @@
 /**
  * `decopin dev --annotate` (ADR 44)。cmd.tsx の default export の props に
- * `CommandProps<'<name>'>` を補う。
+ * `CmdProps<'<name>'>` を補う。
  *
  * 型注釈が無い `export default function Command(props)` を見つけたら
- * `Command(props: CommandProps<'hello'>)` に書き換え、import が無ければ足す。
+ * `Command(props: CmdProps<'hello'>)` に書き換え、import が無ければ足す。
  * 既に何らかの型注釈が付いていれば触らない (手書きの型も尊重する)。
  *
  * TypeScript の AST は使わず、文字列やコメントを空白にした同じ長さの view で
@@ -338,7 +338,7 @@ function findDecopinImport(
   return undefined;
 }
 
-/** `CommandProps as Props` も含め、import 済みならローカル名を返す */
+/** `CmdProps as Props` も含め、import 済みならローカル名を返す */
 function commandPropsLocalName(names: string): string | undefined {
   const clean = names
     .replace(/\/\*[\s\S]*?\*\//g, ' ')
@@ -348,19 +348,19 @@ function commandPropsLocalName(names: string): string | undefined {
       /^(?:type\s+)?([A-Za-z_$][\w$]*)(?:\s+as\s+([A-Za-z_$][\w$]*))?$/.exec(
         part.trim()
       );
-    if (match?.[1] === 'CommandProps') return match[2] ?? 'CommandProps';
+    if (match?.[1] === 'CmdProps') return match[2] ?? 'CmdProps';
   }
   return undefined;
 }
 
 /** 既存のローカル binding と衝突しない import 名を選ぶ */
-function availableCommandPropsName(view: string): string {
+function availableCmdPropsName(view: string): string {
   const isUsed = (name: string): boolean =>
     new RegExp(`\\b${name}\\b`).test(view);
-  if (!isUsed('CommandProps')) return 'CommandProps';
-  if (!isUsed('DecopinCommandProps')) return 'DecopinCommandProps';
+  if (!isUsed('CmdProps')) return 'CmdProps';
+  if (!isUsed('DecopinCmdProps')) return 'DecopinCmdProps';
   for (let suffix = 2; ; suffix++) {
-    const candidate = `DecopinCommandProps${suffix}`;
+    const candidate = `DecopinCmdProps${suffix}`;
     if (!isUsed(candidate)) return candidate;
   }
 }
@@ -378,16 +378,14 @@ function prependImport(source: string, statement: string): string {
   return source.slice(0, bom) + statement + source.slice(bom);
 }
 
-/** `import { A, B } from 'decopin-cli'` に `type CommandProps` を足す */
+/** `import { A, B } from 'decopin-cli'` に `type CmdProps` を足す */
 function ensureImport(
   source: string,
   quote: string,
   localName: string
 ): string {
   const imported =
-    localName === 'CommandProps'
-      ? 'CommandProps'
-      : `CommandProps as ${localName}`;
+    localName === 'CmdProps' ? 'CmdProps' : `CmdProps as ${localName}`;
   const standalone = `import { type ${imported} } from ${quote}decopin-cli${quote};\n`;
   const found = findDecopinImport(source);
   if (found === undefined) return prependImport(source, standalone);
@@ -451,9 +449,9 @@ export function annotateCommandSource(
   const quote = foundImport?.quote ?? "'";
   const typeName =
     foundImport === undefined
-      ? availableCommandPropsName(view)
+      ? availableCmdPropsName(view)
       : (commandPropsLocalName(foundImport.names) ??
-        availableCommandPropsName(view));
+        availableCmdPropsName(view));
   const trailing = params.length - params.trimEnd().length;
   const insertAt = closeIndex - trailing;
   const annotation = `: ${typeName}<${stringLiteral(routeName, quote)}>`;

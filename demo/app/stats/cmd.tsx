@@ -1,7 +1,7 @@
-import { KeyValue, Line, List, Text, type CommandProps } from 'decopin-cli';
+import { KeyValue, Line, List, Text, type CmdProps } from 'decopin-cli';
 
 /** The view only formats what `data.tsx` produced (ADR 25) */
-export default function Command({ data }: CommandProps<'stats'>) {
+export default function Command({ data }: CmdProps<'stats'>) {
   return (
     <>
       <Line>

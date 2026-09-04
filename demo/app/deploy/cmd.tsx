@@ -1,4 +1,4 @@
-import { choose, help, Line, Success, type CommandProps } from 'decopin-cli';
+import { choose, help, Line, Success, type CmdProps } from 'decopin-cli';
 
 const TARGETS = ['web', 'api', 'worker'] as const;
 
@@ -6,10 +6,7 @@ const TARGETS = ['web', 'api', 'worker'] as const;
  * Without a target: in a terminal, choose() asks (ADR 36); anywhere else
  * (a pipe, an agent) help() shows the usage instead (ADR 30)
  */
-export default async function Command({
-  args,
-  options,
-}: CommandProps<'deploy'>) {
+export default async function Command({ args, options }: CmdProps<'deploy'>) {
   let target = args.target;
   if (target === undefined && !options.all) {
     try {

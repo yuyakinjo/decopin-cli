@@ -1,4 +1,4 @@
-import type { CommandProps } from 'decopin-cli';
+import type { CmdProps } from 'decopin-cli';
 
 /** 行き先の表。cwd からの相対パス */
 const PLACES = {
@@ -8,6 +8,6 @@ const PLACES = {
   tests: 'test',
 } as const;
 
-export default function Data({ args }: CommandProps<'go'>) {
+export default function Data({ args }: CmdProps<'go'>) {
   return { place: args.place, path: PLACES[args.place] };
 }

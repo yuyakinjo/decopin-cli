@@ -150,7 +150,7 @@ describe('README のコードブロック', () => {
       JSON.stringify({
         extends: '../tsconfig.json',
         compilerOptions: { noEmit: true, types: ['bun'] },
-        // 生成された型を読ませる (CommandProps<'hello'> を解決するため)
+        // 生成された型を読ませる (CmdProps<'hello'> を解決するため)
         include: ['*.tsx', '../.decopin/types.d.ts'],
         exclude: [],
       })

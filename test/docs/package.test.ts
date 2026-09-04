@@ -81,7 +81,7 @@ describe('公開するパッケージ', () => {
 
   test('生成された型の受け皿が公開されている', async () => {
     const types = await Bun.file(`${OUT}/lib/index.d.ts`).text();
-    expect(types).toContain('CommandProps');
+    expect(types).toContain('CmdProps');
     expect(types).toContain('Routes');
   });
 });

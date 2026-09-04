@@ -141,11 +141,11 @@ export type {
 
 export type {
   CommandBase,
-  CommandProps,
+  CmdProps,
   RouteName,
   Routes,
   RouteShape,
-  UntypedCommandProps,
+  UntypedCmdProps,
 } from './features/conventions/cmd/types.ts';
 export type { EnvVars } from './features/root-only/env/types.ts';
 

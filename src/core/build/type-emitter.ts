@@ -1,7 +1,7 @@
 /**
  * 宣言から `.decopin/types.d.ts` を書く (ADR 9 の emit)。
  *
- * `cmd.tsx` は `CommandProps<'hello'>` でこの型を引く。
+ * `cmd.tsx` は `CmdProps<'hello'>` でこの型を引く。
  * JSX 式は型引数を運べない (ADR 9) ので、型はここを通してしか届かない。
  */
 import type { ArgvSpec } from '../../features/conventions/argv/spec.ts';

@@ -1,6 +1,6 @@
-import { Line, Text, type CommandProps } from 'decopin-cli';
+import { Line, Text, type CmdProps } from 'decopin-cli';
 
-export default function Command({ stdin }: CommandProps<'upper'>) {
+export default function Command({ stdin }: CmdProps<'upper'>) {
   if (stdin === undefined) {
     return (
       <Line>

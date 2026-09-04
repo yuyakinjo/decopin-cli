@@ -12,9 +12,9 @@ Output is JSX. There is no React — decopin ships its own small renderer.
 
 ```tsx
 // app/hello/cmd.tsx
-import { Line, Text, type CommandProps } from 'decopin-cli';
+import { Line, Text, type CmdProps } from 'decopin-cli';
 
-export default function Command({ args, options }: CommandProps<'hello'>) {
+export default function Command({ args, options }: CmdProps<'hello'>) {
   return (
     <Line>
       <Text bold color="green">
@@ -93,7 +93,7 @@ bunx decopin dev     # watch app/ and rebuild types + dist/index.js on every sav
 
 `dev --annotate` also fills in the props type for you: a `cmd.tsx` whose
 default export has no annotation, such as `function Command(props)`, is
-rewritten to `function Command(props: CommandProps<'hello'>)` (and the import
+rewritten to `function Command(props: CmdProps<'hello'>)` (and the import
 is added) right after the types are generated. Files that already annotate
 their props, with the generated type or a hand-written one, are left alone.
 `init` puts this flag in the `dev` script.
@@ -178,9 +178,9 @@ different input and are not interchangeable.
 The declaration is where your types come from.
 
 ```tsx
-import type { CommandProps } from 'decopin-cli';
+import type { CmdProps } from 'decopin-cli';
 
-export default function Command({ args, options }: CommandProps<'hello'>) {
+export default function Command({ args, options }: CmdProps<'hello'>) {
   args.name; // string
   options.times; // number
   options.style; // "plain" | "bold" | "rainbow"
@@ -215,9 +215,9 @@ TypeScript's own inference.
 
 ```tsx
 // app/stats/data.tsx
-import type { CommandProps } from 'decopin-cli';
+import type { CmdProps } from 'decopin-cli';
 
-export default function Data({ options }: CommandProps<'stats'>) {
+export default function Data({ options }: CmdProps<'stats'>) {
   const files = ['README.md', 'package.json'];
   return { files, total: files.length };
 }
@@ -225,9 +225,9 @@ export default function Data({ options }: CommandProps<'stats'>) {
 
 ```tsx
 // app/stats/cmd.tsx
-import { KeyValue, List, type CommandProps } from 'decopin-cli';
+import { KeyValue, List, type CmdProps } from 'decopin-cli';
 
-export default function Command({ data }: CommandProps<'stats'>) {
+export default function Command({ data }: CmdProps<'stats'>) {
   // data.files is string[], data.total is number
   return (
     <>
@@ -363,11 +363,11 @@ works out the suggestion for you:
 
 ```tsx
 // app/user/show/data.tsx
-import { notFound, type CommandProps } from 'decopin-cli';
+import { notFound, type CmdProps } from 'decopin-cli';
 
 const USERS = ['alice', 'bob', 'carol'];
 
-export default function Data({ args }: CommandProps<'user/show'>) {
+export default function Data({ args }: CmdProps<'user/show'>) {
   if (!USERS.includes(args.name)) {
     notFound({ what: 'user', requested: args.name, available: USERS });
   }
@@ -416,9 +416,9 @@ misuse.
 
 ```tsx
 // app/deploy/cmd.tsx
-import { help, Success, type CommandProps } from 'decopin-cli';
+import { help, Success, type CmdProps } from 'decopin-cli';
 
-export default function Command({ args, options }: CommandProps<'deploy'>) {
+export default function Command({ args, options }: CmdProps<'deploy'>) {
   if (args.target === undefined && !options.all) {
     help({ message: 'give a target, or pass --all' });
   }
@@ -447,11 +447,11 @@ same command asks a person and instructs a machine:
 
 ```tsx
 // app/deploy/cmd.tsx
-import { choose, help, Success, type CommandProps } from 'decopin-cli';
+import { choose, help, Success, type CmdProps } from 'decopin-cli';
 
 const TARGETS = ['web', 'api', 'worker'] as const;
 
-export default async function Command({ args }: CommandProps<'deploy'>) {
+export default async function Command({ args }: CmdProps<'deploy'>) {
   let target = args.target;
   if (target === undefined) {
     try {
@@ -496,9 +496,9 @@ command that fixes it**:
 
 ```tsx
 // app/publish/data.tsx
-import { authRequired, missingTool, type CommandProps } from 'decopin-cli';
+import { authRequired, missingTool, type CmdProps } from 'decopin-cli';
 
-export default function Data({ env }: CommandProps<'publish'>) {
+export default function Data({ env }: CmdProps<'publish'>) {
   if (env.DECOPIN_TOKEN === undefined) {
     authRequired({ service: 'the registry', fix: 'export DECOPIN_TOKEN=…' });
   }
@@ -634,9 +634,9 @@ writes the shell code with the quoting done.
 
 ```tsx
 // app/go/shell.tsx — receives the same props as cmd.tsx
-import { Shell, type CommandProps } from 'decopin-cli';
+import { Shell, type CmdProps } from 'decopin-cli';
 
-export default function ShellChanges({ data }: CommandProps<'go'>) {
+export default function ShellChanges({ data }: CmdProps<'go'>) {
   return (
     <>
       <Shell.Cd to={data.path} />
@@ -852,9 +852,9 @@ it is the command's job:
 
 ```tsx
 // app/publish/data.tsx
-import type { CommandProps } from 'decopin-cli';
+import type { CmdProps } from 'decopin-cli';
 
-export default function Data({ dryRun }: CommandProps<'publish'>) {
+export default function Data({ dryRun }: CmdProps<'publish'>) {
   return { published: !dryRun, dryRun };
 }
 ```

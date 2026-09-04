@@ -92,7 +92,7 @@ props 方式でも children 方式でも同じなので、**JSX で型を運ぶ�
 
 代わりに Next.js の typed routes と同じく、ビルド時に `.decopin/types.d.ts` を生成し、
 module augmentation で `Routes` / `EnvVars` を埋める。`cmd.tsx` は
-`CommandProps<'hello'>` で引く。
+`CmdProps<'hello'>` で引く。
 
 **代償**: `decopin dev` を回していないと型が古い。未生成のときは緩い型に
 フォールバックするが、「古い」と「未生成」は区別できていない。
@@ -1053,7 +1053,7 @@ test/runtime/handle-error.test.tsx が「包んでも場所が潰れない」こ
 
 ## ADR 44: `decopin dev --annotate` は cmd.tsx の props に生成型を書き足す
 
-`CommandProps<'hello'>` はコマンド名を手で書く。名前はディレクトリ名と同じで
+`CmdProps<'hello'>` はコマンド名を手で書く。名前はディレクトリ名と同じで
 情報としては冗長だし、`.decopin/types.d.ts` を生成する側はどの cmd.tsx が
 どの名前かを知っている。それでも「型注釈を書かないと `args` が `unknown` に
 落ちる」ことに気付くのはエディタの補完が効かなくなったときで、原因が
@@ -1061,7 +1061,7 @@ test/runtime/handle-error.test.tsx が「包んでも場所が潰れない」こ
 
 **そこで dev に `--annotate` を足す**。型を生成した直後に、default export が
 型注釈を持たない cmd.tsx (`function Command(props)`) を見つけたら、
-`props: CommandProps<'hello'>` と `import { type CommandProps }` を書き足す。
+`props: CmdProps<'hello'>` と `import { type CmdProps }` を書き足す。
 分割代入 (`{ args, options }`) も同じ扱いで、閉じ括弧の直後に入れる。
 
 **ユーザーのソースを書き換えるので、既定では動かさない**。build にも付けない。

@@ -1,7 +1,7 @@
-import { authRequired, missingTool, type CommandProps } from 'decopin-cli';
+import { authRequired, missingTool, type CmdProps } from 'decopin-cli';
 
 /** Prerequisites belong with the data, before anything is displayed (ADR 31) */
-export default function Data({ env, dryRun }: CommandProps<'publish'>) {
+export default function Data({ env, dryRun }: CmdProps<'publish'>) {
   if (env.DECOPIN_TOKEN === undefined) {
     authRequired({ service: 'the registry', fix: 'export DECOPIN_TOKEN=…' });
   }
