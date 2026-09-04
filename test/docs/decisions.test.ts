@@ -131,7 +131,8 @@ const GUARDS: Record<number, Guard> = {
   },
   3: {
     kind: 'lint',
-    label: 'app/ のファイル名が規約に含まれる (綴り違いは黙って無視されるため)',
+    label:
+      'demo/app/ のファイル名が規約に含まれる (綴り違いは黙って無視されるため)',
     check: async () => {
       const { CONVENTION_FILES } =
         await import('../../src/features/conventions/index.ts');
@@ -142,7 +143,7 @@ const GUARDS: Record<number, Guard> = {
         ...ROOT_ONLY_FILES,
       ]);
       const offenders: string[] = [];
-      for (const file of await sourceFiles('app')) {
+      for (const file of await sourceFiles('demo/app')) {
         // `_` で始まるディレクトリは共有コードの置き場なので自由
         if (file.split('/').some((part) => part.startsWith('_'))) continue;
         const base = (file.split('/').pop() as string).replace(/\.tsx?$/, '');

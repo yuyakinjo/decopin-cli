@@ -20,7 +20,7 @@
   "include": [
     "src/**/*",
     "test/**/*",
-    "app/**/*",
+    "demo/app/**/*",
     "scripts/**/*",
     ".decopin/types.d.ts"
   ],

@@ -94,7 +94,7 @@ beforeAll(async () => {
   blocks = extractBlocks(source);
   workspace = await mkdtemp(join(tmpdir(), 'decopin-readme-'));
   const built = await build({
-    appDir: 'app',
+    appDir: 'demo/app',
     workDir: '.decopin',
     outDir: join(workspace, 'dist'),
   });
@@ -223,15 +223,15 @@ describe('README のシェル実行例', () => {
     expect(result.code).toBe(2);
   });
 
-  test('README が挙げている app/ のサンプルが実在する', async () => {
-    const referenced = [...source.matchAll(/\]\((app\/[a-z/-]+)\)/g)].map(
+  test('README が挙げている demo/app/ のサンプルが実在する', async () => {
+    const referenced = [...source.matchAll(/\]\((demo\/app\/[a-z/-]+)\)/g)].map(
       (match) => match[1] as string
     );
     expect(referenced.length).toBeGreaterThan(5);
     for (const path of referenced) {
       expect(await Bun.file(join(path, 'cmd.tsx')).exists()).toBe(
-        // app/user のようなグループはコマンドを持たない
-        path !== 'app/user'
+        // demo/app/user のようなグループはコマンドを持たない
+        path !== 'demo/app/user'
       );
     }
   });

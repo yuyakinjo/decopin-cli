@@ -10,7 +10,7 @@ import { readdir } from 'node:fs/promises';
 import { join } from 'node:path';
 
 const DECISIONS = 'docs/decisions.md';
-const ROOTS = ['src', 'app', 'scripts', 'test'];
+const ROOTS = ['src', 'demo/app', 'scripts', 'test'];
 
 /** 走査対象のソースを集める */
 async function sourceFiles(dir: string): Promise<string[]> {
@@ -148,11 +148,11 @@ describe('宣言と実体の一致', () => {
   });
 
   test('サンプルの version が package.json と一致する', async () => {
-    // app/ はこのリポジトリ自身のデモなので、古い版が残ると利用者が真似る
+    // demo/app/ はこのリポジトリ自身のデモなので、古い版が残ると利用者が真似る
     const manifest = (await Bun.file('package.json').json()) as {
       version: string;
     };
-    const sample = await Bun.file('app/version.tsx').text();
+    const sample = await Bun.file('demo/app/version.tsx').text();
     expect(sample).toContain(`version="${manifest.version}"`);
   });
 

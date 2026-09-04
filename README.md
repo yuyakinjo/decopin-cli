@@ -922,22 +922,22 @@ JSON-RPC, because that is all stdio MCP needs.
 
 ## Working examples
 
-[`app/`](app/) is the example, and the build and the tests keep it honest.
+[`demo/app/`](demo/app/) is the example, and the build and the tests keep it honest.
 
-| Command                              | What it shows                                                         |
-| ------------------------------------ | --------------------------------------------------------------------- |
-| [`app/hello`](app/hello)             | positional args, options, enums                                       |
-| [`app/count`](app/count)             | `stdin.tsx` (lines), a `help.tsx` override, bundled boolean aliases   |
-| [`app/upper`](app/upper)             | optional stdin (`undefined` in a terminal)                            |
-| [`app/user`](app/user)               | subcommands, `layout.tsx`, `middleware.tsx`, an inherited `error.tsx` |
-| [`app/user/import`](app/user/import) | `mode="json"` with `Type.Object`                                      |
-| [`app/config`](app/config)           | reading validated `env.tsx` values                                    |
-| [`app/user/show`](app/user/show)     | `notFound()` with an automatic suggestion                             |
-| [`app/deploy`](app/deploy)           | `help()` when the input cannot be acted on                            |
-| [`app/publish`](app/publish)         | `authRequired()` / `missingTool()` with fix hints                     |
-| [`app/stats`](app/stats)             | `data.tsx` split from the view, and `--json`                          |
-| [`app/crash`](app/crash)             | `error.tsx` and `<Exit>`                                              |
-| [`app/go`](app/go)                   | `shell.tsx`: `cd` and `export` in the parent shell                    |
+| Command                                        | What it shows                                                         |
+| ---------------------------------------------- | --------------------------------------------------------------------- |
+| [`demo/app/hello`](demo/app/hello)             | positional args, options, enums                                       |
+| [`demo/app/count`](demo/app/count)             | `stdin.tsx` (lines), a `help.tsx` override, bundled boolean aliases   |
+| [`demo/app/upper`](demo/app/upper)             | optional stdin (`undefined` in a terminal)                            |
+| [`demo/app/user`](demo/app/user)               | subcommands, `layout.tsx`, `middleware.tsx`, an inherited `error.tsx` |
+| [`demo/app/user/import`](demo/app/user/import) | `mode="json"` with `Type.Object`                                      |
+| [`demo/app/config`](demo/app/config)           | reading validated `env.tsx` values                                    |
+| [`demo/app/user/show`](demo/app/user/show)     | `notFound()` with an automatic suggestion                             |
+| [`demo/app/deploy`](demo/app/deploy)           | `help()` when the input cannot be acted on                            |
+| [`demo/app/publish`](demo/app/publish)         | `authRequired()` / `missingTool()` with fix hints                     |
+| [`demo/app/stats`](demo/app/stats)             | `data.tsx` split from the view, and `--json`                          |
+| [`demo/app/crash`](demo/app/crash)             | `error.tsx` and `<Exit>`                                              |
+| [`demo/app/go`](demo/app/go)                   | `shell.tsx`: `cd` and `export` in the parent shell                    |
 
 ## Startup cost
 

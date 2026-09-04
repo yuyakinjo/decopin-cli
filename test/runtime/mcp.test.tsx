@@ -449,11 +449,11 @@ describe('tools/call', () => {
   });
 });
 
-describe('ビルドした app/ から', () => {
+describe('ビルドした demo/app/ から', () => {
   let tools: McpTool[];
   beforeAll(async () => {
     const workspace = await mkdtemp(join(tmpdir(), 'decopin-mcp-'));
-    await build({ appDir: 'app', workDir: '.decopin', outDir: workspace });
+    await build({ appDir: 'demo/app', workDir: '.decopin', outDir: workspace });
     const generated = (await import('../../.decopin/routes.ts')) as {
       routes: RouteTable;
     };

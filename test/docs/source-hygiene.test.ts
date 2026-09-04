@@ -35,7 +35,7 @@ async function sourceFiles(dir: string): Promise<string[]> {
 describe('ソースの衛生', () => {
   test('生の制御文字 (ESC / NUL など) を含むファイルが無い', async () => {
     const offenders: string[] = [];
-    for (const dir of ['src', 'test', 'app', 'scripts', 'docs']) {
+    for (const dir of ['src', 'test', 'demo/app', 'scripts', 'docs']) {
       for (const file of await sourceFiles(dir)) {
         const text = await Bun.file(file).text();
         const match = CONTROL_CHARS.exec(text);

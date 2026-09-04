@@ -1,5 +1,5 @@
 /**
- * Phase 2 の完了条件: `app/hello/cmd.tsx` が `dist/index.js hello` で動く。
+ * Phase 2 の完了条件: `demo/app/hello/cmd.tsx` が `dist/index.js hello` で動く。
  * 実際にビルドして、生成された 1 ファイルを別プロセスで実行して確かめる。
  */
 import { afterAll, beforeAll, describe, expect, test } from 'bun:test';
@@ -22,7 +22,7 @@ beforeAll(async () => {
   workspace = await mkdtemp(join(tmpdir(), 'decopin-build-'));
   workDir = await mkdtemp(join(process.cwd(), '.decopin-test-'));
   const result = await build({
-    appDir: 'app',
+    appDir: 'demo/app',
     workDir,
     outDir: join(workspace, 'dist'),
   });
@@ -59,9 +59,9 @@ describe('build', () => {
     expect(stats.mode & 0o111).toBeGreaterThan(0);
   });
 
-  test('app/ のコマンドを列挙する', async () => {
+  test('demo/app/ のコマンドを列挙する', async () => {
     const result = await build({
-      appDir: 'app',
+      appDir: 'demo/app',
       workDir,
       outDir: join(workspace, 'dist'),
     });
