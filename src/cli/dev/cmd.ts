@@ -15,9 +15,13 @@ export default function run(argv: string[]): Promise<number> {
       workDir: optionValue(argv, '--work'),
       minify: hasFlag(argv, '--minify'),
       strictEffects: hasFlag(argv, '--strict-effects'),
+      annotate: hasFlag(argv, '--annotate'),
       onGenerate: (result) => {
         for (const warning of result.warnings) {
           process.stderr.write(`[decopin] warning: ${warning.message}\n`);
+        }
+        for (const file of result.annotated) {
+          process.stdout.write(`[decopin] annotated ${file}\n`);
         }
         const names = result.routes.map((route) => route.name || '(root)');
         process.stdout.write(

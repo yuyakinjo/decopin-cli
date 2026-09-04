@@ -53,6 +53,8 @@ Options:
                  fail the build when the effects analysis gives up on a
                  command (eval, unresolved import). Opt a command out with
                  export const unsafeEval = true in its cmd.tsx
+  --annotate     (dev) add CommandProps<'<name>'> to the props of any cmd.tsx
+                 whose default export has no type annotation
   -h, --help     show this help
 `;
 
