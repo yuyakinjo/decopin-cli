@@ -1000,6 +1000,27 @@ React が要素を `Symbol.for('react.element')` で見分けるのと同じ手�
 同じ立ち位置。ただし**種類は区別しない**ので、`CliError` かどうかの判定は
 印と併用する。
 
+**印は 1 つのシンボルに種類の名前を載せる** (2026-09-04 に変更)。当初は
+`Symbol.for('decopin.CliError')` のように種類ごとに別のシンボルを置いていたが、
+`RenderError` / `RpcError` にも印を付けようとすると同じ 3 行が増え続ける。
+`Symbol.for('decopin.error')` に `'CliError'` などの名前を載せ、`errorTag()` で
+読む形にした。`isCliError()` は `errorTag(e) === 'CliError'` の薄い包みで、
+`toCliError()` は `switch (errorTag(e))` の 1 本で全種類を扱う。
+**valibot の `v.instance()` は使わない**。中身は `instanceof` なので、
+この ADR が避けたい弱点をそのまま持ち込む。
+
+**包み直しても投げた場所は失われない**。`toCliError()` は元のエラーを
+`cause` に残す。既定の表示には出さないが、`DECOPIN_DEBUG=1` で連鎖とスタックを
+stderr に足す (`--json` では `error.trace`)。フラグではなく環境変数にしたのは、
+`--verbose` / `--debug` は利用者が自分のオプションとして宣言しがちな名前で
+(README の middleware の例、ADR 11)、予約すると既存の宣言を壊すため。
+test/runtime/handle-error.test.tsx が「包んでも場所が潰れない」ことを固定する。
+
+**旧い印は 1 年付け続け、見続ける** (ADR 20)。新バージョンが投げたエラーを
+旧バージョンが受ける (逆も) 場面があるため、新しいインスタンスは旧いシンボルも
+持ち、`errorTag()` は旧いシンボルも読む。2027-09-04 以降に消す。期限は
+`src/core/deprecations.ts` が見張る。
+
 ---
 
 ## 未決 / 保留

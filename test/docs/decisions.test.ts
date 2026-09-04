@@ -417,22 +417,44 @@ const GUARDS: Record<number, Guard> = {
       for (const [file, source] of srcSources) {
         // 出自を問う判定。コピーや realm をまたぐと静かに false になる
         for (const match of source.matchAll(
-          /\binstanceof\s+(CliError|DeclarationError|Error)\b/g
+          /\binstanceof\s+(CliError|DeclarationError|RenderError|RpcError|Error)\b/g
         )) {
           const name = match[1] as string;
-          const use = name === 'Error' ? 'Error.isError()' : `is${name}()`;
+          const use =
+            name === 'Error'
+              ? 'Error.isError()'
+              : name === 'RpcError'
+                ? "errorTag() === 'RpcError'"
+                : `is${name}()`;
           offenders.push(`${file}: instanceof ${name} (${use} を使う)`);
         }
       }
-      // 印そのものが外れていないか
-      const branded: [string, string][] = [
-        ['src/core/runtime/errors.ts', 'decopin.CliError'],
+      // 印そのものが外れていないか。印は 1 つのシンボルに種類の名前を載せる
+      const shared = srcSources.get('src/core/errors.ts') ?? '';
+      if (!shared.includes("Symbol.for('decopin.error')")) {
+        offenders.push('src/core/errors.ts: 共通の印 decopin.error が無い');
+      }
+      const tagged: [string, string][] = [
+        ['src/core/runtime/errors.ts', 'CliError'],
+        ['src/core/errors.ts', 'DeclarationError'],
+        ['src/core/renderer/errors.ts', 'RenderError'],
+        ['src/core/runtime/mcp.ts', 'RpcError'],
+      ];
+      for (const [file, tag] of tagged) {
+        const source = srcSources.get(file) ?? '';
+        if (!source.includes(`[ERROR_TAG] = '${tag}'`)) {
+          offenders.push(`${file}: ${tag} の印が無い`);
+        }
+      }
+      // 旧い印は 2027-09-04 まで付け続ける (ADR 20)。期限は deprecations.ts が見張る
+      const legacy: [string, string][] = [
+        ['src/core/errors.ts', 'decopin.CliError'],
         ['src/core/errors.ts', 'decopin.DeclarationError'],
       ];
-      for (const [file, key] of branded) {
+      for (const [file, key] of legacy) {
         const source = srcSources.get(file) ?? '';
         if (!source.includes(`Symbol.for('${key}')`)) {
-          offenders.push(`${file}: ${key} の印が無い`);
+          offenders.push(`${file}: 旧い印 ${key} が期限前に消えている`);
         }
       }
       return offenders;

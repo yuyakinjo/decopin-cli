@@ -19,12 +19,16 @@ function recorder() {
   };
 }
 
-async function invoke(table: RouteTable, argv: string[]) {
+async function invoke(
+  table: RouteTable,
+  argv: string[],
+  env: Record<string, string | undefined> = {}
+) {
   const stdout = recorder();
   const stderr = recorder();
   const code = await run(table, {
     argv,
-    env: { NO_COLOR: '1' },
+    env: { NO_COLOR: '1', ...env },
     program: 'cli',
     targets: { stdout, stderr },
   });
@@ -60,7 +64,13 @@ const table: RouteTable = {
 
 /** stderr の JSON を読む */
 function payload(stderr: string): {
-  error: { code: string; message: string; exitCode: number; issues?: string[] };
+  error: {
+    code: string;
+    message: string;
+    exitCode: number;
+    issues?: string[];
+    trace?: string[];
+  };
 } {
   return JSON.parse(stderr) as ReturnType<typeof payload>;
 }
@@ -122,5 +132,29 @@ describe('--json のときの失敗', () => {
     const result = await invoke(table, ['boom']);
     expect(result.stderr).toContain('HUMAN VIEW');
     expect(result.stderr).not.toContain('"code"');
+  });
+});
+
+describe('DECOPIN_DEBUG=1 のときの --json', () => {
+  test('既定では trace は無い (形を増やさない)', async () => {
+    const result = await invoke(table, ['boom', '--json']);
+    expect(payload(result.stderr).error.trace).toBeUndefined();
+  });
+
+  test('入っていれば error.trace に cause の連鎖が並び、JSON のまま読める', async () => {
+    const result = await invoke(table, ['boom', '--json'], {
+      DECOPIN_DEBUG: '1',
+    });
+    const { error } = payload(result.stderr);
+    expect(error.code).toBe('runtime');
+    expect(
+      error.trace?.some((l) =>
+        l.startsWith('Caused by: Error: database is down')
+      )
+    ).toBe(true);
+    expect(
+      error.trace?.some((l) => l.includes('run-json-error.test.tsx'))
+    ).toBe(true);
+    expect(result.stdout).toBe('');
   });
 });

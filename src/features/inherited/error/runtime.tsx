@@ -5,8 +5,9 @@
  * 組み込みの既定表示。**表示係が自分で失敗しても、次の候補に進む** —
  * エラーを出そうとして落ちる、が一番困る事故なので。
  */
+import { errorTag } from '../../../core/errors.ts';
 import type { Renderable, RenderInput } from '../../../core/jsx/types.ts';
-import { CliError, isCliError } from '../../../core/runtime/errors.ts';
+import { CliError } from '../../../core/runtime/errors.ts';
 import type { ErrorProps } from '../../../core/runtime/errors.ts';
 import { ErrorMessage } from '../../conventions/error/messages.tsx';
 
@@ -93,10 +94,27 @@ export async function handleError({
   return { exitCode: declared ?? error.exitCode };
 }
 
-/** 例外を CliError に揃える */
+/**
+ * 例外を CliError に揃える。
+ *
+ * 種類の見分けは印 (`errorTag`) で行う (ADR 42)。種類ごとの扱いを変えたく
+ * なったら、ここの分岐に足す。判定を catch 側にばらまかない
+ */
 export function toCliError(error: unknown): CliError {
-  if (isCliError(error)) return error;
-  return new CliError(Error.isError(error) ? error.message : String(error), {
-    cause: error,
-  });
+  switch (errorTag(error)) {
+    case 'CliError':
+      return error as CliError;
+    case 'DeclarationError':
+    case 'RenderError':
+      // 利用者のコードのバグ。文面はそのまま出し、使い方の誤り (exit 2) とは分ける
+      return new CliError((error as Error).message, {
+        kind: 'runtime',
+        cause: error,
+      });
+    default:
+      return new CliError(
+        Error.isError(error) ? error.message : String(error),
+        { cause: error }
+      );
+  }
 }

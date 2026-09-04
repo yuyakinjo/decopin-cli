@@ -39,6 +39,23 @@ export const DEPRECATIONS: readonly Deprecation[] = [
     removeAfter: '2027-09-02',
     migration: 'replace command.tsx with cmd.tsx (command.ts with cmd.ts)',
   },
+  // エラーの印を 1 つのシンボルに揃えた (ADR 42)。旧い印は付け続け、見続ける
+  {
+    kind: 'source',
+    what: "Symbol.for('decopin.CliError')",
+    since: '2026-09-04',
+    removeAfter: '2027-09-04',
+    migration:
+      "use Symbol.for('decopin.error') with the value 'CliError' (or isCliError())",
+  },
+  {
+    kind: 'source',
+    what: "Symbol.for('decopin.DeclarationError')",
+    since: '2026-09-04',
+    removeAfter: '2027-09-04',
+    migration:
+      "use Symbol.for('decopin.error') with the value 'DeclarationError' (or isDeclarationError())",
+  },
 ];
 
 /** 削除期限を過ぎているもの。期限当日はまだ残してよい */
