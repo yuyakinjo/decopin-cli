@@ -13,6 +13,30 @@ import type { StdinSpec } from '../stdin/spec.ts';
 /** 説明を縦に揃えるための最小の間隔 */
 const GAP = 2;
 
+/**
+ * 一覧の 1 行に載せる説明。description に、省略時の値を持つ引数と
+ * オプションを `(default: name="world", --loud=false)` の形で添える。
+ *
+ * 一覧は「打たずに何が起きるか」を選ぶ場面でもあるので、暗黙の既定値を
+ * `--help` まで降りずに見せる (ADR 8)。hidden なオプションは出さない
+ */
+export function summarizeSpec(spec: ArgvSpec): string | undefined {
+  const defaults = [
+    ...spec.args
+      .filter((arg) => arg.defaultValue !== undefined)
+      .map((arg) => `${arg.name}=${JSON.stringify(arg.defaultValue)}`),
+    ...spec.options
+      .filter((option) => !option.hidden && option.defaultValue !== undefined)
+      .map(
+        (option) => `--${option.name}=${JSON.stringify(option.defaultValue)}`
+      ),
+  ];
+  const parts: string[] = [];
+  if (spec.description !== undefined) parts.push(spec.description);
+  if (defaults.length > 0) parts.push(`(default: ${defaults.join(', ')})`);
+  return parts.length === 0 ? undefined : parts.join(' ');
+}
+
 /** help の一覧に添える説明を各 argv.tsx から集める。 */
 export async function describeCommands(
   table: RouteTable,
@@ -21,7 +45,7 @@ export async function describeCommands(
   const entries = await Promise.all(
     commands.map(async (name) => {
       try {
-        return [name, (await loadArgvSpec(table[name]?.argv)).description];
+        return [name, summarizeSpec(await loadArgvSpec(table[name]?.argv))];
       } catch {
         return [name, undefined];
       }

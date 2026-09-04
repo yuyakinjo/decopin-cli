@@ -6,6 +6,7 @@ import type { ArgvSpec } from '../../src/features/conventions/argv/spec.ts';
 import {
   CommandList,
   Help,
+  summarizeSpec,
 } from '../../src/features/conventions/help/runtime.tsx';
 import type { StdinSpec } from '../../src/features/conventions/stdin/spec.ts';
 
@@ -140,6 +141,42 @@ describe('Help — stdin の宣言', () => {
       trim: true,
     });
     expect(text).toContain('optional (undefined when run in a terminal)');
+  });
+});
+
+describe('summarizeSpec', () => {
+  test('description に、省略時の値を持つ引数とオプションを添える', () => {
+    // hidden な secret と、既定値の無い times は出ない
+    expect(summarizeSpec(spec)).toBe(
+      'Greet someone. (default: name="world", --loud=false)'
+    );
+  });
+
+  test('既定値が無ければ description だけ', () => {
+    expect(
+      summarizeSpec({ description: 'List users.', args: [], options: [] })
+    ).toBe('List users.');
+  });
+
+  test('description が無くても既定値は出す', () => {
+    expect(
+      summarizeSpec({
+        args: [],
+        options: [
+          {
+            name: 'port',
+            required: false,
+            defaultValue: 3000,
+            hidden: false,
+            type: { kind: 'number' },
+          },
+        ],
+      })
+    ).toBe('(default: --port=3000)');
+  });
+
+  test('何も無ければ undefined (一覧は名前だけになる)', () => {
+    expect(summarizeSpec({ args: [], options: [] })).toBeUndefined();
   });
 });
 

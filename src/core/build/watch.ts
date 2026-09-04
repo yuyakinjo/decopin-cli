@@ -1,18 +1,20 @@
 /**
- * `decopin dev` (ADR 5)。`app/` を見張って `.decopin/` を作り直す。
+ * `decopin dev` (ADR 5, ADR 43)。`app/` を見張って build を回し、
+ * `.decopin/` と `dist/` を作り直す。
  *
  * 型は生成物なので、これを回していないと `cmd.tsx` の props の型が
- * 古くなる (docs/decisions.md の未決事項)。バンドルはしない。
+ * 古くなる (docs/decisions.md の未決事項)。バンドルも毎回やり直すので、
+ * 保存した直後の `./dist/index.js` が最新の app/ を映す (ADR 43)。
  */
 import { watch } from 'node:fs';
 
-import { generate } from './index.ts';
-import type { GenerateOptions, GenerateResult } from './index.ts';
+import { build } from './index.ts';
+import type { BuildOptions, BuildResult } from './index.ts';
 
-export interface WatchOptions extends GenerateOptions {
+export interface WatchOptions extends BuildOptions {
   /** まとめて処理するまでの待ち時間 (ms) */
   debounceMs?: number;
-  onGenerate?: (result: GenerateResult) => void;
+  onGenerate?: (result: BuildResult) => void;
   onError?: (error: unknown) => void;
 }
 
@@ -49,7 +51,7 @@ export function watchApp(
     }
     running = true;
     try {
-      const result = await generate(options);
+      const result = await build(options);
       if (!closed) options.onGenerate?.(result);
     } catch (error) {
       if (!closed) options.onError?.(error);
