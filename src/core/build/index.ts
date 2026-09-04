@@ -12,6 +12,7 @@ import { createLayoutChains } from '../../features/inherited/layout/build.ts';
 import { createMiddlewareChains } from '../../features/inherited/middleware/build.ts';
 import { createNotFoundChains } from '../../features/inherited/not-found/build.ts';
 import { evaluateEnv } from '../../features/root-only/env/evaluate.ts';
+import { annotateCommands } from './annotate.ts';
 import { bundle } from './bundler.ts';
 import {
   checkDeprecations,
@@ -42,6 +43,11 @@ export interface GenerateOptions {
    * cmd.tsx が `export const unsafeEval = true` を持つコマンドは通す
    */
   strictEffects?: boolean;
+  /**
+   * 型注釈の無い cmd.tsx の props に `CommandProps<'<name>'>` を書き足す (ADR 44)。
+   * ユーザーのソースを書き換えるので opt-in
+   */
+  annotate?: boolean;
 }
 
 export interface BuildOptions extends GenerateOptions {
@@ -64,6 +70,8 @@ export interface GenerateResult {
   bin: string;
   /** コマンド名 → 副作用の到達判定 (ADR 32) */
   effects: Map<string, EffectReport>;
+  /** `annotate` で型注釈を書き足した cmd.tsx (ADR 44)。無効なら空 */
+  annotated: string[];
 }
 
 export interface BuildResult extends GenerateResult {
@@ -225,7 +233,20 @@ export async function generate(
   }
   await writeIfChanged(files.types, types.text);
 
-  return { routes, evaluated, files, warnings, program, bin, effects };
+  // 型が揃った後に props の注釈を補う。生成した Routes のキーと同じ名前を書く
+  const annotated =
+    options.annotate === true ? await annotateCommands(routes) : [];
+
+  return {
+    routes,
+    evaluated,
+    files,
+    warnings,
+    program,
+    bin,
+    effects,
+    annotated,
+  };
 }
 
 export async function build(options: BuildOptions = {}): Promise<BuildResult> {

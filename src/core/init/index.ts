@@ -49,7 +49,7 @@ export function templates(name: string): Record<string, string> {
     bin: { [name]: './dist/index.js' },
     scripts: {
       build: 'decopin build',
-      dev: 'decopin dev',
+      dev: 'decopin dev --annotate',
     },
   };
   const tsconfig = {

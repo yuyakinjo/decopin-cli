@@ -1051,6 +1051,35 @@ test/runtime/handle-error.test.tsx が「包んでも場所が潰れない」こ
 途中の状態を見る心配が薄い。test/build/watch.test.ts が「保存で型もバンドルも
 追従する」ことを固定する。
 
+## ADR 44: `decopin dev --annotate` は cmd.tsx の props に生成型を書き足す
+
+`CommandProps<'hello'>` はコマンド名を手で書く。名前はディレクトリ名と同じで
+情報としては冗長だし、`.decopin/types.d.ts` を生成する側はどの cmd.tsx が
+どの名前かを知っている。それでも「型注釈を書かないと `args` が `unknown` に
+落ちる」ことに気付くのはエディタの補完が効かなくなったときで、原因が
+注釈漏れだと分かるまで少し迷う。
+
+**そこで dev に `--annotate` を足す**。型を生成した直後に、default export が
+型注釈を持たない cmd.tsx (`function Command(props)`) を見つけたら、
+`props: CommandProps<'hello'>` と `import { type CommandProps }` を書き足す。
+分割代入 (`{ args, options }`) も同じ扱いで、閉じ括弧の直後に入れる。
+
+**ユーザーのソースを書き換えるので、既定では動かさない**。build にも付けない。
+`init` が出す `package.json` の `dev` スクリプトにだけ付け、始めた人には
+黙って効き、既存プロジェクトは自分で選ぶ。書き換えは default export の
+1 行と import 行に限り、それ以外のバイトには触らない。既に何か注釈がある
+(生成型でも手書きでも) ものと、引数を取らないものは対象外。
+
+**AST は使わない**。文字列とコメントを除いた同じ長さの view から
+`export default (async) function` の候補を正規表現で探し、Bun の構文 scan で
+JSX text ではなく実際の export だと確かめ、括弧の対応を数えて引数を切り出す。
+TypeScript を依存に足すほどの仕事ではない
+(ADR 5 の「宣言は import して呼ぶ」と同じ節約)。
+
+**自分の書き換えで watch が 1 回余分に回る**が、2 回目は差分が無いので止まる。
+test/build/annotate.test.ts が「注釈が無いときだけ足す」「import を足す」
+「既にあれば触らない」を固定する。
+
 ---
 
 ## 未決 / 保留

@@ -91,6 +91,13 @@ bunx decopin build   # scan app/ and produce dist/index.js
 bunx decopin dev     # watch app/ and rebuild types + dist/index.js on every save
 ```
 
+`dev --annotate` also fills in the props type for you: a `cmd.tsx` whose
+default export has no annotation, such as `function Command(props)`, is
+rewritten to `function Command(props: CommandProps<'hello'>)` (and the import
+is added) right after the types are generated. Files that already annotate
+their props, with the generated type or a hand-written one, are left alone.
+`init` puts this flag in the `dev` script.
+
 ## Declaring arguments
 
 What you write in `argv.tsx` drives all three of validation, `--help`, and
