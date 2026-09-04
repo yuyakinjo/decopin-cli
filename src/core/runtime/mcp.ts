@@ -13,6 +13,7 @@ import type { OutputSpec } from '../../features/conventions/output/spec.ts';
 import { loadStdinSpec } from '../../features/conventions/stdin/runtime.ts';
 import type { StdinSpec } from '../../features/conventions/stdin/spec.ts';
 import { loadVersionSpec } from '../../features/root-only/version/runtime.ts';
+import { ERROR_TAG, errorTag } from '../errors.ts';
 import type { EffectVerdicts } from '../types/effects.ts';
 /**
  * コマンドを MCP のツールとして出す (ADR 33)。
@@ -91,6 +92,8 @@ type RpcResponse =
 
 /** JSON-RPC の途中で投げる。応答の error になる */
 class RpcError extends Error {
+  override readonly name = 'RpcError';
+  readonly [ERROR_TAG] = 'RpcError';
   constructor(
     readonly code: number,
     message: string
@@ -507,8 +510,8 @@ export async function serveMcp(
       respond({ jsonrpc: '2.0', id: request.id, result });
     } catch (error) {
       const rpc =
-        error instanceof RpcError
-          ? error
+        errorTag(error) === 'RpcError'
+          ? (error as RpcError)
           : new RpcError(
               -32603,
               Error.isError(error) ? error.message : String(error)

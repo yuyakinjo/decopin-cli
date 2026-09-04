@@ -26,3 +26,19 @@ export function ErrorMessage({
     </Stderr>
   );
 }
+
+/**
+ * `DECOPIN_DEBUG=1` のときにエラー表示の後ろへ足す、cause の連鎖とスタック。
+ * error.tsx の外側に付けるので、利用者の表示係には紛れ込まない
+ */
+export function ErrorTrace({ lines }: { lines: string[] }): Renderable {
+  return (
+    <Stderr>
+      {lines.map((line, index) => (
+        <Line key={`${index}:${line}`}>
+          <Text dim>{line}</Text>
+        </Line>
+      ))}
+    </Stderr>
+  );
+}

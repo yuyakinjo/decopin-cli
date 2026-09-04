@@ -2,6 +2,7 @@
  * 実行時のエラー分類。
  * `error.tsx` はこの `kind` を見て表示を切り替える。
  */
+import { ERROR_TAG, errorTag, LEGACY_ERROR_MARKS } from '../errors.ts';
 import { EXIT_CODE } from './exit.ts';
 
 /** エラーの分類。`error.tsx` はこれを見て表示を切り替える */
@@ -29,19 +30,15 @@ export interface CliErrorOptions {
 }
 
 /**
- * 出自ではなく印で見分ける (ADR 42)。
- * `Symbol.for` はグローバルな登録簿から引くので、decopin-cli が
- * node_modules に 2 つ入っても、realm が違っても同じ印になる。
- */
-const CLI_ERROR = Symbol.for('decopin.CliError');
-
-/**
  * 実行時のエラー。`kind` と `exitCode` を持つ。
  * 検証の失敗のように理由が複数ある場合は `issues` に並べる
  */
 export class CliError extends Error {
   override readonly name = 'CliError';
-  readonly [CLI_ERROR] = true;
+  /** 出自ではなく印で見分ける (ADR 42) */
+  readonly [ERROR_TAG] = 'CliError';
+  /** 旧バージョンの受け手のため (2027-09-04 まで) */
+  readonly [LEGACY_ERROR_MARKS.CliError] = true;
   readonly kind: ErrorKind;
   readonly exitCode: number;
   readonly issues: string[];
@@ -78,8 +75,5 @@ export function validationError(issues: string[]): CliError {
 
 /** {@link CliError} か。`instanceof` より広く当たる (ADR 42) */
 export function isCliError(value: unknown): value is CliError {
-  return (
-    Error.isError(value) &&
-    (value as { [CLI_ERROR]?: unknown })[CLI_ERROR] === true
-  );
+  return errorTag(value) === 'CliError';
 }

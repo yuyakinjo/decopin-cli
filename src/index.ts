@@ -77,7 +77,11 @@ export type {
 export type { ShellName } from './features/conventions/shell/runtime.ts';
 export { CliError, isCliError } from './core/runtime/errors.ts';
 export type { ErrorKind, ErrorProps } from './core/runtime/errors.ts';
-export { DeclarationError, isDeclarationError } from './core/errors.ts';
+export {
+  DeclarationError,
+  errorTag,
+  isDeclarationError,
+} from './core/errors.ts';
 export type {
   ArgSpec,
   ArgvSpec,
@@ -201,7 +205,7 @@ export { frameRows, present } from './core/renderer/present.ts';
 export type { PresentOptions } from './core/renderer/present.ts';
 export { write } from './core/renderer/writer.ts';
 export type { WritableLike, WriteTargets } from './core/renderer/writer.ts';
-export { RenderError } from './core/renderer/errors.ts';
+export { isRenderError, RenderError } from './core/renderer/errors.ts';
 
 export type {
   Color,

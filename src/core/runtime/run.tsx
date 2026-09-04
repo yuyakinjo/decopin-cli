@@ -13,7 +13,10 @@ import {
 } from '../../features/conventions/complete/runtime.ts';
 import { loadData } from '../../features/conventions/data/runtime.ts';
 import { findNotSerializable } from '../../features/conventions/data/serializable.ts';
-import { ErrorMessage } from '../../features/conventions/error/messages.tsx';
+import {
+  ErrorMessage,
+  ErrorTrace,
+} from '../../features/conventions/error/messages.tsx';
 import {
   CommandList,
   describeCommands,
@@ -66,6 +69,7 @@ import {
   setTerminal,
 } from './choose.ts';
 import type { Terminal } from './choose.ts';
+import { isDebugRequested, traceLines } from './debug.ts';
 import { CliError, validationError } from './errors.ts';
 import { EXIT_CODE } from './exit.ts';
 import { serveMcp } from './mcp.ts';
@@ -264,6 +268,8 @@ export async function run(
   const noColorFlag = findFlag(rawArgv, [NO_COLOR_FLAG]);
   const argv = withoutFlags(rawArgv, [NO_COLOR_FLAG]);
   const cwd = options.cwd ?? process.cwd();
+  // 失敗の元 (cause の連鎖とスタック) を見せるか。argv ではなく環境変数で受ける
+  const debug = isDebugRequested(options.env ?? process.env);
   const program = options.program ?? 'cli';
   const helpRequested = findFlag(argv, HELP_FLAGS);
   const versionRequested = findFlag(argv, [VERSION_FLAG]);
@@ -613,7 +619,14 @@ export async function run(
     if (jsonRequested) {
       await emit(
         <Stderr>
-          <Json value={{ error: errorPayload(cliError) }} />
+          <Json
+            value={{
+              error: {
+                ...errorPayload(cliError),
+                ...(debug ? { trace: traceLines(cliError) } : {}),
+              },
+            }}
+          />
         </Stderr>,
         options,
         noColorFlag
@@ -643,6 +656,14 @@ export async function run(
         return emit(<Stderr>{wrapped}</Stderr>, options, noColorFlag);
       },
     });
+    // 表示係が何であっても、その後ろに足す。layout には包まない
+    if (debug) {
+      await emit(
+        <ErrorTrace lines={traceLines(cliError)} />,
+        options,
+        noColorFlag
+      );
+    }
     return handled.exitCode;
   }
 }
