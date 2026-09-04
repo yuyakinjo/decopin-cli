@@ -88,7 +88,7 @@ settings, unless your tsconfig uses `extends`).
 
 ```sh
 bunx decopin build   # scan app/ and produce dist/index.js
-bunx decopin dev     # watch app/ and keep the types fresh (no bundling)
+bunx decopin dev     # watch app/ and rebuild types + dist/index.js on every save
 ```
 
 ## Declaring arguments
@@ -684,11 +684,15 @@ Usage: decopin-cli user <command> [options]
 
 Commands:
   import  Import users from JSON on stdin.
-  list    List users.
+  list    List users. (default: --limit=10, --verbose=false)
   show    Show one user, or suggest a close name.
 
 Run "decopin-cli user <command> --help" for details.
 ```
+
+The list carries each command's `description`, and every argument or option
+that has a `default` is spelled out, so nothing happens implicitly when a flag
+is left off.
 
 Asking for `--help` explicitly prints to stdout and exits 0. Ending up without a
 command prints to stderr and exits 2.

@@ -95,7 +95,7 @@ describe('build', () => {
 describe('生成された CLI', () => {
   test('hello', async () => {
     const result = await cli(['hello']);
-    expect(result.stdout).toBe('hello, world\n');
+    expect(result.stdout).toBe('hello, test\n');
     expect(result.stderr).toBe('');
     expect(result.code).toBe(0);
   });

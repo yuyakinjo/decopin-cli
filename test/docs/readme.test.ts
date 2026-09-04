@@ -210,9 +210,9 @@ describe('README のシェル実行例', () => {
     const result = await runCli(['user']);
     for (const line of [
       'Usage: decopin-cli user <command> [options]',
-      // 一覧には argv.tsx の説明が揃えて付く
+      // 一覧には argv.tsx の説明が揃えて付き、既定値があれば添える (ADR 8)
       '  import  Import users from JSON on stdin.',
-      '  list    List users.',
+      '  list    List users. (default: --limit=10, --verbose=false)',
       'Run "decopin-cli user <command> --help" for details.',
     ]) {
       expect(documented(line)).toBe(true);

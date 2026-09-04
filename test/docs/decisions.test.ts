@@ -314,6 +314,11 @@ const GUARDS: Record<number, Guard> = {
     label: '実行時に決まる補完候補は complete.tsx (壊れても遅くても落ちない)',
     file: 'test/runtime/complete.test.tsx',
   },
+  43: {
+    kind: 'test',
+    label: 'decopin dev は build を回し続ける (型だけでなく dist/ も追従)',
+    file: 'test/build/watch.test.ts',
+  },
   40: {
     kind: 'test',
     label: '端末より高い <Dynamic> のフレームは末尾を優先して切り詰める',

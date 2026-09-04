@@ -67,6 +67,13 @@ JSX を再帰的に ANSI 文字列へ変換するだけで足りる。Ink は yo
 `argv.tsx` / `stdin.tsx` の宣言を唯一の情報源にする。スキーマと help の
 二重管理が起きない。足りない場合だけ `help.tsx` で上書きする。
 
+**コマンド一覧にも既定値を出す** (2026-09-04 に追加)。`<Argv>` の
+`description` の後ろに、`default` を持つ引数とオプションを
+`(default: name="world", --loud=false)` の形で添える。一覧は「どれを打つか」
+だけでなく「打たないと何が起きるか」を選ぶ場面でもあり、`--help` まで降りないと
+既定値が分からないのは暗黙の振る舞いになる。hidden なオプションは出さない。
+`summarizeSpec()` が組み立て、test/runtime/help.test.tsx が固定する。
+
 ## ADR 9: 型はビルド時の codegen で配る
 
 **JSX 式は型引数を運べない。** TypeScript 7.0.2 で実測した:
@@ -322,8 +329,8 @@ zsh の補完は 2 つの部品で実現する。ビルドが生成する薄い�
 足すたびにファイルが変わり、zsh の compdump キャッシュを無効化する
 きれいな手段がない。シムを「聞きに行くだけ」にすれば、ビルドし直した
 CLI が次の Tab からそのまま反映される。**ただし反映は bundle の更新が条件**:
-`decopin dev` は `.decopin/` しか更新しないので、補完に映るのは `decopin build`
-の後 (シム自体は不変)。候補の情報源は argv.tsx ただ 1 つで、--help と同じ
+`decopin build` か、build を回し続ける `decopin dev` (ADR 43) の後に映る
+(シム自体は不変)。候補の情報源は argv.tsx ただ 1 つで、--help と同じ
 (ADR 8)。enum は値まで補完でき、hidden は出さない。
 
 **コマンド名は `bin` のキーから取る**: help に出す `program` は package.json の
@@ -1020,6 +1027,29 @@ test/runtime/handle-error.test.tsx が「包んでも場所が潰れない」こ
 旧バージョンが受ける (逆も) 場面があるため、新しいインスタンスは旧いシンボルも
 持ち、`errorTag()` は旧いシンボルも読む。2027-09-04 以降に消す。期限は
 `src/core/deprecations.ts` が見張る。
+
+## ADR 43: `decopin dev` は build を回し続ける (型だけでなく dist/ も追従させる)
+
+当初の `decopin dev` は `.decopin/` (routes / entry / 型) だけを更新し、
+バンドルはしなかった。型の鮮度が目的で、`dist/` は `decopin build` の
+仕事という分担だった。
+
+**実際の使われ方と合わなかった**。`bun run dev` を回しながら `app/` を編集し、
+別の端末で `bun ./dist/index.js` を叩いて確かめる、というのが素直な開発の
+回し方になる。このとき `dist/index.js` が古いままなので「保存したのに変わらない」
+と見え、原因が「dev はバンドルしない」だと気付くには README を読み直す必要が
+あった。変更が映らない開発サーバは開発サーバとして機能しない。
+
+**そこで dev は `build()` をそのまま呼ぶ**。`watchApp` が回すのは `generate()`
+ではなく `build()` になり、保存のたびに `.decopin/` と `dist/index.js` と
+補完シムが揃って更新される。`--out` / `--minify` も `build` と同じく受ける。
+費用は 1 回あたり数十 ms のバンドル (demo/app で 20ms 前後) で、debounce (50ms)
+の中に収まる。バンドルが失敗しても watch は止めず、エラーを出して次の保存を待つ。
+
+**`.decopin/` の更新は内容が変わったときだけ**なのは変わらない (`writeIfChanged`)。
+`dist/index.js` は毎回書き直すが、これは読む側が tsc ではなく bun の起動なので
+途中の状態を見る心配が薄い。test/build/watch.test.ts が「保存で型もバンドルも
+追従する」ことを固定する。
 
 ---
 
