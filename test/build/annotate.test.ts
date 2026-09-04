@@ -1,6 +1,6 @@
 /**
  * `decopin dev --annotate` は型注釈の無い cmd.tsx の props に
- * `CommandProps<'<name>'>` を書き足す (ADR 44)。
+ * `CmdProps<'<name>'>` を書き足す (ADR 44)。
  */
 import { afterEach, describe, expect, test } from 'bun:test';
 import { mkdtemp, mkdir, rm, writeFile } from 'node:fs/promises';
@@ -25,9 +25,9 @@ describe('annotateCommandSource', () => {
     ].join('\n');
     expect(annotateCommandSource(source, 'hello')).toBe(
       [
-        "import { Line, type CommandProps } from 'decopin-cli';",
+        "import { Line, type CmdProps } from 'decopin-cli';",
         '',
-        "export default function Command(props: CommandProps<'hello'>) {",
+        "export default function Command(props: CmdProps<'hello'>) {",
         '  return <Line>{props.args.name}</Line>;',
         '}',
         '',
@@ -41,7 +41,7 @@ describe('annotateCommandSource', () => {
       'export default function Command({ args, options: { loud } }) {\n' +
       '  return null;\n}\n';
     expect(annotateCommandSource(source, 'user/import')).toContain(
-      "function Command({ args, options: { loud } }: CommandProps<'user/import'>) {"
+      "function Command({ args, options: { loud } }: CmdProps<'user/import'>) {"
     );
   });
 
@@ -52,8 +52,8 @@ describe('annotateCommandSource', () => {
         'deploy'
       )
     ).toBe(
-      "import { type CommandProps } from 'decopin-cli';\n" +
-        "export default async function (props: CommandProps<'deploy'>) {\n" +
+      "import { type CmdProps } from 'decopin-cli';\n" +
+        "export default async function (props: CmdProps<'deploy'>) {\n" +
         '  return null;\n}\n'
     );
   });
@@ -74,8 +74,8 @@ describe('annotateCommandSource', () => {
   test('既に注釈があれば触らない (生成型でも手書きでも)', () => {
     expect(
       annotateCommandSource(
-        "import { type CommandProps } from 'decopin-cli';\n" +
-          "export default function Command(props: CommandProps<'hello'>) {}\n",
+        "import { type CmdProps } from 'decopin-cli';\n" +
+          "export default function Command(props: CmdProps<'hello'>) {}\n",
         'hello'
       )
     ).toBeUndefined();
@@ -111,14 +111,14 @@ describe('annotateCommandSource', () => {
       "import {\n  Line,\n  Text,\n} from 'decopin-cli';\n" +
       'export default function Command(props) {}\n';
     expect(annotateCommandSource(multiline, 'hello')).toContain(
-      "import {\n  Line,\n  Text,\n  type CommandProps,\n} from 'decopin-cli';"
+      "import {\n  Line,\n  Text,\n  type CmdProps,\n} from 'decopin-cli';"
     );
 
     const typeOnly =
       "import type { Line } from 'decopin-cli';\n" +
       'export default function Command(props) {}\n';
     expect(annotateCommandSource(typeOnly, 'hello')).toContain(
-      "import type { Line, CommandProps } from 'decopin-cli';"
+      "import type { Line, CmdProps } from 'decopin-cli';"
     );
 
     const doubleQuoted =
@@ -126,17 +126,17 @@ describe('annotateCommandSource', () => {
       'export default function Command(props) {}\n';
     const annotated = annotateCommandSource(doubleQuoted, 'hello');
     expect(annotated).toContain(
-      'import { Line, type CommandProps } from "decopin-cli";'
+      'import { Line, type CmdProps } from "decopin-cli";'
     );
-    expect(annotated).toContain('CommandProps<"hello">');
+    expect(annotated).toContain('CmdProps<"hello">');
   });
 
-  test('CommandProps を既に import していれば import は増やさない', () => {
+  test('CmdProps を既に import していれば import は増やさない', () => {
     const source =
-      "import { Line, type CommandProps } from 'decopin-cli';\n" +
+      "import { Line, type CmdProps } from 'decopin-cli';\n" +
       'export default function Command(props) {}\n';
     const annotated = annotateCommandSource(source, 'hello');
-    expect(annotated?.match(/CommandProps/g)).toHaveLength(2);
+    expect(annotated?.match(/CmdProps/g)).toHaveLength(2);
   });
 
   test('コメント・文字列・template・正規表現中の偽 default export は無視する', () => {
@@ -150,7 +150,7 @@ describe('annotateCommandSource', () => {
     ].join('\n');
     const annotated = annotateCommandSource(source, 'hello');
     expect(annotated).toContain(
-      "export default function Command(props: CommandProps<'hello'>) {}"
+      "export default function Command(props: CmdProps<'hello'>) {}"
     );
     expect(annotated).toContain(
       '// export default function Commented(props) {}'
@@ -173,7 +173,7 @@ describe('annotateCommandSource', () => {
     expect(nestedResult).toContain(
       'export default function Fake(props)\n' +
         '` : ""}`;\n' +
-        "export default function Command(props: CommandProps<'hello'>) {}"
+        "export default function Command(props: CmdProps<'hello'>) {}"
     );
 
     const jsx =
@@ -185,7 +185,7 @@ describe('annotateCommandSource', () => {
     expect(jsxResult).toContain(
       '  export default function Fake(props)\n' +
         '</Text>;\n' +
-        "export default function Command(props: CommandProps<'hello'>) {}"
+        "export default function Command(props: CmdProps<'hello'>) {}"
     );
 
     const exportedElsewhere =
@@ -211,13 +211,13 @@ describe('annotateCommandSource', () => {
     const destructured =
       'export default function Command({ value = ")" }) {}\n';
     expect(annotateCommandSource(destructured, 'hello')).toContain(
-      `function Command({ value = ")" }: CommandProps<'hello'>) {}`
+      `function Command({ value = ")" }: CmdProps<'hello'>) {}`
     );
 
     const commented =
       'export default function Command(props /* keep this */) {}\n';
     expect(annotateCommandSource(commented, 'hello')).toContain(
-      `function Command(props: CommandProps<'hello'> /* keep this */) {}`
+      `function Command(props: CmdProps<'hello'> /* keep this */) {}`
     );
   });
 
@@ -226,12 +226,12 @@ describe('annotateCommandSource', () => {
       "import { Line } from 'decopin-cli';\n" +
       'export default function Command(props) {}\n';
     const annotated = annotateCommandSource(source, "team/o'hare\\ops\nnext");
-    expect(annotated).toContain("CommandProps<'team/o\\'hare\\\\ops\\nnext'>");
+    expect(annotated).toContain("CmdProps<'team/o\\'hare\\\\ops\\nnext'>");
   });
 
-  test('CommandProps の import alias をそのまま使い、空 import にも追加する', () => {
+  test('CmdProps の import alias をそのまま使い、空 import にも追加する', () => {
     const aliased =
-      "import { type CommandProps as Props } from 'decopin-cli';\n" +
+      "import { type CmdProps as Props } from 'decopin-cli';\n" +
       'export default function Command(props) {}\n';
     const aliasResult = annotateCommandSource(aliased, 'hello');
     expect(aliasResult).toContain("props: Props<'hello'>");
@@ -241,7 +241,7 @@ describe('annotateCommandSource', () => {
       "import {} from 'decopin-cli';\n" +
       'export default function Command(props) {}\n';
     expect(annotateCommandSource(empty, 'hello')).toContain(
-      "import { type CommandProps } from 'decopin-cli';"
+      "import { type CmdProps } from 'decopin-cli';"
     );
   });
 
@@ -252,22 +252,20 @@ describe('annotateCommandSource', () => {
       'export default function Command(props) {}\n';
     expect(annotateCommandSource(withComment, 'hello')).toStartWith(
       "// import { Line } from 'decopin-cli';\n" +
-        "import { Line, type CommandProps } from 'decopin-cli';\n"
+        "import { Line, type CmdProps } from 'decopin-cli';\n"
     );
 
     const withShebang =
       '#!/usr/bin/env bun\n' + 'export default function Command(props) {}\n';
     expect(annotateCommandSource(withShebang, 'hello')).toStartWith(
-      '#!/usr/bin/env bun\n' +
-        "import { type CommandProps } from 'decopin-cli';\n"
+      '#!/usr/bin/env bun\n' + "import { type CmdProps } from 'decopin-cli';\n"
     );
 
     const crShebang =
       '#!/usr/bin/env bun\r' + 'export default function Command(props) {}\r';
     const crResult = annotateCommandSource(crShebang, 'hello');
     expect(crResult).toStartWith(
-      '#!/usr/bin/env bun\r' +
-        "import { type CommandProps } from 'decopin-cli';\n"
+      '#!/usr/bin/env bun\r' + "import { type CmdProps } from 'decopin-cli';\n"
     );
     expect(() =>
       new Bun.Transpiler({ loader: 'tsx' }).transformSync(crResult as string)
@@ -277,7 +275,7 @@ describe('annotateCommandSource', () => {
       "import { Line // keep this\n} from 'decopin-cli';\n" +
       'export default function Command(props) {}\n';
     expect(annotateCommandSource(commentedSpecifier, 'hello')).toStartWith(
-      "import { type CommandProps } from 'decopin-cli';\n" +
+      "import { type CmdProps } from 'decopin-cli';\n" +
         "import { Line // keep this\n} from 'decopin-cli';\n"
     );
 
@@ -288,7 +286,7 @@ describe('annotateCommandSource', () => {
       'export default function Command(props) {}\n';
     const jsxResult = annotateCommandSource(jsxText, 'hello');
     expect(jsxResult).toStartWith(
-      "import { type CommandProps } from 'decopin-cli';\n" +
+      "import { type CmdProps } from 'decopin-cli';\n" +
         'const example = <Text>\n' +
         "  import { Line } from 'decopin-cli'\n"
     );
@@ -297,24 +295,24 @@ describe('annotateCommandSource', () => {
     ).not.toThrow();
   });
 
-  test('既存のローカル CommandProps と衝突しない alias で import する', () => {
+  test('既存のローカル CmdProps と衝突しない alias で import する', () => {
     const local =
-      "import type { CommandProps } from './local';\n" +
+      "import type { CmdProps } from './local';\n" +
       'export default function Command(props) {}\n';
     const localResult = annotateCommandSource(local, 'hello');
     expect(localResult).toStartWith(
-      "import { type CommandProps as DecopinCommandProps } from 'decopin-cli';\n"
+      "import { type CmdProps as DecopinCmdProps } from 'decopin-cli';\n"
     );
-    expect(localResult).toContain("props: DecopinCommandProps<'hello'>");
+    expect(localResult).toContain("props: DecopinCmdProps<'hello'>");
 
     const decopinAlias =
-      "import { Line as CommandProps } from 'decopin-cli';\n" +
+      "import { Line as CmdProps } from 'decopin-cli';\n" +
       'export default function Command(props) {}\n';
     const aliasResult = annotateCommandSource(decopinAlias, 'hello');
     expect(aliasResult).toContain(
-      'Line as CommandProps, type CommandProps as DecopinCommandProps'
+      'Line as CmdProps, type CmdProps as DecopinCmdProps'
     );
-    expect(aliasResult).toContain("props: DecopinCommandProps<'hello'>");
+    expect(aliasResult).toContain("props: DecopinCmdProps<'hello'>");
   });
 
   test('複数引数と rest parameter は安全に注釈できないので触らない', () => {
@@ -355,8 +353,8 @@ describe('annotateCommands / generate({ annotate })', () => {
     const typed = join(appDir, 'typed/cmd.tsx');
     await writeFile(bare, 'export default function Command(props) {}\n');
     const typedSource =
-      "import { type CommandProps } from 'decopin-cli';\n" +
-      "export default function Command(props: CommandProps<'typed'>) {}\n";
+      "import { type CmdProps } from 'decopin-cli';\n" +
+      "export default function Command(props: CmdProps<'typed'>) {}\n";
     await writeFile(typed, typedSource);
 
     // 既定では触らない
@@ -374,8 +372,8 @@ describe('annotateCommands / generate({ annotate })', () => {
     });
     expect(first.annotated).toEqual([bare]);
     expect(await Bun.file(bare).text()).toBe(
-      "import { type CommandProps } from 'decopin-cli';\n" +
-        "export default function Command(props: CommandProps<'bare'>) {}\n"
+      "import { type CmdProps } from 'decopin-cli';\n" +
+        "export default function Command(props: CmdProps<'bare'>) {}\n"
     );
     expect(await Bun.file(typed).text()).toBe(typedSource);
 

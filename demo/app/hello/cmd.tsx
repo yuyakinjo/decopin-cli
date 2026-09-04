@@ -1,8 +1,8 @@
-import { Line, Text, type CommandProps } from 'decopin-cli';
+import { Line, Text, type CmdProps } from 'decopin-cli';
 
 const RAINBOW = ['red', 'yellow', 'green', 'cyan', 'blue', 'magenta'] as const;
 
-export default function Command({ args, options }: CommandProps<'hello'>) {
+export default function Command({ args, options }: CmdProps<'hello'>) {
   const message = options.loud
     ? `HELLO, ${args.name.toUpperCase()}!`
     : `hello, ${args.name}`;

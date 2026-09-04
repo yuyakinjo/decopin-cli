@@ -19,7 +19,7 @@ export interface RouteShape {
 
 /**
  * 生成された `.decopin/types.d.ts` が埋める。
- * 未生成のうちは空なので、{@link CommandProps} は緩い型にフォールバックする。
+ * 未生成のうちは空なので、{@link CmdProps} は緩い型にフォールバックする。
  */
 export interface Routes {}
 
@@ -38,7 +38,7 @@ export interface CommandBase {
 }
 
 /** 型が未生成のときの緩いフォールバック */
-export interface UntypedCommandProps extends CommandBase {
+export interface UntypedCmdProps extends CommandBase {
   args: Record<string, unknown>;
   options: Record<string, unknown>;
   stdin: unknown;
@@ -52,14 +52,14 @@ export type RouteName = [keyof Routes] extends [never] ? string : keyof Routes;
  * `cmd.tsx` の props。
  *
  * ```tsx
- * export default function Command({ args, options }: CommandProps<'hello'>) {}
+ * export default function Command({ args, options }: CmdProps<'hello'>) {}
  * ```
  *
  * `decopin build` を通していない状態では `args` / `options` が
  * `Record<string, unknown>` になる。型が欲しければ `decopin dev` を回す。
  */
-export type CommandProps<R extends RouteName> = R extends keyof Routes
+export type CmdProps<R extends RouteName> = R extends keyof Routes
   ? Routes[R] extends RouteShape
     ? Routes[R] & CommandBase
-    : UntypedCommandProps
-  : UntypedCommandProps;
+    : UntypedCmdProps
+  : UntypedCmdProps;

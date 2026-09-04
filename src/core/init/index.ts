@@ -87,9 +87,9 @@ export default function DefineArgv() {
   );
 }
 `,
-    'app/hello/cmd.tsx': `import { Line, Text, type CommandProps } from 'decopin-cli';
+    'app/hello/cmd.tsx': `import { Line, Text, type CmdProps } from 'decopin-cli';
 
-export default function Command({ args }: CommandProps<'hello'>) {
+export default function Command({ args }: CmdProps<'hello'>) {
   return (
     <Line>
       <Text bold color="green">

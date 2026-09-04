@@ -1,6 +1,6 @@
-import { Line, Text, type CommandProps } from 'decopin-cli';
+import { Line, Text, type CmdProps } from 'decopin-cli';
 
-export default function Command({ stdin }: CommandProps<'user/import'>) {
+export default function Command({ stdin }: CmdProps<'user/import'>) {
   return (
     <>
       {stdin.map((user) => (

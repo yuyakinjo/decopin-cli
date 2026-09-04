@@ -44,7 +44,7 @@ export interface GenerateOptions {
    */
   strictEffects?: boolean;
   /**
-   * 型注釈の無い cmd.tsx の props に `CommandProps<'<name>'>` を書き足す (ADR 44)。
+   * 型注釈の無い cmd.tsx の props に `CmdProps<'<name>'>` を書き足す (ADR 44)。
    * ユーザーのソースを書き換えるので opt-in
    */
   annotate?: boolean;

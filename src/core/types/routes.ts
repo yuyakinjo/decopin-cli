@@ -1,10 +1,10 @@
 /** コマンド規約と環境変数規約の公開型を集約する互換エントリ。 */
 export type {
   CommandBase,
-  CommandProps,
+  CmdProps,
   RouteName,
   Routes,
   RouteShape,
-  UntypedCommandProps,
+  UntypedCmdProps,
 } from '../../features/conventions/cmd/types.ts';
 export type { EnvVars } from '../../features/root-only/env/types.ts';
