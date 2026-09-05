@@ -33,13 +33,6 @@ hello, world
 
 ## Setup
 
-**Bun is required.** The library calls `Bun.build` / `Bun.stdin`, and the CLI it
-generates runs under `#!/usr/bin/env bun`. It does not run on Node.
-
-The quickest way is `init`, which writes everything below into a new folder
-(`package.json`, `tsconfig.json`, `.gitignore`, `app/hello/`) and adds the
-dependencies:
-
 ```sh
 bunx decopin-cli init my-cli   # or `init` alone for the current folder
 cd my-cli
@@ -47,10 +40,7 @@ bun run build
 ./dist/index.js hello          # hello, world
 ```
 
-Existing files are never overwritten, so it is safe to run inside a project
-you already have. Pass `--no-install` to skip `bun add`.
-
-To set things up by hand instead:
+To set things up by hand instead
 
 ```sh
 bun add decopin-cli
@@ -75,28 +65,10 @@ settings, unless your tsconfig uses `extends`).
 }
 ```
 
-- `jsx` / `jsxImportSource` — required. `decopin build` does not pass JSX
-  options to `Bun.build`; the tsconfig is the only place they come from.
-- `moduleResolution: "bundler"` (or `node16` / `nodenext`) — required to
-  resolve the `decopin-cli/jsx/jsx-runtime` subpath export.
-- `include: [".decopin/types.d.ts"]` — not required for the build, but without
-  it the generated `Routes` augmentation is never loaded, so command names are
-  not checked and `args` / `options` fall back to `Record<string, unknown>`.
-- `allowImportingTsExtensions` — only needed if you import with `.ts` / `.tsx`
-  extensions inside `app/` (as the demo does). TypeScript requires `noEmit`
-  alongside it.
-
 ```sh
 bunx decopin build   # scan app/ and produce dist/index.js
 bunx decopin dev     # watch app/ and rebuild types + dist/index.js on every save
 ```
-
-`dev --annotate` also fills in the props type for you: a `cmd.tsx` whose
-default export has no annotation, such as `function Command(props)`, is
-rewritten to `function Command(props: CmdProps<'hello'>)` (and the import
-is added) right after the types are generated. Files that already annotate
-their props, with the generated type or a hand-written one, are left alone.
-`init` puts this flag in the `dev` script.
 
 ## Declaring arguments
 
