@@ -1,0 +1,64 @@
+{
+  "title": "decopin-cli",
+  "tagline": "Build CLIs the way Next.js builds web apps.",
+  "repo": "https://github.com/yuyakinjo/decopin-cli",
+  "sections": [
+    {
+      "title": "Getting started",
+      "pages": [
+        "getting-started/introduction",
+        "getting-started/setup",
+        "getting-started/project-structure"
+      ]
+    },
+    {
+      "title": "Conventions",
+      "pages": [
+        "conventions/cmd",
+        "conventions/argv",
+        "conventions/data",
+        "conventions/stdin",
+        "conventions/help",
+        "conventions/shell",
+        "conventions/complete"
+      ]
+    },
+    {
+      "title": "Inherited",
+      "pages": [
+        "inherited/layout",
+        "inherited/middleware",
+        "inherited/error",
+        "inherited/not-found"
+      ]
+    },
+    {
+      "title": "Root-only",
+      "pages": ["root-only/env", "root-only/version", "root-only/global-error"]
+    },
+    {
+      "title": "Guides",
+      "pages": [
+        "guides/subcommands",
+        "guides/output-components",
+        "guides/partial-repainting",
+        "guides/prompts",
+        "guides/setup-errors",
+        "guides/reserved-options",
+        "guides/shell-completion",
+        "guides/mcp",
+        "guides/startup-cost"
+      ]
+    },
+    {
+      "title": "Project",
+      "pages": [
+        "project/examples",
+        "project/decisions",
+        "project/versioning",
+        "project/releasing",
+        "project/development"
+      ]
+    }
+  ]
+}

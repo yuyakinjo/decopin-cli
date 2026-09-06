@@ -1,8 +1,8 @@
 /**
- * README の例が崩れないことを担保する。
+ * README とドキュメントサイト (site/content/) の例が崩れないことを担保する。
  *
- * 仕様書を持たない代わりに、使い方ドキュメントを**実行して**検証する。
- * ここが落ちたら README が嘘をついている。
+ * 仕様書を持たない代わりに、使い方ドキュメントを**実行して**検証する (ADR 15)。
+ * ここが落ちたら README かサイトが嘘をついている。
  */
 import { afterAll, beforeAll, describe, expect, test } from 'bun:test';
 import { mkdtemp, rm, writeFile } from 'node:fs/promises';
@@ -14,11 +14,15 @@ import { build } from '../../src/core/build/index.ts';
 interface Block {
   lang: string;
   code: string;
-  /** README の何行目から始まるか (失敗時に探しやすくするため) */
+  /** 何行目から始まるか (失敗時に探しやすくするため) */
   line: number;
+  /** どのファイルの断片か */
+  file: string;
 }
 
 const README = 'README.md';
+/** サイトの本文。README から移した節はここにあるので、同じ検査を掛ける */
+const SITE_CONTENT = 'site/content';
 
 /**
  * import を書いていない断片ブロックに足す import。
@@ -55,7 +59,7 @@ const FRAGMENT_IMPORTS = `import {
 `;
 
 /** ```lang ... ``` を取り出す */
-function extractBlocks(source: string): Block[] {
+function extractBlocks(source: string, file: string): Block[] {
   const blocks: Block[] = [];
   const lines = source.split('\n');
   let current: Block | undefined;
@@ -63,7 +67,7 @@ function extractBlocks(source: string): Block[] {
   for (const [index, line] of lines.entries()) {
     const fence = /^```(\w+)?\s*$/.exec(line);
     if (fence !== null && current === undefined) {
-      current = { lang: fence[1] ?? '', code: '', line: index + 1 };
+      current = { lang: fence[1] ?? '', code: '', line: index + 1, file };
       continue;
     }
     if (line.trim() === '```' && current !== undefined) {
@@ -80,6 +84,8 @@ let source: string;
 /** 表の桁揃えに左右されないよう、連続する空白を 1 つに潰したもの */
 let normalized: string;
 let blocks: Block[];
+/** サイトの全ページの tsx ブロック */
+let siteBlocks: Block[];
 
 /** README に (整形の差を無視して) その一節が含まれるか */
 function documented(fragment: string): boolean {
@@ -91,7 +97,13 @@ let cliPath: string;
 beforeAll(async () => {
   source = await Bun.file(README).text();
   normalized = source.replace(/[ \t]+/g, ' ');
-  blocks = extractBlocks(source);
+  blocks = extractBlocks(source, README);
+  siteBlocks = [];
+  const pages = [...new Bun.Glob('**/*.md').scanSync(SITE_CONTENT)].sort();
+  for (const page of pages) {
+    const path = join(SITE_CONTENT, page);
+    siteBlocks.push(...extractBlocks(await Bun.file(path).text(), path));
+  }
   workspace = await mkdtemp(join(tmpdir(), 'decopin-readme-'));
   const built = await build({
     appDir: 'demo/app',
@@ -128,8 +140,16 @@ describe('README のコードブロック', () => {
     ).toBeGreaterThan(3);
   });
 
-  test('tsx のブロックが型検査を通る', async () => {
-    const tsxBlocks = blocks.filter((block) => block.lang === 'tsx');
+  test('サイトにも tsx のブロックがある', () => {
+    expect(
+      siteBlocks.filter((block) => block.lang === 'tsx').length
+    ).toBeGreaterThan(20);
+  });
+
+  test('tsx のブロックが型検査を通る (README とサイト)', async () => {
+    const tsxBlocks = [...blocks, ...siteBlocks].filter(
+      (block) => block.lang === 'tsx'
+    );
     // 'decopin-cli' の自己参照を解決させるため、リポジトリ内に置いて検査する
     const dir = await mkdtemp(join(process.cwd(), '.readme-check-'));
     const files: string[] = [];
@@ -137,7 +157,9 @@ describe('README のコードブロック', () => {
     for (const [index, block] of tsxBlocks.entries()) {
       // 断片 (import が無い / JSX だけ) は 1 つの関数に包んで通す
       const isModule = block.code.includes('export default');
-      const path = join(dir, `block-${index}.tsx`);
+      // 失敗時に元の場所へ戻れるよう、ファイル名に出どころを刻む
+      const origin = `${block.file.replace(/[^\w]+/g, '_')}_L${block.line}`;
+      const path = join(dir, `block-${index}-${origin}.tsx`);
       const body = isModule
         ? block.code
         : `${FRAGMENT_IMPORTS}\nexport function Sample() {\n  return (\n    <>\n${block.code}\n    </>\n  );\n}\n`;
@@ -236,9 +258,11 @@ describe('README のシェル実行例', () => {
     }
   });
 
-  test('README が挙げている終了コードが実装と一致する', async () => {
+  test('サイトが挙げている終了コードが実装と一致する', async () => {
     const { EXIT_CODE } = await import('../../src/core/runtime/exit.ts');
-    expect(documented('| 130 | Ctrl+C')).toBe(true);
+    // 終了コードの表は README から site/content/inherited/error.md に移した
+    const page = await Bun.file(`${SITE_CONTENT}/inherited/error.md`).text();
+    expect(page.replace(/[ \t]+/g, ' ')).toContain('| 130 | Ctrl+C');
     expect(EXIT_CODE.interrupted).toBe(130);
     expect(EXIT_CODE.usage).toBe(2);
     expect(EXIT_CODE.runtime).toBe(1);
