@@ -52,10 +52,23 @@ function escapeHtml(text: string): string {
     .replaceAll('"', '&quot;');
 }
 
+/**
+ * 見出しの中身 (Bun.markdown が出した HTML) からタグを剥がして素の文字にする。
+ * 一回の置換では `<<b>script>` のように剥がした跡が新しいタグになり得るので、
+ * 変化しなくなるまで繰り返す (CodeQL: incomplete multi-character sanitization)。
+ */
+function stripTags(html: string): string {
+  let text = html;
+  for (;;) {
+    const next = text.replace(/<[^<>]*>/g, '');
+    if (next === text) return next;
+    text = next;
+  }
+}
+
 function slugify(text: string): string {
-  return text
+  return stripTags(text)
     .toLowerCase()
-    .replace(/<[^>]+>/g, '')
     .replace(/&[a-z]+;/g, '')
     .replace(/[^a-z0-9\s-]/g, '')
     .trim()
@@ -92,7 +105,7 @@ function addHeadingIds(html: string): {
       const count = seen.get(id) ?? 0;
       seen.set(id, count + 1);
       if (count > 0) id = `${id}-${count}`;
-      const text = inner.replace(/<[^>]+>/g, '');
+      const text = stripTags(inner);
       headings.push({ level: Number(level) as 2 | 3, id, text });
       return `<h${level} id="${id}"><a class="anchor" href="#${id}">${inner}</a></h${level}>`;
     }
