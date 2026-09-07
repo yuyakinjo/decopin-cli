@@ -26,7 +26,7 @@ jobs:
 
       - uses: oven-sh/setup-bun@v2
         with:
-          bun-version: 1.4.0
+          bun-version: 1.4.2
 
       # provenance を付けるために npm CLI を使う (ビルドとテストは bun)
       - uses: actions/setup-node@v7

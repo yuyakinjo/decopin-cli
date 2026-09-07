@@ -149,6 +149,36 @@ middleware が検証済みの `args` / `options` を受け取れる方が実用�
 
 目標の「10ms 未満」は decopin の取り分としては達成、総時間としては未達。
 
+**Bun 1.4.2 への更新** (2026-09-07、[issue #52](https://github.com/yuyakinjo/decopin-cli/issues/52)):
+
+- CI / bench / release は 1.4.2 に統一。`@types/bun` は更新時点で公開済みの
+  最新 `^1.4.1` にする (`1.4.2` は未公開)。固有 API を追加していないため
+  `engines.bun` は `>=1.4.0` のまま。
+- [1.4.1](https://bun.com/blog/bun-v1.4.1) の compile ローダー高速化と
+  bytecode 縮小は既存の配布手順で利用できる。issue の同条件比較では
+  compile + bytecode が 11.9 → 9.1ms、runtime floor を引いた取り分が
+  7.5 → 5.4ms。これは当時の 7 コマンドの実測。
+- [1.4.2](https://bun.com/blog/bun-v1.4.2) は 1.4.1 で入った bundler の
+  `var` / `let` 等の名前衝突を修正しているため、更新先に選ぶ。
+  AsyncLocalStorage のメモリリーク修正もあるが、decopin 自体は使用していない。
+- 今回の macOS arm64 / Homebrew 1.4.2 / `e35f0e0` の 12 コマンドでは、CI と同じ
+  `hyperfine --shell=none --warmup 20 --runs 50`、`NO_COLOR=1` で
+  compile + bytecode が 19.0 ± 1.1ms、compile のみが 22.2 ± 1.3ms。
+  floor は 9.8 ± 3.7ms で外れ値あり。過去の数字との直接比較や速度向上の
+  判定には使わない。再現手順とサイズは [Startup cost](../site/content/guides/startup-cost.md) に記録する。
+- `--bytecode-depth=1` は 19.5 ± 1.8ms、削減量は約 0.15 MB だけ。
+  issue の 1.4.1 比較でも 9.1 → 10.1ms と遅くなったため採用しない。
+- `export * as` / dynamic import の tree-shaking は利用者が zod / Effect 等を
+  バンドルする場合の候補。decopin の valibot は flat export で、最小 CLI の
+  minify は 80,594 B と issue の 1.4.1 測定と同じ。大幅な縮小は確認できない。
+  `--splitting` / `minChunkSize` / `splitRequire` は単一ファイル配布のため採用しない。
+- `bun install --offline` / `--prefer-offline` は依存キャッシュを CI に導入する時に
+  再検討する。`bun test --isolate` のメモリ・環境分離改善は分離実行が必要に
+  なった時の候補。現状のテスト実行方式は維持する。
+- `--env-file` の pipe/FIFO 対応は CLI 利用者が秘密管理ツールと連携する際の候補。
+  stdin を使うコマンドとの併用では process substitution を使う。
+  import attributes の型付けは TypeScript 7.1 以降かつ当該構文を使う時に検討する。
+
 ## ADR 13: middleware は `children` ではなく `next` を受け取る
 
 `layout.tsx` の `children` は React と同じ「値」で、置くだけで済む。対して
