@@ -3,8 +3,8 @@
 
 version: 2
 updates:
-  # Enable version updates for npm
-  - package-ecosystem: 'npm'
+  # Enable version updates for Bun (bun.lock)
+  - package-ecosystem: 'bun'
     directory: '/'
     schedule:
       interval: 'weekly'
