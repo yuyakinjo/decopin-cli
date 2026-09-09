@@ -7,6 +7,7 @@ description: Working on decopin-cli itself.
 bun install
 bun run ci            # build, then typecheck / test / lint / format in parallel
 bun run site          # build the documentation site into site/dist
+bun run site:dev      # build and preview at http://localhost:4173 (restart after edits)
 bun run bench         # startup time
 bun run format        # rewrite files (ci only checks)
 ```

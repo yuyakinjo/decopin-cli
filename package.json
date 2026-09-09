@@ -35,6 +35,7 @@
     "dev": "bun src/cli/bin.ts dev --app demo/app",
     "bench": "bun scripts/benchmark-startup.ts",
     "site": "bun scripts/build-site.ts",
+    "site:dev": "bun scripts/serve-site.ts",
     "ci": "bun scripts/ci.tsx",
     "build:package": "bun scripts/build-package.ts",
     "version:next": "bun scripts/next-version.ts"

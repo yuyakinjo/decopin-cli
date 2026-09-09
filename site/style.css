@@ -322,7 +322,8 @@ main strong {
   text-align: right;
 }
 footer.site {
-  grid-column: 1 / -1;
+  max-width: 90rem;
+  margin: 0 auto;
   padding: 2rem 1.25rem;
   border-top: 1px solid var(--border);
   color: var(--fg-muted);
