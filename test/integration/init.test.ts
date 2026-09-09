@@ -84,7 +84,13 @@ describe('decopin init', () => {
 
   test('生成した tsconfig.json で型検査が通る', async () => {
     const result = await run(
-      ['bunx', 'tsc', '--noEmit', '-p', 'tsconfig.json'],
+      [
+        'bun',
+        join(REPO, 'node_modules/typescript/bin/tsc'),
+        '--noEmit',
+        '-p',
+        'tsconfig.json',
+      ],
       project
     );
     expect(result.stdout).toBe('');

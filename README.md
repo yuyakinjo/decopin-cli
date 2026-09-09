@@ -40,6 +40,25 @@ bun run build
 ./dist/index.js hello          # hello, world
 ```
 
+Add files to an existing project with `gen`:
+
+```sh
+bunx decopin-cli gen --conv cmd --path app/hello
+bunx decopin-cli gen --conv argv --path app/hello
+bunx decopin-cli gen --inherited layout --path app/user
+bunx decopin-cli gen --root-only env --path app
+bunx decopin-cli gen --help
+```
+
+Choose one of `--conv`, `--inherited`, or `--root-only`; the help lists all
+supported names. `--path` is a directory relative to the current working
+directory and defaults to the app root. Use `--app src/app` for a custom root
+(and `--path src/app/hello` for a command inside it). Root-only files must go
+at that root. Inherited files use the same templates as their convention
+counterparts and apply to the subtree where they are placed. Each invocation
+creates one `.tsx` file and any missing directories. Existing `.tsx`, `.ts`,
+and legacy `command` files are kept. Run `bun run build` afterward.
+
 To set things up by hand instead
 
 ```sh
