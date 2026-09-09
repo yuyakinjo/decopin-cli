@@ -9,8 +9,9 @@
  * 既にあるファイルは上書きしない。init を途中で止めても、既存プロジェクトで
  * 打ってしまっても、消えるものが無いように
  */
-import { mkdir } from 'node:fs/promises';
-import { basename, dirname, join, resolve } from 'node:path';
+import { basename, resolve } from 'node:path';
+
+import { writeTemplates } from '../scaffold/write.ts';
 
 export interface InitOptions {
   /** 雛形を置くディレクトリ (default: カレント) */
@@ -123,20 +124,10 @@ export async function installDependencies(dir: string): Promise<boolean> {
 
 export async function init(options: InitOptions = {}): Promise<InitResult> {
   const dir = resolve(options.dir ?? '.');
-  const created: string[] = [];
-  const skipped: string[] = [];
-
-  await mkdir(dir, { recursive: true });
-  for (const [path, content] of Object.entries(templates(packageName(dir)))) {
-    const target = join(dir, path);
-    if (await Bun.file(target).exists()) {
-      skipped.push(path);
-      continue;
-    }
-    await mkdir(dirname(target), { recursive: true });
-    await Bun.write(target, content);
-    created.push(path);
-  }
+  const { created, skipped } = await writeTemplates(
+    dir,
+    templates(packageName(dir))
+  );
 
   const installed =
     options.install === false ? false : await installDependencies(dir);

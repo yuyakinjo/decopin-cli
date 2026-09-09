@@ -10,6 +10,7 @@ import { EXIT_CODE } from '../core/runtime/exit.ts';
 import type { Usage } from './argv.ts';
 import buildCommand, { usage as buildUsage } from './build/cmd.ts';
 import devCommand, { usage as devUsage } from './dev/cmd.ts';
+import genCommand, { usage as genUsage } from './gen/cmd.ts';
 import initCommand, { usage as initUsage } from './init/cmd.ts';
 
 interface Command {
@@ -20,6 +21,7 @@ interface Command {
 /** 並び順が help の並び順 */
 const COMMANDS: Record<string, Command> = {
   init: { usage: initUsage, run: initCommand },
+  gen: { usage: genUsage, run: genCommand },
   build: { usage: buildUsage, run: buildCommand },
   dev: { usage: devUsage, run: devCommand },
 };
@@ -59,6 +61,7 @@ Options:
 `;
 
 async function main(argv: string[]): Promise<number> {
+  if (argv[0] === 'gen') return genCommand(argv);
   if (argv.length === 0 || argv.includes('-h') || argv.includes('--help')) {
     process.stdout.write(USAGE);
     return EXIT_CODE.success;
