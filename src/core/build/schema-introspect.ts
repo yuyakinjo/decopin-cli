@@ -1,5 +1,6 @@
 /**
- * valibot スキーマを歩いて TypeScript の型テキストを作る (ADR 9)。
+ * valibot スキーマを歩いて、TypeScript の型テキスト (ADR 9) と JSON Schema
+ * (ADR 33) を作る。
  *
  * `<Stdin mode="json" schema={...}>` のエスケープハッチのためだけに使う。
  * JSX は型を運べない (ADR 9) ので、渡された**実オブジェクト**を読む。
@@ -7,6 +8,7 @@
  * valibot を import しないのは意図的で、`type` 文字列で分岐するだけで足りる。
  * これにより valibot への依存は src/core/validation/ に閉じたままになる (ADR 10)。
  */
+import { compactJsonSchema, type JsonSchema } from '../types/json-schema.ts';
 import { quoteKey, wrapUnion } from '../types/type-text.ts';
 
 /** unknown に落ちた箇所 */
@@ -278,4 +280,244 @@ function emitMember(
     }
   }
   return { text: emit(entry, path, depth, context), optional: false };
+}
+
+/**
+ * valibot スキーマを JSON Schema にする (ADR 33)。
+ *
+ * `Type.*` で組んだ宣言は {@link toJsonSchema} が変換するが、`output.tsx` /
+ * `stdin.tsx` は valibot スキーマを直接渡せる (ADR 9 の逃げ道)。そちらで
+ * 書いても MCP のスキーマが消えないように、同じ木をここでも歩く。
+ *
+ * **表せない節は `{}` にする**。JSON Schema の `{}` は「制約なし」であって
+ * 嘘ではないので、ここだけは annotations (ADR 32 の `unknown` は黙る) と
+ * 逆に倒す。制約を強める側に間違えると、通るはずの値を弾く形になるため、
+ * 読めた制約だけを写して残りは開けておく。
+ *
+ * direction は既定で output。stdin は input を指定し、既定値を持つキーも
+ * 省略可能として公開する。
+ *
+ * @returns valibot スキーマでなければ undefined (スキーマを出さない)
+ */
+export function schemaToJsonSchema(
+  schema: unknown,
+  options: { maxDepth?: number; direction?: 'input' | 'output' } = {}
+): JsonSchema | undefined {
+  if (!isValibotSchema(schema) || isAsyncSchema(schema)) return undefined;
+  return jsonSchemaOf(
+    schema,
+    options.maxDepth ?? DEFAULT_MAX_DEPTH,
+    new Set(),
+    options.direction === 'input'
+  );
+}
+
+/** 制約なし。表せなかった節はこれになる */
+const ANY: JsonSchema = {};
+
+/** valibot の validation アクション 1 つ */
+interface Action {
+  type: string;
+  requirement?: unknown;
+}
+
+/**
+ * `pipe` の validation アクションを集める。
+ *
+ * 入れ子の pipe は平坦化されないので {@link findTransformation} と同じく
+ * `pipe[0]` を再帰的に辿る。metadata と transformation は制約ではないので落とす
+ */
+function actionsOf(schema: SchemaLike): Action[] {
+  const pipe = schema.pipe;
+  if (!Array.isArray(pipe) || pipe.length === 0) return [];
+
+  const [base, ...rest] = pipe;
+  const inherited =
+    base !== undefined && base !== schema && isValibotSchema(base)
+      ? actionsOf(base as SchemaLike)
+      : [];
+
+  const actions: Action[] = [...inherited];
+  for (const action of rest) {
+    if (typeof action !== 'object' || action === null) continue;
+    const { kind, type, requirement } = action as {
+      kind?: unknown;
+      type?: unknown;
+      requirement?: unknown;
+    };
+    if (kind !== 'validation' || typeof type !== 'string') continue;
+    actions.push({ type, requirement });
+  }
+  return actions;
+}
+
+/** 数値の制約だけを取る (`requirement` が数でないものは無視する) */
+function numeric(actions: Action[], type: string): number | undefined {
+  for (const action of actions) {
+    if (action.type === type && typeof action.requirement === 'number') {
+      return action.requirement;
+    }
+  }
+  return undefined;
+}
+
+function has(actions: Action[], type: string): boolean {
+  return actions.some((action) => action.type === type);
+}
+
+/** 文字数・要素数の下限と上限。`length` は両方を決める */
+function bounds(actions: Action[]): { min?: number; max?: number } {
+  const exact = numeric(actions, 'length');
+  return exact === undefined
+    ? {
+        min: numeric(actions, 'min_length'),
+        max: numeric(actions, 'max_length'),
+      }
+    : { min: exact, max: exact };
+}
+
+/** リテラルの並びを enum にする。文字列だけなら出せる */
+function enumOf(values: readonly unknown[]): JsonSchema {
+  return values.length > 0 && values.every((value) => typeof value === 'string')
+    ? { type: 'string', enum: [...(values as string[])] }
+    : ANY;
+}
+
+function jsonSchemaOf(
+  value: unknown,
+  depth: number,
+  stack: Set<object>,
+  input: boolean
+): JsonSchema {
+  if (depth < 0 || !isValibotSchema(value)) return ANY;
+
+  const schema = value as SchemaLike;
+  const object = value as object;
+  // 循環と、値を変えるアクション (transform の先は読めない) はここで開ける
+  if (stack.has(object)) return ANY;
+  if (schema.async === true) return ANY;
+  if (findTransformation(schema) !== undefined) return ANY;
+
+  stack.add(object);
+  try {
+    return byType(schema, depth, stack, input);
+  } finally {
+    stack.delete(object);
+  }
+}
+
+function byType(
+  schema: SchemaLike,
+  depth: number,
+  stack: Set<object>,
+  input: boolean
+): JsonSchema {
+  const actions = actionsOf(schema);
+  switch (schema.type) {
+    case 'string': {
+      const { min, max } = bounds(actions);
+      const pattern = actions.find(
+        (action) => action.type === 'regex'
+      )?.requirement;
+      return compactJsonSchema({
+        type: 'string',
+        minLength: min,
+        maxLength: max,
+        pattern:
+          pattern instanceof RegExp && pattern.flags === ''
+            ? pattern.source
+            : undefined,
+        // email と url が両方立つことは実際には無い。立てば先に書いた方を採る
+        format: has(actions, 'email')
+          ? 'email'
+          : has(actions, 'url')
+            ? 'uri'
+            : undefined,
+      });
+    }
+    case 'number':
+      return compactJsonSchema({
+        type: has(actions, 'integer') ? 'integer' : 'number',
+        minimum: numeric(actions, 'min_value'),
+        maximum: numeric(actions, 'max_value'),
+      });
+    case 'boolean':
+      return { type: 'boolean' };
+    case 'date':
+      // 実行時は Date だが、JSON になった時点では ISO 8601 の文字列
+      return { type: 'string', format: 'date-time' };
+    case 'literal':
+      return enumOf([schema.literal]);
+    case 'picklist':
+    case 'enum':
+      return enumOf(schema.options ?? []);
+    case 'array': {
+      const { min, max } = bounds(actions);
+      return compactJsonSchema({
+        type: 'array',
+        items: jsonSchemaOf(schema.item, depth - 1, stack, input),
+        minItems: min,
+        maxItems: max,
+      });
+    }
+    case 'object':
+    case 'loose_object':
+      return objectSchema(schema, depth, stack, input);
+    case 'optional':
+    case 'exact_optional':
+      return jsonSchemaOf(schema.wrapped, depth - 1, stack, input);
+    case 'null':
+      return { type: 'null' };
+    case 'nullable':
+    case 'nullish':
+      return {
+        anyOf: [
+          jsonSchemaOf(schema.wrapped, depth - 1, stack, input),
+          { type: 'null' },
+        ],
+      };
+    case 'union': {
+      const options = schema.options ?? [];
+      if (options.length === 0) return ANY;
+      return {
+        anyOf: options.map((option) =>
+          jsonSchemaOf(option, depth - 1, stack, input)
+        ),
+      };
+    }
+    default:
+      // record / tuple / custom / lazy / intersect / variant など。
+      // lazy の getter は呼ばない (循環と副作用を避けるため)
+      return ANY;
+  }
+}
+
+/** 省略してよいキー。既定値があれば検証後に必ず入るので required に数える */
+function isOptionalEntry(entry: unknown, input: boolean): boolean {
+  if (!isValibotSchema(entry)) return false;
+  const schema = entry as SchemaLike;
+  const wrapper =
+    schema.type === 'optional' ||
+    schema.type === 'exact_optional' ||
+    schema.type === 'nullish';
+  return wrapper && (input || schema.default === undefined);
+}
+
+function objectSchema(
+  schema: SchemaLike,
+  depth: number,
+  stack: Set<object>,
+  input: boolean
+): JsonSchema {
+  const properties: Record<string, JsonSchema> = {};
+  const required: string[] = [];
+  for (const [key, entry] of Object.entries(schema.entries ?? {})) {
+    properties[key] = jsonSchemaOf(entry, depth - 1, stack, input);
+    if (!isOptionalEntry(entry, input)) required.push(key);
+  }
+  return compactJsonSchema({
+    type: 'object',
+    properties,
+    required: required.length === 0 ? undefined : required,
+  });
 }

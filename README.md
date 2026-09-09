@@ -8,6 +8,15 @@
 Build CLIs the way Next.js builds web apps: file conventions, JSX output, and
 types that come from your declarations. TypeScript + Bun.
 
+Most CLIs keep their real interface implicit. The arguments are declared, but
+whether the command reads stdin, which environment variables it needs, the
+shape of what it prints and whether it touches the disk all live inside the
+code, unstated. decopin gives each of them a file with a fixed name, which
+makes the interface a declaration — and **anything that can read a
+declaration then comes for free**: `--help`, shell completion, the TypeScript
+types, and an MCP server the CLI already is. There is no second definition to
+keep in sync, because there is no second definition.
+
 Output is JSX. There is no React — decopin ships its own small renderer.
 
 ```tsx
@@ -128,6 +137,31 @@ Every file you add does two things. It changes what the command (or the
 subtree, or the whole CLI) does, and it changes the type of `CmdProps<'…'>`
 the next time `decopin build` or `decopin dev` runs. What you leave out is not
 guessed: a command without `stdin.tsx` gets `stdin: never`, and never reads it.
+
+### Declared once, and the machines read it
+
+Because the inputs are declared instead of implied, the CLI is already an MCP
+server. Run it with the reserved `__mcp` command and an agent host can list
+and call your commands:
+
+```json
+{
+  "mcpServers": {
+    "mycli": { "command": "mycli", "args": ["__mcp"] }
+  }
+}
+```
+
+Nothing new to declare, and nothing to annotate. `argv.tsx` is the
+`inputSchema`, `output.tsx` is the `outputSchema`, `data.tsx` is the
+`structuredContent`, `env.tsx` says what a call needs, and the tool
+`annotations` (`readOnlyHint`, `openWorldHint`) come from `decopin build`
+counting which side effects each command can reach — a proven absence, not an
+assertion. `--strict-effects` turns that into a build-time guarantee. A
+command whose point is to change the parent shell (`shell.tsx`) is left out,
+because under an MCP host there is no parent shell to change. The full
+mechanics are in the
+[MCP guide](https://yuyakinjo.github.io/decopin-cli/guides/mcp/).
 
 The directory tree is also the subcommand tree, and a group lists what is
 under it, with each command's description and defaults:

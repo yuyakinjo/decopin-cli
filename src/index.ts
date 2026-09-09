@@ -130,11 +130,13 @@ export { argumentsSchema } from './features/conventions/argv/json-schema.ts';
 export {
   annotationsFor,
   EFFECTS_META_KEY,
+  ENV_META_KEY,
   listTools,
   toolName,
 } from './core/runtime/mcp.ts';
 export type {
   CallResult,
+  EnvRequirement,
   McpTool,
   ToolAnnotations,
 } from './core/runtime/mcp.ts';

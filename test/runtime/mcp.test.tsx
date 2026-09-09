@@ -14,18 +14,24 @@ import {
   annotationsFor,
   Arg,
   EFFECTS_META_KEY,
+  ENV_META_KEY,
   Argv,
+  Env,
   Line,
   Option,
   Output,
   run,
+  Shell,
   Stdin,
   Type,
+  Var,
   Version,
 } from 'decopin-cli';
 import type { EffectVerdicts, McpTool, RouteTable } from 'decopin-cli';
+import * as v from 'valibot';
 
 import { build } from '../../src/core/build/index.ts';
+import { assertToolNames } from '../../src/core/runtime/mcp-names.ts';
 
 function recorder() {
   const chunks: string[] = [];
@@ -52,7 +58,10 @@ interface Response {
 async function talk(
   table: RouteTable,
   requests: (object | string)[],
-  options: { versionFile?: () => Promise<unknown> } = {}
+  options: {
+    versionFile?: () => Promise<unknown>;
+    envFile?: () => Promise<unknown>;
+  } = {}
 ) {
   const stdout = recorder();
   const stderr = recorder();
@@ -334,7 +343,9 @@ describe('tools/list', () => {
     expect(byName.greet?._meta).toEqual({
       [EFFECTS_META_KEY]: { ...NONE, network: 'detected' },
     });
-    expect(byName.count?._meta?.[EFFECTS_META_KEY]['fs.write']).toBe('unknown');
+    expect(byName.count?._meta?.[EFFECTS_META_KEY]?.['fs.write']).toBe(
+      'unknown'
+    );
     // 手書きの表 (判定なし) なら _meta も無い
     expect(byName.bare?._meta).toBeUndefined();
   });
@@ -449,6 +460,101 @@ describe('tools/call', () => {
   });
 });
 
+describe('席が無い宣言 / 出せないコマンド', () => {
+  /** valibot で書いた output.tsx と、shell.tsx を持つコマンド */
+  const mixed: RouteTable = {
+    stats: {
+      argv: loader(() => <Argv description="Stats." />),
+      data: loader(() => ({ total: 2, tags: ['a'], note: undefined })),
+      output: loader(() => (
+        <Output
+          schema={v.object({
+            total: v.pipe(v.number(), v.integer(), v.minValue(0)),
+            tags: v.array(v.pipe(v.string(), v.minLength(1))),
+            note: v.optional(v.string()),
+          })}
+        />
+      )),
+      cmd: loader(() => <Line>unused</Line>),
+    },
+    go: {
+      argv: loader(() => <Argv description="Go somewhere." />),
+      data: loader(() => ({ path: '/tmp' })),
+      shell: loader(({ data }: { data: { path: string } }) => (
+        <Shell.Cd to={data.path} />
+      )),
+      cmd: loader(() => <Line>unused</Line>),
+    },
+  };
+
+  const envFile = loader(() => (
+    <Env>
+      <Var
+        name="API_TOKEN"
+        type="string"
+        required
+        description="what authenticates you"
+      />
+      <Var name="RETRIES" type="number" default={3} />
+    </Env>
+  ));
+
+  test('valibot で書いた output.tsx も outputSchema になる', async () => {
+    const { responses } = await talk(mixed, [
+      { jsonrpc: '2.0', id: 1, method: 'tools/list' },
+    ]);
+    const { tools } = (responses[0] as Response).result as { tools: McpTool[] };
+    const stats = tools.find((tool) => tool.name === 'stats') as McpTool;
+    expect(stats.outputSchema).toEqual({
+      type: 'object',
+      properties: {
+        total: { type: 'integer', minimum: 0 },
+        tags: { type: 'array', items: { type: 'string', minLength: 1 } },
+        note: { type: 'string' },
+      },
+      // optional なキーだけが required から落ちる
+      required: ['total', 'tags'],
+    });
+  });
+
+  test('shell.tsx を持つコマンドは一覧にも出ず、名前で呼んでも通らない', async () => {
+    const { responses } = await talk(mixed, [
+      { jsonrpc: '2.0', id: 1, method: 'tools/list' },
+      call(2, 'go'),
+    ]);
+    const { tools } = (responses[0] as Response).result as { tools: McpTool[] };
+    expect(tools.map((tool) => tool.name)).toEqual(['stats']);
+    // 一覧から外すだけでは、名前を知っているホストが呼べてしまう
+    expect((responses[1] as Response).error?.message).toBe('Unknown tool: go');
+  });
+
+  test('env.tsx の宣言は _meta に載る (呼ぶ前に読めるように)', async () => {
+    const { responses } = await talk(
+      mixed,
+      [{ jsonrpc: '2.0', id: 1, method: 'tools/list' }],
+      { envFile }
+    );
+    const { tools } = (responses[0] as Response).result as { tools: McpTool[] };
+    expect(tools[0]?._meta?.[ENV_META_KEY]).toEqual([
+      {
+        name: 'API_TOKEN',
+        required: true,
+        description: 'what authenticates you',
+        schema: { type: 'string' },
+      },
+      { name: 'RETRIES', required: false, schema: { type: 'number' } },
+    ]);
+  });
+
+  test('env.tsx が無ければ _meta に env の席も作らない', async () => {
+    const { responses } = await talk(mixed, [
+      { jsonrpc: '2.0', id: 1, method: 'tools/list' },
+    ]);
+    const { tools } = (responses[0] as Response).result as { tools: McpTool[] };
+    expect(tools[0]?._meta).toBeUndefined();
+  });
+});
+
 describe('ビルドした demo/app/ から', () => {
   let tools: McpTool[];
   beforeAll(async () => {
@@ -473,13 +579,14 @@ describe('ビルドした demo/app/ から', () => {
     expect(stats.outputSchema?.type).toBe('object');
   });
 
-  test('全コマンドがツールになる', () => {
+  test('shell.tsx を除く全コマンドがツールになる', () => {
+    // go は shell.tsx を持つ (ADR 35)。MCP のホストの下では親シェルが
+    // 居ないので、出せば黙って半分だけ効く形になる
     expect(tools.map((tool) => tool.name).sort()).toEqual([
       'config',
       'count',
       'crash',
       'deploy',
-      'go',
       'hello',
       'publish',
       'stats',
@@ -488,5 +595,149 @@ describe('ビルドした demo/app/ から', () => {
       'user_list',
       'user_show',
     ]);
+  });
+});
+
+describe('MCP 宣言と入出力の一致', () => {
+  test('nullable とフラグ付き正規表現の正常値を除外しない', async () => {
+    const schema = v.object({
+      note: v.nullable(v.string()),
+      tag: v.pipe(v.string(), v.regex(/abc/i)),
+    });
+    const routes: RouteTable = {
+      probe: {
+        cmd: loader(() => null),
+        data: loader(() => ({ note: null, tag: 'ABC' })),
+        output: loader(() => <Output schema={schema} />),
+      },
+    };
+    const { responses } = await talk(routes, [
+      { jsonrpc: '2.0', id: 1, method: 'tools/list' },
+      call(2, 'probe'),
+    ]);
+    const tools = responses[0]?.result?.tools as McpTool[];
+    expect(tools[0]?.outputSchema?.properties?.note).toEqual({
+      anyOf: [{ type: 'string' }, { type: 'null' }],
+    });
+    expect(tools[0]?.outputSchema?.properties?.tag).toEqual({ type: 'string' });
+    expect(responses[1]?.result?.structuredContent).toEqual({
+      note: null,
+      tag: 'ABC',
+    });
+  });
+
+  test('非オブジェクトと不確定な出力はスキーマと値を同じ形で包む', async () => {
+    for (const [schema, value] of [
+      [v.number(), 42],
+      [v.array(v.string()), ['a']],
+      [v.null(), null],
+      [v.union([v.object({ x: v.number() }), v.number()]), { x: 1 }],
+      [v.pipe(v.string(), v.transform(Number)), '42'],
+      [undefined, [1, 2]],
+    ] as const) {
+      const routes: RouteTable = {
+        probe: {
+          cmd: loader(() => null),
+          data: loader(() => value),
+          ...(schema === undefined
+            ? {}
+            : { output: loader(() => <Output schema={schema} />) }),
+        },
+      };
+      const { responses } = await talk(routes, [
+        { jsonrpc: '2.0', id: 1, method: 'tools/list' },
+        call(2, 'probe'),
+      ]);
+      const tools = responses[0]?.result?.tools as McpTool[];
+      if (schema !== undefined) {
+        expect(tools[0]?.outputSchema?.type).toBe('object');
+        expect(tools[0]?.outputSchema?.required).toEqual(['result']);
+      }
+      const expected = schema === undefined ? value : v.parse(schema, value);
+      expect(responses[1]?.result?.structuredContent).toEqual({
+        result: expected,
+      });
+      const content = responses[1]?.result?.content as { text: string }[];
+      expect(JSON.parse(content[0]!.text)).toEqual({ result: expected });
+    }
+  });
+
+  test('Valibot stdin の入力スキーマと既定値、文字列、null を扱う', async () => {
+    for (const [schema, input, expected] of [
+      [v.object({ count: v.optional(v.number(), 3) }), {}, { count: 3 }],
+      [v.string(), 'hello', 'hello'],
+      [v.nullable(v.string()), null, null],
+    ] as const) {
+      const routes: RouteTable = {
+        probe: {
+          cmd: loader(() => null),
+          stdin: loader(() => <Stdin mode="json" required schema={schema} />),
+          data: loader(({ stdin }: { stdin: unknown }) => ({
+            received: stdin,
+          })),
+        },
+      };
+      const { responses } = await talk(routes, [
+        { jsonrpc: '2.0', id: 1, method: 'tools/list' },
+        call(2, 'probe', { stdin: input }),
+      ]);
+      const tools = responses[0]?.result?.tools as McpTool[];
+      const exported = tools[0]?.inputSchema.properties?.stdin;
+      if (typeof input === 'object' && input !== null) {
+        expect(exported?.type).toBe('object');
+        expect(exported?.properties?.count).toEqual({ type: 'number' });
+        expect(exported?.required).toBeUndefined();
+      }
+      expect(responses[1]?.result?.structuredContent).toEqual({
+        received: expected,
+      });
+    }
+  });
+
+  test('衝突する名前は一覧も呼び出しも拒否してコマンドを実行しない', async () => {
+    let executed = false;
+    const route = {
+      cmd: loader(() => {
+        executed = true;
+        return null;
+      }),
+    };
+    for (const names of [
+      ['user/show', 'user_show'],
+      ['', 'cli'],
+      ['a'.repeat(65), 'a'.repeat(64)],
+    ]) {
+      expect(() => assertToolNames(names, 'cli')).toThrow(
+        'MCP tool name collision'
+      );
+      const routes = Object.fromEntries(names.map((name) => [name, route]));
+      const { responses } = await talk(routes, [
+        { jsonrpc: '2.0', id: 1, method: 'tools/list' },
+        call(2, names[1]!),
+      ]);
+      expect(
+        responses.every((response) =>
+          response.error?.message.includes('MCP tool name collision')
+        )
+      ).toBe(true);
+    }
+    expect(executed).toBe(false);
+  });
+
+  test('ビルドもツール名の衝突を拒否する', async () => {
+    const workspace = await mkdtemp(join(tmpdir(), 'decopin-mcp-collision-'));
+    for (const name of ['user/show', 'user_show']) {
+      await Bun.write(
+        join(workspace, 'app', name, 'cmd.ts'),
+        'export default function Command() { return null; }'
+      );
+    }
+    await expect(
+      build({
+        appDir: join(workspace, 'app'),
+        workDir: join(workspace, 'work'),
+        outDir: join(workspace, 'out'),
+      })
+    ).rejects.toThrow('MCP tool name collision');
   });
 });

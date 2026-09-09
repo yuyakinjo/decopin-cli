@@ -1,3 +1,4 @@
+import { schemaToJsonSchema } from '../../../core/build/schema-introspect.ts';
 import {
   compactJsonSchema,
   toJsonSchema,
@@ -43,9 +44,12 @@ export function argumentsSchema(spec: ArgvSpec, stdin?: StdinSpec): JsonSchema {
 
   if (stdin !== undefined && !(STDIN_ARGUMENT in properties)) {
     properties[STDIN_ARGUMENT] =
-      stdin.mode === 'json' && stdin.type !== undefined
+      stdin.mode === 'json'
         ? compactJsonSchema({
-            ...toJsonSchema(stdin.type),
+            ...(stdin.type !== undefined
+              ? toJsonSchema(stdin.type)
+              : (schemaToJsonSchema(stdin.schema, { direction: 'input' }) ??
+                {})),
             description: 'What would be piped to standard input',
           })
         : {

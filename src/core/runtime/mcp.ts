@@ -1,3 +1,5 @@
+import { assertToolNames, toolName } from './mcp-names.ts';
+export { toolName } from './mcp-names.ts';
 import {
   argumentsSchema,
   STDIN_ARGUMENT,
@@ -12,9 +14,9 @@ import { loadOutputSpec } from '../../features/conventions/output/runtime.ts';
 import type { OutputSpec } from '../../features/conventions/output/spec.ts';
 import { loadStdinSpec } from '../../features/conventions/stdin/runtime.ts';
 import type { StdinSpec } from '../../features/conventions/stdin/spec.ts';
+import { loadEnvSpec } from '../../features/root-only/env/runtime.ts';
+import type { EnvSpec } from '../../features/root-only/env/spec.ts';
 import { loadVersionSpec } from '../../features/root-only/version/runtime.ts';
-import { ERROR_TAG, errorTag } from '../errors.ts';
-import type { EffectVerdicts } from '../types/effects.ts';
 /**
  * コマンドを MCP のツールとして出す (ADR 33)。
  *
@@ -30,6 +32,9 @@ import type { EffectVerdicts } from '../types/effects.ts';
  * 付けるので、検証・middleware・output.tsx の検査・エラーの構造化 (ADR 29)
  * がすべて CLI と同じ経路を通る。MCP のためだけの経路を持たない
  */
+import { schemaToJsonSchema } from '../build/schema-introspect.ts';
+import { ERROR_TAG, errorTag } from '../errors.ts';
+import type { EffectVerdicts } from '../types/effects.ts';
 import { toJsonSchema } from '../types/json-schema.ts';
 import type { JsonSchema } from '../types/json-schema.ts';
 import { EXIT_CODE } from './exit.ts';
@@ -60,6 +65,23 @@ export interface ToolAnnotations {
  */
 export const EFFECTS_META_KEY = 'decopin-cli/effects';
 
+/**
+ * `_meta` に載せる、そのコマンドが読む環境変数 (env.tsx より)。
+ *
+ * env.tsx は root-only なので CLI 全体で同じ並びになる。それでも各ツールに
+ * 載せるのは、ホストが見るのは tools/list だけで、「このツールを動かすのに
+ * 何が要るか」はツールの性質だからである
+ */
+export const ENV_META_KEY = 'decopin-cli/env';
+
+/** 環境変数 1 つ分の要求。env.tsx の `<Var>` をそのまま写す */
+export interface EnvRequirement {
+  name: string;
+  required: boolean;
+  description?: string;
+  schema: JsonSchema;
+}
+
 /** `tools/list` の 1 件 */
 export interface McpTool {
   name: string;
@@ -68,11 +90,17 @@ export interface McpTool {
   outputSchema?: JsonSchema;
   annotations?: ToolAnnotations;
   /**
-   * 生の判定 (ADR 32) をそのまま載せる。hint は `none` のときしか動かさない
-   * ので、`unknown` で hint が消えた理由や、`detected` の内訳はここでしか
-   * 読めない。ホストが自分の基準で判断できるように
+   * 宣言のうち、MCP のフィールドに席が無いもの。
+   *
+   * - 生の判定 (ADR 32): hint は `none` のときしか動かさないので、`unknown` で
+   *   hint が消えた理由や `detected` の内訳はここでしか読めない。ホストが
+   *   自分の基準で判断できるように
+   * - 環境変数の要求 (env.tsx): 呼んで失敗するまで分からないのでは遅い
    */
-  _meta?: { [EFFECTS_META_KEY]: EffectVerdicts };
+  _meta?: {
+    [EFFECTS_META_KEY]?: EffectVerdicts;
+    [ENV_META_KEY]?: EnvRequirement[];
+  };
 }
 
 interface RpcRequest {
@@ -137,15 +165,6 @@ export function annotationsFor(
   return Object.keys(hints).length === 0 ? undefined : hints;
 }
 
-/**
- * ルート名をツール名にする。MCP は `^[a-zA-Z0-9_-]{1,64}$` を求めるので、
- * `/` は `_` に、その他の文字も `_` に落とす。ルートコマンドはプログラム名
- */
-export function toolName(route: string, program: string): string {
-  const raw = route === '' ? program : route.split('/').join('_');
-  return raw.replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 64) || 'root';
-}
-
 function invalidDefaultExport(expected: string): () => Error {
   return () => new Error(`${expected} must default-export a function`);
 }
@@ -167,13 +186,42 @@ async function loadDeclarations(route: RouteLoaders): Promise<Declarations> {
   };
 }
 
+/**
+ * ツールとして出せるコマンド。
+ *
+ * **shell.tsx を持つコマンドは外す**。あれは親シェルへの指示 (ADR 35) で、
+ * 受け渡しはシェル関数が渡す一時ファイルなので、MCP のホストの下では
+ * 起こりようがない。それでも一覧に出すと、モデルは `cli go docs` を呼んで
+ * 成功の応答を受け取り、cd は起きない — 黙って半分だけ効く形になる。
+ * 出さない方が正直である。
+ *
+ * choose() (ADR 36) を使うコマンドは**外さない**。あちらは端末でなければ
+ * exit 2 と「引数で渡せ」という文面で落ちるので、呼べば失敗が構造化されて
+ * 返り、モデルが直せる。静かに効かないのとは違う
+ */
+function mcpRoutes(
+  table: RouteTable,
+  program: string
+): [string, RouteLoaders][] {
+  const routes = Object.entries(table).filter(
+    ([, route]) => route.shell === undefined
+  );
+  assertToolNames(
+    routes.map(([name]) => name),
+    program
+  );
+  return routes;
+}
+
 /** ツール一覧。宣言ファイルを読むので非同期 */
 export async function listTools(
   table: RouteTable,
-  program: string
+  program: string,
+  envFile?: () => Promise<unknown>
 ): Promise<McpTool[]> {
+  const env = await envRequirements(envFile);
   const tools: McpTool[] = [];
-  for (const [name, route] of Object.entries(table)) {
+  for (const [name, route] of mcpRoutes(table, program)) {
     const { argv, stdin, output } = await loadDeclarations(route);
     const tool: McpTool = {
       name: toolName(name, program),
@@ -182,17 +230,46 @@ export async function listTools(
         `Run \`${[program, ...name.split('/')].filter(Boolean).join(' ')}\``,
       inputSchema: argumentsSchema(argv, stdin),
     };
-    // valibot の schema prop は内省しないので、Type.* で書いたときだけ出る
-    if (output?.type !== undefined)
-      tool.outputSchema = toJsonSchema(output.type);
+    // Type.* なら型の木から、valibot ならスキーマを歩いて (ADR 9 の逃げ道で
+    // 書いても outputSchema が消えないように)
+    const outputSchema = declaredOutputSchema(output);
+    if (route.data !== undefined && outputSchema !== undefined) {
+      tool.outputSchema =
+        outputSchema.type === 'object'
+          ? outputSchema
+          : wrappedOutputSchema(outputSchema);
+    }
     const annotations = annotationsFor(route.effects);
     if (annotations !== undefined) tool.annotations = annotations;
-    if (route.effects !== undefined) {
-      tool._meta = { [EFFECTS_META_KEY]: route.effects };
-    }
+    const meta = {
+      ...(route.effects === undefined
+        ? {}
+        : { [EFFECTS_META_KEY]: route.effects }),
+      ...(env === undefined ? {} : { [ENV_META_KEY]: env }),
+    };
+    if (Object.keys(meta).length > 0) tool._meta = meta;
     tools.push(tool);
   }
   return tools;
+}
+
+function declaredOutputSchema(
+  output: OutputSpec | undefined
+): JsonSchema | undefined {
+  return output?.type !== undefined
+    ? toJsonSchema(output.type)
+    : output?.schema !== undefined
+      ? schemaToJsonSchema(output.schema)
+      : undefined;
+}
+
+function wrappedOutputSchema(schema: JsonSchema): JsonSchema {
+  return {
+    type: 'object',
+    properties: { result: schema },
+    required: ['result'],
+    additionalProperties: false,
+  };
 }
 
 /** 引数の値を argv の 1 トークンにする。Temporal / Date は ISO 文字列 */
@@ -216,7 +293,8 @@ function asToken(value: unknown): string {
 export function toArgv(
   spec: ArgvSpec,
   args: Record<string, unknown>,
-  hasStdin: boolean
+  hasStdin: boolean,
+  jsonStdin = false
 ): { argv: string[]; stdin?: string; issues: string[] } {
   const issues: string[] = [];
   const known = new Set<string>([
@@ -270,11 +348,13 @@ export function toArgv(
 
   const stdinValue = hasStdin ? args[STDIN_ARGUMENT] : undefined;
   const stdin =
-    stdinValue === undefined || stdinValue === null
+    stdinValue === undefined || (stdinValue === null && !jsonStdin)
       ? undefined
-      : typeof stdinValue === 'string'
-        ? stdinValue
-        : JSON.stringify(stdinValue);
+      : jsonStdin
+        ? JSON.stringify(stdinValue)
+        : typeof stdinValue === 'string'
+          ? stdinValue
+          : JSON.stringify(stdinValue);
 
   return {
     argv: [
@@ -299,7 +379,7 @@ function recorder() {
 /** `tools/call` の結果 */
 export interface CallResult {
   content: { type: 'text'; text: string }[];
-  structuredContent?: unknown;
+  structuredContent?: Record<string, unknown>;
   isError?: boolean;
 }
 
@@ -309,7 +389,8 @@ type Runner = (table: RouteTable, options: RunOptions) => Promise<number>;
  * ツールを 1 回実行する。
  *
  * data.tsx があるコマンドは `--json` で走らせ、stdout の JSON を
- * `structuredContent` に、その文面を text にも出す (仕様の後方互換の勧めどおり)。
+ * オブジェクトとして `structuredContent` に、その文面を text にも出す。
+ * 出力宣言で object と確定できない値は両方とも { result: value } に包む。
  * 無いコマンドは表示そのもの (色なし) を text で返す。
  *
  * 失敗は `isError: true`。入力の誤りはプロトコルのエラーではなく
@@ -324,15 +405,24 @@ export async function callTool(
   args: Record<string, unknown>
 ): Promise<CallResult> {
   const program = options.program ?? 'cli';
-  const entry = Object.entries(table).find(
+  const entry = mcpRoutes(table, program).find(
     ([route]) => toolName(route, program) === name
   );
   if (entry === undefined) {
     throw new RpcError(RPC.invalidParams, `Unknown tool: ${name}`);
   }
   const [routeName, route] = entry;
-  const { argv: spec, stdin: stdinSpec } = await loadDeclarations(route);
-  const converted = toArgv(spec, args, stdinSpec !== undefined);
+  const {
+    argv: spec,
+    stdin: stdinSpec,
+    output,
+  } = await loadDeclarations(route);
+  const converted = toArgv(
+    spec,
+    args,
+    stdinSpec !== undefined,
+    stdinSpec?.mode === 'json'
+  );
   if (converted.issues.length > 0) {
     const payload = {
       error: {
@@ -372,10 +462,47 @@ export async function callTool(
   }
   const text = stdout.text.trimEnd();
   if (!structured) return { content: [{ type: 'text', text }] };
+  const value: unknown = JSON.parse(text);
+  const schema = declaredOutputSchema(output);
+  const wrap =
+    schema === undefined ? !isRecord(value) : schema.type !== 'object';
+  const structuredContent = wrap
+    ? { result: value }
+    : (value as Record<string, unknown>);
   return {
-    content: [{ type: 'text', text }],
-    structuredContent: JSON.parse(text) as unknown,
+    content: [
+      { type: 'text', text: wrap ? JSON.stringify(structuredContent) : text },
+    ],
+    structuredContent,
   };
+}
+
+/**
+ * env.tsx があれば、宣言した環境変数を `_meta` の形にする。
+ *
+ * 読めなければ黙って省く。env.tsx が壊れていれば CLI 自体が起動時に落ちる
+ * (そこで言う) ので、ここで一覧ごと失敗させる意味はない
+ *
+ * @returns 宣言が無い / 空なら undefined
+ */
+async function envRequirements(
+  envFile: (() => Promise<unknown>) | undefined
+): Promise<EnvRequirement[] | undefined> {
+  let spec: EnvSpec | undefined;
+  try {
+    spec = await loadEnvSpec(envFile);
+  } catch {
+    return undefined;
+  }
+  if (spec === undefined || spec.vars.length === 0) return undefined;
+  return spec.vars.map((variable) => ({
+    name: variable.name,
+    required: variable.required,
+    ...(variable.description === undefined
+      ? {}
+      : { description: variable.description }),
+    schema: toJsonSchema(variable.type),
+  }));
 }
 
 /** version.tsx があれば serverInfo に載せる */
@@ -425,7 +552,13 @@ async function dispatch(
     case 'ping':
       return {};
     case 'tools/list':
-      return { tools: await listTools(table, options.program ?? 'cli') };
+      return {
+        tools: await listTools(
+          table,
+          options.program ?? 'cli',
+          options.envFile
+        ),
+      };
     case 'tools/call': {
       if (typeof params.name !== 'string') {
         throw new RpcError(RPC.invalidParams, 'tools/call needs params.name');

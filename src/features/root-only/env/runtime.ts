@@ -3,7 +3,30 @@ import type { Renderable } from '../../../core/jsx/types.ts';
 import { CliError } from '../../../core/runtime/errors.ts';
 import { EXIT_CODE } from '../../../core/runtime/exit.ts';
 import { parseEnvSpec } from './parse.ts';
+import type { EnvSpec } from './spec.ts';
 import { validateEnv } from './validation.ts';
+
+/**
+ * env.tsx を読んで宣言だけを返す (検証はしない)。
+ *
+ * MCP のツール定義が読む (ADR 33)。何を要求するコマンドなのかは、呼んで
+ * 失敗するまで分からないのでは遅い
+ *
+ * @returns env.tsx が無ければ undefined
+ */
+export async function loadEnvSpec(
+  loader: (() => Promise<unknown>) | undefined
+): Promise<EnvSpec | undefined> {
+  if (loader === undefined) return undefined;
+  const loaded = (await loader()) as { default?: unknown };
+  const declare = loaded.default;
+  if (typeof declare !== 'function') {
+    throw new CliError('Env must default-export a function that returns <Env>');
+  }
+  return parseEnvSpec(
+    await resolveHosts((declare as () => Renderable)() as Renderable)
+  );
+}
 
 /** env.tsx を読み、起動時の環境変数を検証する。 */
 export async function loadEnv(
