@@ -12,6 +12,7 @@ import { createLayoutChains } from '../../features/inherited/layout/build.ts';
 import { createMiddlewareChains } from '../../features/inherited/middleware/build.ts';
 import { createNotFoundChains } from '../../features/inherited/not-found/build.ts';
 import { evaluateEnv } from '../../features/root-only/env/evaluate.ts';
+import { assertToolNames } from '../runtime/mcp-names.ts';
 import { annotateCommands } from './annotate.ts';
 import { bundle } from './bundler.ts';
 import {
@@ -151,6 +152,12 @@ export async function generate(
     ...deprecatedFileWarnings(deprecatedFiles)
   );
   const program = options.program ?? (await readProgramName());
+  assertToolNames(
+    routes
+      .filter((route) => route.files.shell === undefined)
+      .map((route) => route.name),
+    program
+  );
   // 名前は help 用の program ではなく package.json の bin のキーから取る
   const bin = await resolveBinaryName(program);
   const files = {

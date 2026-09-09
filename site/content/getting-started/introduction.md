@@ -41,6 +41,11 @@ two things: it changes what the command does, and it changes the type of
 `CmdProps<'…'>` the next time `decopin build` or `decopin dev` runs. What you
 leave out is not guessed.
 
+And once the inputs are declared instead of implied, everything that reads a
+declaration comes for free: `--help`, shell completion, the TypeScript types,
+and [an MCP server the CLI already is](/guides/mcp/) — `mycli __mcp`, with no
+tool definition to write and no second description to keep in sync.
+
 There are three kinds of files, and they differ in where they may go:
 
 | Kind            | Files                                                                                          | Where it goes                                     |

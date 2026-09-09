@@ -12,7 +12,14 @@ import type { TypeNode } from './type-node.ts';
 
 /** JSON Schema (draft 2020-12 の範囲で使う部分だけ) */
 export type JsonSchema = {
-  type?: 'string' | 'number' | 'integer' | 'boolean' | 'array' | 'object';
+  type?:
+    | 'string'
+    | 'number'
+    | 'integer'
+    | 'boolean'
+    | 'array'
+    | 'object'
+    | 'null';
   description?: string;
   default?: unknown;
   enum?: string[];
