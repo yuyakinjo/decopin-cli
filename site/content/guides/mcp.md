@@ -34,6 +34,10 @@ checks the data, and a failure comes back as `isError: true` with the same
 structured payload `--json` prints (`{"error": {"code": "validation", ...}}`),
 so the model can read what to fix.
 
+To add another tool, [scaffold a command](/guides/scaffold/) with `gen`,
+edit its declarations and implementation, and rebuild the CLI. It becomes
+available through the same `__mcp` entry point.
+
 ## Annotations come from analysis, not assertion
 
 Annotations are not something you assert. `decopin build` counts which side

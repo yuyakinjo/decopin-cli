@@ -18,7 +18,7 @@ bun run format        # rewrite files (ci only checks)
 
 ```
 src/
-├── cli/                  the decopin command: init, build, dev
+├── cli/                  the decopin command: init, gen, build, dev
 ├── core/
 │   ├── build/            scanner, evaluator, type emitter, codegen
 │   ├── runtime/          what runs inside your built CLI

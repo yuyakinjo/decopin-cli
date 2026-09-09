@@ -39,6 +39,7 @@
     {
       "title": "Guides",
       "pages": [
+        "guides/scaffold",
         "guides/subcommands",
         "guides/output-components",
         "guides/partial-repainting",

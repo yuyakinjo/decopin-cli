@@ -10,6 +10,13 @@ bun run build
 ./dist/index.js hello          # hello, world
 ```
 
+To add commands and other convention files after setup, use
+[`gen`](/guides/scaffold/).
+
+```sh
+bunx decopin-cli gen --conv cmd --path app/greet
+```
+
 ## By hand
 
 ```sh
