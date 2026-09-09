@@ -275,8 +275,8 @@ function render(page: Page, index: number): string {
     ${pager(index)}
   </main>
   <aside class="toc">${toc(page)}<a class="edit" href="${nav.repo}/edit/main/site/content/${page.slug}.md">Edit this page on GitHub</a></aside>
-  <footer class="site"><span>MIT License</span><a href="${nav.repo}">GitHub</a><a href="https://www.npmjs.com/package/decopin-cli">npm</a></footer>
 </div>
+<footer class="site"><span>MIT License</span><a href="${nav.repo}">GitHub</a><a href="https://www.npmjs.com/package/decopin-cli">npm</a></footer>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
 <script>${PAGE_SCRIPT}</script>
 </body>
