@@ -281,6 +281,9 @@ main th {
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
+main td code {
+  white-space: nowrap;
+}
 main blockquote {
   margin: 1rem 0;
   padding: 0.5rem 1rem;

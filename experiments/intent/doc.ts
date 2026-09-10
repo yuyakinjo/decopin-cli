@@ -19,6 +19,7 @@ import {
   mergeReports,
   sharedCarriers,
   toDocument,
+  unproven,
 } from './core.ts';
 import { SHARD_DIR } from './evidence.ts';
 
@@ -76,6 +77,15 @@ for (const report of merged.values()) {
   process.stdout.write(toDocument(report));
 }
 
+/**
+ * 全体の判定はここ。断片 1 つでは「この Intent の Behavior が全部証明された
+ * か」を言えない (report(impl, { partial: true }) で分担している場合がある)。
+ * 合流した後なら言えるので、残っていれば落とす。
+ */
+const left = [...merged.values()].flatMap((report) =>
+  unproven(report).map((behavior) => `${report.id}/${behavior}`)
+);
+
 // §11.8 の重なり。疑いを出すだけで、正常な再利用かどうかは人が決める (§5.1)
 const shared = sharedCarriers([...merged.values()]);
 if (shared.length > 0) {
@@ -86,4 +96,11 @@ if (shared.length > 0) {
       process.stdout.write(`      ${use.intent} / ${use.behavior}\n`);
     }
   }
+}
+
+if (left.length > 0) {
+  process.stderr.write(
+    `[intent] 証明されていない Behavior: ${left.join(', ')}\n`
+  );
+  process.exit(1);
 }

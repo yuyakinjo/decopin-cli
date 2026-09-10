@@ -192,13 +192,23 @@ function slot(
   return created;
 }
 
+/**
+ * Evidence を記録する。**確定した結果 (`passed` / `failed`) は動かない。**
+ *
+ * 一方向にしてあるのは、テストランナーが打ち切った後に `fn()` が遅れて
+ * 解決することがあるから。タイムアウトで落ちたテストの `passed` が後から
+ * 上書きすると、落ちているのに ✓ が出る (§11.7 False Verification)。
+ */
 export function recordEvidence(
   intentId: string,
   behaviorId: string,
   name: string,
   status: EvidenceStatus
 ): void {
-  slot(intentId, behaviorId).set(name, status);
+  const slots = slot(intentId, behaviorId);
+  const current = slots.get(name);
+  if (current === 'passed' || current === 'failed') return;
+  slots.set(name, status);
 }
 
 export function evidenceOf(
