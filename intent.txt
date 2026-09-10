@@ -1,0 +1,1026 @@
+Intent-First Development
+
+Design / Theory / Method — Draft v0.1
+
+0. この実験について
+
+このプロジェクトでは、Intent-First Developmentという開発モデルを、実際のライブラリ開発に適用しながら検証する。
+
+最初のドッグフーディング対象として decopin-cli を使用する。
+
+decopin-cli はTypeScript + Bunを基盤とし、ファイル規約・JSX・型生成・runtime validationなど、すでに「宣言を中心に実装を構成する」という性質を持っている。
+
+そのため、Intent-First Developmentを実際のコードベースへ導入し、
+
+* Intentは本当に有用なのか
+* Behaviorという中間概念は必要なのか
+* TestをIntentのEvidenceとして扱えるのか
+* 既存コードへ導入できるのか
+* 複数Behaviorを扱っても複雑化しないか
+* AI Agentによる変更に利用できるのか
+
+を実証する。
+
+この段階では、新しい言語や拡張子を作ることを目的としない。
+
+まず開発モデルを検証し、その結果として必要な仕組みだけを実装する。
+
+⸻
+
+1. 問題意識
+
+現在のソフトウェア開発では、コードの「何をするか」は実装やTestからある程度読み取れる。
+
+一方、
+
+なぜこのコードが存在するのか
+
+という設計意図は、JSDoc、コメント、README、ADR、Issueなどに分散しやすい。
+
+特にJSDocやコメントは、Implementationが変更された後も更新されず、実装との乖離が発生する。
+
+そこで、
+
+「コードの説明を残す」
+
+のではなく、
+
+「Intentをコードベースの第一級Artifactとして扱う」
+
+ことを考える。
+
+⸻
+
+2. Intentとは何か
+
+Intentは、「このコードによって何を達成しようとしているのか」を表す。
+
+Intentは人間の設計判断であるため、完全に構造化・機械解釈することを目的としない。
+
+例えば、「決済APIが冪等性を保証しないため、UI側で二重送信を防ぐ」のような自然言語を許容する。
+
+したがって、
+
+Intent = human-readable / human-owned
+
+とする。
+
+ただしIntentそのものは直接Testしにくい。
+
+そこでBehaviorを導入する。
+
+⸻
+
+3. 基本モデル
+
+Intent-First Developmentの基本的な流れは、
+
+Intent
+   ↓
+Behavior
+   ↓
+Test
+   ↓
+Implementation
+
+とする。
+
+より構造的には、
+
+Intent
+   │
+   ▼
+Behavior
+   │
+   ▼
+Implementation
+   │
+   ▼
+Component / Function / Module
+
+TestはBehaviorを証明するEvidenceとして扱う。
+
+Behavior
+   ▲
+   │
+ Test
+
+したがって、TestはImplementationそのものを中心にするのではなく、
+
+ImplementationがBehaviorを満たしていることを証明する
+
+ものとする。
+
+⸻
+
+4. IntentとBehavior
+
+Intentは抽象的な目的。
+
+Behaviorは、そのIntentを特定のコンテキストで具体化した、機械的に検証可能な振る舞い。
+
+例えば、
+
+Intent:
+「決済の二重実行を防ぐ」
+Behavior:
+「submitは1回しか実行されない」
+
+あるいは、
+
+Intent:
+「ユーザーが安全に決済できる」
+Behaviors:
+- submit-only-once
+- disable-while-submitting
+- recover-after-error
+
+という関係になる。
+
+重要なのは、
+
+Intentを細かく構造化するのではなく、Behaviorを検証可能な単位にすること。
+
+ただし、BehaviorはIntentと同じ寿命を持たない。
+
+Intentは、達成しようとしていることが変わらない限り安定する。
+
+Implementationは、技術や環境の変化に応じて流動する。
+
+Behaviorはその中間にあり、Intentより短く、Implementationより長い。
+
+Behaviorは「機械的に検証可能」であることを求められるため、書いた瞬間から実装の語彙を吸い込みやすい。
+
+例えば、
+
+Behavior:
+「生成した雛形だけでbuildが通り、dist/index.js helloが挨拶する」
+
+は、出力先をdist/から変えただけで文が偽になる。
+
+Intentは1ミリも変わっていない。
+
+11.4 Behavior Explosion と 11.5 Behavior Coupling は、この滑りが進んだ後の症状ではないかと考えている。
+
+Behaviorを第3のArtifactとして別の扱いにするかは未決とする (19)。
+
+⸻
+
+5. 複数Behavior
+
+1つのIntentは複数のBehaviorを持てる。
+
+Intent
+ ├── Behavior A
+ ├── Behavior B
+ └── Behavior C
+
+Behavior同士を自由なグラフとして接続することは、原則として避ける。
+
+例えば、
+
+A → B → C → D
+
+のような複雑なBehavior依存を基本構造にしない。
+
+基本的には、
+
+             ┌── Behavior A ──┐
+Intent ──────┼── Behavior B ──┼──→ Implementation
+             └── Behavior C ──┘
+
+とする。
+
+これにより、Behaviorが増えても構造が発散しにくくなる。
+
+5.1 Behaviorは共有しない
+
+1つのBehaviorは、ちょうど1つのIntentに属する。
+
+複数のIntentが同じBehaviorを指すことは許さない。
+
+実験2 (decopin gen) で、別々のIntentが近い保証を必要とする場面が出た。
+
+Intent: start-by-writing-commands  → Behavior: never-overwrites
+Intent: add-conventions-without-memorizing → Behavior: keeps-existing-files
+
+説明文はほぼ同じで、担っている実装 (writeTemplates) も同じ。
+
+一見すると1つのBehaviorを2つのIntentが共有している形に見える。
+
+しかし共有を許すと、次の4つが保てなくなる。
+
+免除が伝染する:
+waiverはBehaviorが持つ。片方のIntentの都合でwaived()にすると、
+もう片方のIntentでも証明が要求されなくなる。
+欠落を可視化するためのwaived()が、逆に欠落を隠す。
+
+証明の所属が決まらない:
+Evidenceは (Intent, Behavior) の組で記録される。
+共有すると、同じ証明を2回書くか、片方が永久に未証明のまま残る。
+Behaviorだけをキーにすれば直るが、今度は
+「そのIntentのTestを1つも走らせていないのに緑になる」が起きる。
+
+Carrierの矛盾を検出できない:
+Implementationの宣言はIntent単位なので、
+同じBehaviorに別々の実装を結んでも、どこも落ちない。
+
+Intentを消せなくなる:
+13のLifecycleでは、Intentが死ねばBehaviorも死ぬ。
+共有していると、片方のIntentを消したときに
+Behaviorを消してよいか決められない。
+所有者が2人いるArtifactが生まれる。
+
+Intentは人が所有する。所有者は1人でなければならない。
+
+したがって、近い保証が複数のIntentに現れたときは、
+それぞれのIntentの文脈で言い直す。
+
+重なりはBehaviorの側ではなく、Carrierの側に現れる。
+
+これは異常ではない。1つの実装が複数の目的を担うのは正常な状態で、
+11.8が「疑いを出すところまで」としているのはこのため。
+
+⸻
+
+6. 一方向性
+
+Intent-First Developmentでは、Reactの重要な特性の一つである「一方向」のmental modelを参考にする。
+
+基本的な情報の流れは、
+
+Intent
+  ↓
+Behavior
+  ↓
+Implementation
+  ↓
+Component
+
+とする。
+
+IntentからImplementationへ向かう。
+
+ImplementationからIntentを生成・変更することを基本モデルにはしない。
+
+Testは横からBehaviorを証明する。
+
+              Intent
+                 ↓
+              Behavior
+                 ↓
+           Implementation
+                 ↓
+             Component
+                 ↑
+                 │
+                Test
+
+内部的な関係が複雑であっても、開発者が理解する基本方向は単純に保つ。
+
+⸻
+
+7. BehaviorとFunction
+
+Behaviorを実装そのものと同一視しない。
+
+特にReactでは、
+
+* state
+* props
+* event handler
+* custom hook
+* context
+* API
+* Server Action
+* reducer
+
+など、Behaviorを実現する方法は多数存在する。
+
+したがって、
+
+Behaviorの実装方法をTSXWが強制する
+
+ことは避ける。
+
+重要なのは、
+
+どのFunction / ComponentがどのBehaviorを担っているか
+
+を表現できること。
+
+⸻
+
+8. 二つのパターン
+
+BehaviorとImplementationを結びつける方法として、現在2つのパターンを考えている。
+
+8.1 一方向パターン
+
+describeBehaviorなどがBehaviorを付与したFunctionを返す。
+
+概念的には、
+
+const handleSubmit = describeBehavior(
+  createOrder,
+  [
+    submitOnlyOnce,
+    disableWhileSubmitting,
+    recoverAfterError,
+  ]
+)
+
+そして、
+
+<button onClick={handleSubmit}>
+  Pay
+</button>
+
+とする。
+
+特徴は、
+
+Behaviorを通過したFunctionをImplementationとして利用する
+
+こと。
+
+BehaviorがImplementationに直接関与する。
+
+⸻
+
+8.2 証明分離パターン
+
+Implementationは通常のTypeScript/Reactコードとして書く。
+
+function PaymentButton() {
+  // ordinary implementation
+}
+
+BehaviorとImplementationの関係はTestによって証明する。
+
+describeBehavior(submitOnlyOnce, ...)
+describeBehavior(disableWhileSubmitting, ...)
+describeBehavior(recoverAfterError, ...)
+
+特徴は、
+
+BehaviorはImplementationを生成せず、Testが適合性を証明する
+
+こと。
+
+⸻
+
+8.3 二つのパターンの共通点
+
+重要なのは、二つのパターンを別の理論として扱わないこと。
+
+どちらも最終的には、
+
+Intent
+   │
+   ├── Behavior A
+   ├── Behavior B
+   └── Behavior C
+            │
+            ▼
+       Implementation
+            │
+            ▼
+        Component
+
+という同じIntent Graphになる。
+
+違いは、
+
+describeBehaviorの返り値をImplementationとして利用するかどうか
+
+という記述方法の違い。
+
+この2つを同じ基盤で扱えるかを検証する。
+
+⸻
+
+9. 型安全性
+
+型安全性はBehaviorの実装そのものを完全に型付けする方向にはしない。
+
+例えば、
+
+Behavior<
+  Input,
+  Output,
+  State,
+  Effects,
+  Dependencies,
+  ...
+>
+
+のような巨大な型システムを作ることは避ける。
+
+型安全性の主な対象は、
+
+Intent ↔ Behavior
+Behavior ↔ Function
+Behavior ↔ Test
+Function ↔ Component
+
+などのArtifact間の構造・参照関係とする。
+
+Behaviorの具体的な実装は通常のTypeScriptに任せる。
+
+原則：
+
+Graphの構造は型安全に、Implementationの自由度は維持する。
+
+⸻
+
+10. Test = Evidence
+
+Testは単に「テストコードが存在する」という意味ではない。
+
+Behaviorを証明するEvidenceとして扱う。
+
+例えば、
+
+Behavior:
+submit-only-once
+Test:
+click()
+click()
+expect(onSubmit).toHaveBeenCalledTimes(1)
+
+という関係。
+
+理想的には、
+
+Behavior
+   │
+   └── Evidence
+          │
+          └── Test
+
+を辿れるようにする。
+
+ただし、
+
+Testが存在することと、Behaviorが本当に証明されていることは同じではない。
+
+そのため「False Verification」を重要なアンチパターンとして扱う。
+
+また、Evidenceは永続的な真ではない。
+
+Testが通ったという事実は、ある日付の、あるランタイムとある依存関係の上での観測結果である。
+
+例えば「生成したtsconfig.jsonで型検査が通る」は、TypeScriptのバージョンに完全に相対的で、来年同じ結果が出る保証はない。
+
+したがってEvidenceは、蓄積して保存するものではなく、そのつど作り直すものとして扱う。
+
+「証明」という語がこの時制を隠していないかは、19で未決とする。
+
+⸻
+
+11. 主要なアンチパターン
+
+Intent-First Developmentでは、何が「やってはいけないこと」なのかも理論の一部として定義する。
+
+11.1 Implementation First
+
+Implementation
+ ↓
+Behavior
+ ↓
+Intent
+
+を通常の新規開発として行う。
+
+ただし既存コードのIntent Recoveryでは例外的に許容する。
+
+⸻
+
+11.2 Intent as Comment
+
+Intentを単なるコメント/JSDocとして記述する。
+
+Intent Graphとの接続がないため、陳腐化問題を解決できない。
+
+⸻
+
+11.3 Behaviorless Intent
+
+Intentは存在するが、検証可能なBehaviorが存在しない。
+
+人間には意味があるが、機械的なEvidenceに接続できない。
+
+⸻
+
+11.4 Behavior Explosion
+
+DOMの細かな実装詳細までBehavior化する。
+
+Behaviorが大量のノイズとなり、Intentの意味を失わせる。
+
+数が多いこと自体より、増え方を見る。
+
+Behaviorが増え続けているとき、それはIntentが判断を経ずに広がっている兆候かもしれない (11.8)。
+
+⸻
+
+11.5 Behavior Coupling
+
+Behavior同士を過剰に依存させる。
+
+A → B → C → D
+
+のようなグラフを形成する。
+
+⸻
+
+11.6 Hidden Behavior
+
+Implementationには重要な振る舞いが存在するのに、Intent/Behaviorとして宣言されていない。
+
+Intent GraphとImplementationが乖離する。
+
+⸻
+
+11.7 False Verification
+
+Testが存在するが、実際にはBehaviorを証明していない。
+
+Behavior ✓
+Test ✓
+
+と表示されてもEvidenceとして意味がない状態。
+
+⸻
+
+11.8 Intent Duplication
+
+同じ目的に対して複数のIntent Identityを作る。
+
+prevent-double-submit
+prevent-duplicate-submit
+avoid-double-submit
+
+など。
+
+発散には2つの形がある。
+
+可視の分裂:
+Intentが2つになる。上の例。名前が並ぶので気づける。
+
+不可視の膨張:
+Intentは1つのまま、purposeが黙って広がる。
+purposeは自然言語なので、広がったことを検出する手段がない。
+
+後者は、次の経路で起きる。
+
+Testが落ちる
+  ↓
+落ちた理由がBehaviorの記述の古さであることに気づかない (13)
+  ↓
+Implementationを直して緑にする
+  ↓
+それでも収まらないぶんをBehaviorとして足す
+  ↓
+誰も「このIntentを広げよう」と決めていないのに守備範囲が広がる
+
+このとき、観測可能な副作用は1つしかない。
+
+Behaviorの数が増えること。
+
+したがって11.4 Behavior Explosionは、見づらさの問題ではなく、
+Intentが判断を経ずに広がったことの唯一の兆候として読む。
+
+可視の分裂については、Intent Graphから検出できる余地がある。
+
+Intentが複数あるとき、carriersの集合が重なっていれば重複を疑う。
+
+名前は揺れなくても実体は重なりうるため、名前の類似より強い信号になる。
+
+ただし1つの関数が正当に複数のIntentを担うことはあるので、疑いを出すところまでとする。
+
+実験2で、この「正当に重なる」側が先に出た。
+
+writeTemplates が init と gen の両方を担っており、
+carriersの集合は重なるが、Intentは重複していない (5.1)。
+
+つまりこの信号は、単独ではIntent Duplicationを意味しない。
+
+読み方は次の2段になる。
+
+carriersが重なる かつ purposeが同じ目的を指している → 11.8 の疑い
+carriersが重なる かつ purposeが別の目的を指している → 正常な再利用
+
+後段を機械が判定することはできない。purposeは自然言語だから。
+
+Graphができるのは、重なりを漏らさず一覧に出すところまで。
+どちらかを決めるのは人の仕事になる。
+
+なお、Testが落ちたとき、答えは3通りある。
+
+Implementationが間違っている / Behaviorの記述が古い / Intentを広げるべき
+
+現在のモデルには、どれを選んだのかを記録する場所がない。
+
+「テストが通ればいい」に流れるのは、記録先が用意されていないことの結果でもある。
+
+⸻
+
+11.9 Component-Centric Intent
+
+IntentがComponentの別名になる。
+
+IntentはComponentではなく、目的をIdentityとする。
+
+Intent: prevent-double-submit
+ ├── PaymentButton
+ ├── CheckoutButton
+ └── SubscribeButton
+
+という再利用可能な関係を維持する。
+
+⸻
+
+11.10 Intent Theater
+
+Intent、Behavior、Testが存在しているように見えるが、実際にはImplementationを拘束していない。
+
+これはIntent-First Developmentにおける最大のアンチパターン候補。
+
+⸻
+
+12. 新規開発と既存コード
+
+Intent-First Developmentは、新規開発だけを対象にしない。
+
+新規開発
+
+Intent
+ ↓
+Behavior
+ ↓
+Test
+ ↓
+Implementation
+
+これが理想的なIntent-First Development。
+
+既存コード
+
+既存コードでは逆方向からIntentを回収する。
+
+Existing Implementation
+        ↓
+Behavior Discovery
+        ↓
+Intent Recovery
+        ↓
+Test
+
+これはIntent-First Developmentそのものではなく、
+
+Intent Recovery
+
+という別のMethodとして扱う。
+
+⸻
+
+13. Intent Lifecycle
+
+Intentは永続的なコメントではなく、Lifecycleを持つ。
+
+Intent
+  ↓
+Behavior
+  ↓
+Test
+  ↓
+Implementation
+
+Implementationが変更された場合、
+
+Intent
+ ↓
+affected Behaviors
+ ↓
+affected Tests
+ ↓
+affected Implementations
+
+を追跡できることを目指す。
+
+また、設計環境が変わった場合、
+
+Intent obsolete?
+       ↓
+Behavior obsolete?
+       ↓
+Test obsolete?
+       ↓
+Implementation obsolete?
+
+という判断を可能にする。
+
+ただし、陳腐化はこの経路だけを辿るとは限らない。
+
+Intentが変わらないまま、Behaviorだけが古くなることがある (4)。
+
+Intent alive
+      ↓
+Behavior obsolete
+      ↓
+Test obsolete
+
+Behaviorが実装の語彙を含んでいた場合に起きる。
+
+このときTestは落ちるが、落ちた理由は「Intentが成り立たなくなった」ことではなく、「Behaviorの記述が古い」ことにある。
+
+両者を区別できないと、Behaviorの文を直すべき場面でImplementationを直してしまう。
+
+これにより、
+
+「このコードは何のためにあるんだっけ？」
+
+ではなく、
+
+「このIntentはまだ存在するか？」
+
+からコードの寿命を判断できる。
+
+⸻
+
+14. AIとの関係
+
+Intent-First Developmentでは、AIにコードそのものではなくIntentを中心に依頼できる可能性がある。
+
+例えば、
+
+prevent-double-submit Intentを維持したままPaymentButtonを変更する。
+
+AIは、
+
+Intent
+ ↓
+Behaviors
+ ↓
+Tests
+ ↓
+Implementation
+
+を辿って変更する。
+
+逆に、
+
+prevent-double-submit Intentを削除する。
+
+なら、
+
+Intent
+ ↓
+Behaviors
+ ↓
+Tests
+ ↓
+Components
+
+を探索し、影響範囲を提示できる。
+
+したがってAIの役割を、
+
+「コード生成」から「Intentを満たすImplementationの生成・変更」へ変える
+
+ことができる可能性がある。
+
+これは仮説であり、ケーススタディによって検証する。
+
+⸻
+
+15. 自動ドキュメント
+
+Intent / Behavior / Test / Implementationが構造化されていれば、ドキュメントを別途手書きする必要性が減る。
+
+例えば、
+
+Intent: safe-payment
+Purpose:
+決済を安全に実行する
+Behaviors:
+✓ submit-only-once
+✓ disable-while-submitting
+✓ recover-after-error
+Evidence:
+✓ PaymentButton.test.tsx
+✓ payment.spec.ts
+Implementation:
+PaymentButton
+createOrder
+
+のようなドキュメントを自動生成できる。
+
+重要なのは、
+
+ドキュメントを生成することが目的ではなく、第一級Artifactとして存在するIntent Graphから自然にドキュメントを生成できる
+
+ことである。
+
+⸻
+
+16. decopin-cliでのドッグフーディング
+
+最初の実験対象として decopin-cli を利用する。
+
+decopin-cli は、すでにファイル規約を中心とした宣言的な構造を持っている。
+
+例えば、
+
+app/
+  user/
+    list/
+      argv.tsx
+      data.tsx
+      cmd.tsx
+
+のような構造からCLIの振る舞いを導出している。
+
+また、argv.tsx の宣言がvalidation・help・型生成に利用され、output.tsx はruntime validationにも利用される。(GitHub)
+
+この既存の設計を壊すのではなく、
+
+「この構造はなぜ存在するのか？」
+
+をIntentとして明示するところから始める。
+
+⸻
+
+17. 最初の実験
+
+最初からdecopin-cli全体をIntent化しない。
+
+1つの小さな既存機能を選ぶ。
+
+例えば、
+
+argv.tsx
+
+について、
+
+Intent
+
+「CLIの引数定義を一箇所に記述し、その宣言から型・validation・helpを一貫して生成する」
+
+Behaviors
+
+* argument declaration is the source of TypeScript types
+* argument declaration is the source of runtime validation
+* argument declaration is the source of --help
+* invalid input is rejected consistently
+
+というように分解する。
+
+実際、現在のREADMEにも、argv.tsx の宣言がvalidation・--help・typesの3つを駆動することが明示されている。(GitHub)
+
+これらをTestへ接続する。
+
+⸻
+
+18. 最初に検証すること
+
+最初のPrototypeでは、機能追加よりも以下を検証する。
+
+Question A
+
+Intentを自然言語で書いたとき、Behaviorへ適切に分解できるか。
+
+Question B
+
+Behaviorはどの粒度が適切か。
+
+細かすぎるとBehavior Explosionになる。
+
+粗すぎるとTestできない。
+
+Question C
+
+一方向パターンは実際のコードで自然か。
+
+Question D
+
+証明分離パターンは既存コードへの導入に自然か。
+
+Question E
+
+同じIntent Graphを2パターンで表現できるか。
+
+Question F
+
+複数Behaviorを追加してもモデルが複雑化しないか。
+
+Question G
+
+IntentとImplementationの乖離を実際に検出できるか。
+
+Question H
+
+AI AgentがIntent Graphを使って変更できるか。
+
+⸻
+
+19. まだ決めないこと
+
+現段階では、以下は意図的に未決定とする。
+
+* .tsxw のような新しい拡張子が必要か
+* Intentをどのファイルに置くか
+* Intentの具体的なAPI
+* Behaviorの具体的なAPI
+* describeBehaviorという名前を維持するか
+* Behavior同士の関係をどこまで許すか
+* Behaviorを型でどこまで表現するか
+* Behaviorを第3のArtifactとして別扱いにするか (4)
+  Intentより短くImplementationより長い寿命に、専用の扱いが要るか
+  退役したBehaviorを記録するか、配列から消して履歴ごと失うか
+* 「証明」という語を維持するか (10)
+  Evidenceは日付とツールチェーンに紐づいた観測であり、永続的な真ではない
+  単体のEvidenceには強い語を残し、集約は「証拠の有無」までに留める案がある
+* TestをどのTest Runnerに依存させるか
+* Compilerが必要か
+* CLIが必要か
+* VS Code Extensionが必要か
+* Intent GraphをJSON等に出力するか
+* AI Agent向けのinterfaceをどうするか
+
+これらは理論から必要性が出てきた時点で決める。
+
+⸻
+
+20. 現時点での中心仮説
+
+Intent-First Developmentの本質は、
+
+JSDocを陳腐化させないことではない。
+
+より本質的には、
+
+Intentを第一級Artifactとしてコードベースに保持し、そのIntentをBehaviorとして具体化し、TestによってEvidenceを与え、ImplementationをそのBehaviorを満たすものとして扱う開発モデルである。
+
+基本モデル：
+
+        Intent
+          │
+          ▼
+       Behavior
+          │
+          ▼
+   Implementation
+          │
+          ▼
+      Component
+          ▲
+          │
+         Test
+
+このモデルを、
+
+* 人間にとって理解しやすい
+* TypeScriptにとって扱いやすい
+* Reactの一方向性と相性がよい
+* 既存コードへ導入できる
+* AI Agentが利用できる
+* 自動ドキュメント生成につながる
+
+ものとして成立させられるかを、decopin-cli の実開発を通して検証する。
+
+理論を先に固定しすぎず、ドッグフーディングによって理論そのものを修正する。
+
+⸻
+
+21. 次のステップ
+
+次は実装ではなく、まず decopin-cli の既存コードから1つのケースを選び、
+
+Existing Implementation
+        ↓
+Intent Recovery
+        ↓
+Behavior
+        ↓
+Test
+
+を実際に書いてみる。
+
+その後、
+
+Intent
+ ↓
+Behavior
+ ↓
+Test
+ ↓
+Implementation
+
+で同じ機能を新規に作る。
+
+この2つを比較することで、Intent-First Developmentの「理論」と「実際の開発体験」の差を確認する。
+
+その結果をもとに、Design / Theory / Methodをv0.2へ更新する。

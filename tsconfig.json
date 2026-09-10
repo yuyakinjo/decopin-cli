@@ -22,6 +22,7 @@
     "test/**/*",
     "demo/app/**/*",
     "scripts/**/*",
+    "experiments/**/*",
     ".decopin/types.d.ts"
   ],
   // 当て木は専用の tsconfig から検査する (ルートの型検査からは外す)

@@ -172,6 +172,7 @@ test-app-version/
 .decopin-test-*/
 .decopin-lazy-*/
 .decopin-probe/
+.decopin-intent/
 # npm 公開物の出力先。ルート直下だけ (demo/app/publish/ のようなコマンド名を巻き込まない)
 /publish/
 lib/
