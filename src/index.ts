@@ -74,6 +74,10 @@ export type {
   Completer,
   CompleteProps,
 } from './features/conventions/complete/runtime.ts';
+export type {
+  CommandExample,
+  Examples,
+} from './features/conventions/example/runtime.ts';
 export type { ShellName } from './features/conventions/shell/runtime.ts';
 export { CliError, isCliError } from './core/runtime/errors.ts';
 export type { ErrorKind, ErrorProps } from './core/runtime/errors.ts';

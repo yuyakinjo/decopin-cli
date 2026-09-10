@@ -20,7 +20,8 @@
         "conventions/stdin",
         "conventions/help",
         "conventions/shell",
-        "conventions/complete"
+        "conventions/complete",
+        "conventions/example"
       ]
     },
     {

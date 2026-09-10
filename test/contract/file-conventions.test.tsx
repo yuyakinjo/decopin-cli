@@ -50,6 +50,7 @@ describe('置ける場所', () => {
       'help',
       'shell',
       'complete',
+      'example',
     ]);
   });
 

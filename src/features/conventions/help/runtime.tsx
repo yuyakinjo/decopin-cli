@@ -54,12 +54,14 @@ export async function describeCommands(
   return Object.fromEntries(entries);
 }
 
-function argUsage(arg: ArgSpec): string {
+/** 位置引数を打つときの形。docs も同じ形で書くので共有する (ADR 8) */
+export function argUsage(arg: ArgSpec): string {
   const inner = arg.variadic ? `${arg.name}...` : arg.name;
   return arg.required ? `<${inner}>` : `[${inner}]`;
 }
 
-function optionLabel(option: OptionSpec): string {
+/** オプションを打つときの形。docs も同じ形で書くので共有する (ADR 8) */
+export function optionLabel(option: OptionSpec): string {
   const flags =
     option.alias === undefined
       ? `    --${option.name}`

@@ -43,7 +43,12 @@ for (const file of srcFiles) srcSources.set(file, await Bun.file(file).text());
  * コメントを落として、文字列リテラルの中身だけを取り出す。
  *
  * 素朴に正規表現をかけると JSDoc の日本語まで拾ってしまうので、
- * 文字列とコメントの状態を見ながら 1 文字ずつ進む
+ * 文字列とコメントの状態を見ながら 1 文字ずつ進む。
+ *
+ * **正規表現リテラルは解釈しない。** `/` の後が除算か正規表現かは前の
+ * トークンを見ないと決まらないので、そこまではやっていない。代わりに
+ * 引用符を含む正規表現 (`` /`{3,}/ `` など) を src/ に書かない、という運用に
+ * している。書くとその先のコメントまで文字列として拾い、ここが誤検出する
  */
 function stringLiterals(source: string): string[] {
   const literals: string[] = [];
@@ -323,6 +328,11 @@ const GUARDS: Record<number, Guard> = {
     kind: 'test',
     label: 'decopin dev --annotate は cmd.tsx の props に生成型を書き足す',
     file: 'test/build/annotate.test.ts',
+  },
+  45: {
+    kind: 'test',
+    label: '実行例は example.tsx で宣言し、docs はそれだけを実行する',
+    file: 'experiments/intent/docs/docs.test.ts',
   },
   40: {
     kind: 'test',

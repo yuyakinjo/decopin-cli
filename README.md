@@ -96,6 +96,7 @@ settings, unless your tsconfig uses `extends`).
 ```sh
 bunx decopin build   # scan app/ and produce dist/index.js
 bunx decopin dev     # watch app/ and rebuild types + dist/index.js on every save
+bunx decopin docs    # write a Markdown reference for every command to stdout
 ```
 
 ## Files, not configuration
@@ -108,11 +109,11 @@ type checker cannot see any of them.
 decopin gives each of them a file with a fixed name. There are three kinds,
 and they differ in where they may go:
 
-| Kind            | Files                                                                                          | Where it goes                                     |
-| --------------- | ---------------------------------------------------------------------------------------------- | ------------------------------------------------- |
-| **Conventions** | `cmd.tsx` `argv.tsx` `data.tsx` `output.tsx` `stdin.tsx` `help.tsx` `shell.tsx` `complete.tsx` | next to the command; applies to that command only |
-| **Inherited**   | `layout.tsx` `middleware.tsx` `error.tsx` `not-found.tsx`                                      | any directory; applies to everything below it     |
-| **Root-only**   | `env.tsx` `version.tsx` `global-error.tsx`                                                     | `app/` only; applies to the whole CLI             |
+| Kind            | Files                                                                                                        | Where it goes                                     |
+| --------------- | ------------------------------------------------------------------------------------------------------------ | ------------------------------------------------- |
+| **Conventions** | `cmd.tsx` `argv.tsx` `data.tsx` `output.tsx` `stdin.tsx` `help.tsx` `shell.tsx` `complete.tsx` `example.tsx` | next to the command; applies to that command only |
+| **Inherited**   | `layout.tsx` `middleware.tsx` `error.tsx` `not-found.tsx`                                                    | any directory; applies to everything below it     |
+| **Root-only**   | `env.tsx` `version.tsx` `global-error.tsx`                                                                   | `app/` only; applies to the whole CLI             |
 
 ```
 app/
