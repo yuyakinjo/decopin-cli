@@ -317,7 +317,7 @@ const GUARDS: Record<number, Guard> = {
   43: {
     kind: 'test',
     label: 'decopin dev は build を回し続ける (型だけでなく dist/ も追従)',
-    file: 'test/build/watch.test.ts',
+    file: 'experiments/intent/dev/dev.test.ts',
   },
   44: {
     kind: 'test',

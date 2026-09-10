@@ -9,9 +9,10 @@
 | 2    | `decopin gen`   | `add-conventions-without-memorizing` | 6            |
 | 3a   | `decopin build` | `ship-what-the-directories-declare`  | 5            |
 | 3b   | 生成された CLI  | `run-commands-as-declared`           | 10           |
+| 4    | `decopin dev`   | `keep-types-honest-while-editing`    | 5 + waived 1 |
 
 将来 `intent.ts` として切り出すのは `core.ts` / `evidence.ts` / `evidence.bun.ts`
-だけ。`init/` `gen/` `build/` `runtime/` はその利用例。
+だけ。`init/` `gen/` `build/` `runtime/` `dev/` はその利用例。
 
 ## ファイル
 
@@ -294,16 +295,56 @@ init/gen (テストファイルごと移せた) では見えていなかった�
 | 2 `gen`      | 6        | 142  | 23.7       |
 | 3a `build`   | 5        | 112  | 22.4       |
 | 3b `runtime` | 10       | 187  | **18.7**   |
+| 4 `dev`      | 6        | 106  | 17.7       |
 
 10 個並べたところで 1 つあたりが下がる。ヘッダのコメントと import が
 Behavior 数で割られるため。**線形どころか少し逓減する**。
 
-合計 26 Behavior・記述 556 行に対してランタイムは 674 行なので、**比率は
-2.3 : 1 から 1.2 : 1**。
+合計 32 Behavior・記述 662 行に対してランタイムは 674 行なので、**比率は
+2.3 : 1 から 1.0 : 1**。
 
-Evidence は 278 行 → 490 行 (+76%)。増分のうち約 55 行は、**2 つの Intent が
-それぞれ自前でビルドする**ようにしたぶんの重複 (`beforeAll` / `cli()`)。
-どちらが落ちたのか混ざらないことを優先して、共有しなかった。
+Evidence は 278 行 → 827 行。増分の一部は、**2 つの Intent がそれぞれ自前で
+ビルドする**ようにしたぶんの重複 (`beforeAll` / `cli()`)。どちらが落ちたのか
+混ざらないことを優先して、共有しなかった。
+
+## 実験 4 (`dev`) で分かったこと
+
+**18. 「watch なので免除だらけになる」という予想は外れた。**
+
+着手前の予想は「Evidence がほぼ `waived()` になる Intent の題材」だった。
+実際は 6 個中 1 個だけで、しかもそれは「watch すること」ではなく
+**OS のファイル通知に触る一点** (`watches-the-real-filesystem`) だった。
+
+差が出たのは `watchApp()` が第 2 引数で通知の受け口 (`WatchBackend`) を
+差し替えられるように作ってあったから。つまり免除の範囲を決めていたのは
+**「非決定的な機能かどうか」ではなく、非決定な部分がどこまで括り出して
+あるか**だった。裏返すと、`waived()` が増える Intent は仕様が難しいのでは
+なく、**実装が境界を括り出していない**という信号として読める。
+
+**19. 「証明の免除」は「実装の免除」ではない。**
+
+`watches-the-real-filesystem` にも Carrier は繋いである。実体は
+`NODE_WATCH_BACKEND` だが export されていないので `watchApp` で指した
+(実験 2 の finding 8 と同じ制約)。免除したのは証拠であって、
+どのコードが担っているかは分かったままにしておける。
+
+**20. 重なり検出 (§11.8) の 2 例目が出た。**
+
+`build()` が `ship-what-the-directories-declare / produces-one-runnable-file`
+と `keep-types-honest-while-editing / rebuilds-on-every-change` の両方に出る。
+`sharedCarriers()` は疑いとして出すが、これは正常な再利用だった —
+**build は配れるものを作る、dev は書いている間ずれないようにする**で、
+purpose が別の目的を指しているため (§5.1 の 2 段読み)。1 例目
+(`writeTemplates`) と合わせて、検出された 2 件はどちらも正常だった。
+**検出器は今のところ偽陽性しか出していない**。
+
+**21. 目的が近い 2 つの Intent は、境界を言葉で書かないと決まらない。**
+
+`build` と `dev` はどちらも「生成物を作る」。分けた根拠は実装 (`watchApp` の
+有無) ではなく purpose の側で、`intent.ts` のヘッダに **build は配れるものを
+作る / dev は書いている間ずれないようにする**と書いて初めて Behavior の
+振り分けが決まった。3a/3b の分割 (finding 12) が実装の境界と一致していたのに
+対し、ここは**実装の境界と Intent の境界がずれている**例。
 
 ## まだ答えていない問い
 
@@ -311,11 +352,11 @@ Evidence は 278 行 → 490 行 (+76%)。増分のうち約 55 行は、**2 つ
 - Question E (同じ Graph を 2 パターンで) — 未着手
 - Question F (Behavior が増えても複雑化しないか) — 記述量は逓減した (11, 17)。
   残るのは「Intent どうしの関係」。今のところ Graph は Intent を並べるだけで、
-  依存も順序も持たない。4 つでは足りていない
+  依存も順序も持たない。5 つでは足りていない
 - 大きい Intent (Behavior 10) と、判断を経ずに広がった Intent を、
   Graph からは区別できない (14)。§11.4 の信号の扱いが未決
-- `decopin dev` は未着手。watch なので Evidence がほぼ `waived()` になりそうで、
-  免除だらけの Intent がドキュメントとして読めるかの題材になる
+- `sharedCarriers()` の検出 2 件はどちらも正常な再利用だった (20)。
+  **異常を 1 件も捉えていない検出器**が要るかは、もっと数が出てから
 - Question H (AI Agent が Graph を使って変更できるか) — 未着手
 - Evidence の断片はテストファイル単位。同じ Intent を複数ファイルが証明する
   場合は `mergeReports()` で合流するが、**並列プロセスで走らせた場合は未検証**

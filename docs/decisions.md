@@ -1102,8 +1102,8 @@ test/runtime/handle-error.test.tsx が「包んでも場所が潰れない」こ
 
 **`.decopin/` の更新は内容が変わったときだけ**なのは変わらない (`writeIfChanged`)。
 `dist/index.js` は毎回書き直すが、これは読む側が tsc ではなく bun の起動なので
-途中の状態を見る心配が薄い。test/build/watch.test.ts が「保存で型もバンドルも
-追従する」ことを固定する。
+途中の状態を見る心配が薄い。experiments/intent/dev/dev.test.ts が「保存で型も
+バンドルも追従する」ことを固定する。
 
 ## ADR 44: `decopin dev --annotate` は cmd.tsx の props に生成型を書き足す
 
