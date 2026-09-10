@@ -1,18 +1,20 @@
 # Intent-First Development — `decopin` への適用実験
 
-`intent.txt` の開発モデルを、既存の機能に当てて試す。既にある実装からの回収なので、
-これは Intent-First そのものではなく §12 の **Intent Recovery**。
+`intent.txt` の開発モデルを `decopin` に当てて試す。実験 1〜4 は既にある実装から
+Intent を回収する §12 の **Intent Recovery**。実験 5 だけが、実装を書く前に Intent と
+Behavior を決める **Intent-First** そのもの。
 
-| 実験 | 対象            | Intent                               | Behavior     |
-| ---- | --------------- | ------------------------------------ | ------------ |
-| 1    | `decopin init`  | `start-by-writing-commands`          | 4 + waived 1 |
-| 2    | `decopin gen`   | `add-conventions-without-memorizing` | 6            |
-| 3a   | `decopin build` | `ship-what-the-directories-declare`  | 5            |
-| 3b   | 生成された CLI  | `run-commands-as-declared`           | 10           |
-| 4    | `decopin dev`   | `keep-types-honest-while-editing`    | 5 + waived 1 |
+| 実験 | 対象            | Intent                                        | Behavior     | 向き      |
+| ---- | --------------- | --------------------------------------------- | ------------ | --------- |
+| 1    | `decopin init`  | `start-by-writing-commands`                   | 4 + waived 1 | Recovery  |
+| 2    | `decopin gen`   | `add-conventions-without-memorizing`          | 6            | Recovery  |
+| 3a   | `decopin build` | `ship-what-the-directories-declare`           | 5            | Recovery  |
+| 3b   | 生成された CLI  | `run-commands-as-declared`                    | 10           | Recovery  |
+| 4    | `decopin dev`   | `keep-types-honest-while-editing`             | 5 + waived 1 | Recovery  |
+| 5    | `decopin docs`  | `know-what-a-command-does-without-running-it` | 6            | **First** |
 
 将来 `intent.ts` として切り出すのは `core.ts` / `evidence.ts` / `evidence.bun.ts`
-だけ。`init/` `gen/` `build/` `runtime/` `dev/` はその利用例。
+だけ。`init/` `gen/` `build/` `runtime/` `dev/` `docs/` はその利用例。
 
 ## ファイル
 
@@ -346,13 +348,85 @@ purpose が別の目的を指しているため (§5.1 の 2 段読み)。1 例�
 振り分けが決まった。3a/3b の分割 (finding 12) が実装の境界と一致していたのに
 対し、ここは**実装の境界と Intent の境界がずれている**例。
 
+## 実験 5 (`docs`) で分かったこと — 初めての Intent-First
+
+これまでの 5 つは既存コードからの回収だった。ここは **Intent と Behavior を
+書き、型検査を通してから `src/` に 1 行目を書いた**。題材は Issue #3
+(app/ の構造からドキュメントを生成する)。
+
+**22. 「実行可能」の解釈が、Intent を書く段で 1 回決まった。**
+
+Issue の言葉は「コマンド単位で実行可能」で、頭にあったのは OpenAPI の
+「押したら結果が返る」形だった。押せる HTML にすると**任意のコマンドを
+実行するサーバー**を抱える。purpose を書こうとして初めて、欲しいのは
+押せることではなく **「打たずに結果が分かること」** だと分かり、
+`know-what-a-command-does-without-running-it` に落ちた。**実装の選択肢を
+削ったのは設計判断ではなく、purpose を 1 文にする作業**だった。
+
+**23. 予想は 2 つとも外れた (どちらも良い方向に)。**
+
+| 予想                                           | 実際                 |
+| ---------------------------------------------- | -------------------- |
+| 実装しながら Behavior を書き換える回数が増える | **0 回**。6 個のまま |
+| `waived()` は 0 個                             | 0 個 (これは当たり)  |
+
+書き換えが 0 だったのは、Behavior を「利用者が観測できる結末」で割ってあり、
+**出力の形 (Markdown か HTML か、表かリストか) を一切書かなかった**ため。
+実装中に何度も変えたのは表の列や見出しの体裁で、そこは Behavior の外にあった。
+Intent Recovery では実装を見ながら書くので、つい形が混ざる。**先に書くほうが
+かえって実装から遠い言葉になる**という逆の結果。
+
+**24. Behavior は変わらなかったが、Carrier の場所は 1 回変わった。**
+
+最初 `src/core/docs/index.ts` に書いたら、リポジトリ自身のガードが
+ADR 41 (core は features を呼ばない) 違反を 5 件出した。docs は argv・example・
+help の規約を読むので core には置けない。`src/cli/docs/document.ts` へ移し、
+`implementation.ts` の Carrier の `where` を書き換えた。**Behavior は動かず、
+Implementation だけが動いた** — §8.2 の証明分離が効いている形。
+
+**25. 新しい規約ファイルを 1 つ足すと、リポジトリの 3 つのガードが順に鳴った。**
+
+`example.tsx` を規約に足したときに落ちたもの:
+
+| 鳴ったもの                  | 中身                                    |
+| --------------------------- | --------------------------------------- |
+| 型検査 (TS2741)             | `gen` の雛形表に `example` が無い       |
+| `file-conventions.test.tsx` | 置けるファイルの一覧に `example` が無い |
+| ADR 41 / ADR 14 のガード    | 置き場所と、外に出る文字列              |
+
+Intent Graph はこれを 1 件も検出しない。**Graph が見るのは「この Intent の
+Behavior が証明されているか」だけで、リポジトリ全体の整合は見ない。**
+Intent-First は既存の規約検査を置き換えるものではない、という線が引けた。
+
+**26. ADR 14 のガードが、私の書いたコードを誤読して 22 件の偽陽性を出した。**
+
+原因は正規表現リテラル ``/`{3,}/g`` の中のバッククォート。ガードの
+`stringLiterals()` は素朴な字句解析で正規表現を知らないので、そこから先の
+日本語コメントを全部「文字列」として拾っていた。正規表現をやめて 1 文字ずつ
+数える形に書き換えて消した。**証拠を出す仕組みは、それ自体が誤検出する** —
+§11.7 の裏返し (False Alarm) で、この実験でも `evidence.ts` の
+タイムアウト穴と同じ日に 2 例目が出た。
+
+**27. 記述量は逓減しなかった。**
+
+| 実験         | Behavior | 記述 | 1 つあたり |
+| ------------ | -------- | ---- | ---------- |
+| 3b `runtime` | 10       | 187  | 18.7       |
+| 4 `dev`      | 6        | 106  | 17.7       |
+| 5 `docs`     | 6        | 146  | **24.3**   |
+
+Intent Recovery より高い。増えたぶんは**予想と、採らなかった選択肢の理由**
+(押せる HTML を採らない、help と docs の境界) で、既存コードから起こすときは
+書く必要がなかったもの。**Intent-First では Intent がドキュメントを兼ねる**
+ので、この差は無駄ではなく、置き場所が移っただけと読める。
+
 ## まだ答えていない問い
 
 - Question C (一方向パターン) — 未着手。`init` は既存コードなので当てられない
 - Question E (同じ Graph を 2 パターンで) — 未着手
 - Question F (Behavior が増えても複雑化しないか) — 記述量は逓減した (11, 17)。
-  残るのは「Intent どうしの関係」。今のところ Graph は Intent を並べるだけで、
-  依存も順序も持たない。5 つでは足りていない
+  ただし Intent-First では逆に増えた (27)。残るのは「Intent どうしの関係」。
+  今のところ Graph は Intent を並べるだけで、依存も順序も持たない
 - 大きい Intent (Behavior 10) と、判断を経ずに広がった Intent を、
   Graph からは区別できない (14)。§11.4 の信号の扱いが未決
 - `sharedCarriers()` の検出 2 件はどちらも正常な再利用だった (20)。
