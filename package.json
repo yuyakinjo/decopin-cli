@@ -27,7 +27,7 @@
   },
   "scripts": {
     "test": "bun test",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc --noEmit && tsc -p site/tsconfig.json",
     "lint": "oxlint",
     "format": "oxfmt",
     "format:check": "oxfmt --check",
