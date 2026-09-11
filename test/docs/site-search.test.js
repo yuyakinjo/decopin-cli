@@ -66,7 +66,13 @@ describe('documentation search', () => {
         join(source, 'scripts/build-site.ts'),
         join(root, 'scripts/build-site.ts')
       );
-      for (const name of ['content', 'nav.json', 'style.css', 'search.ts']) {
+      for (const name of [
+        'assets',
+        'content',
+        'nav.json',
+        'style.css',
+        'search.ts',
+      ]) {
         await cp(join(source, 'site', name), join(root, 'site', name), {
           recursive: true,
         });

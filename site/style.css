@@ -77,20 +77,12 @@ a:hover {
 .top .brand {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  font-weight: 600;
-  color: var(--fg);
-  letter-spacing: -0.01em;
+  flex-shrink: 0;
 }
-.top .brand .dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background: var(--fg);
-}
-.top .brand span.docs {
-  color: var(--fg-muted);
-  font-weight: 400;
+.top .brand img {
+  display: block;
+  width: auto;
+  height: 40px;
 }
 .top .search {
   margin-left: auto;
@@ -512,8 +504,7 @@ body:has(.search-dialog[open]) {
     min-width: 0;
   }
   .search-label,
-  .top .search kbd,
-  .top .brand span.docs {
+  .top .search kbd {
     display: none;
   }
   .search-mobile-label {
