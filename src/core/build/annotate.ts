@@ -339,7 +339,10 @@ function findDecopinImport(
 }
 
 /** `CmdProps as Props` も含め、import 済みならローカル名を返す */
-function commandPropsLocalName(names: string): string | undefined {
+function importedLocalName(
+  names: string,
+  exported: string
+): string | undefined {
   const clean = names
     .replace(/\/\*[\s\S]*?\*\//g, ' ')
     .replace(/\/\/[^\r\n]*/g, ' ');
@@ -348,19 +351,19 @@ function commandPropsLocalName(names: string): string | undefined {
       /^(?:type\s+)?([A-Za-z_$][\w$]*)(?:\s+as\s+([A-Za-z_$][\w$]*))?$/.exec(
         part.trim()
       );
-    if (match?.[1] === 'CmdProps') return match[2] ?? 'CmdProps';
+    if (match?.[1] === exported) return match[2] ?? exported;
   }
   return undefined;
 }
 
 /** 既存のローカル binding と衝突しない import 名を選ぶ */
-function availableCmdPropsName(view: string): string {
+function availableName(view: string, exported: string): string {
   const isUsed = (name: string): boolean =>
     new RegExp(`\\b${name}\\b`).test(view);
-  if (!isUsed('CmdProps')) return 'CmdProps';
-  if (!isUsed('DecopinCmdProps')) return 'DecopinCmdProps';
+  if (!isUsed(exported)) return exported;
+  if (!isUsed(`Decopin${exported}`)) return `Decopin${exported}`;
   for (let suffix = 2; ; suffix++) {
-    const candidate = `DecopinCmdProps${suffix}`;
+    const candidate = `Decopin${exported}${suffix}`;
     if (!isUsed(candidate)) return candidate;
   }
 }
@@ -382,15 +385,16 @@ function prependImport(source: string, statement: string): string {
 function ensureImport(
   source: string,
   quote: string,
+  exported: string,
   localName: string
 ): string {
   const imported =
-    localName === 'CmdProps' ? 'CmdProps' : `CmdProps as ${localName}`;
+    localName === exported ? exported : `${exported} as ${localName}`;
   const standalone = `import { type ${imported} } from ${quote}decopin-cli${quote};\n`;
   const found = findDecopinImport(source);
   if (found === undefined) return prependImport(source, standalone);
   const { index, statement, typeOnly, names } = found;
-  if (commandPropsLocalName(names) !== undefined) return source;
+  if (importedLocalName(names, exported) !== undefined) return source;
   // コメントの前後へ comma を足すと意味が変わり得るので、別 import にする
   if (/\/[/*]/.test(names)) return prependImport(source, standalone);
 
@@ -408,6 +412,44 @@ function ensureImport(
   return (
     source.slice(0, index) + replaced + source.slice(index + statement.length)
   );
+}
+
+/** import 済みならそのローカル名、無ければ衝突しない新しい名前 */
+function localNameFor(
+  view: string,
+  found: DecopinImport | undefined,
+  exported: string
+): string {
+  if (found === undefined) return availableName(view, exported);
+  return (
+    importedLocalName(found.names, exported) ?? availableName(view, exported)
+  );
+}
+
+interface DefaultExport {
+  /** 引数の `(` */
+  openIndex: number;
+  /** 対応する `)` */
+  closeIndex: number;
+  async: boolean;
+}
+
+/** 実際に default export されている関数を 1 つ探す */
+function findDefaultExport(
+  source: string,
+  view: string
+): DefaultExport | undefined {
+  DEFAULT_FUNCTION.lastIndex = 0;
+  let match: RegExpExecArray | null;
+  do {
+    match = DEFAULT_FUNCTION.exec(view);
+  } while (match !== null && !isDefaultExport(source, view, match.index));
+  if (match === null) return undefined;
+
+  const openIndex = match.index + match[0].length - 1;
+  const closeIndex = closingParen(view, openIndex);
+  if (closeIndex === -1) return undefined;
+  return { openIndex, closeIndex, async: /\basync\b/.test(match[0]) };
 }
 
 /** JSON の escape を保ったまま、周囲だけ既存 import の引用符に合わせる */
@@ -431,34 +473,77 @@ export function annotateCommandSource(
   routeName: string
 ): string | undefined {
   const view = lexicalView(source);
-  DEFAULT_FUNCTION.lastIndex = 0;
-  let match: RegExpExecArray | null;
-  do {
-    match = DEFAULT_FUNCTION.exec(view);
-  } while (match !== null && !isDefaultExport(source, view, match.index));
-  if (match === null) return undefined;
-
-  const openIndex = match.index + match[0].length - 1;
-  const closeIndex = closingParen(view, openIndex);
-  if (closeIndex === -1) return undefined;
+  const found = findDefaultExport(source, view);
+  if (found === undefined) return undefined;
+  const { openIndex, closeIndex } = found;
 
   const params = view.slice(openIndex + 1, closeIndex);
   if (params.trim() === '' || unsupportedParams(params)) return undefined;
 
   const foundImport = findDecopinImport(source, view);
   const quote = foundImport?.quote ?? "'";
-  const typeName =
-    foundImport === undefined
-      ? availableCmdPropsName(view)
-      : (commandPropsLocalName(foundImport.names) ??
-        availableCmdPropsName(view));
+  const typeName = localNameFor(view, foundImport, 'CmdProps');
   const trailing = params.length - params.trimEnd().length;
   const insertAt = closeIndex - trailing;
   const annotation = `: ${typeName}<${stringLiteral(routeName, quote)}>`;
   const annotated =
     source.slice(0, insertAt) + annotation + source.slice(insertAt);
-  return ensureImport(annotated, quote, typeName);
+  return ensureImport(annotated, quote, 'CmdProps', typeName);
 }
+
+/**
+ * 返り値型を補った宣言ファイルのソースを返す。触る必要が無ければ undefined。
+ *
+ * 対象は `export default (async) function Name?(...)` で、返り値型が
+ * まだ書かれていないものだけ。引数の有無は見ない (`env.tsx` のように
+ * 引数を取らない宣言もあるため)
+ *
+ * @param exported `decopin-cli` から import する型名
+ * @param typeArgument 付ける型引数 (`DataResult<'stats'>` の `stats`)
+ */
+export function annotateReturnSource(
+  source: string,
+  exported: string,
+  typeArgument?: string
+): string | undefined {
+  const view = lexicalView(source);
+  const found = findDefaultExport(source, view);
+  if (found === undefined) return undefined;
+  const { closeIndex, async } = found;
+
+  // 既に返り値型がある (手書きでも生成型でも) なら触らない
+  let after = closeIndex + 1;
+  while (after < view.length && /\s/.test(view[after] as string)) after++;
+  if (view[after] === ':') return undefined;
+  // `)` の次が `{` でなければ、想定していない形なので触らない
+  if (view[after] !== '{') return undefined;
+
+  const foundImport = findDecopinImport(source, view);
+  const quote = foundImport?.quote ?? "'";
+  const localName = localNameFor(view, foundImport, exported);
+  const applied =
+    typeArgument === undefined
+      ? localName
+      : `${localName}<${stringLiteral(typeArgument, quote)}>`;
+  // async なら Promise に包む。宣言は await されるので async でも通る
+  const annotation = `: ${async ? `Promise<${applied}>` : applied}`;
+  const annotated =
+    source.slice(0, closeIndex + 1) + annotation + source.slice(closeIndex + 1);
+  return ensureImport(annotated, quote, exported, localName);
+}
+
+/** 宣言ファイルの種類 → `decopin-cli` が公開している返り値型 */
+const RETURN_TYPES = {
+  argv: 'ArgvDefinition',
+  stdin: 'StdinDefinition',
+  output: 'OutputDefinition',
+  shell: 'ShellDefinition',
+} as const;
+
+const ROOT_RETURN_TYPES = {
+  env: 'EnvDefinition',
+  version: 'VersionDefinition',
+} as const;
 
 /** 型注釈を補った cmd.tsx を書き戻し、書き換えたファイルの一覧を返す */
 export async function annotateCommands(routes: Route[]): Promise<string[]> {
@@ -468,6 +553,44 @@ export async function annotateCommands(routes: Route[]): Promise<string[]> {
     if (file === undefined) continue;
     const source = await Bun.file(file).text();
     const next = annotateCommandSource(source, route.name);
+    if (next === undefined || next === source) continue;
+    await Bun.write(file, next);
+    written.push(file);
+  }
+  return written;
+}
+
+/**
+ * 宣言ファイルに返り値型を補い、書き換えたファイルの一覧を返す (ADR 46)。
+ *
+ * `data.tsx` は `output.tsx` があるコマンドだけ。無ければ `data` の型は
+ * data.tsx の戻り値から引いている (ADR 25) ので、書くと自己参照する
+ */
+export async function annotateDeclarations(
+  routes: Route[],
+  rootFiles: Partial<Record<'env' | 'version', string>> = {}
+): Promise<string[]> {
+  const targets: Array<{ file: string; type: string; argument?: string }> = [];
+
+  for (const route of routes) {
+    for (const [kind, type] of Object.entries(RETURN_TYPES)) {
+      const file = route.files[kind as keyof typeof RETURN_TYPES];
+      if (file !== undefined) targets.push({ file, type });
+    }
+    const data = route.files.data;
+    if (data !== undefined && route.files.output !== undefined) {
+      targets.push({ file: data, type: 'DataResult', argument: route.name });
+    }
+  }
+  for (const [kind, type] of Object.entries(ROOT_RETURN_TYPES)) {
+    const file = rootFiles[kind as keyof typeof ROOT_RETURN_TYPES];
+    if (file !== undefined) targets.push({ file, type });
+  }
+
+  const written: string[] = [];
+  for (const { file, type, argument } of targets) {
+    const source = await Bun.file(file).text();
+    const next = annotateReturnSource(source, type, argument);
     if (next === undefined || next === source) continue;
     await Bun.write(file, next);
     written.push(file);

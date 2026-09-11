@@ -1164,6 +1164,47 @@ experiments/intent/docs/docs.test.ts が「一覧・呼び方・実行結果・�
 
 ---
 
+## ADR 46: 宣言ファイルの返り値型を配り、`--annotate` が書き足す
+
+`cmd.tsx` には `CmdProps<'hello'>` があるのに、`argv.tsx` や `env.tsx` には
+何も無い。「この関数は何を返せばいいのか」がコードから読めず、`decopin build`
+を通すまで分からなかった。
+
+**ADR 9 を測り直した上で入れている。** TypeScript 7.0.2 でも JSX 式の型は
+`JSX.Element` に潰れる。`jsx()` factory を `jsx<T>(type: T, ...): Element<T>`
+としても変わらない (実測)。したがって `EnvDefinition` のような別名は
+**どれも同じ型**で、「`env.tsx` に `<Argv>` を書いた」取り違えは型では
+捕まえられない。そこは評価時の `DeclarationError` が見る。
+
+それでも入れるのは、型として言えることが 2 つあるから:
+
+- **要素を返すこと**。`null`・文字列・配列の返し間違いは型検査で落ちる
+- **書き方が揃うこと**。規約ファイルの形が import した型名で読める
+
+**本当に型検査が効くのは `data.tsx` × `output.tsx` の 1 か所**。ここは JSX を
+経由しないので ADR 9 に縛られない。`output.tsx` があれば宣言が正 (ADR 28) な
+のに、食い違いは実行時検証まで分からなかった。生成する `.decopin/types.d.ts`
+に `DataResults` を足し、`DataResult<'stats'>` で引けるようにする。
+
+**`DataResults` を `Routes` と分けたのは自己参照を避けるため**。`output.tsx`
+が無いコマンドの `data` は data.tsx の戻り値から `ReturnType` で引いている
+(ADR 25)。そこへ `DataResult<'go'>` と書くと型が自分を参照する。だから
+`DataResults` には **`output.tsx` があるコマンドだけ**を並べ、`--annotate` も
+その場合しか書かない。未生成のときは `unknown` に落ちる (ADR 9 の代償と同じ
+扱いで、注釈が型検査を止めないことを優先する)。
+
+**`--annotate` を拡張する。新しいフラグは足さない** (ADR 44)。`cmd.tsx` の
+props を補うのと同じ条件 — 注釈が無いものだけ・書き換えは 1 行と import 行
+だけ — を宣言ファイルの返り値へ広げる。`async` の宣言には `Promise<...>` を
+書く。フラグを分けると「props だけ補って返り値は補わない」状態ができ、
+どちらが効いているのか説明が増える。
+
+experiments/intent/returns/returns.test.ts が「型が配られていること」
+「注釈を足すこと」「既にあるものに触らないこと」「output.tsx が無い data.tsx
+を対象にしないこと」を固定する。
+
+---
+
 ## 未決 / 保留
 
 **決めていないこと**をここに置く。ADR ではないので、`test/docs/decisions.test.ts`

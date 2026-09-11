@@ -1,6 +1,6 @@
-import { Arg, Argv, Option, Type } from 'decopin-cli';
+import { Arg, Argv, Option, Type, type ArgvDefinition } from 'decopin-cli';
 
-export default function DefineArgv() {
+export default function DefineArgv(): ArgvDefinition {
   return (
     <Argv description="Greet someone.">
       <Arg

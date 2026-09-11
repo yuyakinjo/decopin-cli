@@ -1,8 +1,8 @@
 # Intent-First Development — `decopin` への適用実験
 
 `intent.txt` の開発モデルを `decopin` に当てて試す。実験 1〜4 は既にある実装から
-Intent を回収する §12 の **Intent Recovery**。実験 5 だけが、実装を書く前に Intent と
-Behavior を決める **Intent-First** そのもの。
+Intent を回収する §12 の **Intent Recovery**。実験 5 と 6 は、実装を書く前に Intent と
+Behavior を決める **Intent-First**。
 
 | 実験 | 対象            | Intent                                        | Behavior     | 向き      |
 | ---- | --------------- | --------------------------------------------- | ------------ | --------- |
@@ -12,9 +12,10 @@ Behavior を決める **Intent-First** そのもの。
 | 3b   | 生成された CLI  | `run-commands-as-declared`                    | 10           | Recovery  |
 | 4    | `decopin dev`   | `keep-types-honest-while-editing`             | 5 + waived 1 | Recovery  |
 | 5    | `decopin docs`  | `know-what-a-command-does-without-running-it` | 6            | **First** |
+| 6    | 宣言の返り値型  | `notice-declaration-mistakes-while-typing`    | 6            | **First** |
 
 将来 `intent.ts` として切り出すのは `core.ts` / `evidence.ts` / `evidence.bun.ts`
-だけ。`init/` `gen/` `build/` `runtime/` `dev/` `docs/` はその利用例。
+だけ。`init/` `gen/` `build/` `runtime/` `dev/` `docs/` `returns/` はその利用例。
 
 ## ファイル
 
@@ -420,10 +421,78 @@ Intent Recovery より高い。増えたぶんは**予想と、採らなかっ�
 書く必要がなかったもの。**Intent-First では Intent がドキュメントを兼ねる**
 ので、この差は無駄ではなく、置き場所が移っただけと読める。
 
+## 実験 6 (宣言ファイルの返り値型) で分かったこと — Question C の答え
+
+題材は ADR 46。`env.tsx` などの宣言ファイルに返り値型を配り、`dev --annotate`
+に書き足させる。狙いは機能そのものより **§8.1 一方向パターン (Question C)** を
+測ること。予想は 2 つ書いてから始めた。
+
+**28. 一方向パターンは、型検査でもテストでもなく「配布物の組み立て」で落ちた。**
+
+`src/core/build/annotate.ts` の `annotateReturnSource` を `carries()` で包んだ:
+
+| 段                      | 結果                                                                         |
+| ----------------------- | ---------------------------------------------------------------------------- |
+| `bunx tsc --noEmit`     | 通る                                                                         |
+| `bun test annotate`     | 17 pass / 0 fail                                                             |
+| `bun run build:package` | **落ちる** TS6059: `experiments/intent/core.ts` is not under `rootDir` `src` |
+
+`carries()` は実装そのものを包むので、**Intent ランタイムが配布物に入る**。
+`rootDir` はそれを機械的に拒否した。予想 (「成立しない」) は当たったが、
+落ちる場所の予想はできていなかった。アプリなら払える代償だが、npm に出す
+ライブラリでは払えない。**公開ライブラリの `src/` では §8.2 が強制される**
+— これが Question C への答え。逆に言えば、一方向が使えるのは
+**実装と Intent が同じ配布単位に居られる場合だけ**。
+
+**29. §8.1 は「消せない対応表」と引き換えに、依存の向きを 1 本増やす。**
+
+§8.2 の `implement()` は `experiments/ → src/` の一方向で、`src/` は Intent を
+知らない。§8.1 は `src/ → experiments/` を足すので、**実装が Intent に依存する**。
+対応表が実装から剥がれないという利点は、そのまま「Intent を消すと実装が
+コンパイルできない」という結合でもある。intent.txt §8.3 は「どちらでも同じ
+Graph になる」と言うが、**同じなのは Graph であって依存グラフではない**。
+
+**30. 予想していた `waived()` は要らなかった。TypeScript 7 が速すぎた。**
+
+「型検査が落ちること」の証明は tsc を子プロセスで回すしかなく、費用次第では
+免除するつもりだった。実測は **1 プロジェクトあたり 0.11 秒** (tsc 7.0.2、
+ネイティブ実装)。4 プロジェクト回しても実験 6 のテスト全体で 426 ms。
+**「重いから証明しない」という判断は、道具が変わると寿命が尽きる。**
+waiver の理由に「費用」を書くときは、測り直す日付ごと書いたほうがよさそう。
+
+**31. Behavior の書き換えは 0 回。ただし 1 つは実装の途中で意味が狭まった。**
+
+`ties-data-to-output` は最初「宣言と食い違う `data` は型検査で落ちる」の
+つもりだったが、ADR 9 の再測定で **JSX を経由する 5 つには型引数を運べない**
+ことが確定し、この Behavior だけが「`output.tsx` があるコマンドの `data.tsx`」に
+限定された。文言は書き直していない (最初から `output.tsx` があるコマンドと
+書いてあった) が、**Behavior が守っている範囲は測定の後で初めて確定した**。
+先に書いた Behavior が正しかったのではなく、**実装不可能な期待を purpose に
+書かなかった**のが効いている (purpose は「型安全にする」ではなく
+「動かす前に気付ける」)。
+
+**32. 記述量は実験 5 より更に増えた。**
+
+| 実験         | Behavior | 記述 | 1 つあたり |
+| ------------ | -------- | ---- | ---------- |
+| 3b `runtime` | 10       | 187  | 18.7       |
+| 4 `dev`      | 6        | 106  | 17.7       |
+| 5 `docs`     | 6        | 146  | 24.3       |
+| 6 `returns`  | 6        | 204  | **34.0**   |
+
+増分のほとんどは `implementation.ts` の冒頭 28 行 — **失敗した一方向パターンの
+測定記録**。捨てた選択肢の理由を Intent の側に書き残すと記述量は増える。
+Intent-First 2 回とも同じ方向に増えているので、(27) は偶然ではない。
+
 ## まだ答えていない問い
 
-- Question C (一方向パターン) — 未着手。`init` は既存コードなので当てられない
-- Question E (同じ Graph を 2 パターンで) — 未着手
+- Question C (一方向パターン) — **答えが出た (28, 29)**。公開ライブラリの
+  `src/` では使えない。残るのは「アプリ側で使ったときに本当に対応表が
+  腐らないか」
+- Question E (同じ Graph を 2 パターンで) — 半分。関数 1 つを両方のパターンで
+  書いて、どちらも同じ Behavior に結べることは見た。Intent 全体を 2 パターンで
+  組んで Graph を突き合わせるのは、`carries()` を置ける場所が
+  `experiments/` の中しか無いので未着手
 - Question F (Behavior が増えても複雑化しないか) — 記述量は逓減した (11, 17)。
   ただし Intent-First では逆に増えた (27)。残るのは「Intent どうしの関係」。
   今のところ Graph は Intent を並べるだけで、依存も順序も持たない

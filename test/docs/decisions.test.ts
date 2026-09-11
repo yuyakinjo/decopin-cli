@@ -329,6 +329,11 @@ const GUARDS: Record<number, Guard> = {
     label: 'decopin dev --annotate は cmd.tsx の props に生成型を書き足す',
     file: 'test/build/annotate.test.ts',
   },
+  46: {
+    kind: 'test',
+    label: '宣言ファイルの返り値型を配り、--annotate が書き足す',
+    file: 'experiments/intent/returns/returns.test.ts',
+  },
   45: {
     kind: 'test',
     label: '実行例は example.tsx で宣言し、docs はそれだけを実行する',

@@ -1,6 +1,6 @@
-import { Argv, Option, Type } from 'decopin-cli';
+import { Argv, Option, Type, type ArgvDefinition } from 'decopin-cli';
 
-export default function DefineArgv() {
+export default function DefineArgv(): ArgvDefinition {
   return (
     <Argv description="List users.">
       <Option name="limit" alias="n" default={10} description="max rows">

@@ -13,7 +13,7 @@ import { createMiddlewareChains } from '../../features/inherited/middleware/buil
 import { createNotFoundChains } from '../../features/inherited/not-found/build.ts';
 import { evaluateEnv } from '../../features/root-only/env/evaluate.ts';
 import { assertToolNames } from '../runtime/mcp-names.ts';
-import { annotateCommands } from './annotate.ts';
+import { annotateCommands, annotateDeclarations } from './annotate.ts';
 import { bundle } from './bundler.ts';
 import {
   checkDeprecations,
@@ -71,7 +71,7 @@ export interface GenerateResult {
   bin: string;
   /** コマンド名 → 副作用の到達判定 (ADR 32) */
   effects: Map<string, EffectReport>;
-  /** `annotate` で型注釈を書き足した cmd.tsx (ADR 44)。無効なら空 */
+  /** `annotate` で型注釈を書き足したファイル (ADR 44, 46)。無効なら空 */
   annotated: string[];
 }
 
@@ -242,7 +242,12 @@ export async function generate(
 
   // 型が揃った後に props の注釈を補う。生成した Routes のキーと同じ名前を書く
   const annotated =
-    options.annotate === true ? await annotateCommands(routes) : [];
+    options.annotate === true
+      ? [
+          ...(await annotateCommands(routes)),
+          ...(await annotateDeclarations(routes, rootFiles)),
+        ]
+      : [];
 
   return {
     routes,

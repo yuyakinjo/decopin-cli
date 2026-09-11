@@ -69,9 +69,29 @@ declare module 'decopin-cli' {
   interface Routes {
 ${entries}
   }
+  interface DataResults {
+${dataResults(evaluated, workDir)}
+  }
 ${envShape(env)}}
 `;
   return { text, unsupported };
+}
+
+/**
+ * `output.tsx` で形を宣言したコマンドだけを並べる (ADR 46)。
+ *
+ * 宣言が無いコマンドを入れない理由は自己参照で、そちらの `data` は
+ * data.tsx の戻り値そのもの (ADR 25)。`DataResult<'go'>` を data.tsx に
+ * 書けてしまうと、型が自分を参照して解決できなくなる
+ */
+function dataResults(evaluated: EvaluatedRoute[], workDir: string): string {
+  return evaluated
+    .filter(({ output }) => output !== undefined)
+    .map(
+      ({ route, output }) =>
+        `    ${quoteName(route.name)}: ${dataTypeText(route.files.data, workDir, output)};`
+    )
+    .join('\n');
 }
 
 /** ルートコマンドは空文字なので、常に引用符付きで書く */

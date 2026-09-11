@@ -1,7 +1,7 @@
-import { Stdin, Type } from 'decopin-cli';
+import { Stdin, Type, type StdinDefinition } from 'decopin-cli';
 
 /** JSON の構造も Type.* で宣言できる (ADR 2) */
-export default function DefineStdin() {
+export default function DefineStdin(): StdinDefinition {
   return (
     <Stdin mode="json" required>
       <Type.Array minItems={1}>

@@ -1,7 +1,7 @@
-import { Env, Type, Var } from 'decopin-cli';
+import { Env, Type, Var, type EnvDefinition } from 'decopin-cli';
 
 /** 起動時に一度だけ検証される */
-export default function DefineEnv() {
+export default function DefineEnv(): EnvDefinition {
   return (
     <Env>
       <Var name="DECOPIN_LOG" default="info" description="log level">

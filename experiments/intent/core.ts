@@ -161,6 +161,65 @@ export function implement<I extends Intent>(
 }
 
 /**
+ * §8.1 一方向パターン。**Behavior を通した値を、そのまま実装として使う。**
+ *
+ * `implement()` (§8.2) との違いは表の置き場所だけで、Intent Graph は同じ
+ * (§8.3)。8.2 は「実装 → それを指す表」、こちらは「宣言しながら実装を通す」。
+ *
+ * 代償が 1 つある。**全 Behavior が担われていることを型で要求できない。**
+ * `implement()` は引数が全 id を要求するので型検査が落ちるが、こちらは
+ * 呼ばれた分しか集まらないので、欠けは `collect()` の実行時エラーになる。
+ */
+export function carries<V extends object, I extends Intent>(
+  of: I,
+  ids: readonly BehaviorId<I>[],
+  value: V,
+  where: string,
+  name?: string
+): V {
+  if (ids.length === 0) {
+    throw new Error(`担う Behavior が要る: ${where}`);
+  }
+  const carrier = carriedBy(value as { name: string }, where, name as string);
+  const slots = REGISTERED.get(of.id) ?? new Map<string, Carrier[]>();
+  for (const id of ids) {
+    const found = of.behaviors.find((b) => b.id === id);
+    if (found === undefined) {
+      throw new Error(`宣言されていない Behavior: ${id}`);
+    }
+    slots.set(id, [...(slots.get(id) ?? []), carrier]);
+  }
+  REGISTERED.set(of.id, slots);
+  return value;
+}
+
+/** `carries()` が集めた対応。Intent id → Behavior id → Carrier */
+const REGISTERED = new Map<string, Map<string, Carrier[]>>();
+
+/**
+ * `carries()` で集めた対応を Implementation にする (§8.1 側の締め)。
+ *
+ * `implement()` が型検査で見ていた「全 Behavior が担われている」を、
+ * ここで実行時に見る。**モジュールが読み込まれていないと集まらない**ので、
+ * 呼ぶ側が実装を import 済みであることに依存する
+ */
+export function collect<I extends Intent>(of: I): Implementation<I> {
+  const slots = REGISTERED.get(of.id) ?? new Map<string, Carrier[]>();
+  const missing = of.behaviors
+    .filter((b) => b.waiver === undefined && !slots.has(b.id))
+    .map((b) => b.id);
+  if (missing.length > 0) {
+    throw new Error(
+      `担い手のいない Behavior: ${missing.join(', ')}。` +
+        `carries() を書くか、実装を import すること`
+    );
+  }
+  const carriers: Record<string, readonly Carrier[]> = {};
+  for (const b of of.behaviors) carriers[b.id] = slots.get(b.id) ?? [];
+  return { intent: of, carriers };
+}
+
+/**
  * Evidence の状態。
  *
  * `declared` は「テストとして登録されたが、まだ結果が返っていない」。

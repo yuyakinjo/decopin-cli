@@ -1,10 +1,12 @@
-import type { CmdProps } from 'decopin-cli';
+import type { CmdProps, DataResult } from 'decopin-cli';
 
 /**
  * Data only — no view here. `command.tsx` receives the return value as
  * `data`, and `--json` prints it directly (ADR 25).
  */
-export default function Data({ options }: CmdProps<'stats'>) {
+export default function Data({
+  options,
+}: CmdProps<'stats'>): DataResult<'stats'> {
   const files = ['README.md', 'package.json', 'tsconfig.json'];
   const shown =
     options.limit === undefined ? files : files.slice(0, options.limit);

@@ -1,10 +1,10 @@
-import { Output, Type } from 'decopin-cli';
+import { Output, Type, type OutputDefinition } from 'decopin-cli';
 
 /**
  * The shape `data.tsx` promises. Declaring it here makes it the source of
  * truth for the `data` prop's type, and checks the value at runtime (ADR 28).
  */
-export default function DefineOutput() {
+export default function DefineOutput(): OutputDefinition {
   return (
     <Output>
       <Type.Object>
