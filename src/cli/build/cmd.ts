@@ -1,6 +1,7 @@
 import { relative } from 'node:path';
 
 import { build } from '../../core/build/index.ts';
+import { supportsUnicode } from '../../core/renderer/render.ts';
 import { EXIT_CODE } from '../../core/runtime/exit.ts';
 import { hasFlag, optionValue, type Usage } from '../argv.ts';
 import { commandTree } from './tree.ts';
@@ -66,6 +67,7 @@ export default function run(argv: string[]): Promise<number> {
           routes: result.routes,
           rootFiles: result.rootFiles,
           inherited: result.inherited,
+          unicode: supportsUnicode(process.env),
         }) +
         '\n' +
         effectsBlock +

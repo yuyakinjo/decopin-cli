@@ -149,15 +149,26 @@ describeBehavior(BUILD, 'shows-what-each-command-is-made-of', () => {
       expect(result.stdout).toContain('Route (demo/app)');
       // 自分のディレクトリのファイルは、読む順 (CONVENTION_FILES の順) で並ぶ
       expect(result.stdout).toMatch(
-        /stats\n.* cmd\.tsx {2}argv\.tsx {2}data\.tsx {2}output\.tsx/
+        /stats\n.*ƒ cmd\.tsx {2}ƒ argv\.tsx {2}ƒ data\.tsx {2}ƒ output\.tsx/
       );
-      // 継承は ↑ を付けて、どの階層のものかまで出す
+      // 継承は ↑ を付けて、どの階層のものかまで出す。置かれたファイルと
+      // 同じ行に並べ、どちらなのかは行ではなく記号で分ける
       expect(result.stdout).toMatch(
-        /user\/list\n.*\n.*↑ user\/error\.tsx {2}user\/layout\.tsx/
+        /user\/list\n.*ƒ cmd\.tsx.*↑ user\/error\.tsx {2}↑ user\/layout\.tsx/
+      );
+      // 記号の読み方は木の下に置く
+      expect(result.stdout).toContain(
+        "ƒ  convention   placed in the command's own directory"
+      );
+      expect(result.stdout).toContain(
+        '↑  inherited    comes from a directory above'
+      );
+      expect(result.stdout).toContain(
+        '¤  root-only    applies to every command'
       );
       // ルート直下にしか置けないものは、コマンドの木とは別に 1 度だけ出す
       expect(result.stdout).toContain('Root (demo/app)');
-      expect(result.stdout).toMatch(/Root \(demo\/app\)\n {4}.*env\.tsx/);
+      expect(result.stdout).toMatch(/Root \(demo\/app\)\n {4}.*¤ env\.tsx/);
     }
   );
 
@@ -174,7 +185,7 @@ describeBehavior(BUILD, 'shows-what-each-command-is-made-of', () => {
     // demo/app/not-found.tsx は Root の行にだけ出る
     const arrows = result.stdout
       .split('\n')
-      .filter((line) => line.includes('↑'));
+      .filter((line) => line.includes('↑') && line.includes('.tsx'));
     expect(arrows.length).toBeGreaterThan(0);
     expect(arrows.some((line) => line.includes('not-found.tsx'))).toBe(false);
   });

@@ -23,7 +23,7 @@ describe('commandTree', () => {
       rootFiles: {},
       inherited: EMPTY,
     });
-    expect(tree).toBe('Route (app)\n─ hello\n    cmd.tsx\n');
+    expect(tree.split('\n\n')[0]).toBe('Route (app)\n─ hello\n    ƒ cmd.tsx');
   });
 
   test('ルートコマンドは名前が空なので (root) と出す', () => {
@@ -47,14 +47,14 @@ describe('commandTree', () => {
       rootFiles: {},
       inherited: EMPTY,
     });
-    expect(tree.split('\n').filter((line) => line.trim() !== '')).toEqual([
+    expect(tree.split('\n\n')[0]?.split('\n')).toEqual([
       'Route (app)',
       '┌ a',
-      '│   cmd.tsx',
+      '│   ƒ cmd.tsx',
       '├ b',
-      '│   cmd.tsx',
+      '│   ƒ cmd.tsx',
       '└ c',
-      '    cmd.tsx',
+      '    ƒ cmd.tsx',
     ]);
   });
 
@@ -73,7 +73,7 @@ describe('commandTree', () => {
       rootFiles: {},
       inherited: EMPTY,
     });
-    expect(tree).toContain('cmd.tsx  argv.tsx  data.tsx  output.tsx');
+    expect(tree).toContain('ƒ cmd.tsx  ƒ argv.tsx  ƒ data.tsx  ƒ output.tsx');
   });
 
   test('継承は近い順に、app/ からの相対パスで出す', () => {
@@ -95,7 +95,7 @@ describe('commandTree', () => {
         ],
       ]),
     });
-    expect(tree).toContain('↑ user/error.tsx  error.tsx  user/layout.tsx');
+    expect(tree).toContain('↑ user/error.tsx  ↑ error.tsx  ↑ user/layout.tsx');
   });
 
   test('自分のディレクトリにあるものは ↑ に重ねない', () => {
@@ -110,8 +110,8 @@ describe('commandTree', () => {
       rootFiles: {},
       inherited: new Map([['crash', { error: 'app/crash/error.tsx' }]]),
     });
-    expect(tree).toContain('cmd.tsx  error.tsx');
-    expect(tree).not.toContain('↑');
+    expect(tree).toContain('ƒ cmd.tsx  ƒ error.tsx');
+    expect(tree.split('\n\n')[0]).not.toContain('↑');
   });
 
   test('ルート直下にしか置けないものは別の節に 1 度だけ出す', () => {
@@ -125,8 +125,8 @@ describe('commandTree', () => {
       // 同じ not-found.tsx が全コマンドに継承されるが、木には出さない
       inherited: new Map([['', { 'not-found': 'app/not-found.tsx' }]]),
     });
-    expect(tree).toContain('Root (app)\n    not-found.tsx  env.tsx\n');
-    expect(tree).not.toContain('↑');
+    expect(tree).toContain('Root (app)\n    ¤ not-found.tsx  ¤ env.tsx');
+    expect(tree.split('\n\n')[0]).not.toContain('↑');
   });
 
   test('ルート直下のファイルが無ければ節ごと出さない', () => {
@@ -137,5 +137,36 @@ describe('commandTree', () => {
       inherited: EMPTY,
     });
     expect(tree).not.toContain('Root (');
+  });
+});
+
+describe('記号', () => {
+  const INPUT = {
+    appDir: 'app',
+    routes: [
+      {
+        name: 'user/list',
+        dir: 'user/list',
+        files: { cmd: 'app/user/list/cmd.tsx' },
+      },
+    ],
+    rootFiles: { env: 'app/env.tsx' },
+    inherited: new Map([['user', { layout: 'app/user/layout.tsx' }]]),
+  };
+
+  test('3 つの種別を 1 桁の記号で区別し、読み方を木の下に置く', () => {
+    const tree = commandTree(INPUT);
+    expect(tree).toContain('ƒ cmd.tsx  ↑ user/layout.tsx');
+    expect(tree).toContain('¤ env.tsx');
+    expect(tree).toContain("ƒ  convention   placed in the command's own");
+    expect(tree).toContain('↑  inherited    comes from a directory above');
+    expect(tree).toContain('¤  root-only    applies to every command');
+  });
+
+  test('UTF-8 でない端末では ASCII に落とす', () => {
+    const tree = commandTree({ ...INPUT, unicode: false });
+    expect(tree).toContain('f cmd.tsx  ^ user/layout.tsx');
+    expect(tree).toContain('* env.tsx');
+    expect(/[ƒ↑¤─┌├└│]/.test(tree)).toBe(false);
   });
 });

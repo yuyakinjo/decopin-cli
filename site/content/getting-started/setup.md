@@ -59,21 +59,25 @@ conventions are readable right where they took effect:
 Found 3 command(s)
 Route (app)
 ┌ hello
-│   cmd.tsx  argv.tsx
+│   ƒ cmd.tsx  ƒ argv.tsx
 ├ user/import
-│   cmd.tsx  argv.tsx  stdin.tsx
-│   ↑ user/error.tsx  user/layout.tsx
+│   ƒ cmd.tsx  ƒ argv.tsx  ƒ stdin.tsx  ↑ user/error.tsx  ↑ user/layout.tsx
 └ user/list
-    cmd.tsx  argv.tsx
-    ↑ user/error.tsx  user/layout.tsx
+    ƒ cmd.tsx  ƒ argv.tsx  ↑ user/error.tsx  ↑ user/layout.tsx
 
 Root (app)
-    global-error.tsx  env.tsx
+    ¤ global-error.tsx  ¤ env.tsx
+
+ƒ  convention   placed in the command's own directory
+↑  inherited    comes from a directory above
+¤  root-only    applies to every command
 ```
 
-`↑` marks a file inherited from a directory above the command, named by where
-it sits. Root-only files apply everywhere, so they are listed once at the
-bottom rather than on every node.
+The marker before each file says which of the three kinds it is, and the
+legend under the tree repeats it. An inherited file is named by where it
+sits, so you know which directory to open. Root-only files apply everywhere,
+so they are listed once at the bottom rather than on every node. Terminals
+without UTF-8 get `f`, `^` and `*` instead.
 
 `decopin dev` also fills in the `CmdProps<'…'>` annotation when it sees a
 `cmd.tsx` without one, so a new command is typed as soon as the file is saved.

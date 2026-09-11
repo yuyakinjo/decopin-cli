@@ -106,21 +106,24 @@ that produced the CLI are readable right where they took effect:
 Found 3 command(s)
 Route (app)
 ┌ hello
-│   cmd.tsx  argv.tsx
+│   ƒ cmd.tsx  ƒ argv.tsx
 ├ user/import
-│   cmd.tsx  argv.tsx  stdin.tsx
-│   ↑ user/error.tsx  user/layout.tsx
+│   ƒ cmd.tsx  ƒ argv.tsx  ƒ stdin.tsx  ↑ user/error.tsx  ↑ user/layout.tsx
 └ user/list
-    cmd.tsx  argv.tsx
-    ↑ user/error.tsx  user/layout.tsx
+    ƒ cmd.tsx  ƒ argv.tsx  ↑ user/error.tsx  ↑ user/layout.tsx
 
 Root (app)
-    global-error.tsx  env.tsx
+    ¤ global-error.tsx  ¤ env.tsx
+
+ƒ  convention   placed in the command's own directory
+↑  inherited    comes from a directory above
+¤  root-only    applies to every command
 ```
 
-`↑` marks files that come from a directory above the command. Files that
-apply to every command, like the root-only ones, are listed once at the
-bottom instead of on every node.
+Each file carries a one-character marker for where it came from, and the
+legend under the tree spells them out. Files that apply to every command,
+like the root-only ones, are listed once at the bottom instead of on every
+node. On a terminal without UTF-8 the markers fall back to `f`, `^` and `*`.
 
 ## Files, not configuration
 
