@@ -33,6 +33,7 @@
     "format:check": "oxfmt --check",
     "build": "bun src/cli/bin.ts build --app demo/app",
     "dev": "bun src/cli/bin.ts dev --app demo/app",
+    "gen": "bun src/cli/bin.ts gen --app demo/app",
     "bench": "bun scripts/benchmark-startup.ts",
     "site": "bun scripts/build-site.ts",
     "site:dev": "bun scripts/serve-site.ts",

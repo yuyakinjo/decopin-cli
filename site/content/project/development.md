@@ -6,6 +6,9 @@ description: Working on decopin-cli itself.
 ```sh
 bun install
 bun run ci            # build, then typecheck / test / lint / format in parallel
+bun run build         # build demo/app with the checkout itself (no bunx)
+bun run dev           # watch demo/app and rebuild on every save
+bun run gen --conv cmd --path demo/app/hello   # scaffold into demo/app
 bun run site          # build the documentation site into site/dist
 bun run site:dev      # build and preview at http://localhost:4173 (restart after edits)
 bun run bench         # startup time
