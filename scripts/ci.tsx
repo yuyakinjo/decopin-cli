@@ -33,7 +33,7 @@ const SEQUENTIAL: Task[] = [
 
 /** 互いに独立なので並列に流すもの */
 const PARALLEL: Task[] = [
-  { name: 'typecheck', command: ['bunx', 'tsc', '--noEmit'] },
+  { name: 'typecheck', command: ['bun', 'run', 'typecheck'] },
   { name: 'test', command: ['bun', 'test'] },
   { name: 'lint', command: ['bunx', 'oxlint'] },
   { name: 'format', command: ['bunx', 'oxfmt', '--check'] },
