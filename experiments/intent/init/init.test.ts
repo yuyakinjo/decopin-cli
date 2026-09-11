@@ -69,7 +69,8 @@ describeBehavior(INIT, 'runs-from-scratch', () => {
       const result = await run(['bun', BIN, 'build'], project);
       expect(result.stderr).toBe('');
       expect(result.code).toBe(0);
-      expect(result.stdout).toContain('Found 1 command(s): hello');
+      expect(result.stdout).toContain('Found 1 command(s)');
+      expect(result.stdout).toContain('─ hello');
       expect(await readdir(join(project, 'dist'))).toContain('index.js');
     },
     60_000

@@ -31,6 +31,19 @@ export const REPORTS_WHAT_IT_WROTE = behavior(
   '見つけたコマンドと、書いた生成物の場所を漏らさず出す'
 );
 
+/**
+ * 出力を「打つ側から見た単位」で並べる。**後から足した Behavior** で、
+ * きっかけは Next.js の build が出す Route 一覧を見た利用者の要望。
+ *
+ * 一覧に名前しか出さないと、そのコマンドが何から組み立っているのか
+ * (argv.tsx があるのか、上の layout.tsx が効いているのか) は app/ を
+ * 開き直さないと分からない
+ */
+export const SHOWS_WHAT_EACH_COMMAND_IS_MADE_OF = behavior(
+  'shows-what-each-command-is-made-of',
+  'コマンドごとに、そこに置かれた規約ファイルと、上のディレクトリから効いている継承ファイルを、どこの階層のものかまで出す'
+);
+
 export const REPORTS_REACHABLE_EFFECTS = behavior(
   'reports-reachable-effects',
   'コマンドごとに到達できる副作用と、そこまでの経路を出す。無ければ無いと言う'
@@ -41,5 +54,6 @@ export const BEHAVIORS = [
   NAMES_COMMANDS_AFTER_DIRECTORIES,
   REFUSES_AN_APP_WITHOUT_COMMANDS,
   REPORTS_WHAT_IT_WROTE,
+  SHOWS_WHAT_EACH_COMMAND_IS_MADE_OF,
   REPORTS_REACHABLE_EFFECTS,
 ] as const;

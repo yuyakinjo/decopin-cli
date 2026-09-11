@@ -1205,6 +1205,36 @@ experiments/intent/returns/returns.test.ts が「型が配られていること�
 
 ---
 
+## ADR 47: `decopin build` はコマンドごとの組み立てを木で出す
+
+**「ファイルの有無 = 機能の有無」が一番外側の契約**なのに、build の出力は
+コマンド名しか出していなかった。名前だけ並んでいても、そのコマンドに
+`argv.tsx` があるのか、上の `layout.tsx` が効いているのかは `app/` を開き直す
+まで分からない。**契約を、契約が効いた直後に読み返せる形にする**。
+
+**木はコマンド中心にする。`app/` のディレクトリ構造そのままにはしない**。
+打つ側から見える単位はコマンドで、`user/` のように `cmd.tsx` を持たない
+中間ディレクトリは単位ではない。1 コマンド = 1 ノードにして、そのノードに
+置かれた規約ファイルを読む順 (`CONVENTION_FILES` の順) に並べる。
+
+**継承ファイルは `↑` を付けて、どの階層のものかまで書く**。`layout.tsx` とだけ
+出すと、直しに行く先が分からない。ただし `app/` 直下のものは Root の節に
+1 度だけ出し、木には出さない。全コマンドに効くものを全コマンドの行に書いても
+情報は 1 件も増えず、本当に近い階層のものが埋もれる。
+
+**フラグにはしない**。`--tree` を付けたときだけ出すと、既定では新しい情報が
+何も見えない。ADR 32 の副作用ブロックと同じで、**build のたびに読み返せて
+初めて、契約とずれたときに気付ける**。
+
+**組み立ては `src/cli/build/tree.ts` に置く**。規約の一覧 (`CONVENTION_FILES`・
+`INHERITED_FILES`・`ROOT_ONLY_FILES`) と継承の解決を読むので、core には
+置けない (ADR 41)。`cli/docs/document.ts` (ADR 45) と同じ形。
+
+test/build/tree.test.ts が木の形を、experiments/intent/build/build.test.ts の
+`shows-what-each-command-is-made-of` が CLI を通した出力を固定する。
+
+---
+
 ## 未決 / 保留
 
 **決めていないこと**をここに置く。ADR ではないので、`test/docs/decisions.test.ts`

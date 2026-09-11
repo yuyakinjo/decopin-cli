@@ -52,6 +52,29 @@ bunx decopin build   # scan app/ and produce dist/index.js
 bunx decopin dev     # watch app/ and rebuild types + dist/index.js on every save
 ```
 
+`build` prints one node per command with the files that produced it, so the
+conventions are readable right where they took effect:
+
+```
+Found 3 command(s)
+Route (app)
+┌ hello
+│   cmd.tsx  argv.tsx
+├ user/import
+│   cmd.tsx  argv.tsx  stdin.tsx
+│   ↑ user/error.tsx  user/layout.tsx
+└ user/list
+    cmd.tsx  argv.tsx
+    ↑ user/error.tsx  user/layout.tsx
+
+Root (app)
+    global-error.tsx  env.tsx
+```
+
+`↑` marks a file inherited from a directory above the command, named by where
+it sits. Root-only files apply everywhere, so they are listed once at the
+bottom rather than on every node.
+
 `decopin dev` also fills in the `CmdProps<'…'>` annotation when it sees a
 `cmd.tsx` without one, so a new command is typed as soon as the file is saved.
 

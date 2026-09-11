@@ -29,7 +29,7 @@ import type { EffectReport } from './effects.ts';
 import { evaluateRoutes } from './evaluator.ts';
 import type { EvaluatedRoute } from './evaluator.ts';
 import { scan } from './scanner.ts';
-import type { Route } from './scanner.ts';
+import type { Route, ScanResult } from './scanner.ts';
 import { generateTypes } from './type-emitter.ts';
 
 export interface GenerateOptions {
@@ -60,6 +60,10 @@ export interface BuildOptions extends GenerateOptions {
 
 export interface GenerateResult {
   routes: Route[];
+  /** ルート直下にだけ置けるファイル。何が読まれたかを報告するために返す */
+  rootFiles: ScanResult['rootFiles'];
+  /** ディレクトリ → 継承されるファイル。どのコマンドに効くかは `dir` で引く */
+  inherited: ScanResult['inherited'];
   evaluated: EvaluatedRoute[];
   /** 落とすほどではないが、たぶん意図と違うこと */
   warnings: Warning[];
@@ -251,6 +255,8 @@ export async function generate(
 
   return {
     routes,
+    rootFiles,
+    inherited,
     evaluated,
     files,
     warnings,

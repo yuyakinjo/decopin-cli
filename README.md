@@ -99,6 +99,29 @@ bunx decopin dev     # watch app/ and rebuild types + dist/index.js on every sav
 bunx decopin docs    # write a Markdown reference for every command to stdout
 ```
 
+`build` prints what it found, one node per command, so the file conventions
+that produced the CLI are readable right where they took effect:
+
+```
+Found 3 command(s)
+Route (app)
+┌ hello
+│   cmd.tsx  argv.tsx
+├ user/import
+│   cmd.tsx  argv.tsx  stdin.tsx
+│   ↑ user/error.tsx  user/layout.tsx
+└ user/list
+    cmd.tsx  argv.tsx
+    ↑ user/error.tsx  user/layout.tsx
+
+Root (app)
+    global-error.tsx  env.tsx
+```
+
+`↑` marks files that come from a directory above the command. Files that
+apply to every command, like the root-only ones, are listed once at the
+bottom instead of on every node.
+
 ## Files, not configuration
 
 A CLI has more inputs than argv. It reads stdin, or does not. It depends on

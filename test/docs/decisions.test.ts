@@ -339,6 +339,11 @@ const GUARDS: Record<number, Guard> = {
     label: '実行例は example.tsx で宣言し、docs はそれだけを実行する',
     file: 'experiments/intent/docs/docs.test.ts',
   },
+  47: {
+    kind: 'test',
+    label: 'build はコマンドごとの組み立てを木で出す',
+    file: 'test/build/tree.test.ts',
+  },
   40: {
     kind: 'test',
     label: '端末より高い <Dynamic> のフレームは末尾を優先して切り詰める',

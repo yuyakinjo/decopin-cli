@@ -123,12 +123,60 @@ describeBehavior(BUILD, 'reports-what-it-wrote', () => {
     ]);
     expect(result.stderr).toBe('');
     expect(result.code).toBe(0);
-    expect(result.stdout).toContain('Found 12 command(s): config, count');
+    expect(result.stdout).toContain('Found 12 command(s)');
     expect(result.stdout).toContain('user/show');
     // 書いたものは 3 種類とも出す。1 つでも黙ると次に何を見ればよいか分からない
     expect(result.stdout).toContain(`Wrote ${join(workDir, 'types.d.ts')}`);
     expect(result.stdout).toContain('(zsh completion)');
     expect(result.stdout).toMatch(/Wrote .*index\.js \([\d.]+ KB\) in \d+ms/);
+  });
+});
+
+describeBehavior(BUILD, 'shows-what-each-command-is-made-of', () => {
+  proves(
+    'コマンドごとに、置かれたファイルと継承したファイルを出す',
+    async () => {
+      const result = await cli([
+        'build',
+        '--app',
+        'demo/app',
+        '--work',
+        workDir,
+        '--out',
+        join(workspace, 'dist-tree'),
+      ]);
+      expect(result.code).toBe(0);
+      expect(result.stdout).toContain('Route (demo/app)');
+      // 自分のディレクトリのファイルは、読む順 (CONVENTION_FILES の順) で並ぶ
+      expect(result.stdout).toMatch(
+        /stats\n.* cmd\.tsx {2}argv\.tsx {2}data\.tsx {2}output\.tsx/
+      );
+      // 継承は ↑ を付けて、どの階層のものかまで出す
+      expect(result.stdout).toMatch(
+        /user\/list\n.*\n.*↑ user\/error\.tsx {2}user\/layout\.tsx/
+      );
+      // ルート直下にしか置けないものは、コマンドの木とは別に 1 度だけ出す
+      expect(result.stdout).toContain('Root (demo/app)');
+      expect(result.stdout).toMatch(/Root \(demo\/app\)\n {4}.*env\.tsx/);
+    }
+  );
+
+  proves('全コマンドに効くものを全コマンドの行に書かない', async () => {
+    const result = await cli([
+      'build',
+      '--app',
+      'demo/app',
+      '--work',
+      workDir,
+      '--out',
+      join(workspace, 'dist-tree-root'),
+    ]);
+    // demo/app/not-found.tsx は Root の行にだけ出る
+    const arrows = result.stdout
+      .split('\n')
+      .filter((line) => line.includes('↑'));
+    expect(arrows.length).toBeGreaterThan(0);
+    expect(arrows.some((line) => line.includes('not-found.tsx'))).toBe(false);
   });
 });
 

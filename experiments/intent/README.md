@@ -8,7 +8,7 @@ Behavior を決める **Intent-First**。
 | ---- | --------------- | --------------------------------------------- | ------------ | --------- |
 | 1    | `decopin init`  | `start-by-writing-commands`                   | 4 + waived 1 | Recovery  |
 | 2    | `decopin gen`   | `add-conventions-without-memorizing`          | 6            | Recovery  |
-| 3a   | `decopin build` | `ship-what-the-directories-declare`           | 5            | Recovery  |
+| 3a   | `decopin build` | `ship-what-the-directories-declare`           | 6            | Recovery  |
 | 3b   | 生成された CLI  | `run-commands-as-declared`                    | 10           | Recovery  |
 | 4    | `decopin dev`   | `keep-types-honest-while-editing`             | 5 + waived 1 | Recovery  |
 | 5    | `decopin docs`  | `know-what-a-command-does-without-running-it` | 6            | **First** |
@@ -483,6 +483,22 @@ waiver の理由に「費用」を書くときは、測り直す日付ごと書�
 増分のほとんどは `implementation.ts` の冒頭 28 行 — **失敗した一方向パターンの
 測定記録**。捨てた選択肢の理由を Intent の側に書き残すと記述量は増える。
 Intent-First 2 回とも同じ方向に増えているので、(27) は偶然ではない。
+
+## 実験 6 の後に足した Behavior (`build` の木)
+
+**33. 機能追加が、Intent のどこに入るかで自分の大きさを名乗った。**
+
+「build の出力を Next.js のようにコマンドごとの木にしたい」という要望に対し、
+入れ先は `ship-what-the-directories-declare` の 6 番目の Behavior
+`shows-what-each-command-is-made-of` になった。**新しい Intent は要らなかった**
+— purpose (「app/ に置いたファイルだけから配れる 1 本の実行ファイルを得る」)
+はそのままで、その結末の見せ方が増えただけ。逆に、もし purpose を書き直したく
+なっていたら、それは build に別の目的を混ぜようとしている合図だった。
+**Intent は、機能追加の大きさを測る物差しとして使えた** (§13 の逆向き)。
+
+`implement()` が全 Behavior を要求するので、Behavior を足した時点で型検査が
+落ち、Carrier を書くまで通らない。**書き忘れが構造的に起きない**のは、
+Intent Recovery で作った表が後から効いた初めての例。
 
 ## まだ答えていない問い
 

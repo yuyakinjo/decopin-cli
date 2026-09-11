@@ -6,6 +6,7 @@
  * Carrier を 1 つに絞ると嘘になる。
  */
 import run from '../../../src/cli/build/cmd.ts';
+import { commandTree } from '../../../src/cli/build/tree.ts';
 import { bundle } from '../../../src/core/build/bundler.ts';
 import {
   generateEntry,
@@ -36,6 +37,12 @@ export const IMPLEMENTATION = implement(SHIP_WHAT_THE_DIRECTORIES_DECLARE, {
   'refuses-an-app-without-commands': [carriedBy(generate, INDEX)],
   // 何を書いたかを知っているのは generate、それを出すのは CLI 層
   'reports-what-it-wrote': [carriedBy(run, CMD), carriedBy(generate, INDEX)],
+  // 木を組み立てるのは CLI 層。材料 (rootFiles と inherited) は scan が持つ
+  'shows-what-each-command-is-made-of': [
+    carriedBy(commandTree, 'src/cli/build/tree.ts'),
+    carriedBy(scan, 'src/core/build/scanner.ts'),
+    carriedBy(run, CMD),
+  ],
   'reports-reachable-effects': [
     carriedBy(analyzeEffects, 'src/core/build/effects.ts'),
     carriedBy(run, CMD),
