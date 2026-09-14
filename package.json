@@ -27,7 +27,7 @@
   },
   "scripts": {
     "test": "bun test",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc --noEmit && tsc -p site/tsconfig.json",
     "lint": "oxlint",
     "format": "oxfmt",
     "format:check": "oxfmt --check",
@@ -42,12 +42,12 @@
     "version:next": "bun scripts/next-version.ts"
   },
   "dependencies": {
-    "valibot": "^1.4.2"
+    "valibot": "^1.5.0"
   },
   "devDependencies": {
-    "@types/bun": "^1.4.1",
-    "@types/node": "^26.4.1",
-    "oxfmt": "^0.66.0",
+    "@types/bun": "^1.4.2",
+    "@types/node": "^26.5.1",
+    "oxfmt": "^0.67.0",
     "oxlint": "^1.81.0",
     "typescript": "^7.0.2"
   },
