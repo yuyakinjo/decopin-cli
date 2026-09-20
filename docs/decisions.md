@@ -1102,8 +1102,8 @@ test/runtime/handle-error.test.tsx が「包んでも場所が潰れない」こ
 
 **`.decopin/` の更新は内容が変わったときだけ**なのは変わらない (`writeIfChanged`)。
 `dist/index.js` は毎回書き直すが、これは読む側が tsc ではなく bun の起動なので
-途中の状態を見る心配が薄い。test/build/watch.test.ts が「保存で型もバンドルも
-追従する」ことを固定する。
+途中の状態を見る心配が薄い。test/intent/dev/dev.test.ts が「保存で型も
+バンドルも追従する」ことを固定する。
 
 ## ADR 44: `decopin dev --annotate` は cmd.tsx の props に生成型を書き足す
 
@@ -1133,6 +1133,177 @@ TypeScript を依存に足すほどの仕事ではない
 **自分の書き換えで watch が 1 回余分に回る**が、2 回目は差分が無いので止まる。
 test/build/annotate.test.ts が「注釈が無いときだけ足す」「import を足す」
 「既にあれば触らない」を固定する。
+
+## ADR 45: 実行例は `example.tsx` で宣言する。`decopin docs` はそれだけを実行する
+
+Issue #3 の「app/ の構造からドキュメントを生成し、コマンド単位で実行可能に」を
+入れるにあたり、**押したら結果が返る HTML** は採らなかった。押せる形にすると、
+任意のコマンドを引数付きで起動するサーバーを配ることになる。ドキュメントは
+読むものなので、読むために実行環境を要求するのは釣り合わない。
+
+**代わりに、生成する側が実行して結果を貼る**。`decopin docs` は Markdown を
+出し、例を実際に走らせて、打った行と返ってきた出力を並べる。読む人は打たずに
+結果を知る。Issue が求めていたのは押せることではなく、**打たずに何が返るかが
+分かること**だと読み替えた。
+
+**何を走らせるかは `example.tsx` でだけ決まる**。help (ADR 8) が argv.tsx から
+呼び方を組み立てるのと同じ形で、`example.tsx` が `CommandExample[]`
+(`args` と任意の `description`) を default export する。**宣言が無いコマンドは
+実行しない**。ドキュメントを作るだけで副作用が起きると、生成そのものが危険な
+操作になる。`--no-run` で全部止められる。
+
+**失敗した例も載せる**。終了コードと出力をそのまま「失敗」として書き、生成は
+止めない。例が腐っていることは、ドキュメントに出ているほうが分かる。
+
+**組み立ては `src/cli/docs/document.ts` に置く。core には置かない**。argv・
+example・help の規約を読む以上、core に置くと ADR 41 を破る。使うのは
+`decopin docs` だけなので、`cli/gen/generate.ts` と同じ形にした。
+
+test/intent/docs/docs.test.ts が「一覧・呼び方・実行結果・宣言のない
+コマンドに触らないこと・失敗の載せ方・`--out`」を固定する。
+
+---
+
+## ADR 46: 宣言ファイルの返り値型を配り、`--annotate` が書き足す
+
+`cmd.tsx` には `CmdProps<'hello'>` があるのに、`argv.tsx` や `env.tsx` には
+何も無い。「この関数は何を返せばいいのか」がコードから読めず、`decopin build`
+を通すまで分からなかった。
+
+**ADR 9 を測り直した上で入れている。** TypeScript 7.0.2 でも JSX 式の型は
+`JSX.Element` に潰れる。`jsx()` factory を `jsx<T>(type: T, ...): Element<T>`
+としても変わらない (実測)。したがって `EnvDefinition` のような別名は
+**どれも同じ型**で、「`env.tsx` に `<Argv>` を書いた」取り違えは型では
+捕まえられない。そこは評価時の `DeclarationError` が見る。
+
+それでも入れるのは、型として言えることが 2 つあるから:
+
+- **要素を返すこと**。`null`・文字列・配列の返し間違いは型検査で落ちる
+- **書き方が揃うこと**。規約ファイルの形が import した型名で読める
+
+**本当に型検査が効くのは `data.tsx` × `output.tsx` の 1 か所**。ここは JSX を
+経由しないので ADR 9 に縛られない。`output.tsx` があれば宣言が正 (ADR 28) な
+のに、食い違いは実行時検証まで分からなかった。生成する `.decopin/types.d.ts`
+に `DataResults` を足し、`DataResult<'stats'>` で引けるようにする。
+
+**`DataResults` を `Routes` と分けたのは自己参照を避けるため**。`output.tsx`
+が無いコマンドの `data` は data.tsx の戻り値から `ReturnType` で引いている
+(ADR 25)。そこへ `DataResult<'go'>` と書くと型が自分を参照する。だから
+`DataResults` には **`output.tsx` があるコマンドだけ**を並べ、`--annotate` も
+その場合しか書かない。未生成のときは `unknown` に落ちる (ADR 9 の代償と同じ
+扱いで、注釈が型検査を止めないことを優先する)。
+
+**`--annotate` を拡張する。新しいフラグは足さない** (ADR 44)。`cmd.tsx` の
+props を補うのと同じ条件 — 注釈が無いものだけ・書き換えは 1 行と import 行
+だけ — を宣言ファイルの返り値へ広げる。`async` の宣言には `Promise<...>` を
+書く。フラグを分けると「props だけ補って返り値は補わない」状態ができ、
+どちらが効いているのか説明が増える。
+
+test/intent/returns/returns.test.ts が「型が配られていること」
+「注釈を足すこと」「既にあるものに触らないこと」「output.tsx が無い data.tsx
+を対象にしないこと」を固定する。
+
+---
+
+## ADR 47: `decopin build` はコマンドごとの組み立てを木で出す
+
+**「ファイルの有無 = 機能の有無」が一番外側の契約**なのに、build の出力は
+コマンド名しか出していなかった。名前だけ並んでいても、そのコマンドに
+`argv.tsx` があるのか、上の `layout.tsx` が効いているのかは `app/` を開き直す
+まで分からない。**契約を、契約が効いた直後に読み返せる形にする**。
+
+**木はコマンド中心にする。`app/` のディレクトリ構造そのままにはしない**。
+打つ側から見える単位はコマンドで、`user/` のように `cmd.tsx` を持たない
+中間ディレクトリは単位ではない。1 コマンド = 1 ノードにして、そのノードに
+置かれた規約ファイルを読む順 (`CONVENTION_FILES` の順) に並べる。
+
+**継承ファイルは、どの階層のものかまで書く**。`layout.tsx` とだけ出すと、
+直しに行く先が分からない。ただし `app/` 直下のものは Root の節に 1 度だけ
+出し、木には出さない。全コマンドに効くものを全コマンドの行に書いても情報は
+1 件も増えず、本当に近い階層のものが埋もれる。
+
+**種別は行の位置ではなく、ファイル名の前の記号で示す** (`ƒ` 規約 / `↑` 継承 /
+`¤` ルート専用)。置かれたファイルと継承ファイルを別の行に分けていたときは、
+行が何を意味するのかが出力のどこにも書いていなかった。記号にすると 1 行に
+混ぜられ、読み方を木の下の凡例に 1 度書けば済む。**絵文字は使わない**。幅が
+2 桁で、異体字セレクタの有無でも変わる (`src/core/renderer/width.ts` に実測の
+覚書がある)。UTF-8 でない端末には、`src/core/renderer/data.ts` の `SYMBOLS`
+と同じく ASCII の対 (`f` / `^` / `*`) を用意する。
+
+**フラグにはしない**。`--tree` を付けたときだけ出すと、既定では新しい情報が
+何も見えない。ADR 32 の副作用ブロックと同じで、**build のたびに読み返せて
+初めて、契約とずれたときに気付ける**。
+
+**組み立ては `src/cli/build/tree.ts` に置く**。規約の一覧 (`CONVENTION_FILES`・
+`INHERITED_FILES`・`ROOT_ONLY_FILES`) と継承の解決を読むので、core には
+置けない (ADR 41)。`cli/docs/document.ts` (ADR 45) と同じ形。
+
+test/build/tree.test.ts が木の形を、test/intent/build/build.test.ts の
+`shows-what-each-command-is-made-of` が CLI を通した出力を固定する。
+
+---
+
+## ADR 48: 目的は `test/intent/` に Intent として置き、証明はテストが担う
+
+`intent.txt` の開発モデル (Intent → Behavior → Implementation、Test = Evidence) を
+`experiments/intent/` で 7 つの Intent・45 の Behavior に当てて試した
+(2026-09-10〜14、記録は test/intent/README.md)。既存のテストが見ていなかった
+Behavior が 3 件出た (init が次の一手を出すこと、build の出力 2 件)。実装を書く
+前に Intent を決めた 2 回は Behavior の書き直しが 0 回で、目的を 1 文にする段で
+実装の選択肢が削れた。**実験の置き場から本線に移す。**
+
+**置き場は `test/intent/`**。ランタイム (`core.ts` / `evidence.ts` /
+`evidence.bun.ts` / `doc.ts`) と、Intent ごとのディレクトリ (`intent.ts` /
+`behavior.ts` / `implementation.ts` / `<name>.test.ts`。宣言を JSX で書く
+Evidence は `.tsx`)。`src/` に置かないのは、
+配布物に Intent ランタイムが入るからで、`build:package` の `rootDir` が実測で
+それを拒否した (TS6059)。**依存は `test/intent/ → src/` の一方向**で、`src/` は
+Intent を知らない。`test/` の下なら衛生 (制御文字) と参照切れの検査も届く。
+
+**`report()` はファイル末尾で 1 回。後ろに `describeBehavior` が来たら throw する**。
+「不要な waived()」の判定はファイル内の証明が出揃った後で走る前提で、後ろに
+置いた証明は判定をすり抜け、ドキュメントには ✓ で出た (実測 2026-09-14)。
+順序の約束を人が守るのではなく、ランタイムが見張る。
+
+**ドキュメントは断片から組むが、宣言と突き合わせる**。`doc.ts` は
+`.decopin-intent/` の断片を `intent.ts` の宣言と比べ、宣言の無い Intent・
+宣言に無い Behavior・断片の無い Intent があれば何も出さずに落とす。消した
+Intent の断片が残り、6 つの Behavior が ✓ で出たことがある (同日)。CI は
+`bun test` の後に `doc.ts` を走らせ、ローカルの `bun run intent:doc` は断片を
+消してフル実行から作り直す。
+
+**断片のファイル名には Behavior id を含める** (`shardName()`)。証明名だけで
+分けると、`partial: true` で分担した 2 ファイルが同じ証明名を使っているとき
+同名になり、**プロセスを分けて並列に走らせると後勝ちで片方の証明が消える**
+(実測 2026-09-20)。Evidence はモジュールに貯まるので同一プロセスでは起きない。
+消えても `doc.ts` は未証明として落ちるが、テストは全部通っているので原因が
+読めない。id を含めれば衝突せず、同じ分担なら同じ名前 (冪等) のまま。
+
+**新しいサブコマンド (`src/cli/<name>/`) は Intent から書く**。既存の機能は
+触るときに回収する (Intent Recovery)。**すべてのテストを Evidence にはしない**。
+`test/build/` のように、Behavior ではなく実装の形を見るテストは普通のテストの
+まま隣に置く。
+
+**結末を見ているテストは、動かさずに分担させる**。`test/runtime/handle-error.test.tsx`
+のように規約の隣にあるテストは、`describeBehavior` で包んで
+`report(impl, { partial: true })` を末尾に置くだけで Evidence になる。分担する
+Intent は元のファイルも `partial` にする — 非 partial の `report()` が先に走ると、
+後ろの `describeBehavior` が throw する。`describeBehavior` の中に `describe` は
+入れない (bun:test の body の呼ばれ方のせいで、中の `proves` が判定をすり抜ける)。
+
+**`test/intent/` の `§` は `intent.txt` の節番号**。ADR 15 で捨てた仕様書の節参照と
+形は同じだが、指す先は決定ではなく開発モデルの理論なので、ここだけ許す。
+`intent.txt` が消えたら参照ごと落ちる。
+
+**代償**: テスト時間 (Intent の Evidence は 102 件で 3.1 秒、全体 4.3 秒の 7 割。
+build / runtime / dev がそれぞれ demo を組み立てるため) と記述量 (Behavior あたり
+18〜34 行)。Intent が増えて `bun run intent:doc` の時間が効いてきたら、断片を
+分担する `report(impl, { partial: true })` の側を見直す。
+
+test/docs/decisions.test.ts の lint が「各 Intent ディレクトリに 4 ファイルが揃う」
+「`report()` が末尾に 1 回」「`src/cli/*` のサブコマンドごとに Intent がある」を
+見る。ランタイム自身の性質 (順序・免除の自壊・落ちた証明の扱い) は
+test/intent/evidence.test.ts が固定する。
 
 ---
 

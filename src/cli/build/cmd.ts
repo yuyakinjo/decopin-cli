@@ -1,8 +1,10 @@
 import { relative } from 'node:path';
 
 import { build } from '../../core/build/index.ts';
+import { supportsUnicode } from '../../core/renderer/render.ts';
 import { EXIT_CODE } from '../../core/runtime/exit.ts';
 import { hasFlag, optionValue, type Usage } from '../argv.ts';
+import { commandTree } from './tree.ts';
 
 export const usage: Usage = {
   summary: 'scan app/ and produce dist/index.js',
@@ -10,8 +12,9 @@ export const usage: Usage = {
 
 export default function run(argv: string[]): Promise<number> {
   const started = performance.now();
+  const appDir = optionValue(argv, '--app') ?? 'app';
   return build({
-    appDir: optionValue(argv, '--app'),
+    appDir,
     outDir: optionValue(argv, '--out'),
     workDir: optionValue(argv, '--work'),
     minify: hasFlag(argv, '--minify'),
@@ -24,7 +27,6 @@ export default function run(argv: string[]): Promise<number> {
         process.stderr.write(`[decopin]   ${warning.hint}\n`);
       }
     }
-    const names = result.routes.map((route) => route.name || '(root)');
     // 副作用は「無いことの証明」が価値なので、あるものだけ挙げる (ADR 32)。
     // 見つけたものには入口からの経路を添える。「なぜ届くのか」が分からないと
     // 直せないので
@@ -59,7 +61,15 @@ export default function run(argv: string[]): Promise<number> {
         : `Effects reachable (? = analysis gave up):\n${notable.join('\n')}\n`;
 
     process.stdout.write(
-      `Found ${result.routes.length} command(s): ${names.join(', ')}\n` +
+      `Found ${result.routes.length} command(s)\n` +
+        commandTree({
+          appDir,
+          routes: result.routes,
+          rootFiles: result.rootFiles,
+          inherited: result.inherited,
+          unicode: supportsUnicode(process.env),
+        }) +
+        '\n' +
         effectsBlock +
         `Wrote ${result.files.types}\n` +
         `Wrote ${result.completionPath} (zsh completion)\n` +

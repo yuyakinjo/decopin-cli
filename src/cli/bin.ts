@@ -10,6 +10,7 @@ import { EXIT_CODE } from '../core/runtime/exit.ts';
 import type { Usage } from './argv.ts';
 import buildCommand, { usage as buildUsage } from './build/cmd.ts';
 import devCommand, { usage as devUsage } from './dev/cmd.ts';
+import docsCommand, { usage as docsUsage } from './docs/cmd.ts';
 import genCommand, { usage as genUsage } from './gen/cmd.ts';
 import initCommand, { usage as initUsage } from './init/cmd.ts';
 
@@ -24,6 +25,7 @@ const COMMANDS: Record<string, Command> = {
   gen: { usage: genUsage, run: genCommand },
   build: { usage: buildUsage, run: buildCommand },
   dev: { usage: devUsage, run: devCommand },
+  docs: { usage: docsUsage, run: docsCommand },
 };
 
 const INDENT = ' '.repeat(17);
@@ -57,6 +59,7 @@ Options:
                  export const unsafeEval = true in its cmd.tsx
   --annotate     (dev) add CmdProps<'<name>'> to the props of any cmd.tsx
                  whose default export has no type annotation
+  --no-run       (docs) do not run the declared examples
   -h, --help     show this help
 `;
 

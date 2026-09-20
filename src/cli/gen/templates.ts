@@ -77,6 +77,12 @@ export default function Complete(): Candidate[] {
   return [];
 }
 `,
+  example: `import type { CommandExample } from 'decopin-cli';
+
+export default function Example(): CommandExample[] {
+  return [{ args: [], description: 'show the default output' }];
+}
+`,
   env: `import { Env, Var } from 'decopin-cli';
 
 export default function DefineEnv() {

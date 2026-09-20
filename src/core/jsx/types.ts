@@ -129,6 +129,17 @@ export interface Element {
   readonly props: Record<string, unknown>;
 }
 
+/**
+ * 宣言ファイル (`argv.tsx` など) の default export が返すもの。
+ *
+ * 種類ごとの別名 ({@link Element} の別名) を各 `definition.ts` に置いているが、
+ * **どれも同じ型**。ADR 9 のとおり JSX 式の型は `JSX.Element` に潰れるので、
+ * 「`env.tsx` に `<Argv>` を書いた」のような取り違えは型では捕まえられない。
+ * それは評価時の `DeclarationError` が見る。ここで型として言えるのは
+ * 「要素を返す」(null も文字列も Promise でもない) ことまで。
+ */
+export type Declaration = Element;
+
 /** レンダリング可能なもの。`null` / `undefined` / `boolean` は何も描かない */
 export type Renderable =
   | Element

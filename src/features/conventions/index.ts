@@ -3,6 +3,7 @@ import { FILE_NAME as CMD_FILE } from './cmd/definition.ts';
 import { FILE_NAME as COMPLETE_FILE } from './complete/definition.ts';
 import { FILE_NAME as DATA_FILE } from './data/definition.ts';
 import { FILE_NAME as ERROR_FILE } from './error/definition.ts';
+import { FILE_NAME as EXAMPLE_FILE } from './example/definition.ts';
 import { FILE_NAME as HELP_FILE } from './help/definition.ts';
 import { FILE_NAME as LAYOUT_FILE } from './layout/definition.ts';
 import { FILE_NAME as MIDDLEWARE_FILE } from './middleware/definition.ts';
@@ -25,6 +26,7 @@ export const CONVENTION_FILES = [
   HELP_FILE,
   SHELL_FILE,
   COMPLETE_FILE,
+  EXAMPLE_FILE,
 ] as const;
 
 export type ConventionFile = (typeof CONVENTION_FILES)[number];

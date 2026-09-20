@@ -96,7 +96,34 @@ settings, unless your tsconfig uses `extends`).
 ```sh
 bunx decopin build   # scan app/ and produce dist/index.js
 bunx decopin dev     # watch app/ and rebuild types + dist/index.js on every save
+bunx decopin docs    # write a Markdown reference for every command to stdout
 ```
+
+`build` prints what it found, one node per command, so the file conventions
+that produced the CLI are readable right where they took effect:
+
+```
+Found 3 command(s)
+Route (app)
+┌ hello
+│   ƒ cmd.tsx  ƒ argv.tsx
+├ user/import
+│   ƒ cmd.tsx  ƒ argv.tsx  ƒ stdin.tsx  ↑ user/error.tsx  ↑ user/layout.tsx
+└ user/list
+    ƒ cmd.tsx  ƒ argv.tsx  ↑ user/error.tsx  ↑ user/layout.tsx
+
+Root (app)
+    ¤ global-error.tsx  ¤ env.tsx
+
+ƒ  convention   placed in the command's own directory
+↑  inherited    comes from a directory above
+¤  root-only    applies to every command
+```
+
+Each file carries a one-character marker for where it came from, and the
+legend under the tree spells them out. Files that apply to every command,
+like the root-only ones, are listed once at the bottom instead of on every
+node. On a terminal without UTF-8 the markers fall back to `f`, `^` and `*`.
 
 ## Files, not configuration
 
@@ -108,11 +135,11 @@ type checker cannot see any of them.
 decopin gives each of them a file with a fixed name. There are three kinds,
 and they differ in where they may go:
 
-| Kind            | Files                                                                                          | Where it goes                                     |
-| --------------- | ---------------------------------------------------------------------------------------------- | ------------------------------------------------- |
-| **Conventions** | `cmd.tsx` `argv.tsx` `data.tsx` `output.tsx` `stdin.tsx` `help.tsx` `shell.tsx` `complete.tsx` | next to the command; applies to that command only |
-| **Inherited**   | `layout.tsx` `middleware.tsx` `error.tsx` `not-found.tsx`                                      | any directory; applies to everything below it     |
-| **Root-only**   | `env.tsx` `version.tsx` `global-error.tsx`                                                     | `app/` only; applies to the whole CLI             |
+| Kind            | Files                                                                                                        | Where it goes                                     |
+| --------------- | ------------------------------------------------------------------------------------------------------------ | ------------------------------------------------- |
+| **Conventions** | `cmd.tsx` `argv.tsx` `data.tsx` `output.tsx` `stdin.tsx` `help.tsx` `shell.tsx` `complete.tsx` `example.tsx` | next to the command; applies to that command only |
+| **Inherited**   | `layout.tsx` `middleware.tsx` `error.tsx` `not-found.tsx`                                                    | any directory; applies to everything below it     |
+| **Root-only**   | `env.tsx` `version.tsx` `global-error.tsx`                                                                   | `app/` only; applies to the whole CLI             |
 
 ```
 app/

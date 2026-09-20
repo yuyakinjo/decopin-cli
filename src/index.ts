@@ -74,6 +74,10 @@ export type {
   Completer,
   CompleteProps,
 } from './features/conventions/complete/runtime.ts';
+export type {
+  CommandExample,
+  Examples,
+} from './features/conventions/example/runtime.ts';
 export type { ShellName } from './features/conventions/shell/runtime.ts';
 export { CliError, isCliError } from './core/runtime/errors.ts';
 export type { ErrorKind, ErrorProps } from './core/runtime/errors.ts';
@@ -150,6 +154,24 @@ export type {
   UntypedCmdProps,
 } from './features/conventions/cmd/types.ts';
 export type { EnvVars } from './features/root-only/env/types.ts';
+
+/**
+ * 宣言ファイルの返り値型 (ADR 46)。`decopin dev --annotate` が書き足す。
+ *
+ * JSX を返すものは「要素を返す」ことしか言えない (ADR 9)。実際に宣言との
+ * 食い違いを型で捕まえられるのは {@link DataResult} だけ。
+ */
+export type { ArgvDefinition } from './features/conventions/argv/definition.ts';
+export type { StdinDefinition } from './features/conventions/stdin/definition.ts';
+export type { OutputDefinition } from './features/conventions/output/definition.ts';
+export type { ShellDefinition } from './features/conventions/shell/definition.ts';
+export type { EnvDefinition } from './features/root-only/env/definition.ts';
+export type { VersionDefinition } from './features/root-only/version/definition.ts';
+export type {
+  DataResult,
+  DataResults,
+} from './features/conventions/data/definition.ts';
+export type { Declaration } from './core/jsx/types.ts';
 
 export { run } from './core/runtime/run.tsx';
 export type { CommandContext } from './features/conventions/cmd/context.ts';

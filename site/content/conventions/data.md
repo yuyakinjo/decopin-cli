@@ -85,6 +85,33 @@ awkward shapes, pass a valibot schema instead: `<Output schema={v.object(…)} /
 The declaration also becomes the `outputSchema` of the command's
 [MCP tool](/guides/mcp/).
 
+## DataResult: the declaration, checked while you type
+
+With an `output.tsx` in place, `data.tsx` can name what it returns. Then a
+value that disagrees with the declaration fails to type-check, before the
+runtime check ever runs:
+
+```tsx
+// app/stats/data.tsx
+import type { CmdProps, DataResult } from 'decopin-cli';
+
+export default function Data({
+  options,
+}: CmdProps<'stats'>): DataResult<'stats'> {
+  const files = ['README.md', 'package.json'];
+  const shown =
+    options.limit === undefined ? files : files.slice(0, options.limit);
+  // leave out a declared field, or get one wrong, and tsc says so here
+  return { counted: shown.length, total: files.length, files: shown };
+}
+```
+
+`decopin dev` writes that annotation for you. It is added only when the
+command has an `output.tsx`: without one, the `data` prop's type is inferred
+from this function's return value, so annotating it here would make the type
+refer to itself. Before `decopin build` has generated types,
+`DataResult<'…'>` is `unknown`, so a fresh checkout still type-checks.
+
 ## What --json refuses
 
 `--json` refuses to print data that would not survive the round trip, and
