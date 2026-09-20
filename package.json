@@ -28,6 +28,7 @@
   "scripts": {
     "test": "bun test",
     "intent:doc": "bun test/intent/doc.ts --run",
+    "intent:list": "bun test/intent/doc.ts --list",
     "typecheck": "tsc --noEmit && tsc -p site/tsconfig.json",
     "lint": "oxlint",
     "format": "oxfmt",

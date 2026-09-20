@@ -452,6 +452,26 @@ function markOf(b: IntentReport['behaviors'][number]): string {
  * Intent Graph からドキュメントを組み立てる (§15)。
  * 手で書く文書ではないので、ずれようがない。
  */
+/**
+ * 索引の 1 件分。**結末の語彙で引ければよい**ので、Purpose と数だけ出す。
+ *
+ * 全体のドキュメントは 390 行あり、人もエージェントも途中で読むのをやめて
+ * grep に切り替えた (README の 40)。引ける長さにしてから詳細を見せる。
+ */
+export function toIndexLine(report: IntentReport): string {
+  const marks = report.behaviors.map(markOf);
+  const count = (mark: string) => marks.filter((m) => m === mark).length;
+  const proved = count('✓');
+  const waived = count('–');
+  const left = marks.length - proved - waived;
+  const counts = [
+    `${proved}/${marks.length} ✓`,
+    ...(waived > 0 ? [`${waived} –`] : []),
+    ...(left > 0 ? [`${left} ✗`] : []),
+  ].join(' ');
+  return `${left > 0 ? '✗' : '✓'} ${report.id}  (${counts})\n  ${report.purpose}\n`;
+}
+
 export function toDocument(report: IntentReport): string {
   const lines = [
     `Intent: ${report.id}`,

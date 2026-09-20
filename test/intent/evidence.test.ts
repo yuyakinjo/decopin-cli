@@ -17,8 +17,10 @@ import {
   carries,
   collect,
   implement,
+  type EvidenceStatus,
   intent,
   type IntentReport,
+  toIndexLine,
   toReport,
   unproven,
   waived,
@@ -285,5 +287,57 @@ describe('2 つの Implementation Pattern', () => {
     carries(of, ['gap-a'], partOnly, 'test/intent/evidence.test.ts');
     // implement() なら引数の型が落ちる。8.1 は型で要求できない (core.ts §8.1)
     expect(() => collect(of)).toThrow('担い手のいない Behavior: gap-b');
+  });
+});
+
+/**
+ * 索引の形 (`doc.ts --list`)。全体のドキュメントは 390 行あり、人もエージェントも
+ * 途中で読むのをやめて grep に切り替えた (README の 40)。結末の語彙で引ける
+ * 長さにしてから詳細へ降りる、という使い方をここで固定する。
+ */
+describe('索引の行', () => {
+  const report = (
+    behaviors: { id: string; waiver?: string; status?: EvidenceStatus }[]
+  ): IntentReport => ({
+    id: 'indexed',
+    purpose: '索引の検査',
+    behaviors: behaviors.map((b) => ({
+      id: b.id,
+      description: b.id,
+      carriers: [],
+      waiver: b.waiver,
+      evidence: b.status === undefined ? [] : [{ name: 'e', status: b.status }],
+    })),
+  });
+
+  test('全部証明されていれば ✓ と数だけ', () => {
+    expect(
+      toIndexLine(report([{ id: 'a', status: 'passed' }])).split('\n')[0]
+    ).toBe('✓ indexed  (1/1 ✓)');
+  });
+
+  test('免除は別に数え、合否は分けない', () => {
+    expect(
+      toIndexLine(
+        report([
+          { id: 'a', status: 'passed' },
+          { id: 'b', waiver: '理由' },
+        ])
+      ).split('\n')[0]
+    ).toBe('✓ indexed  (1/2 ✓ 1 –)');
+  });
+
+  test('証明の無い Behavior が 1 つでもあれば ✗', () => {
+    expect(
+      toIndexLine(report([{ id: 'a', status: 'passed' }, { id: 'b' }])).split(
+        '\n'
+      )[0]
+    ).toBe('✗ indexed  (1/2 ✓ 1 ✗)');
+  });
+
+  test('2 行目は Purpose。結末の語彙で grep できる', () => {
+    expect(toIndexLine(report([{ id: 'a', status: 'passed' }]))).toEndWith(
+      '\n  索引の検査\n'
+    );
   });
 });

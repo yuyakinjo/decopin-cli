@@ -3,6 +3,11 @@
  *
  *   bun run intent:doc       # 断片を消し、テストをフル実行してから出す
  *   bun test/intent/doc.ts   # 直前の `bun test` が残した断片から出す (CI はこちら)
+ *   bun test/intent/doc.ts --list        # Intent の索引だけ (結末の語彙で引く)
+ *   bun test/intent/doc.ts <id> [<id>]   # その Intent だけ詳細を出す
+ *
+ * **判定はどの形でも変わらない**。絞って出しても、証明されていない Behavior が
+ * どこかにあれば exit 1 する — 絞り込みは読む量を減らすだけで、合格の線を動かさない。
  *
  * `.decopin-intent/` の断片を読んで Intent ごとにまとめるだけ。**テストを
  * 走らせた後でないと何も出ない**のは意図したところで、Evidence はテストの
@@ -23,6 +28,7 @@ import {
   mergeReports,
   sharedCarriers,
   toDocument,
+  toIndexLine,
   unproven,
   waivedButProven,
 } from './core.ts';
@@ -88,7 +94,11 @@ function fail(lines: readonly string[]): never {
   process.exit(1);
 }
 
-const shouldRun = process.argv.includes('--run');
+const args = process.argv.slice(2);
+const shouldRun = args.includes('--run');
+const indexOnly = args.includes('--list');
+/** 絞り込む Intent id。無ければ全部 */
+const only = new Set(args.filter((arg) => !arg.startsWith('--')));
 if (shouldRun) {
   const code = await runTests();
   if (code !== 0) {
@@ -135,12 +145,21 @@ if (stale.length > 0 || missing.length > 0) {
   ]);
 }
 
-for (const report of merged.values()) {
-  process.stdout.write(toDocument(report));
+const shown = [...merged.values()].filter(
+  (report) => only.size === 0 || only.has(report.id)
+);
+if (only.size > 0 && shown.length === 0) {
+  fail([
+    `その Intent は無い: ${[...only].join(', ')}`,
+    `あるのは: ${[...merged.keys()].join(', ')}`,
+  ]);
+}
+for (const report of shown) {
+  process.stdout.write(indexOnly ? toIndexLine(report) : toDocument(report));
 }
 
 // §11.8 の重なり。疑いを出すだけで、正常な再利用かどうかは人が決める (§5.1)
-const shared = sharedCarriers([...merged.values()]);
+const shared = indexOnly ? [] : sharedCarriers(shown);
 if (shared.length > 0) {
   process.stdout.write('\n複数の Intent が担わせている実装:\n');
   for (const carrier of shared) {
