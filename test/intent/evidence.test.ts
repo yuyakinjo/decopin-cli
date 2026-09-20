@@ -16,12 +16,13 @@ import {
   carriedBy,
   implement,
   intent,
+  type IntentReport,
   toReport,
   unproven,
   waived,
   waivedButProven,
 } from './core.ts';
-import { createEvidence, type Runner } from './evidence.ts';
+import { createEvidence, type Runner, shardName } from './evidence.ts';
 
 interface Outcome {
   readonly name: string;
@@ -191,6 +192,47 @@ describe('describeBehavior の形', () => {
     const impl = probe('undecl-a', 'undecl-b');
     expect(() => describeBehavior(impl, 'nope' as never, () => {})).toThrow(
       '宣言されていない'
+    );
+  });
+});
+
+describe('断片のファイル名', () => {
+  /**
+   * 1 つの Intent を 2 ファイルで分担し、片側だけを証明した断片。
+   *
+   * `toReport()` を使わないのは、Evidence が (Intent, Behavior) で
+   * モジュールに貯まるから (core.ts の EVIDENCE)。同一プロセスでは impl を
+   * 作り直しても累積され、**分担を再現できない**。別プロセスでは
+   * 片側しか無い断片が出るので、その形を直接組む
+   */
+  const halfShard = (
+    proved: 'a' | 'b',
+    evidenceName: string
+  ): IntentReport => ({
+    id: 'split-across-files',
+    purpose: '分担の検査',
+    behaviors: (['a', 'b'] as const).map((id) => ({
+      id,
+      description: id,
+      carriers: [],
+      evidence:
+        id === proved
+          ? [{ name: evidenceName, status: 'passed' as const }]
+          : [],
+    })),
+  });
+
+  // 実測 2026-09-20: 証明名だけで印を作ると同名になり、プロセスを分けて
+  // 並列に走らせたとき後勝ちで片方の証明が消えた
+  test('別の Behavior を同じ証明名で分担しても衝突しない', () => {
+    expect(shardName(halfShard('a', '同じ名前の証明'))).not.toBe(
+      shardName(halfShard('b', '同じ名前の証明'))
+    );
+  });
+
+  test('同じ分担なら同じ名前。断片が溢れない', () => {
+    expect(shardName(halfShard('a', '証明'))).toBe(
+      shardName(halfShard('a', '証明'))
     );
   });
 });

@@ -28,6 +28,7 @@ import {
   type BehaviorId,
   type Implementation,
   type Intent,
+  type IntentReport,
   recordEvidence,
   toReport,
   unproven,
@@ -199,10 +200,9 @@ export function createEvidence(runner: Runner): EvidenceApi {
 
     runner.afterAll(async () => {
       const shard = toReport(impl);
-      const name = `${impl.intent.id}.${fingerprint(shard.behaviors.flatMap((b) => b.evidence.map((e) => e.name)))}.json`;
       await mkdir(SHARD_DIR, { recursive: true });
       await writeFile(
-        join(SHARD_DIR, name),
+        join(SHARD_DIR, shardName(shard)),
         `${JSON.stringify(shard, null, 2)}\n`
       );
     });
@@ -212,9 +212,23 @@ export function createEvidence(runner: Runner): EvidenceApi {
 }
 
 /**
- * 断片のファイル名を分けるためだけの短い印。
+ * 断片のファイル名。中身の fingerprint は分けるためだけの短い印。
  * 同じ Intent を複数のテストファイルが証明しても上書きし合わないようにする。
+ *
+ * **印には Behavior id を含める**。証明名だけだと、別の Behavior を
+ * 同じ証明名で分担した 2 ファイルが同じファイル名になる。同一プロセスなら
+ * impl に累積されるので気づかないが、プロセスを分けて並列に走らせると
+ * 後勝ちで片方の証明が消える (実測 2026-09-20)。doc.ts は未証明として
+ * 落ちるので安全側には倒れるが、テストは全部通っているのに落ちるので
+ * 原因が読めない。id を含めれば衝突しないし、同じ分担なら同じ名前 (冪等) のまま。
  */
+export function shardName(report: IntentReport): string {
+  const proved = report.behaviors.flatMap((b) =>
+    b.evidence.map((e) => `${b.id}/${e.name}`)
+  );
+  return `${report.id}.${fingerprint(proved)}.json`;
+}
+
 function fingerprint(names: readonly string[]): string {
   let hash = 2166136261;
   for (const char of names.join('\0')) {
