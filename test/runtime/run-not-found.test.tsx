@@ -1,10 +1,19 @@
 /**
  * 未知のコマンドの表示 (test/contract/routing.test.tsx)。`app/not-found.tsx` で上書きできる。
+ *
+ * **このファイルは Intent `run-commands-as-declared` の Evidence を分担する**。
+ * 見ているのは「打ち間違えた人が案内を受け取る」という結末なので、
+ * 普通のテストではなく `guides-when-the-command-is-missing` の証明として
+ * 数える (ADR 48)。ファイルは動かさず、`report(..., { partial: true })` で
+ * 分担を宣言する — 全 Behavior が揃ったかの判定は doc.ts の合流後。
  */
-import { describe, expect, test } from 'bun:test';
+import { expect } from 'bun:test';
 
 import { Line, List, run, Text } from 'decopin-cli';
 import type { NotFoundProps, RouteTable } from 'decopin-cli';
+
+import { describeBehavior, proves, report } from '../intent/evidence.bun.ts';
+import { IMPLEMENTATION as RUNTIME } from '../intent/runtime/implementation.ts';
 
 function recorder() {
   const chunks: string[] = [];
@@ -42,8 +51,8 @@ const table: RouteTable = {
   'user/list': { cmd: loader(() => <Line>alice</Line>) },
 };
 
-describe('組み込みの表示', () => {
-  test('候補があれば提案し、stderr + exit 2', async () => {
+describeBehavior(RUNTIME, 'guides-when-the-command-is-missing', () => {
+  proves('候補があれば提案し、stderr + exit 2', async () => {
     const result = await invoke(table, ['helo']);
     expect(result.code).toBe(2);
     expect(result.stdout).toBe('');
@@ -51,19 +60,17 @@ describe('組み込みの表示', () => {
     expect(result.stderr).toContain('Did you mean: hello');
   });
 
-  test('候補が無ければコマンド一覧を並べる', async () => {
+  proves('候補が無ければコマンド一覧を並べる', async () => {
     const result = await invoke(table, ['zzzzzz']);
     expect(result.stderr).toContain('Available commands: hello, user list');
   });
 
-  test('グループの下の未知のコマンドも拾う', async () => {
+  proves('グループの下の未知のコマンドも拾う', async () => {
     const result = await invoke(table, ['user', 'nope']);
     expect(result.code).toBe(2);
     expect(result.stderr).toContain('Unknown command: user nope');
   });
-});
 
-describe('not-found.tsx による上書き', () => {
   const view = ({
     requested,
     suggestion,
@@ -82,20 +89,20 @@ describe('not-found.tsx による上書き', () => {
     </>
   );
 
-  test('props を受け取って表示を差し替える', async () => {
+  proves('props を受け取って表示を差し替える', async () => {
     const result = await invoke(table, ['helo'], loader(view));
     expect(result.code).toBe(2);
     expect(result.stdout).toBe('');
     expect(result.stderr).toBe('cli: no such command "helo"\ntry: hello\n');
   });
 
-  test('候補が無い場合はコマンド名が空白区切りで渡る', async () => {
+  proves('候補が無い場合はコマンド名が空白区切りで渡る', async () => {
     const result = await invoke(table, ['zzzzzz'], loader(view));
     expect(result.stderr).toContain('- hello');
     expect(result.stderr).toContain('- user list');
   });
 
-  test('失敗したら組み込みの表示に戻る', async () => {
+  proves('失敗したら組み込みの表示に戻る', async () => {
     const result = await invoke(
       table,
       ['helo'],
@@ -107,18 +114,27 @@ describe('not-found.tsx による上書き', () => {
     expect(result.stderr).toContain('Unknown command: helo');
   });
 
-  test('コンポーネントを default export していなければ組み込みに戻る', async () => {
-    const result = await invoke(table, ['helo'], loader(42));
-    expect(result.stderr).toContain('Unknown command: helo');
-  });
+  proves(
+    'コンポーネントを default export していなければ組み込みに戻る',
+    async () => {
+      const result = await invoke(table, ['helo'], loader(42));
+      expect(result.stderr).toContain('Unknown command: helo');
+    }
+  );
 
-  test('<Stdout> を使えば stdout にも出せる (終了コードは 2 のまま)', async () => {
-    const result = await invoke(
-      table,
-      ['helo'],
-      loader(() => <Line>quiet</Line>)
-    );
-    expect(result.code).toBe(2);
-    expect(result.stderr).toBe('quiet\n');
-  });
+  proves(
+    '<Stdout> を使えば stdout にも出せる (終了コードは 2 のまま)',
+    async () => {
+      const result = await invoke(
+        table,
+        ['helo'],
+        loader(() => <Line>quiet</Line>)
+      );
+      expect(result.code).toBe(2);
+      expect(result.stderr).toBe('quiet\n');
+    }
+  );
 });
+
+// この Intent の証明は他のファイルと分担している。必ず末尾で 1 回
+report(RUNTIME, { partial: true });

@@ -1284,6 +1284,13 @@ Intent の断片が残り、6 つの Behavior が ✓ で出たことがある (
 `test/build/` のように、Behavior ではなく実装の形を見るテストは普通のテストの
 まま隣に置く。
 
+**結末を見ているテストは、動かさずに分担させる**。`test/runtime/handle-error.test.tsx`
+のように規約の隣にあるテストは、`describeBehavior` で包んで
+`report(impl, { partial: true })` を末尾に置くだけで Evidence になる。分担する
+Intent は元のファイルも `partial` にする — 非 partial の `report()` が先に走ると、
+後ろの `describeBehavior` が throw する。`describeBehavior` の中に `describe` は
+入れない (bun:test の body の呼ばれ方のせいで、中の `proves` が判定をすり抜ける)。
+
 **`test/intent/` の `§` は `intent.txt` の節番号**。ADR 15 で捨てた仕様書の節参照と
 形は同じだが、指す先は決定ではなく開発モデルの理論なので、ここだけ許す。
 `intent.txt` が消えたら参照ごと落ちる。

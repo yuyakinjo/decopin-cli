@@ -630,11 +630,11 @@ CI で落ちる**)。
 うち intent が 3.26s。内訳を測ったら、**上位 3 件はどれも待ち方が原因**で、
 証明の数や Intent の構造とは関係が無かった。
 
-| 手 | 前 | 後 |
-| --- | --- | --- |
+| 手                                                                            | 前     | 後    |
+| ----------------------------------------------------------------------------- | ------ | ----- |
 | dev: 固定 `Bun.sleep(300/300/200)` を、**後から必ず起きるビルド**で数える形に | 1111ms | 364ms |
-| gen: 独立した `gen` の子プロセス 15 回を `Promise.all` でまとめて起こす | 857ms | 518ms |
-| returns: tsc 4 プロジェクトを `beforeAll` で先に全部起こす | 483ms | 195ms |
+| gen: 独立した `gen` の子プロセス 15 回を `Promise.all` でまとめて起こす       | 857ms  | 518ms |
+| returns: tsc 4 プロジェクトを `beforeAll` で先に全部起こす                    | 483ms  | 195ms |
 
 合計 `bun test` 4.73s → **3.38s** (-29%)。main との差は 2.2s → 0.9s。
 
@@ -645,6 +645,36 @@ dev の書き換えは速さだけではない。`sleep` で「これ以上ビ�
 
 残りの内訳 (gen の 458ms = build + 実行 + tsc、runtime の 452ms = 証明 20 件分の
 `cli()` 起動) は実作業なので、ここから削るには証明を弱めるしか無い。
+
+**42. 規約ごとのテストは、動かさずに Evidence にできた。**
+
+`runtime` Intent は 12 Behavior を持ちながら、証明は `runtime.test.ts` の 20 件だけ
+だった。同じ結末を見ている `test/runtime/handle-error.test.tsx` などは普通の
+テストのままで、**落ちても Intent の ✓ が変わらなかった**。
+
+`report(impl, { partial: true })` で 4 ファイルを分担にした。**ファイルは 1 つも
+移動していない** — `describeBehavior` で包んで `test` を `proves` にしただけ。
+
+| ファイル                              | Behavior                             | Evidence |
+| ------------------------------------- | ------------------------------------ | -------- |
+| `test/runtime/handle-error.test.tsx`  | `handles-errors-where-declared`      | 38       |
+| `test/runtime/layout.test.tsx`        | `wraps-output-in-layout`             | 13       |
+| `test/runtime/run-not-found.test.tsx` | `guides-when-the-command-is-missing` | 11       |
+| `test/runtime/middleware.test.tsx`    | `runs-middleware-around-the-command` | 10       |
+
+分かったことが 3 つある。
+
+1. **`describeBehavior` の中に `describe` は入れられない**。bun:test の `describe` の body は
+   収集時に呼ばれるが呼び出しの直後ではないので、中の `proves` が「`describeBehavior` の
+   中」の判定をすり抜ける。見出しは証明名に前置して畳む (handle-error は
+   「検証エラーは 2」のように文脈が落ちるので前置し、layout / middleware は不要だった)
+2. **`test.each` は `proves` にはならない**。for で広げて名前を確定させる。どれが落ちたかが
+   そのままドキュメントに出るので、この方が Evidence としては正しい
+3. 分担するなら**元のファイルも `partial: true` にする**。同一プロセスだと非 partial の
+   `report()` が先に走った時点で、他ファイルの `describeBehavior` が throw する
+
+この形なら**回収は移動を伴わない**。complete のとき (36) はファイルごと `test/intent/` に
+移したが、規約ごとのテストは規約の隣にある方が見つけやすい。
 
 ## まだ答えていない問い
 
