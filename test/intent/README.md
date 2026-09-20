@@ -1,7 +1,12 @@
 # Intent-First Development — `decopin` への適用実験
 
-> 2026-09-14 に `experiments/intent/` から `test/intent/` へ移した (ADR 48)。以下は
-> 実験の記録なので、本文中のパスは当時のまま残してある。
+> **これは記録であって、手順書ではない。** 新しい Intent の書き方と、既存のテストを
+> Evidence にする手順は
+> [site/content/project/development.md](../../site/content/project/development.md) の
+> 「Intents」にある。ここには**なぜそうしたか**と、測って分かったことを残している。
+>
+> 2026-09-14 に `experiments/intent/` から `test/intent/` へ移した (ADR 48)。以下の
+> 実験の記録では、本文中のパスは当時のまま残してある。
 
 `intent.txt` の開発モデルを `decopin` に当てて試す。実験 1〜4 は既にある実装から
 Intent を回収する §12 の **Intent Recovery**。実験 5 と 6 は、実装を書く前に Intent と
