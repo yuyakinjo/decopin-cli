@@ -1,5 +1,8 @@
 # Intent-First Development — `decopin` への適用実験
 
+> 2026-09-14 に `experiments/intent/` から `test/intent/` へ移した (ADR 48)。以下は
+> 実験の記録なので、本文中のパスは当時のまま残してある。
+
 `intent.txt` の開発モデルを `decopin` に当てて試す。実験 1〜4 は既にある実装から
 Intent を回収する §12 の **Intent Recovery**。実験 5 と 6 は、実装を書く前に Intent と
 Behavior を決める **Intent-First**。
@@ -40,7 +43,7 @@ Behavior を決める **Intent-First**。
 ## 自動ドキュメント (§15)
 
 ```
-bun experiments/intent/doc.ts --run
+bun run intent:doc
 ```
 
 テストをフル実行し、`.decopin-intent/` に落ちた断片をまとめて出す。**テストを
@@ -500,6 +503,65 @@ Intent-First 2 回とも同じ方向に増えているので、(27) は偶然で
 落ち、Carrier を書くまで通らない。**書き忘れが構造的に起きない**のは、
 Intent Recovery で作った表が後から効いた初めての例。
 
+## 実験 7 (Question H: AI Agent は Graph を使えるか) と `complete` の回収
+
+2026-09-14〜15。本線に移した後の最初の 2 つ。
+
+**34. Intent 文書は正答率を変えなかった。課題が grep で当たるものだったから。**
+
+同じ作業コピーを 2 つ用意し、読み取り専用の AI エージェント 2 体に同じ課題を
+出した: 「`decopin init` が最後に出す Next: に `bun run dev` も足したい。どの
+ファイルを変え、どのテストが証明を担い、その中のどこを変えるか」。片方にだけ
+Intent 文書 (`bun run intent:doc` の出力、7 Intent / 247 行) を先に読ませた。
+
+- 正答 (`src/cli/init/cmd.ts` の steps 配列 / init の Evidence の
+  `tells-the-next-step`): **両方 ○**
+- 開いたファイル: 文書あり 11 (文書を含む) / 文書なし 13
+- ツール呼び出し: 15 / 15。トークン: 46.7k / 43.3k。所要: 107 秒 / 124 秒
+
+差は誤差の範囲。文書なしの側は `Next:` を grep して `cmd.ts` に当たり、同じ
+文字列で Evidence にも当たった。文書ありの側は文書 → `cmd.ts` → Evidence と
+降りたが、着地点は同じ。**Graph の「どこを見ればよいか」という価値は、
+`test/intent/<name>/` という置き場が既に配っている**。ディレクトリ名から
+Intent に届くので、文書が無くても Evidence に当たる。文書の出番は、grep で
+当たらない課題 (「色を落とす判断はどこか」のような結末で聞く問い) に限られる
+はずで、それは未試行。
+
+**35. 両方のエージェントが Evidence の穴を答えに含めた。**
+
+文書ありは「期待値が `toContain` の連続部分文字列なので、末尾に足すとテストを
+直さなくても通る (足した行を誰も見ていない状態になる)」、文書なしは
+「`--no-install` の経路しか spawn していないので、依存を入れた側の Next: は
+証明されていない」。どちらも正しい。Behavior ↔ `proves()` の構造があると、
+エージェントは「何が証明されているか」を答えの一部として返す。これは文書の
+有無ではなく置き場の効果 (34 と同じ結論)。
+
+**36. `complete` の回収では Hidden Behavior が出なかった。**
+
+旧 `test/runtime/` の補完テスト 28 件と旧 `test/build/` の zsh シムのテスト
+8 件を 1 つの Intent `complete-from-the-declarations` (8 Behavior) に結び直した。
+describe 8 つが Behavior 8 つになったが 1 対 1 ではない: 「値の補完」「短縮形に
+= を付けた形」「解釈はトークナイザと同じ」の 3 つは結末で見て 2 つに束ね、
+「壊れていても落ちない」は宣言が壊れた場合と complete.tsx が壊れた場合を
+1 つにした。proves 36 + report 2 = 38 件、77ms。
+
+init (実験 1) と build (実験 3) では回収で Hidden Behavior が 3 件出たが、
+ここでは 0 件。補完のテストは最初から「Tab を押した人の結末」がテスト名に
+なっていて、Behavior と同じ粒度だった。**回収で増えるのは、元のテストが実装の
+都合で切られていたときだけ**。Carrier は `completionCandidates` が 8 Behavior
+中 6 つに出る (runtime と同じ入口集中、finding 8 の裏返し)。ADR 21 / 38 の
+ガードは Evidence ファイルへ向け直し、ADR 48 のガードは宣言を JSX で書く
+Evidence のために `.tsx` も通すようにした。
+
+**37. Intent どうしで demo/app の build を共有するのは見送った。**
+
+dev / build / runtime の Intent がそれぞれ demo/app を build している。共有で
+削れる上限は build のテスト全体の 0.2 秒 (4.3 秒中)。dev の 1.1 秒は watch の
+待ちで build ではない。21 で引いた境界 (build は何を書いたかまで、runtime は
+書いたものが何をするか) を守るには Evidence の前提も別々である方が正しく、
+build が壊れたときに runtime の証明が巻き添えで落ちるのは §11.5 の Intent
+規模版になる。0.2 秒のために結合しない。
+
 ## まだ答えていない問い
 
 - Question C (一方向パターン) — **答えが出た (28, 29)**。公開ライブラリの
@@ -516,7 +578,8 @@ Intent Recovery で作った表が後から効いた初めての例。
   Graph からは区別できない (14)。§11.4 の信号の扱いが未決
 - `sharedCarriers()` の検出 2 件はどちらも正常な再利用だった (20)。
   **異常を 1 件も捉えていない検出器**が要るかは、もっと数が出てから
-- Question H (AI Agent が Graph を使って変更できるか) — 未着手
+- Question H (AI Agent が Graph を使って変更できるか) — 半分 (34, 35)。grep で
+  当たる課題では文書の有無で差が出ない。当たらない課題での再試行が残る
 - Evidence の断片はテストファイル単位。同じ Intent を複数ファイルで分担して
   証明する場合は `report(impl, { partial: true })` を渡し、「全 Behavior が
   証明されたか」の判定は `mergeReports()` で合流した後 (`doc.ts`) に移る。

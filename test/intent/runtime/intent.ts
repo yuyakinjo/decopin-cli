@@ -1,7 +1,7 @@
 /**
  * 生成された CLI が実行時にどう振る舞うかの Intent。実験 3 の後半。
  *
- * **元は build のテストファイルの中にいた。** test/integration/build.test.ts の
+ * **元は build のテストファイルの中にいた。** 旧 `test/integration/` の build テストの
  * `describe('生成された CLI')` が 22 テストあり、どれも build ではなく
  * ランタイムとルーターを見ていた。build の Behavior として数えると、
  * 「ビルドが壊れた」と「実行時が壊れた」が同じ Intent の同じ列に並ぶ。

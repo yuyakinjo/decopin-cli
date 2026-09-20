@@ -18,7 +18,8 @@
  *
  * bun:test の `describe` の body は**収集時に呼ばれるが、呼び出しの直後では
  * ない** (実測)。ブロックを抜けた時点の集計はできないので、判定と書き出しは
- * ファイル末尾の `report()` に置いてある。
+ * ファイル末尾の `report()` に置いてある。**末尾であることは `report()` 自身が
+ * 見張る** — 後ろに `describeBehavior` が来たら throw する (ADR 48)。
  */
 import { mkdir, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
@@ -81,6 +82,12 @@ export function createEvidence(runner: Runner): EvidenceApi {
    * 遅れて解決したとき、印が入れ替わっているので「通った」と数えずに済む
    */
   let running: object | null = null;
+  /**
+   * 非 partial の `report()` を済ませた Intent。その後ろに `describeBehavior` が
+   * 並ぶと、「不要な waived()」の判定が済んだ後で証明が付き、免除の自壊が
+   * 素通りする (実測 2026-09-14)。順序の約束を人が守るのではなく、破ったら落とす
+   */
+  const reported = new Set<string>();
 
   function describeBehavior<I extends Intent>(
     impl: Implementation<I>,
@@ -90,6 +97,11 @@ export function createEvidence(runner: Runner): EvidenceApi {
     const found = impl.intent.behaviors.find((b) => b.id === id);
     if (found === undefined) {
       throw new Error(`宣言されていない Behavior: ${id}`);
+    }
+    if (reported.has(impl.intent.id)) {
+      throw new Error(
+        `report() の後ろに describeBehavior は置けない: ${id}。report() はファイル末尾で 1 回`
+      );
     }
 
     runner.describe(`${found.id}: ${found.description}`, () => {
@@ -162,6 +174,10 @@ export function createEvidence(runner: Runner): EvidenceApi {
    */
   function report(impl: Implementation, options?: ReportOptions): void {
     if (options?.partial !== true) {
+      if (reported.has(impl.intent.id)) {
+        throw new Error(`report() は 1 回だけ: ${impl.intent.id}`);
+      }
+      reported.add(impl.intent.id);
       runner.test(`${impl.intent.id}: 全 Behavior が証明されている`, () => {
         const left = unproven(toReport(impl));
         // 落ちたら、Behavior を消すか、証明する proves() を書く
@@ -201,7 +217,7 @@ export function createEvidence(runner: Runner): EvidenceApi {
  */
 function fingerprint(names: readonly string[]): string {
   let hash = 2166136261;
-  for (const char of names.join(' ')) {
+  for (const char of names.join('\0')) {
     hash ^= char.codePointAt(0) ?? 0;
     hash = Math.imul(hash, 16777619);
   }

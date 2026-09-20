@@ -1102,7 +1102,7 @@ test/runtime/handle-error.test.tsx が「包んでも場所が潰れない」こ
 
 **`.decopin/` の更新は内容が変わったときだけ**なのは変わらない (`writeIfChanged`)。
 `dist/index.js` は毎回書き直すが、これは読む側が tsc ではなく bun の起動なので
-途中の状態を見る心配が薄い。experiments/intent/dev/dev.test.ts が「保存で型も
+途中の状態を見る心配が薄い。test/intent/dev/dev.test.ts が「保存で型も
 バンドルも追従する」ことを固定する。
 
 ## ADR 44: `decopin dev --annotate` は cmd.tsx の props に生成型を書き足す
@@ -1159,7 +1159,7 @@ Issue #3 の「app/ の構造からドキュメントを生成し、コマンド
 example・help の規約を読む以上、core に置くと ADR 41 を破る。使うのは
 `decopin docs` だけなので、`cli/gen/generate.ts` と同じ形にした。
 
-experiments/intent/docs/docs.test.ts が「一覧・呼び方・実行結果・宣言のない
+test/intent/docs/docs.test.ts が「一覧・呼び方・実行結果・宣言のない
 コマンドに触らないこと・失敗の載せ方・`--out`」を固定する。
 
 ---
@@ -1199,7 +1199,7 @@ props を補うのと同じ条件 — 注釈が無いものだけ・書き換え
 書く。フラグを分けると「props だけ補って返り値は補わない」状態ができ、
 どちらが効いているのか説明が増える。
 
-experiments/intent/returns/returns.test.ts が「型が配られていること」
+test/intent/returns/returns.test.ts が「型が配られていること」
 「注釈を足すこと」「既にあるものに触らないこと」「output.tsx が無い data.tsx
 を対象にしないこと」を固定する。
 
@@ -1238,8 +1238,58 @@ experiments/intent/returns/returns.test.ts が「型が配られていること�
 `INHERITED_FILES`・`ROOT_ONLY_FILES`) と継承の解決を読むので、core には
 置けない (ADR 41)。`cli/docs/document.ts` (ADR 45) と同じ形。
 
-test/build/tree.test.ts が木の形を、experiments/intent/build/build.test.ts の
+test/build/tree.test.ts が木の形を、test/intent/build/build.test.ts の
 `shows-what-each-command-is-made-of` が CLI を通した出力を固定する。
+
+---
+
+## ADR 48: 目的は `test/intent/` に Intent として置き、証明はテストが担う
+
+`intent.txt` の開発モデル (Intent → Behavior → Implementation、Test = Evidence) を
+`experiments/intent/` で 7 つの Intent・45 の Behavior に当てて試した
+(2026-09-10〜14、記録は test/intent/README.md)。既存のテストが見ていなかった
+Behavior が 3 件出た (init が次の一手を出すこと、build の出力 2 件)。実装を書く
+前に Intent を決めた 2 回は Behavior の書き直しが 0 回で、目的を 1 文にする段で
+実装の選択肢が削れた。**実験の置き場から本線に移す。**
+
+**置き場は `test/intent/`**。ランタイム (`core.ts` / `evidence.ts` /
+`evidence.bun.ts` / `doc.ts`) と、Intent ごとのディレクトリ (`intent.ts` /
+`behavior.ts` / `implementation.ts` / `<name>.test.ts`。宣言を JSX で書く
+Evidence は `.tsx`)。`src/` に置かないのは、
+配布物に Intent ランタイムが入るからで、`build:package` の `rootDir` が実測で
+それを拒否した (TS6059)。**依存は `test/intent/ → src/` の一方向**で、`src/` は
+Intent を知らない。`test/` の下なら衛生 (制御文字) と参照切れの検査も届く。
+
+**`report()` はファイル末尾で 1 回。後ろに `describeBehavior` が来たら throw する**。
+「不要な waived()」の判定はファイル内の証明が出揃った後で走る前提で、後ろに
+置いた証明は判定をすり抜け、ドキュメントには ✓ で出た (実測 2026-09-14)。
+順序の約束を人が守るのではなく、ランタイムが見張る。
+
+**ドキュメントは断片から組むが、宣言と突き合わせる**。`doc.ts` は
+`.decopin-intent/` の断片を `intent.ts` の宣言と比べ、宣言の無い Intent・
+宣言に無い Behavior・断片の無い Intent があれば何も出さずに落とす。消した
+Intent の断片が残り、6 つの Behavior が ✓ で出たことがある (同日)。CI は
+`bun test` の後に `doc.ts` を走らせ、ローカルの `bun run intent:doc` は断片を
+消してフル実行から作り直す。
+
+**新しいサブコマンド (`src/cli/<name>/`) は Intent から書く**。既存の機能は
+触るときに回収する (Intent Recovery)。**すべてのテストを Evidence にはしない**。
+`test/build/` のように、Behavior ではなく実装の形を見るテストは普通のテストの
+まま隣に置く。
+
+**`test/intent/` の `§` は `intent.txt` の節番号**。ADR 15 で捨てた仕様書の節参照と
+形は同じだが、指す先は決定ではなく開発モデルの理論なので、ここだけ許す。
+`intent.txt` が消えたら参照ごと落ちる。
+
+**代償**: テスト時間 (Intent の Evidence は 102 件で 3.1 秒、全体 4.3 秒の 7 割。
+build / runtime / dev がそれぞれ demo を組み立てるため) と記述量 (Behavior あたり
+18〜34 行)。Intent が増えて `bun run intent:doc` の時間が効いてきたら、断片を
+分担する `report(impl, { partial: true })` の側を見直す。
+
+test/docs/decisions.test.ts の lint が「各 Intent ディレクトリに 4 ファイルが揃う」
+「`report()` が末尾に 1 回」「`src/cli/*` のサブコマンドごとに Intent がある」を
+見る。ランタイム自身の性質 (順序・免除の自壊・落ちた証明の扱い) は
+test/intent/evidence.test.ts が固定する。
 
 ---
 

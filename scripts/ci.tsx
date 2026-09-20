@@ -6,6 +6,8 @@
  *
  * `build` だけは先に単独で走らせる。生成物 (`.decopin/types.d.ts`) を
  * `typecheck` とテストが読むため。残りは互いに独立なので並列に流す。
+ * `intent` は最後に 1 つ。テストが残した Evidence の断片から Intent の
+ * ドキュメントを組み、宣言と食い違えば落ちる (ADR 48)。
  *
  * 結果の表は自作のコンポーネントで出している。CI が回るたびに
  * レンダラーが実地で動くことになる (壊れていれば CI 自体が落ちる)。
@@ -37,6 +39,11 @@ const PARALLEL: Task[] = [
   { name: 'test', command: ['bun', 'test'] },
   { name: 'lint', command: ['bunx', 'oxlint'] },
   { name: 'format', command: ['bunx', 'oxfmt', '--check'] },
+];
+
+/** テストの後に走らせるもの (テストが書いた断片を読む) */
+const AFTER: Task[] = [
+  { name: 'intent', command: ['bun', 'test/intent/doc.ts'] },
 ];
 
 interface Result {
@@ -76,6 +83,10 @@ for (const task of SEQUENTIAL) {
 
 if (results.every((result) => result.ok)) {
   results.push(...(await Promise.all(PARALLEL.map(run))));
+}
+
+if (results.every((result) => result.ok)) {
+  for (const task of AFTER) results.push(await run(task));
 }
 
 const failed = results.filter((result) => !result.ok);

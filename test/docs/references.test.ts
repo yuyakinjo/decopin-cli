@@ -99,10 +99,20 @@ describe('コードからの参照', () => {
     const stale: string[] = [];
     for (const [file, source] of sources) {
       if (source.includes('SPEC.md')) stale.push(file);
-      // § 参照は ADR 番号と契約テストのパスに置き換えた
+      // § 参照は ADR 番号と契約テストのパスに置き換えた。
+      // test/intent/ の § だけは intent.txt の節番号 (ADR 48)
+      if (file.startsWith('test/intent/')) continue;
       if (/§\d/.test(source)) stale.push(`${file} (§ 参照)`);
     }
     expect(stale).toEqual([]);
+  });
+
+  test('test/intent/ の § 参照が指す intent.txt が実在する (ADR 48)', async () => {
+    const citing = [...sources].filter(
+      ([file, source]) => file.startsWith('test/intent/') && /§\d/.test(source)
+    );
+    expect(citing.length).toBeGreaterThan(0);
+    expect(await Bun.file('intent.txt').exists()).toBe(true);
   });
 });
 

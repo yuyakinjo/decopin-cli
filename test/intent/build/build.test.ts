@@ -1,7 +1,7 @@
 /**
  * Intent `ship-what-the-directories-declare` の Evidence。
  *
- * test/integration/build.test.ts の **前半 3 テスト**をここへ移して Behavior に
+ * 旧 `test/integration/` の build テストの **前半 3 テスト**をここへ移して Behavior に
  * 結び直したもの。後半 22 テストは別の Intent (runtime/) に移した。
  *
  * 移す過程で 2 つ足した。src/cli/build/cmd.ts の出力 (何を書いたか・どの副作用に

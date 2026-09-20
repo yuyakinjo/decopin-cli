@@ -9,7 +9,7 @@
  * 同じ形の前例もあった。**waiver は 1 つも要らなかった** (予想が外れた)。
  *
  * 当て木は `test/fixtures/` の専用 tsconfig から検査する。`app/` や
- * `experiments/` に置くと、ルートの `bun run typecheck` が拾ってしまう
+ * `test/intent/` に置くと、ルートの `bun run typecheck` が拾ってしまう
  * (ルートの tsconfig は fixtures を exclude している)
  */
 import { afterAll, beforeAll, describe, expect, test } from 'bun:test';

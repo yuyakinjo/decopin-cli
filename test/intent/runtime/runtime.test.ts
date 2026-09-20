@@ -1,7 +1,7 @@
 /**
  * Intent `run-commands-as-declared` の Evidence。
  *
- * test/integration/build.test.ts の `describe('生成された CLI')` 22 テストを
+ * 旧 `test/integration/` の build テストの `describe('生成された CLI')` 22 テストを
  * ここへ移して Behavior に結び直したもの。検証の中身は変えていない。
  *
  * ビルドは自前でやる。この Intent が見ているのは「生成物が宣言どおりに動くか」

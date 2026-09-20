@@ -8,7 +8,7 @@
  * - 出力が 1 ファイルで shebang と実行権限を持つこと (配れる形)
  * - ADR 32: 副作用は「無いことの証明」に価値があるので、build が報告する
  *
- * この Intent は **test/integration/build.test.ts の前半 3 テスト**から回収した。
+ * この Intent は **旧 `test/integration/` の build テストの前半 3 テスト**から回収した。
  * 同じファイルの後半 22 テストは build ではなく、生成物が実行時にどう振る舞うか
  * を見ていた (§11.5 Behavior Coupling の Intent 規模版)。別の Intent
  * run-commands-as-declared として切り出してある。

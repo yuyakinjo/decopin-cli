@@ -1,7 +1,7 @@
 /**
  * Intent `keep-types-honest-while-editing` の Evidence。
  *
- * test/build/watch.test.ts の 2 テストをここへ移して Behavior に結び直し、
+ * 旧 `test/build/` の watch テスト 2 件をここへ移して Behavior に結び直し、
  * 3 つ足した (まとめ方・出力・終わり方)。
  *
  * `watchApp()` の 2 引数目で通知の受け口を差し替えられるので、**非決定なのは

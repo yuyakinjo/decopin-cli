@@ -1,7 +1,7 @@
 /**
  * Intent `add-conventions-without-memorizing` の Evidence。
  *
- * test/integration/gen.test.ts をここへ移して Behavior に結び直したもの。
+ * 旧 `test/integration/` の gen テストをここへ移して Behavior に結び直したもの。
  * 検証の中身は変えていない。
  *
  * 移す過程で 1 件割れた。元の「不正な引数や配置先はファイルを作らず usage error

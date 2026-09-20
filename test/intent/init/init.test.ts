@@ -1,7 +1,7 @@
 /**
  * Intent `start-by-writing-commands` の Evidence。
  *
- * test/integration/init.test.ts をここへ移して Behavior に結び直したもの。
+ * 旧 `test/integration/` の init テストをここへ移して Behavior に結び直したもの。
  * 中身の考え方は変えていない: 雛形の文字列を照合しても「動くこと」は担保
  * できないので、実際に依存を張って build し、生成物を別プロセスで実行する。
  *

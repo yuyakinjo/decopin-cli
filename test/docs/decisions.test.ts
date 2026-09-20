@@ -307,7 +307,7 @@ const GUARDS: Record<number, Guard> = {
   21: {
     kind: 'test',
     label: '補完の候補は CLI 自身 (__complete) が返す',
-    file: 'test/runtime/complete.test.tsx',
+    file: 'test/intent/complete/complete.test.tsx',
   },
   22: {
     kind: 'test',
@@ -317,12 +317,12 @@ const GUARDS: Record<number, Guard> = {
   38: {
     kind: 'test',
     label: '実行時に決まる補完候補は complete.tsx (壊れても遅くても落ちない)',
-    file: 'test/runtime/complete.test.tsx',
+    file: 'test/intent/complete/complete.test.tsx',
   },
   43: {
     kind: 'test',
     label: 'decopin dev は build を回し続ける (型だけでなく dist/ も追従)',
-    file: 'experiments/intent/dev/dev.test.ts',
+    file: 'test/intent/dev/dev.test.ts',
   },
   44: {
     kind: 'test',
@@ -332,17 +332,75 @@ const GUARDS: Record<number, Guard> = {
   46: {
     kind: 'test',
     label: '宣言ファイルの返り値型を配り、--annotate が書き足す',
-    file: 'experiments/intent/returns/returns.test.ts',
+    file: 'test/intent/returns/returns.test.ts',
   },
   45: {
     kind: 'test',
     label: '実行例は example.tsx で宣言し、docs はそれだけを実行する',
-    file: 'experiments/intent/docs/docs.test.ts',
+    file: 'test/intent/docs/docs.test.ts',
   },
   47: {
     kind: 'test',
     label: 'build はコマンドごとの組み立てを木で出す',
     file: 'test/build/tree.test.ts',
+  },
+  48: {
+    kind: 'lint',
+    label:
+      'Intent は test/intent/ に 4 ファイルで置き、report() は末尾に 1 回。サブコマンドごとに Intent がある',
+    check: async () => {
+      const offenders: string[] = [];
+      const root = 'test/intent';
+      const implementations: string[] = [];
+      for (const entry of await readdir(root, { withFileTypes: true })) {
+        if (!entry.isDirectory()) continue;
+        const dir = join(root, entry.name);
+        const files = new Set(await readdir(dir));
+        // JSX で宣言を書く Evidence は .tsx。無ければ .ts の名で「無い」と言う
+        const testFile =
+          [`${entry.name}.test.ts`, `${entry.name}.test.tsx`].find((name) =>
+            files.has(name)
+          ) ?? `${entry.name}.test.ts`;
+        for (const name of [
+          'intent.ts',
+          'behavior.ts',
+          'implementation.ts',
+          testFile,
+        ]) {
+          if (!files.has(name)) offenders.push(`${dir}: ${name} が無い`);
+        }
+        if (files.has('implementation.ts')) {
+          implementations.push(
+            await Bun.file(join(dir, 'implementation.ts')).text()
+          );
+        }
+        if (!files.has(testFile)) continue;
+        const source = await Bun.file(join(dir, testFile)).text();
+        // コメントと空行を除いた最後の文が report() であること
+        const statements = source
+          .split('\n')
+          .map((line) => line.trim())
+          .filter((line) => line !== '' && !/^(\/\/|\/?\*)/.test(line));
+        if (!(statements.at(-1) ?? '').startsWith('report(')) {
+          offenders.push(`${dir}/${testFile}: 末尾が report() ではない`);
+        }
+        const calls = source.match(/^report\(/gm)?.length ?? 0;
+        if (calls !== 1) {
+          offenders.push(`${dir}/${testFile}: report() が ${calls} 回`);
+        }
+      }
+      // 新しいサブコマンドは Intent から書く。対応表に cmd.ts が現れるかで見る
+      for (const entry of await readdir('src/cli', { withFileTypes: true })) {
+        if (!entry.isDirectory()) continue;
+        const marker = `src/cli/${entry.name}/`;
+        if (!implementations.some((source) => source.includes(marker))) {
+          offenders.push(
+            `src/cli/${entry.name}: 担う Intent が無い (test/intent/*/implementation.ts)`
+          );
+        }
+      }
+      return offenders;
+    },
   },
   40: {
     kind: 'test',
