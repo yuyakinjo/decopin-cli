@@ -14,6 +14,8 @@ import {
   behavior,
   type Carrier,
   carriedBy,
+  carries,
+  collect,
   implement,
   intent,
   type IntentReport,
@@ -234,5 +236,54 @@ describe('断片のファイル名', () => {
     expect(shardName(halfShard('a', '証明'))).toBe(
       shardName(halfShard('a', '証明'))
     );
+  });
+});
+
+/**
+ * §8.3「Implementation Pattern が違っても Intent Graph は同じ」の検査。
+ *
+ * Question E の残り。8.1 (`carries()`) は実装のファイルに書くパターンなので、
+ * ADR 48 で `src/ → test/intent/` の依存を禁じた以上、このリポジトリの
+ * プロダクトコードには置けない (finding 28/29 と同じ壁)。**置き場の話を外して
+ * 「同じ対応から組んだ 2 つの Implementation が同じ Graph になるか」だけを見る。**
+ */
+describe('2 つの Implementation Pattern', () => {
+  test('同じ対応なら implement() と carries()+collect() の Graph が一致する', () => {
+    const of = intent({
+      id: 'two-patterns',
+      purpose: '2 つのパターンが同じ Graph を作ることの検査',
+      behaviors: [
+        behavior('pattern-a', 'a'),
+        behavior('pattern-b', 'b'),
+      ] as const,
+    });
+    const where = 'test/intent/evidence.test.ts';
+    function shared() {}
+    function only() {}
+
+    // 8.2 証明分離: 実装を指す表を別に置く
+    const separated = implement(of, {
+      'pattern-a': [carriedBy(shared, where)],
+      'pattern-b': [carriedBy(shared, where), carriedBy(only, where)],
+    });
+
+    // 8.1 一方向: 宣言しながら値を通す。通す順が表の順になる
+    carries(of, ['pattern-a', 'pattern-b'], shared, where);
+    carries(of, ['pattern-b'], only, where);
+    const oneWay = collect(of);
+
+    expect(toReport(oneWay)).toEqual(toReport(separated));
+  });
+
+  test('carries() を書き忘れた Behavior は collect() が実行時に落とす', () => {
+    const of = intent({
+      id: 'one-way-gap',
+      purpose: '一方向パターンの穴',
+      behaviors: [behavior('gap-a', 'a'), behavior('gap-b', 'b')] as const,
+    });
+    function partOnly() {}
+    carries(of, ['gap-a'], partOnly, 'test/intent/evidence.test.ts');
+    // implement() なら引数の型が落ちる。8.1 は型で要求できない (core.ts §8.1)
+    expect(() => collect(of)).toThrow('担い手のいない Behavior: gap-b');
   });
 });
