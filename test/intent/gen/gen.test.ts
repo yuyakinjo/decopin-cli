@@ -59,19 +59,27 @@ describeBehavior(GEN, 'writes-known-conventions', () => {
   proves(
     '全カテゴリの雛形を生成し、build・実行・型検査が通る',
     async () => {
-      for (const [kind, names] of Object.entries(GENERATOR_KINDS)) {
-        const path =
-          kind === 'root-only'
-            ? 'app'
-            : kind === 'inherited'
-              ? 'app/group'
-              : 'app/group/generated';
-        for (const name of names) {
-          const result = await gen(`--${kind}`, name, '--path', path);
-          expect(result.code).toBe(0);
-          expect(result.stderr).toBe('');
-          expect(result.stdout).toContain(`Wrote ${path}/${name}.tsx`);
+      // 種類ごとに別のファイルを書くので独立している。**まとめて起こす** —
+      // 1 つずつ await すると子プロセスの起動がそのまま積み上がる
+      const written = Object.entries(GENERATOR_KINDS).flatMap(
+        ([kind, names]) => {
+          const path =
+            kind === 'root-only'
+              ? 'app'
+              : kind === 'inherited'
+                ? 'app/group'
+                : 'app/group/generated';
+          return names.map(async (name) => ({
+            name,
+            path,
+            result: await gen(`--${kind}`, name, '--path', path),
+          }));
         }
+      );
+      for (const { name, path, result } of await Promise.all(written)) {
+        expect(result.code).toBe(0);
+        expect(result.stderr).toBe('');
+        expect(result.stdout).toContain(`Wrote ${path}/${name}.tsx`);
       }
       const build = await run([BIN, 'build']);
       expect(build.stderr).toBe('');

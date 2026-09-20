@@ -212,9 +212,14 @@ describeBehavior(DEV, 'coalesces-bursts-of-changes', () => {
       controlled.change();
 
       await waitFor(() => results[1]);
-      // debounce の窓を十分に越えてから数える
-      await Bun.sleep(300);
-      expect(results.length).toBe(2);
+
+      // 待ち時間ではなく**後から必ず起きるビルド**で数える。waitFor を抜けた
+      // 時点で debounce の窓は閉じているので、この 1 回は別のビルドになる。
+      // 3 回の通知がまとまっていなければ、ここで 4 以上になる (sleep だと
+      // 「まだ来ていない」だけを見てしまうし、待ち時間がそのまま代償になる)
+      controlled.change();
+      await waitFor(() => results[2]);
+      expect(results.length).toBe(3);
     },
     30_000
   );
@@ -241,15 +246,22 @@ describeBehavior(DEV, 'coalesces-bursts-of-changes', () => {
       controlled.change();
 
       await waitFor(() => results[1]);
-      await Bun.sleep(300);
-      expect(results.length).toBe(2);
+
+      // 同じ手で数える。走行中の変更が 2 回走っていたら、ここで 4 以上になる
+      controlled.change();
+      await waitFor(() => results[2]);
+      expect(results.length).toBe(3);
     },
     30_000
   );
 });
 
 /** dev は Ctrl+C まで終わらないので、別プロセスで起こして落とす */
-async function dev(args: string[], stopAfter: () => Promise<void>) {
+async function dev(
+  args: string[],
+  /** 落とす前に待つ。引数の `seen` でそこまでの stdout を読める */
+  stopAfter: (seen: () => string) => Promise<void>
+) {
   const proc = Bun.spawn(['bun', BIN, 'dev', ...args], {
     cwd: REPO,
     stdout: 'pipe',
@@ -258,14 +270,17 @@ async function dev(args: string[], stopAfter: () => Promise<void>) {
   });
   const collected = { stdout: '', stderr: '' };
   const reading = Promise.all([
-    new Response(proc.stdout).text().then((text) => {
-      collected.stdout = text;
-    }),
+    (async () => {
+      const decoder = new TextDecoder();
+      for await (const chunk of proc.stdout) {
+        collected.stdout += decoder.decode(chunk, { stream: true });
+      }
+    })(),
     new Response(proc.stderr).text().then((text) => {
       collected.stderr = text;
     }),
   ]);
-  await stopAfter();
+  await stopAfter(() => collected.stdout);
   proc.kill('SIGINT');
   const code = await proc.exited;
   await reading;
@@ -279,10 +294,13 @@ describeBehavior(DEV, 'reports-each-rebuild', () => {
       const { appDir, outDir } = await scratch();
       const result = await dev(
         ['--app', appDir, '--work', workDir as string, '--out', outDir],
-        // 初回ビルドが終わるまで待つ。出力を見たいので落とすのはその後
-        async () => {
+        // 出力を見たいので、**見たい行が揃うまで**待ってから落とす。
+        // 固定の sleep だと、遅いマシンでは足りず速いマシンでは待ちすぎる
+        async (seen) => {
           await waitUntil(() => Bun.file(join(outDir, 'index.js')).exists());
-          await Bun.sleep(200);
+          await waitUntil(async () =>
+            seen().includes(join(outDir, 'index.js'))
+          );
         }
       );
       expect(result.stdout).toContain('[decopin] 1 command(s): probe');
