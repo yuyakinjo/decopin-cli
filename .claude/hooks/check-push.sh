@@ -42,5 +42,5 @@ fi
 printf '%s\n' "$output" >&2
 printf '\nHEAD のクリーンな checkout で bun run ci が失敗しました (作業ツリーでは通っていても)。\n' >&2
 printf '未コミットのファイルや、.gitignore に巻き込まれたファイルにテストが依存していないか確かめてください:\n' >&2
-printf '  git status --short\n  comm -13 <(git ls-files app | sort) <(find app -type f | sort)\n' >&2
+printf '  git status --short --ignored\n' >&2
 exit 2
