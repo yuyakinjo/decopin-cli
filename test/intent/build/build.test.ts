@@ -7,7 +7,7 @@
  * 移す過程で 2 つ足した。src/cli/build/cmd.ts の出力 (何を書いたか・どの副作用に
  * 届くか) を誰も見ていなかったため — §11.6 Hidden Behavior。
  *
- * test/build/*.test.ts の 12 ファイルはここに持ってきていない。あれは
+ * test/core/build/ と test/cli/build/ の 12 ファイルはここに持ってきていない。あれは
  * scanner や codegen の内部を見る実装のテストで、利用者が観測できる結末では
  * ないため (§11.4 を避ける)。**Evidence と普通のテストは共存する**。
  */

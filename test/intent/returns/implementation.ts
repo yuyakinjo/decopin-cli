@@ -13,7 +13,7 @@ import { generateTypes } from '../../../src/core/build/type-emitter.ts';
  *   `carries(NOTICE_..., [...], function annotateReturnSource(...) {...},
  *   'src/core/build/annotate.ts')` に包む
  * - `bunx tsc --noEmit` → 通る
- * - `bun test test/build/annotate.test.ts` → 17 pass / 0 fail
+ * - `bun test test/core/build/annotate.test.ts` → 17 pass / 0 fail
  * - `bun run build:package` → **落ちる**
  *   `src/core/build/annotate.ts(13,25): error TS6059: File
  *   '.../experiments/intent/core.ts' is not under 'rootDir' '.../src'`

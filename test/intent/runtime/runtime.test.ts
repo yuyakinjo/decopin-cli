@@ -296,6 +296,6 @@ describe('Intent Graph', () => {
   });
 });
 
-// 証明は規約ごとのファイルと分担している (test/runtime/run-not-found.test.tsx など)。
+// 証明は規約ごとのファイルと分担している (test/features/conventions/not-found/run-not-found.test.tsx など)。
 // 全 Behavior が揃ったかの判定は doc.ts の合流後に移る
 report(RUNTIME, { partial: true });

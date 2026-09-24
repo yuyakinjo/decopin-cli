@@ -41,7 +41,8 @@
     "site:dev": "bun scripts/serve-site.ts",
     "ci": "bun scripts/ci.tsx",
     "build:package": "bun scripts/build-package.ts",
-    "version:next": "bun scripts/next-version.ts"
+    "version:next": "bun scripts/next-version.ts",
+    "check:layout": "bun scripts/check-test-layout.ts"
   },
   "dependencies": {
     "valibot": "^1.5.0"

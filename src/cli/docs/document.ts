@@ -82,7 +82,9 @@ function usageLine(program: string, name: string, spec: ArgvSpec): string {
     ...(name === '' ? [] : name.split('/')),
     ...spec.args.map(argUsage),
     ...visible.map((option) =>
-      option.required ? optionLabel(option) : `[${optionLabel(option).trim()}]`
+      option.required
+        ? optionLabel(option).trim()
+        : `[${optionLabel(option).trim()}]`
     ),
   ].join(' ');
 }

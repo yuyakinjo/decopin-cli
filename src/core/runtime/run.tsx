@@ -636,7 +636,7 @@ export async function run(
 
     const route = table[resolved.name];
     // 近い error.tsx → 親の error.tsx → global-error.tsx → 組み込み
-    // (順序は test/runtime/handle-error.test.tsx が固定している)
+    // (順序は test/features/inherited/error/handle-error.test.tsx が固定している)
     const handlers = withGlobalError(route?.errors, options.globalError);
     const handled = await handleError({
       error: cliError,

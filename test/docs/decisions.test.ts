@@ -132,7 +132,7 @@ const GUARDS: Record<number, Guard> = {
   2: {
     kind: 'test',
     label: '宣言のないコマンドは stdin に触らない',
-    file: 'test/runtime/run-stdin.test.tsx',
+    file: 'test/core/runtime/run-stdin.test.tsx',
   },
   3: {
     kind: 'lint',
@@ -188,17 +188,17 @@ const GUARDS: Record<number, Guard> = {
   7: {
     kind: 'test',
     label: 'layout.tsx は上位ディレクトリから包む',
-    file: 'test/runtime/layout.test.tsx',
+    file: 'test/features/conventions/layout/layout.test.tsx',
   },
   8: {
     kind: 'test',
     label: '--help は宣言から生成する',
-    file: 'test/runtime/help.test.tsx',
+    file: 'test/features/conventions/help/help.test.tsx',
   },
   9: {
     kind: 'test',
     label: '型はビルド時の codegen で配る',
-    file: 'test/build/typegen.test.ts',
+    file: 'test/core/build/typegen.test.ts',
   },
   10: {
     kind: 'lint',
@@ -211,7 +211,7 @@ const GUARDS: Record<number, Guard> = {
   11: {
     kind: 'test',
     label: 'argv の検証は middleware より前',
-    file: 'test/runtime/middleware.test.tsx',
+    file: 'test/features/conventions/middleware/middleware.test.tsx',
   },
   12: {
     kind: 'lint',
@@ -312,7 +312,7 @@ const GUARDS: Record<number, Guard> = {
   22: {
     kind: 'test',
     label: '動的な出力は AsyncIterable 駆動の島に限る',
-    file: 'test/renderer/present.test.tsx',
+    file: 'test/core/renderer/present.test.tsx',
   },
   38: {
     kind: 'test',
@@ -327,7 +327,7 @@ const GUARDS: Record<number, Guard> = {
   44: {
     kind: 'test',
     label: 'decopin dev --annotate は cmd.tsx の props に生成型を書き足す',
-    file: 'test/build/annotate.test.ts',
+    file: 'test/core/build/annotate.test.ts',
   },
   46: {
     kind: 'test',
@@ -342,7 +342,7 @@ const GUARDS: Record<number, Guard> = {
   47: {
     kind: 'test',
     label: 'build はコマンドごとの組み立てを木で出す',
-    file: 'test/build/tree.test.ts',
+    file: 'test/cli/build/tree.test.ts',
   },
   48: {
     kind: 'lint',
@@ -405,67 +405,67 @@ const GUARDS: Record<number, Guard> = {
   40: {
     kind: 'test',
     label: '端末より高い <Dynamic> のフレームは末尾を優先して切り詰める',
-    file: 'test/renderer/present.test.tsx',
+    file: 'test/core/renderer/present.test.tsx',
   },
   39: {
     kind: 'test',
     label: 'コマンドの本体は cmd.tsx (旧名 command.tsx も 1 年は受ける)',
-    file: 'test/build/scanner.test.ts',
+    file: 'test/core/build/scanner.test.ts',
   },
   37: {
     kind: 'test',
     label: '--dry-run は渡すだけ (差し替えは実測で断念)',
-    file: 'test/runtime/run-dry-run.test.tsx',
+    file: 'test/core/runtime/run-dry-run.test.tsx',
   },
   36: {
     kind: 'test',
     label: '対話は端末とだけ (choose は関数、パイプでは exit 2)',
-    file: 'test/runtime/choose.test.tsx',
+    file: 'test/core/runtime/choose.test.tsx',
   },
   35: {
     kind: 'test',
     label: 'shell.tsx: 親シェルへの指示はファイル経由、成功時だけ',
-    file: 'test/runtime/shell.test.tsx',
+    file: 'test/features/conventions/shell/shell.test.tsx',
   },
   34: {
     kind: 'test',
     label: 'ポリシーは strict だけ (申告させない、unsafeEval で opt-out)',
-    file: 'test/build/effects-policy.test.ts',
+    file: 'test/core/build/effects-policy.test.ts',
   },
   33: {
     kind: 'test',
     label: 'MCP は宣言の輸出 (annotations は none のときだけ動かす)',
-    file: 'test/runtime/mcp.test.tsx',
+    file: 'test/core/runtime/mcp.test.tsx',
   },
   32: {
     kind: 'test',
     label: '副作用はビルド時に数える (none は無いことの証明)',
-    file: 'test/build/effects.test.ts',
+    file: 'test/core/build/effects.test.ts',
   },
   31: {
     kind: 'test',
     label: '環境が整っていないときの形 (認証・ツール不足)',
-    file: 'test/runtime/signals.test.tsx',
+    file: 'test/core/runtime/signals.test.tsx',
   },
   30: {
     kind: 'test',
     label: 'notFound() と、よくある形の詰め合わせ',
-    file: 'test/runtime/signals.test.tsx',
+    file: 'test/core/runtime/signals.test.tsx',
   },
   29: {
     kind: 'test',
     label: '--json のときは失敗も構造化して返す',
-    file: 'test/runtime/run-json-error.test.tsx',
+    file: 'test/core/runtime/run-json-error.test.tsx',
   },
   28: {
     kind: 'test',
     label: 'output.tsx があれば出力の正になる',
-    file: 'test/runtime/run-output.test.tsx',
+    file: 'test/core/runtime/run-output.test.tsx',
   },
   27: {
     kind: 'test',
     label: '--json に出せるかを実行前に見る',
-    file: 'test/runtime/serializable.test.ts',
+    file: 'test/features/conventions/data/serializable.test.ts',
   },
   41: {
     kind: 'lint',
@@ -556,7 +556,7 @@ const GUARDS: Record<number, Guard> = {
   25: {
     kind: 'test',
     label: 'データは data.tsx で、表示と分ける',
-    file: 'test/runtime/run-data.test.tsx',
+    file: 'test/core/runtime/run-data.test.tsx',
   },
   24: {
     kind: 'test',

@@ -292,7 +292,7 @@ finding 8 (解像度は公開 API に縛られる) の裏返しで、**分岐が
 必ず通るなら、Carrier の重なりは設計どおり**。区別を付けているのは `run` と
 並ぶもう 1 つの Carrier の方になる。
 
-**16. Evidence と普通のテストは共存する。** `test/build/*.test.ts` の 12 ファイル
+**16. Evidence と普通のテストは共存する。** `test/core/build/` と `test/cli/build/` の 12 ファイル
 (scanner / codegen / effects / bundler …) は移していない。あれは利用者が
 観測できる結末ではなく実装の内部を見るテストで、Behavior にすると §11.4 に
 なる。**すべてのテストが Evidence になるわけではない**というのが、
@@ -654,18 +654,18 @@ dev の書き換えは速さだけではない。`sleep` で「これ以上ビ�
 **42. 規約ごとのテストは、動かさずに Evidence にできた。**
 
 `runtime` Intent は 12 Behavior を持ちながら、証明は `runtime.test.ts` の 20 件だけ
-だった。同じ結末を見ている `test/runtime/handle-error.test.tsx` などは普通の
+だった。同じ結末を見ている `test/features/inherited/error/handle-error.test.tsx` などは普通の
 テストのままで、**落ちても Intent の ✓ が変わらなかった**。
 
 `report(impl, { partial: true })` で 4 ファイルを分担にした。**ファイルは 1 つも
 移動していない** — `describeBehavior` で包んで `test` を `proves` にしただけ。
 
-| ファイル                              | Behavior                             | Evidence |
-| ------------------------------------- | ------------------------------------ | -------- |
-| `test/runtime/handle-error.test.tsx`  | `handles-errors-where-declared`      | 38       |
-| `test/runtime/layout.test.tsx`        | `wraps-output-in-layout`             | 13       |
-| `test/runtime/run-not-found.test.tsx` | `guides-when-the-command-is-missing` | 11       |
-| `test/runtime/middleware.test.tsx`    | `runs-middleware-around-the-command` | 10       |
+| ファイル                                                     | Behavior                             | Evidence |
+| ------------------------------------------------------------ | ------------------------------------ | -------- |
+| `test/features/inherited/error/handle-error.test.tsx`        | `handles-errors-where-declared`      | 38       |
+| `test/features/conventions/layout/layout.test.tsx`           | `wraps-output-in-layout`             | 13       |
+| `test/features/conventions/not-found/run-not-found.test.tsx` | `guides-when-the-command-is-missing` | 11       |
+| `test/features/conventions/middleware/middleware.test.tsx`   | `runs-middleware-around-the-command` | 10       |
 
 分かったことが 3 つある。
 
