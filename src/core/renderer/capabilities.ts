@@ -17,7 +17,7 @@ function isSet(value: string | undefined): boolean {
 }
 
 /**
- * 優先順 (test/renderer/capabilities.test.ts が表として固定している):
+ * 優先順 (test/core/renderer/capabilities.test.ts が表として固定している):
  * 1. FORCE_COLOR → 色を付ける (ただし 0 / false は「明示的に落とす」)
  * 2. NO_COLOR → 落とす
  * 3. --no-color → 落とす

@@ -5,7 +5,7 @@
  *
  * 始める前の予想は「waived() が 1 つ出る。型検査が落ちることの証明は
  * tsc を子プロセスで回さないと書けないので、費用を見てから決める」だった。
- * 測った結果、1 プロジェクトあたり数秒で、`test/build/typegen.test.ts` に
+ * 測った結果、1 プロジェクトあたり数秒で、`test/core/build/typegen.test.ts` に
  * 同じ形の前例もあった。**waiver は 1 つも要らなかった** (予想が外れた)。
  *
  * 当て木は `test/fixtures/` の専用 tsconfig から検査する。`app/` や

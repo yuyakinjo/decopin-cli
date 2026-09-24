@@ -43,13 +43,16 @@ evaluation, its runtime, and its contribution to the generated types.
 
 ## Tests
 
-| Directory        | What it pins                                                        |
-| ---------------- | ------------------------------------------------------------------- |
-| `test/contract/` | promised behaviour, as tables                                       |
-| `test/docs/`     | the README and this site: tsx blocks type-check, shell examples run |
-| `test/renderer/` | the terminal renderer and display width                             |
-| `test/features/` | each file convention on its own                                     |
-| `test/intent/`   | the Intents, and the runtime that turns tests into their Evidence   |
+Unit tests mirror `src/`: the tests for `src/core/renderer/` live in
+`test/core/renderer/`, and every source directory has at least one test file
+next to its twin. `bun run check:layout` enforces this, and CI runs it.
+
+| Directory                                   | What it pins                                                        |
+| ------------------------------------------- | ------------------------------------------------------------------- |
+| `test/cli/`, `test/core/`, `test/features/` | each source directory on its own, mirroring `src/`                  |
+| `test/contract/`                            | promised behaviour, as tables                                       |
+| `test/docs/`                                | the README and this site: tsx blocks type-check, shell examples run |
+| `test/intent/`                              | the Intents, and the runtime that turns tests into their Evidence   |
 
 ## Intents
 
@@ -103,7 +106,7 @@ A test that already lives next to its convention stays there. Wrap it and
 declare the split — no file moves:
 
 ```ts
-// test/runtime/handle-error.test.tsx
+// test/features/inherited/error/handle-error.test.tsx
 describeBehavior(RUNTIME, 'handles-errors-where-declared', () => {
   /* proves(...) */
 });

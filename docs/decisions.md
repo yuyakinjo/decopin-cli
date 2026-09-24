@@ -72,7 +72,7 @@ JSX を再帰的に ANSI 文字列へ変換するだけで足りる。Ink は yo
 `(default: name="world", --loud=false)` の形で添える。一覧は「どれを打つか」
 だけでなく「打たないと何が起きるか」を選ぶ場面でもあり、`--help` まで降りないと
 既定値が分からないのは暗黙の振る舞いになる。hidden なオプションは出さない。
-`summarizeSpec()` が組み立て、test/runtime/help.test.tsx が固定する。
+`summarizeSpec()` が組み立て、test/features/conventions/help/help.test.tsx が固定する。
 
 ## ADR 9: 型はビルド時の codegen で配る
 
@@ -424,7 +424,7 @@ layout に到達した `<Dynamic>` は誤りとして落とす。
 島の無いドキュメントは従来どおり 1 回書きのまま。
 
 レビュー (PR #16) で固めた個々の契約 (評価の順序、repaint のライフサイクル、
-シグナルでの後始末など) は、文章ではなく test/renderer/present.test.tsx に
+シグナルでの後始末など) は、文章ではなく test/core/renderer/present.test.tsx に
 置いてある (ADR 15)。破ればテストが気づかせてくれる。
 
 **代償と割り切り**: リサイズ (SIGWINCH) は折り返しの変化で前の領域を正確に
@@ -1075,7 +1075,7 @@ React が要素を `Symbol.for('react.element')` で見分けるのと同じ手�
 stderr に足す (`--json` では `error.trace`)。フラグではなく環境変数にしたのは、
 `--verbose` / `--debug` は利用者が自分のオプションとして宣言しがちな名前で
 (README の middleware の例、ADR 11)、予約すると既存の宣言を壊すため。
-test/runtime/handle-error.test.tsx が「包んでも場所が潰れない」ことを固定する。
+test/features/inherited/error/handle-error.test.tsx が「包んでも場所が潰れない」ことを固定する。
 
 **旧い印は 1 年付け続け、見続ける** (ADR 20)。新バージョンが投げたエラーを
 旧バージョンが受ける (逆も) 場面があるため、新しいインスタンスは旧いシンボルも
@@ -1131,7 +1131,7 @@ TypeScript を依存に足すほどの仕事ではない
 (ADR 5 の「宣言は import して呼ぶ」と同じ節約)。
 
 **自分の書き換えで watch が 1 回余分に回る**が、2 回目は差分が無いので止まる。
-test/build/annotate.test.ts が「注釈が無いときだけ足す」「import を足す」
+test/core/build/annotate.test.ts が「注釈が無いときだけ足す」「import を足す」
 「既にあれば触らない」を固定する。
 
 ## ADR 45: 実行例は `example.tsx` で宣言する。`decopin docs` はそれだけを実行する
@@ -1238,7 +1238,7 @@ test/intent/returns/returns.test.ts が「型が配られていること」
 `INHERITED_FILES`・`ROOT_ONLY_FILES`) と継承の解決を読むので、core には
 置けない (ADR 41)。`cli/docs/document.ts` (ADR 45) と同じ形。
 
-test/build/tree.test.ts が木の形を、test/intent/build/build.test.ts の
+test/cli/build/tree.test.ts が木の形を、test/intent/build/build.test.ts の
 `shows-what-each-command-is-made-of` が CLI を通した出力を固定する。
 
 ---
@@ -1281,10 +1281,10 @@ Intent の断片が残り、6 つの Behavior が ✓ で出たことがある (
 
 **新しいサブコマンド (`src/cli/<name>/`) は Intent から書く**。既存の機能は
 触るときに回収する (Intent Recovery)。**すべてのテストを Evidence にはしない**。
-`test/build/` のように、Behavior ではなく実装の形を見るテストは普通のテストの
+`test/core/build/` のように、Behavior ではなく実装の形を見るテストは普通のテストの
 まま隣に置く。
 
-**結末を見ているテストは、動かさずに分担させる**。`test/runtime/handle-error.test.tsx`
+**結末を見ているテストは、動かさずに分担させる**。`test/features/inherited/error/handle-error.test.tsx`
 のように規約の隣にあるテストは、`describeBehavior` で包んで
 `report(impl, { partial: true })` を末尾に置くだけで Evidence になる。分担する
 Intent は元のファイルも `partial` にする — 非 partial の `report()` が先に走ると、
