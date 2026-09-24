@@ -106,14 +106,6 @@ describe('コードからの参照', () => {
     }
     expect(stale).toEqual([]);
   });
-
-  test('test/intent/ の § 参照が指す intent.txt が実在する (ADR 48)', async () => {
-    const citing = [...sources].filter(
-      ([file, source]) => file.startsWith('test/intent/') && /§\d/.test(source)
-    );
-    expect(citing.length).toBeGreaterThan(0);
-    expect(await Bun.file('intent.txt').exists()).toBe(true);
-  });
 });
 
 describe('README からの参照', () => {

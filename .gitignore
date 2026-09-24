@@ -188,3 +188,6 @@ test/fixtures/watch-app/added/
 *.bun-build
 # bench の bundle size 計測が使う作業ディレクトリ (ADR 24)
 .decopin-size/
+
+# Intent-First の原典。手元にだけ置く
+/intent.txt
