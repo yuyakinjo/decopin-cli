@@ -649,6 +649,122 @@ describe('フレームの内容の契約', () => {
   });
 });
 
+describe('source に渡す AbortSignal', () => {
+  const tty = { isTTY: { stdout: false, stderr: true } };
+
+  /** signal が abort されるまで待ち、abort の理由で拒否する */
+  const untilAborted = (signal: AbortSignal) =>
+    new Promise<never>((_, reject) => {
+      signal.addEventListener('abort', () => reject(signal.reason), {
+        once: true,
+      });
+    });
+
+  test('関数の source は島に到達してから signal 付きで呼ばれ、決着で abort される', async () => {
+    const io = channels();
+    let seen: AbortSignal | undefined;
+    const abortedDuring: boolean[] = [];
+    await present(
+      <>
+        <Line>before</Line>
+        <Dynamic
+          source={async function* (signal) {
+            io.log.push('source:called');
+            seen = signal;
+            abortedDuring.push(signal.aborted);
+            yield 'one';
+            abortedDuring.push(signal.aborted);
+          }}
+        >
+          {(value) => <Line>{value}</Line>}
+        </Dynamic>
+      </>,
+      options(io)
+    );
+    expect(io.log.slice(0, 2)).toEqual(['out:before\n', 'source:called']);
+    expect(abortedDuring).toEqual([false, false]);
+    expect(seen?.aborted).toBe(true);
+  });
+
+  test('repaint が失敗するとその失敗を理由に abort され、待ち続けていた source の finally まで走る', async () => {
+    let calls = 0;
+    let cleaned = false;
+    let reason: unknown;
+    const io = channels();
+    await expect(
+      present(
+        <Dynamic
+          source={async function* (signal) {
+            try {
+              yield 'ok';
+              await untilAborted(signal);
+            } catch (error) {
+              reason = error;
+            } finally {
+              cleaned = true;
+            }
+          }}
+          interval={5}
+        >
+          {(value) => {
+            calls += 1;
+            if (calls > 1) throw new Error('frame broke');
+            return <Line>{value}</Line>;
+          }}
+        </Dynamic>,
+        options(io, tty)
+      )
+    ).rejects.toThrow('frame broke');
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    expect(cleaned).toBe(true);
+    expect(String(reason)).toContain('frame broke');
+  });
+
+  test('SIGINT を受けると abort され、理由にシグナル名が入る', async () => {
+    // 他のハンドラがいれば present() は exit せず、終了をそちらに任せる
+    const keepAlive = (): void => {};
+    process.on('SIGINT', keepAlive);
+    let reason: unknown;
+    const io = channels();
+    try {
+      const done = present(
+        <Dynamic
+          source={async function* (signal) {
+            yield 'running';
+            try {
+              await untilAborted(signal);
+            } catch (error) {
+              reason = error;
+            }
+          }}
+        >
+          {(value) => <Line>{value}</Line>}
+        </Dynamic>,
+        options(io, tty)
+      );
+      await new Promise((resolve) => setTimeout(resolve, 10));
+      (process as unknown as { emit(event: string): void }).emit('SIGINT');
+      await done;
+    } finally {
+      process.removeListener('SIGINT', keepAlive);
+    }
+    expect(String(reason)).toContain('SIGINT');
+  });
+
+  test('関数が AsyncIterable を返さなければ誤りとして落ちる', async () => {
+    const io = channels();
+    await expect(
+      present(
+        // @ts-expect-error 誤用をわざと書く
+        <Dynamic source={() => [1, 2]}>
+          {(v: number) => <Line>{v}</Line>}
+        </Dynamic>,
+        options(io)
+      )
+    ).rejects.toThrow('must return an AsyncIterable');
+  });
+});
+
 describe('シグナルでの後始末', () => {
   test('SIGTERM で殺されてもカーソルを返し、慣習コード 143 で終わる', async () => {
     const fixture = new URL(

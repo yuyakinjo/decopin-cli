@@ -49,8 +49,13 @@ export const Exit = host<ExitProps>('exit', 'Exit');
  * 静的テキストとして確定し、ドキュメントの続きが流れる
  */
 export interface DynamicProps<T = unknown> {
-  /** フレームの元になる値の列 (async generator をそのまま渡せる) */
-  source: AsyncIterable<T>;
+  /**
+   * フレームの元になる値の列 (async generator をそのまま渡せる)。
+   * 関数を渡すと島が始まるときに AbortSignal 付きで呼ぶ。signal は島が
+   * 決着・失敗・シグナルで終わるときに abort されるので、fetch や
+   * Bun.spawn に渡せば待ち続ける source も後始末まで走る
+   */
+  source: AsyncIterable<T> | ((signal: AbortSignal) => AsyncIterable<T>);
   /** 最新の値からフレームを描く。時刻を読めば interval だけでも動く */
   children: (value: T) => Renderable;
   /**

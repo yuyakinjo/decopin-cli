@@ -47,6 +47,19 @@ function isThenable(value: unknown): value is PromiseLike<unknown> {
   );
 }
 
+/** `<Dynamic source>` として消費できる値か */
+export function isAsyncIterable(
+  value: unknown
+): value is AsyncIterable<unknown> {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    typeof (value as { [Symbol.asyncIterator]?: unknown })[
+      Symbol.asyncIterator
+    ] === 'function'
+  );
+}
+
 function readString(
   props: Record<string, unknown>,
   key: string
@@ -219,16 +232,11 @@ export async function evaluate(node: RenderInput): Promise<RenderNode> {
     }
     case 'dynamic': {
       // source と frame はここでは触らない。駆動は present() の仕事 (ADR 22)
+      // 関数の source は島が始まるまで呼ばない (AbortSignal を渡すため)
       const source = props.source;
-      if (
-        typeof source !== 'object' ||
-        source === null ||
-        typeof (source as { [Symbol.asyncIterator]?: unknown })[
-          Symbol.asyncIterator
-        ] !== 'function'
-      ) {
+      if (typeof source !== 'function' && !isAsyncIterable(source)) {
         throw new RenderError(
-          '<Dynamic source> must be an AsyncIterable (an async generator works)'
+          '<Dynamic source> must be an AsyncIterable (an async generator works) or a function of an AbortSignal returning one'
         );
       }
       if (typeof children !== 'function') {
@@ -248,7 +256,9 @@ export async function evaluate(node: RenderInput): Promise<RenderNode> {
       }
       return {
         kind: 'dynamic',
-        source: source as AsyncIterable<unknown>,
+        source: source as
+          | AsyncIterable<unknown>
+          | ((signal: AbortSignal) => AsyncIterable<unknown>),
         frame: children as unknown as (value: unknown) => Renderable,
         interval,
       };

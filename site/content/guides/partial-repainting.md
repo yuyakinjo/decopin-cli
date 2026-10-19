@@ -55,6 +55,36 @@ exhausted, then the last frame stays put and the rest of the document
 follows. `interval` (ms) repaints even without a new value, for frames that
 read the clock.
 
+## Cancelling the source
+
+Pass a function instead of an iterable to receive the island's
+`AbortSignal`. It is called when the island is reached, and the signal is
+aborted when the island ends: the source settles, a frame throws, or the
+process receives SIGHUP, SIGINT or SIGTERM while stderr is a TTY. Hand it to `fetch`,
+`Bun.spawn` or anything else that waits, so a source stuck on a slow call
+still gets to run its `finally`.
+
+```tsx
+import { Dynamic, Line } from 'decopin-cli';
+
+async function* watchJob(signal: AbortSignal): AsyncGenerator<string> {
+  while (true) {
+    const res = await fetch('https://example.com/job', { signal });
+    const { state } = (await res.json()) as { state: string };
+    yield state;
+    if (state === 'done') return;
+  }
+}
+
+export default function Command() {
+  return (
+    <Dynamic source={(signal) => watchJob(signal)}>
+      {(state) => <Line>{state}</Line>}
+    </Dynamic>
+  );
+}
+```
+
 ## Where the region lives
 
 The region lives on **stderr**, following the Unix convention for progress

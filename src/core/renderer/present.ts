@@ -15,7 +15,7 @@ import type { AnyComponent, Renderable, RenderInput } from '../jsx/types.ts';
 import { serialize } from './ansi.ts';
 import type { ColorDepth } from './color.ts';
 import { RenderError } from './errors.ts';
-import { evaluate } from './evaluate.ts';
+import { evaluate, isAsyncIterable } from './evaluate.ts';
 import { layout } from './layout.ts';
 import type { RenderNode } from './node.ts';
 import { colorDepthFor, renderTree, supportsUnicode } from './render.ts';
@@ -287,6 +287,12 @@ async function driveIsland(
     err.write(SHOW_CURSOR);
   };
 
+  /**
+   * 島の寿命。決着・失敗・シグナルのどれで終わっても abort する。
+   * 関数の source はこれを受け取り、待っている処理を自分で打ち切れる
+   */
+  const controller = new AbortController();
+
   const signalHandlers: Array<[string, () => void]> = [];
   let timer: ReturnType<typeof setInterval> | undefined;
   try {
@@ -297,6 +303,7 @@ async function driveIsland(
       events.once('exit', restoreCursor);
       for (const [signal, code] of EXIT_SIGNALS) {
         const handler = (): void => {
+          controller.abort(new Error(`received ${signal}`));
           restoreCursor();
           // once なので自分は外れている。他にハンドラがいれば終了はそちらに任せる
           if (events.listenerCount(signal) === 0) process.exit(code);
@@ -310,7 +317,16 @@ async function driveIsland(
       }
     }
 
-    const iterator = island.source[Symbol.asyncIterator]();
+    const source =
+      typeof island.source === 'function'
+        ? island.source(controller.signal)
+        : island.source;
+    if (!isAsyncIterable(source)) {
+      throw new RenderError(
+        '<Dynamic source> function must return an AsyncIterable (an async generator works)'
+      );
+    }
+    const iterator = source[Symbol.asyncIterator]();
     try {
       while (true) {
         // repaint の失敗と source の次の値を競わせる (TTY のときだけ tick がある)
@@ -321,9 +337,7 @@ async function driveIsland(
         latest = { value: result.value };
         if (!isTTY) continue;
         // source からの値は取りこぼさず順に描く (interval の再描画とは重ねない)
-        while (painting) {
-          await new Promise((resolve) => setTimeout(resolve, 1));
-        }
+        while (painting) await inflight;
         painting = true;
         try {
           await paint(result.value);
@@ -333,6 +347,8 @@ async function driveIsland(
       }
     } catch (error) {
       closed = true;
+      // 待っている source を起こしてから return() を促す
+      controller.abort(error);
       // generator の後始末 (finally) を促す。await してはいけない —
       // source が await の途中だと、それが解決するまで return() は
       // 処理されず、永遠に待つ source ではここでデッドロックする
@@ -362,6 +378,7 @@ async function driveIsland(
     }
   } finally {
     closed = true;
+    controller.abort();
     if (timer !== undefined) clearInterval(timer);
     if (isTTY) {
       events.removeListener('SIGWINCH', onResize);
