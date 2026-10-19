@@ -433,6 +433,16 @@ layout に到達した `<Dynamic>` は誤りとして落とす。
 永遠に待つ source を repaint 失敗で中断した場合、generator の finally は
 走らない可能性がある (return を待たないため)。
 
+**島の寿命は AbortSignal で source に渡す** (issue #78): `source` に
+`(signal) => asyncIterable` を渡すと、`present()` は島に到達した時点で
+島ごとの `AbortSignal` を付けて呼ぶ。signal は決着・失敗 (理由は
+その例外)・SIGHUP/SIGINT/SIGTERM (stderr が TTY のとき。非 TTY では
+ハンドラを置かず既定の終了に任せる) のどれで終わっても abort される。
+fetch や `Bun.spawn` に渡しておけば、上の「finally が走らない」は
+source 側で解ける。渡す先は `children` ではなく source — フレームは
+純粋な関数 (ADR 1 / 23) で、打ち切るべき処理を持たない。シグナルでは
+abort の直後に exit するので、届くのは同期の abort リスナーまで。
+
 ## ADR 23: アニメーションは時刻ではなく描き直しの回数で進める
 
 `<Spinner>` のコマは `Date.now()` ではなく、layout に渡る **tick**

@@ -67,7 +67,10 @@ export type RenderNode =
    */
   | {
       kind: 'dynamic';
-      source: AsyncIterable<unknown>;
+      /** 関数なら島の AbortSignal を渡して呼び、返った列を消費する */
+      source:
+        | AsyncIterable<unknown>
+        | ((signal: AbortSignal) => AsyncIterable<unknown>);
       frame: (value: unknown) => Renderable;
       interval: number | undefined;
     };
