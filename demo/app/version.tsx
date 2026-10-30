@@ -1,5 +1,5 @@
 import { Version, type VersionDefinition } from 'decopin-cli';
 
 export default function DefineVersion(): VersionDefinition {
-  return <Version name="decopin-cli" version="2026.1026.605" />;
+  return <Version name="decopin-cli" version="2026.1030.653" />;
 }
