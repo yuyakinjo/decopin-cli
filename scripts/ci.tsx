@@ -6,8 +6,6 @@
  *
  * `build` だけは先に単独で走らせる。生成物 (`.decopin/types.d.ts`) を
  * `typecheck` とテストが読むため。残りは互いに独立なので並列に流す。
- * `intent` は最後に 1 つ。テストが残した Evidence の断片から Intent の
- * ドキュメントを組み、宣言と食い違えば落ちる (ADR 48)。
  *
  * 結果の表は自作のコンポーネントで出している。CI が回るたびに
  * レンダラーが実地で動くことになる (壊れていれば CI 自体が落ちる)。
@@ -46,8 +44,6 @@ const STAGES: Task[][] = [
     { name: 'format', command: ['bunx', 'oxfmt', '--check'] },
     { name: 'layout', command: ['bun', 'run', 'check:layout'] },
   ],
-  // テストが書いた断片を読む
-  [{ name: 'intent', command: ['bun', 'test/intent/doc.ts'] }],
 ];
 
 type Status = 'waiting' | 'running' | 'ok' | 'failed' | 'skipped';

@@ -2,7 +2,7 @@
  * `decopin gen` の本体 generate() (src/cli/gen/generate.ts)。
  *
  * 関数を直に呼び、戻り値 (dir・created・skipped) と投げるエラーの種類を見る。
- * CLI から通したときの終了コードや出力は test/intent/gen/ の側にある
+ * CLI から通したときの終了コードや出力は test/integration/gen.test.ts の側にある
  */
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
 import {

@@ -99,9 +99,7 @@ describe('コードからの参照', () => {
     const stale: string[] = [];
     for (const [file, source] of sources) {
       if (source.includes('SPEC.md')) stale.push(file);
-      // § 参照は ADR 番号と契約テストのパスに置き換えた。
-      // test/intent/ の § だけは intent.txt の節番号 (ADR 48)
-      if (file.startsWith('test/intent/')) continue;
+      // § 参照は ADR 番号と契約テストのパスに置き換えた
       if (/§\d/.test(source)) stale.push(`${file} (§ 参照)`);
     }
     expect(stale).toEqual([]);
