@@ -40,7 +40,8 @@
     "ci": "bun scripts/ci.tsx",
     "build:package": "bun scripts/build-package.ts",
     "version:next": "bun scripts/next-version.ts",
-    "check:layout": "bun scripts/check-test-layout.ts"
+    "check:layout": "bun scripts/check-test-layout.ts",
+    "docs:lifecycle": "bun scripts/lifecycle.tsx"
   },
   "dependencies": {
     "valibot": "^1.5.0"

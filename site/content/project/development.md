@@ -11,6 +11,7 @@ bun run dev           # watch demo/app and rebuild on every save
 bun run gen --conv cmd --path demo/app/hello   # scaffold into demo/app
 bun run site          # build the documentation site into site/dist
 bun run site:dev      # build and preview at http://localhost:4173 (restart after edits)
+bun run docs:lifecycle  # redraw "The order they run in" from an actual run
 bun run bench         # startup time
 bun run format        # rewrite files (ci only checks)
 ```
