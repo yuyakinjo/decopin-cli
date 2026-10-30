@@ -15,5 +15,8 @@
     "**/node_modules/**": true,
     "**/dist/**": true,
     "**/examples/**": true
-  }
+  },
+
+  // gitignoreに登録されているフォルダの非表示
+  "explorer.excludeGitIgnore": true
 }
