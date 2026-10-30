@@ -82,3 +82,20 @@ jobs:
           git tag "v$VERSION"
           git push origin HEAD --tags
           gh release create "v$VERSION" --notes-file "$RUNNER_TEMP/notes.md"
+
+      # タグは直近 20 個だけ残し、古いものは Release ごと消す。タグだけ消すと
+      # Release が壊れた状態で残るため。リリースノートは直前のタグしか見ない
+      # (git describe) ので、古いタグが無くなっても困らない。
+      # CalVer は 0 埋めしないが、-v:refname は数値として比べるので
+      # 2026.924 < 2026.1030 の順に並ぶ
+      - name: prune old releases
+        if: ${{ !inputs.dry-run }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          KEEP: 20
+        run: |
+          git tag --list 'v*' --sort=-v:refname | tail -n "+$((KEEP + 1))" | while read -r tag; do
+            echo "pruning $tag"
+            # Release の無いタグは gh では消せないので、タグだけ消す
+            gh release delete "$tag" --cleanup-tag --yes || git push origin --delete "$tag"
+          done
