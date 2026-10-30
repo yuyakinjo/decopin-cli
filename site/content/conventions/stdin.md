@@ -18,7 +18,7 @@ export default function DefineStdin() {
 
 ```tsx
 // app/count/cmd.tsx
-import { Line, type CmdProps } from 'decopin-cli';
+import { type CmdProps, Line } from 'decopin-cli';
 
 export default function Command({ stdin }: CmdProps<'count'>) {
   // stdin is string[], because mode="lines" and required
@@ -46,7 +46,7 @@ type says `| undefined`, so code that forgets to handle it does not compile.
 
 ```tsx
 // app/upper/cmd.tsx
-import { Line, type CmdProps } from 'decopin-cli';
+import { type CmdProps, Line } from 'decopin-cli';
 
 export default function Command({ stdin }: CmdProps<'upper'>) {
   // stdin is string | undefined
@@ -88,7 +88,7 @@ export default function DefineStdin() {
 
 ```tsx
 // app/user/import/cmd.tsx
-import { Line, Text, type CmdProps } from 'decopin-cli';
+import { type CmdProps, Line, Text } from 'decopin-cli';
 
 export default function Command({ stdin }: CmdProps<'user/import'>) {
   // stdin is { name: string; admin: boolean }[]

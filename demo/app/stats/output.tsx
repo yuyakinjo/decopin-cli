@@ -1,4 +1,4 @@
-import { Output, Type, type OutputDefinition } from 'decopin-cli';
+import { Output, type OutputDefinition, Type } from 'decopin-cli';
 
 /**
  * The shape `data.tsx` promises. Declaring it here makes it the source of

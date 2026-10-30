@@ -1,4 +1,4 @@
-import { authRequired, missingTool, type CmdProps } from 'decopin-cli';
+import { authRequired, type CmdProps, missingTool } from 'decopin-cli';
 
 /** Prerequisites belong with the data, before anything is displayed (ADR 31) */
 export default function Data({ env, dryRun }: CmdProps<'publish'>) {

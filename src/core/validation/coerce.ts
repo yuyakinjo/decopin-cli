@@ -10,8 +10,7 @@ import type { TypeNode } from '../types/type-node.ts';
 export type RawValue = string | true;
 
 export type CoerceResult =
-  | { ok: true; value: unknown }
-  | { ok: false; message: string };
+  { ok: true; value: unknown } | { ok: false; message: string };
 
 function coerceBoolean(raw: RawValue): CoerceResult {
   if (raw === true) return { ok: true, value: true };

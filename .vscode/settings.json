@@ -1,9 +1,6 @@
 {
-  // Oxcをデフォルトフォーマッターに設定
-  "editor.defaultFormatter": "oxc.oxc-vscode",
-
-  // 保存時の自動フォーマット
-  "editor.formatOnSave": true,
+  // フォーマットは bun fmt (bun run format) で行う。エディタからは整形しない
+  "editor.formatOnSave": false,
 
   // 保存時にOxlintの安全な修正を適用
   "editor.codeActionsOnSave": {

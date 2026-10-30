@@ -20,8 +20,7 @@ export interface ValidatedArgv {
 }
 
 export type ValidateResult =
-  | { ok: true; value: ValidatedArgv }
-  | { ok: false; issues: string[] };
+  { ok: true; value: ValidatedArgv } | { ok: false; issues: string[] };
 
 /** 「省略できるか」を反映したスキーマを作る (test/contract/argv-parsing.test.ts の存在と型の分離) */
 function presenceSchema(

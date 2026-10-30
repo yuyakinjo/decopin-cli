@@ -1,4 +1,4 @@
-import { Stdin, Type, type StdinDefinition } from 'decopin-cli';
+import { Stdin, type StdinDefinition, Type } from 'decopin-cli';
 
 /** JSON の構造も Type.* で宣言できる (ADR 2) */
 export default function DefineStdin(): StdinDefinition {

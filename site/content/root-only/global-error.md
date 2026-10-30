@@ -9,7 +9,7 @@ look when no subtree had an opinion.
 
 ```tsx
 // app/global-error.tsx
-import { Line, Text, type ErrorKind, type ErrorProps } from 'decopin-cli';
+import { type ErrorKind, type ErrorProps, Line, Text } from 'decopin-cli';
 
 const USAGE_KINDS: ErrorKind[] = ['validation', 'stdin', 'env'];
 const SETUP_KINDS: ErrorKind[] = ['auth', 'missing-tool'];

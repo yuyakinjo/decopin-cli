@@ -1,4 +1,4 @@
-import { notFound, type CmdProps } from 'decopin-cli';
+import { type CmdProps, notFound } from 'decopin-cli';
 
 const USERS = ['alice', 'bob', 'carol'];
 

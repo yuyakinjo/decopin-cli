@@ -1,7 +1,7 @@
 import type { Presentation } from '../../../core/runtime/override.ts';
 import {
-  presentNotFound,
   type NotFoundProps,
+  presentNotFound,
 } from '../../conventions/not-found/runtime.tsx';
 
 /** ルートの not-found.tsx で未知のコマンドを表示する。 */

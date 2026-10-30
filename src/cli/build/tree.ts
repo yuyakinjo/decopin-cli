@@ -1,7 +1,6 @@
 import { basename } from 'node:path';
 
-import type { Route } from '../../core/build/scanner.ts';
-import type { ScanResult } from '../../core/build/scanner.ts';
+import type { Route, ScanResult } from '../../core/build/scanner.ts';
 import { CONVENTION_FILES } from '../../features/conventions/index.ts';
 import { inheritedChain } from '../../features/inherited/chain.ts';
 import type { InheritedFilesByDirectory } from '../../features/inherited/chain.ts';

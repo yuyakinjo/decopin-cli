@@ -13,8 +13,8 @@ import {
   analyzeEffects,
   EFFECT_CATEGORIES,
   importedNames,
-  stripLiterals,
   packageName,
+  stripLiterals,
 } from '../../../src/core/build/effects.ts';
 import type {
   EffectCategory,

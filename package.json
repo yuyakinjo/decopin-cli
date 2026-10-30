@@ -29,8 +29,8 @@
     "test": "bun test",
     "typecheck": "tsc --noEmit && tsc -p site/tsconfig.json",
     "lint": "oxlint",
-    "format": "oxfmt",
-    "format:check": "oxfmt --check",
+    "format": "bun fmt --no-script",
+    "format:check": "bun fmt --no-script --check",
     "build": "bun src/cli/bin.ts build --app demo/app",
     "dev": "bun src/cli/bin.ts dev --app demo/app",
     "gen": "bun src/cli/bin.ts gen --app demo/app",
@@ -49,7 +49,6 @@
   "devDependencies": {
     "@types/bun": "^1.4.4",
     "@types/node": "^26.6.5",
-    "oxfmt": "^0.74.0",
     "oxlint": "^1.89.0",
     "typescript": "^7.0.2"
   },

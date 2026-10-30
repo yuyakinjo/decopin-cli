@@ -200,7 +200,7 @@ function inline(scenario: Scenario): string {
     .join(' → ');
 }
 
-/** 列幅を揃えた表。oxfmt が整える形と同じにしておく (format:check を通す) */
+/** 列幅を揃えた表。bun fmt が整える形と同じにしておく (format:check を通す) */
 function markdownTable(
   header: [string, string],
   rows: [string, string][]

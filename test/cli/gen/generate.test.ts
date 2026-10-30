@@ -8,8 +8,8 @@ import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
 import {
   mkdir,
   mkdtemp,
-  readFile,
   readdir,
+  readFile,
   rm,
   symlink,
   writeFile,

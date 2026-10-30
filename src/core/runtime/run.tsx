@@ -76,8 +76,8 @@ import { serveMcp } from './mcp.ts';
 import { present } from './override.ts';
 import {
   COMPLETE_COMMAND,
-  HELP_FLAGS,
   DRY_RUN_FLAG,
+  HELP_FLAGS,
   JSON_FLAG,
   MCP_COMMAND,
   NO_COLOR_FLAG,

@@ -10,7 +10,7 @@ layouts do.
 
 ```tsx
 // app/user/layout.tsx
-import { Line, Text, type LayoutProps } from 'decopin-cli';
+import { type LayoutProps, Line, Text } from 'decopin-cli';
 
 export default function UserLayout({ children }: LayoutProps) {
   return (

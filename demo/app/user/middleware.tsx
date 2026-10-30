@@ -1,4 +1,4 @@
-import { Line, Stderr, Text, type MiddlewareProps } from 'decopin-cli';
+import { Line, type MiddlewareProps, Stderr, Text } from 'decopin-cli';
 
 /**
  * `app/user/` 以下のコマンドの実行を包む (ADR 13)。

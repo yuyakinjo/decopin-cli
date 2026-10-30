@@ -11,7 +11,7 @@ same command asks a person and instructs a machine:
 
 ```tsx
 // app/deploy/cmd.tsx
-import { choose, help, Success, type CmdProps } from 'decopin-cli';
+import { choose, type CmdProps, help, Success } from 'decopin-cli';
 
 const TARGETS = ['web', 'api', 'worker'] as const;
 

@@ -1,4 +1,4 @@
-import { Line, Text, type ErrorProps } from 'decopin-cli';
+import { type ErrorProps, Line, Text } from 'decopin-cli';
 
 /** `app/user/` 以下のコマンドが共有するエラー表示 (test/contract/routing.test.tsx の継承) */
 export default function UserError({ error }: ErrorProps) {

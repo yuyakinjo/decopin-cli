@@ -8,7 +8,7 @@ command that fixes it**:
 
 ```tsx
 // app/publish/data.tsx
-import { authRequired, missingTool, type CmdProps } from 'decopin-cli';
+import { authRequired, type CmdProps, missingTool } from 'decopin-cli';
 
 export default function Data({ env }: CmdProps<'publish'>) {
   if (env.DECOPIN_TOKEN === undefined) {

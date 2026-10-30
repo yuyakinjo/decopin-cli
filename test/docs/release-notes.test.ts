@@ -7,8 +7,8 @@
 import { describe, expect, test } from 'bun:test';
 
 import {
-  type Commit,
   breakingChanges,
+  type Commit,
   parseLog,
   releaseNotes,
 } from '../../scripts/release-notes.ts';

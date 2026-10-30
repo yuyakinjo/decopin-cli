@@ -14,7 +14,7 @@ the built-in view           ← none of them exist, or all of them failed
 
 ```tsx
 // app/user/error.tsx
-import { Line, Text, type ErrorProps } from 'decopin-cli';
+import { type ErrorProps, Line, Text } from 'decopin-cli';
 
 export default function UserError({ error }: ErrorProps) {
   return (

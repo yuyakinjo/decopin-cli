@@ -89,7 +89,7 @@ whose command declares an `output.tsx`:
 
 ```tsx
 // app/env.tsx, after a save
-import { Env, Var, type EnvDefinition } from 'decopin-cli';
+import { Env, type EnvDefinition, Var } from 'decopin-cli';
 
 export default function DefineEnv(): EnvDefinition {
   return (

@@ -9,7 +9,7 @@ command, or a group, add to it or replace it. The generated text arrives as
 
 ```tsx
 // app/count/help.tsx
-import { Br, Line, Text, type HelpProps } from 'decopin-cli';
+import { Br, type HelpProps, Line, Text } from 'decopin-cli';
 
 export default function Help({ auto, program, command }: HelpProps) {
   return (
@@ -41,7 +41,7 @@ misuse.
 
 ```tsx
 // app/deploy/cmd.tsx
-import { help, Success, type CmdProps } from 'decopin-cli';
+import { type CmdProps, help, Success } from 'decopin-cli';
 
 export default function Command({ args, options }: CmdProps<'deploy'>) {
   if (args.target === undefined && !options.all) {
