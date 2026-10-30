@@ -40,7 +40,7 @@ optional, and the type says so:
 
 ```tsx
 // app/config/cmd.tsx
-import { KeyValue, type CmdProps } from 'decopin-cli';
+import { type CmdProps, KeyValue } from 'decopin-cli';
 
 export default function Command({ env }: CmdProps<'config'>) {
   return (

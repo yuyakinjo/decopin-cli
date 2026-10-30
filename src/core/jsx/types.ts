@@ -142,13 +142,7 @@ export type Declaration = Element;
 
 /** レンダリング可能なもの。`null` / `undefined` / `boolean` は何も描かない */
 export type Renderable =
-  | Element
-  | string
-  | number
-  | boolean
-  | null
-  | undefined
-  | Renderable[];
+  Element | string | number | boolean | null | undefined | Renderable[];
 
 /**
  * レンダラーの入口が受け取れるもの。コンポーネントの戻り値をそのまま渡せる

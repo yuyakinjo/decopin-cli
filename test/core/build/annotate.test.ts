@@ -3,13 +3,13 @@
  * `CmdProps<'<name>'>` を書き足す (ADR 44)。
  */
 import { afterEach, describe, expect, test } from 'bun:test';
-import { mkdtemp, mkdir, rm, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
 import {
-  annotateCommandSource,
   annotateCommands,
+  annotateCommandSource,
 } from '../../../src/core/build/annotate.ts';
 import { generate } from '../../../src/core/build/index.ts';
 

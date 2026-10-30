@@ -1,4 +1,4 @@
-import { Line, Text, type CmdProps } from 'decopin-cli';
+import { type CmdProps, Line, Text } from 'decopin-cli';
 
 export default function Command({ stdin }: CmdProps<'upper'>) {
   if (stdin === undefined) {

@@ -18,8 +18,7 @@ export interface CommandExample {
 
 /** example.tsx の default export の形 */
 export type Examples = () =>
-  | Promise<readonly CommandExample[]>
-  | readonly CommandExample[];
+  Promise<readonly CommandExample[]> | readonly CommandExample[];
 
 function invalid(where: string, what: string): DeclarationError {
   return new DeclarationError(`${where}: ${what}`);

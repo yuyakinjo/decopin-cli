@@ -3,7 +3,7 @@ import { join, relative } from 'node:path';
 import { errorTag } from '../../core/errors.ts';
 import { EXIT_CODE } from '../../core/runtime/exit.ts';
 import type { Usage } from '../argv.ts';
-import { generate, GENERATOR_KINDS, GenerateUsageError } from './generate.ts';
+import { generate, GenerateUsageError, GENERATOR_KINDS } from './generate.ts';
 
 export const usage: Usage = {
   summary: 'generate a convention, inherited or root-only file',

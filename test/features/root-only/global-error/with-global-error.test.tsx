@@ -9,8 +9,8 @@ import { CliError, Line } from 'decopin-cli';
 import type { ErrorProps, RenderInput } from 'decopin-cli';
 
 import {
-  handleError,
   type ErrorHandlerLoader,
+  handleError,
 } from '../../../../src/features/inherited/error/runtime.tsx';
 import { FILE_NAME } from '../../../../src/features/root-only/global-error/definition.ts';
 import { withGlobalError } from '../../../../src/features/root-only/global-error/runtime.ts';

@@ -10,7 +10,7 @@ writes the shell code with the quoting done.
 
 ```tsx
 // app/go/shell.tsx — receives the same props as cmd.tsx
-import { Shell, type CmdProps } from 'decopin-cli';
+import { type CmdProps, Shell } from 'decopin-cli';
 
 export default function ShellChanges({ data }: CmdProps<'go'>) {
   return (

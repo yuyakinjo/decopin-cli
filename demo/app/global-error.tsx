@@ -1,4 +1,4 @@
-import { Line, Text, type ErrorKind, type ErrorProps } from 'decopin-cli';
+import { type ErrorKind, type ErrorProps, Line, Text } from 'decopin-cli';
 
 /** 使い方の誤り (exit 2) にあたる kind */
 const USAGE_KINDS: ErrorKind[] = ['validation', 'stdin', 'env'];

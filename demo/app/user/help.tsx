@@ -1,4 +1,4 @@
-import { Br, Info, type HelpProps } from 'decopin-cli';
+import { Br, type HelpProps, Info } from 'decopin-cli';
 
 /**
  * グループ単位の上書き (test/contract/routing.test.tsx)。`app/user/` には command.tsx が無いが、

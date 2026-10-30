@@ -8,8 +8,8 @@ import { describe, expect, test } from 'bun:test';
 
 import {
   Arg,
-  Argv,
   argumentsSchema,
+  Argv,
   Option,
   Stdin,
   toJsonSchema,

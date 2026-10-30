@@ -1,4 +1,4 @@
-import { choose, help, Line, Success, type CmdProps } from 'decopin-cli';
+import { choose, type CmdProps, help, Line, Success } from 'decopin-cli';
 
 const TARGETS = ['web', 'api', 'worker'] as const;
 

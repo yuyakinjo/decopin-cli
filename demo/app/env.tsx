@@ -1,4 +1,4 @@
-import { Env, Type, Var, type EnvDefinition } from 'decopin-cli';
+import { Env, type EnvDefinition, Type, Var } from 'decopin-cli';
 
 /** 起動時に一度だけ検証される */
 export default function DefineEnv(): EnvDefinition {

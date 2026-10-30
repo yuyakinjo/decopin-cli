@@ -1,4 +1,4 @@
-import { Argv, Option, type ArgvDefinition } from 'decopin-cli';
+import { Argv, type ArgvDefinition, Option } from 'decopin-cli';
 
 export default function DefineArgv(): ArgvDefinition {
   return (

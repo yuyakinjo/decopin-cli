@@ -21,7 +21,7 @@ Output is JSX. There is no React — decopin ships its own small renderer.
 
 ```tsx
 // app/hello/cmd.tsx
-import { Line, Text, type CmdProps } from 'decopin-cli';
+import { type CmdProps, Line, Text } from 'decopin-cli';
 
 export default function Command({ args, options }: CmdProps<'hello'>) {
   return (
@@ -291,7 +291,7 @@ export default function DefineStdin() {
 
 ```tsx
 // app/count/cmd.tsx
-import { Line, type CmdProps } from 'decopin-cli';
+import { type CmdProps, Line } from 'decopin-cli';
 
 export default function Command({ stdin }: CmdProps<'count'>) {
   // stdin is string[], because mode="lines" and required
@@ -343,7 +343,7 @@ export default function DefineStdin() {
 
 ```tsx
 // app/user/import/cmd.tsx
-import { Line, type CmdProps } from 'decopin-cli';
+import { type CmdProps, Line } from 'decopin-cli';
 
 export default function Command({ stdin }: CmdProps<'user/import'>) {
   // stdin is { name: string; admin: boolean }[]
@@ -398,7 +398,7 @@ optional, and the type says so:
 
 ```tsx
 // app/config/cmd.tsx
-import { KeyValue, type CmdProps } from 'decopin-cli';
+import { type CmdProps, KeyValue } from 'decopin-cli';
 
 export default function Command({ env }: CmdProps<'config'>) {
   return (

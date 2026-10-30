@@ -10,7 +10,7 @@ at all.
 
 ```tsx
 // app/user/middleware.tsx
-import { Line, Stderr, Text, type MiddlewareProps } from 'decopin-cli';
+import { Line, type MiddlewareProps, Stderr, Text } from 'decopin-cli';
 
 export default async function Middleware({ next, options }: MiddlewareProps) {
   const started = performance.now();

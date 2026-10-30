@@ -13,10 +13,10 @@ import { join } from 'node:path';
 import {
   annotationsFor,
   Arg,
-  EFFECTS_META_KEY,
-  ENV_META_KEY,
   Argv,
+  EFFECTS_META_KEY,
   Env,
+  ENV_META_KEY,
   Line,
   Option,
   Output,
@@ -228,8 +228,7 @@ describe('handshake', () => {
       { versionFile: loader('not a function') }
     );
     const serverInfo = responses[0]?.result?.serverInfo as
-      | { version: string }
-      | undefined;
+      { version: string } | undefined;
     expect(serverInfo?.version).toBe('0.0.0');
   });
 

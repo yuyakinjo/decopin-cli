@@ -8,11 +8,7 @@
 
 /** 見張る副作用の種類 */
 export type EffectCategory =
-  | 'fs.read'
-  | 'fs.write'
-  | 'network'
-  | 'process.spawn'
-  | 'process.mutate';
+  'fs.read' | 'fs.write' | 'network' | 'process.spawn' | 'process.mutate';
 
 export const EFFECT_CATEGORIES: readonly EffectCategory[] = [
   'fs.read',

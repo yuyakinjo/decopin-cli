@@ -1,4 +1,4 @@
-import { Line, type CmdProps } from 'decopin-cli';
+import { type CmdProps, Line } from 'decopin-cli';
 
 export default function Command({ stdin, options }: CmdProps<'count'>) {
   const kept = options['non-empty']

@@ -8,7 +8,7 @@ declared and returns JSX, which the renderer writes to the terminal.
 
 ```tsx
 // app/hello/cmd.tsx
-import { Line, Text, type CmdProps } from 'decopin-cli';
+import { type CmdProps, Line, Text } from 'decopin-cli';
 
 export default function Command({ args, options }: CmdProps<'hello'>) {
   return (

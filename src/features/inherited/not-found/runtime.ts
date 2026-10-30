@@ -1,7 +1,7 @@
 import type { Presentation } from '../../../core/runtime/override.ts';
 import {
-  presentNotFound,
   type NotFoundProps,
+  presentNotFound,
 } from '../../conventions/not-found/runtime.tsx';
 
 /** 最も近い継承 not-found.tsx で notFound() の結果を表示する。 */

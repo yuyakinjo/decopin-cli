@@ -1,4 +1,4 @@
-import { Line, Text, type CmdProps } from 'decopin-cli';
+import { type CmdProps, Line, Text } from 'decopin-cli';
 
 const RAINBOW = ['red', 'yellow', 'green', 'cyan', 'blue', 'magenta'] as const;
 

@@ -7,8 +7,8 @@
 import { describe, expect, test } from 'bun:test';
 
 import {
-  DEPRECATIONS,
   type Deprecation,
+  DEPRECATIONS,
   overdue,
 } from '../../src/core/deprecations.ts';
 

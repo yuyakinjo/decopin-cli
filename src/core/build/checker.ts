@@ -4,7 +4,7 @@
  * ここで見るのは「動くけれど、たぶん意図と違う」こと。宣言そのものの
  * 誤りは evaluator が集める。
  */
-import { DEPRECATIONS, type Deprecation } from '../deprecations.ts';
+import { type Deprecation, DEPRECATIONS } from '../deprecations.ts';
 import type { DeprecatedFile } from './scanner.ts';
 import type { UnsupportedNode } from './schema-introspect.ts';
 

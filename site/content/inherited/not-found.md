@@ -9,7 +9,7 @@ works out the suggestion for you:
 
 ```tsx
 // app/user/show/data.tsx
-import { notFound, type CmdProps } from 'decopin-cli';
+import { type CmdProps, notFound } from 'decopin-cli';
 
 const USERS = ['alice', 'bob', 'carol'];
 

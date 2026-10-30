@@ -13,12 +13,12 @@ import {
   isDeclarationError,
   isRenderError,
   Line,
+  RenderError,
   run,
   Stdout,
   Text,
 } from 'decopin-cli';
 import type { ErrorProps, RouteLoaders, RouteTable } from 'decopin-cli';
-import { RenderError } from 'decopin-cli';
 
 import { toCliError } from '../../../../src/features/inherited/error/runtime.tsx';
 

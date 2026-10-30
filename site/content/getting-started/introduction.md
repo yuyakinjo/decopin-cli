@@ -10,7 +10,7 @@ Output is JSX. There is no React; decopin ships its own small renderer.
 
 ```tsx
 // app/hello/cmd.tsx
-import { Line, Text, type CmdProps } from 'decopin-cli';
+import { type CmdProps, Line, Text } from 'decopin-cli';
 
 export default function Command({ args, options }: CmdProps<'hello'>) {
   return (

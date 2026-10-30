@@ -1,4 +1,4 @@
-import { Box, KeyValue, type CmdProps } from 'decopin-cli';
+import { Box, type CmdProps, KeyValue } from 'decopin-cli';
 
 export default function Command({ env }: CmdProps<'config'>) {
   return (

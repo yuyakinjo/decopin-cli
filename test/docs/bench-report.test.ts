@@ -7,8 +7,8 @@
 import { describe, expect, test } from 'bun:test';
 
 import {
-  MARKER,
   benchReport,
+  MARKER,
   readBytes,
   readMeasurement,
 } from '../../scripts/bench-report.ts';

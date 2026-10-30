@@ -20,7 +20,7 @@ export default function Data({ options }: CmdProps<'stats'>) {
 
 ```tsx
 // app/stats/cmd.tsx
-import { KeyValue, List, type CmdProps } from 'decopin-cli';
+import { type CmdProps, KeyValue, List } from 'decopin-cli';
 
 export default function Command({ data }: CmdProps<'stats'>) {
   // data.files is string[], data.total is number

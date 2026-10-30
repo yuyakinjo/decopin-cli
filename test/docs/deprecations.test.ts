@@ -11,8 +11,8 @@ import {
   deprecatedFileWarnings,
 } from '../../src/core/build/checker.ts';
 import {
-  DEPRECATIONS,
   type Deprecation,
+  DEPRECATIONS,
   overdue,
 } from '../../src/core/deprecations.ts';
 
