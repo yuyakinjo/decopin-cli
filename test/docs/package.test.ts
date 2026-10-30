@@ -128,6 +128,16 @@ describe('リリースの手順', () => {
     expect(tagAt).toBeGreaterThan(publishAt);
   });
 
+  test('古いタグは Release ごと消し、直近 20 個だけ残す', () => {
+    expect(workflow).toContain('KEEP: 20');
+    // タグだけ消すと Release が壊れた状態で残る
+    expect(workflow).toContain('--cleanup-tag');
+    // 今回のタグを打ってから数える
+    expect(workflow.indexOf('prune old releases')).toBeGreaterThan(
+      workflow.indexOf('gh release create')
+    );
+  });
+
   test('試し打ちができる', () => {
     expect(workflow).toContain('dry-run');
   });
