@@ -2,17 +2,10 @@
  * Phase 5: middleware.tsx の適用順 (ADR 13)。
  * next は関数なので、呼ばないと中が走らない。
  */
-import { expect } from 'bun:test';
+import { describe, expect, test } from 'bun:test';
 
 import { Argv, Line, Option, run, Stderr } from 'decopin-cli';
 import type { MiddlewareProps, RouteLoaders, RouteTable } from 'decopin-cli';
-
-import {
-  describeBehavior,
-  proves,
-  report,
-} from '../../../intent/evidence.bun.ts';
-import { IMPLEMENTATION as RUNTIME } from '../../../intent/runtime/implementation.ts';
 
 function recorder() {
   const chunks: string[] = [];
@@ -40,8 +33,8 @@ function loader(value: unknown) {
   return async () => ({ default: value });
 }
 
-describeBehavior(RUNTIME, 'runs-middleware-around-the-command', () => {
-  proves('外側 = 上位ディレクトリの順に入れ子で走る', async () => {
+describe('middleware.tsx が next の前後に割り込め、stdout を汚さずに足せる', () => {
+  test('外側 = 上位ディレクトリの順に入れ子で走る', async () => {
     const trace: string[] = [];
     const spy =
       (label: string) =>
@@ -72,7 +65,7 @@ describeBehavior(RUNTIME, 'runs-middleware-around-the-command', () => {
     ]);
   });
 
-  proves('next を呼ばなければコマンドは実行されない', async () => {
+  test('next を呼ばなければコマンドは実行されない', async () => {
     let called = false;
     const table: RouteTable = {
       x: {
@@ -88,7 +81,7 @@ describeBehavior(RUNTIME, 'runs-middleware-around-the-command', () => {
     expect(result.stdout).toBe('short circuit\n');
   });
 
-  proves('検証済みの args / options を受け取る (ADR 11)', async () => {
+  test('検証済みの args / options を受け取る (ADR 11)', async () => {
     const seen: Record<string, unknown>[] = [];
     const table: RouteTable = {
       x: {
@@ -110,7 +103,7 @@ describeBehavior(RUNTIME, 'runs-middleware-around-the-command', () => {
     expect(seen).toEqual([{ args: {}, options: { loud: true } }]);
   });
 
-  proves('検証に失敗したら middleware は走らない (ADR 11 の代償)', async () => {
+  test('検証に失敗したら middleware は走らない (ADR 11 の代償)', async () => {
     let entered = false;
     const table: RouteTable = {
       x: {
@@ -133,7 +126,7 @@ describeBehavior(RUNTIME, 'runs-middleware-around-the-command', () => {
     expect(entered).toBe(false);
   });
 
-  proves('出力に足すことができる (可能だが非推奨)', async () => {
+  test('出力に足すことができる (可能だが非推奨)', async () => {
     const table: RouteTable = {
       x: {
         cmd: loader(() => <Line>body</Line>),
@@ -154,7 +147,7 @@ describeBehavior(RUNTIME, 'runs-middleware-around-the-command', () => {
     expect(result.stderr).toBe('done\n');
   });
 
-  proves('middleware の throw は error.tsx に流れる', async () => {
+  test('middleware の throw は error.tsx に流れる', async () => {
     const failing: RouteLoaders = {
       cmd: loader(() => <Line>body</Line>),
       middlewares: [
@@ -169,7 +162,7 @@ describeBehavior(RUNTIME, 'runs-middleware-around-the-command', () => {
     expect(result.stderr).toBe('handled\n');
   });
 
-  proves('コマンドの throw を middleware で捕まえられる', async () => {
+  test('コマンドの throw を middleware で捕まえられる', async () => {
     const table: RouteTable = {
       x: {
         cmd: loader(() => {
@@ -191,7 +184,7 @@ describeBehavior(RUNTIME, 'runs-middleware-around-the-command', () => {
     expect(result.stdout).toBe('recovered\n');
   });
 
-  proves('default export が関数でなければ分かるエラーになる', async () => {
+  test('default export が関数でなければ分かるエラーになる', async () => {
     const table: RouteTable = {
       x: {
         cmd: loader(() => <Line>body</Line>),
@@ -205,7 +198,7 @@ describeBehavior(RUNTIME, 'runs-middleware-around-the-command', () => {
     );
   });
 
-  proves('layout は middleware が返した出力を包む', async () => {
+  test('layout は middleware が返した出力を包む', async () => {
     const table: RouteTable = {
       x: {
         cmd: loader(() => <Line>body</Line>),
@@ -231,6 +224,3 @@ describeBehavior(RUNTIME, 'runs-middleware-around-the-command', () => {
     expect(result.stdout).toBe('layout\nmw\nbody\n');
   });
 });
-
-// この Intent の証明は他のファイルと分担している。必ず末尾で 1 回
-report(RUNTIME, { partial: true });

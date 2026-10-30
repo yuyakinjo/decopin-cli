@@ -1,15 +1,11 @@
 /**
- * Intent `notice-declaration-mistakes-while-typing` の Evidence (ADR 46)。
+ * 宣言ファイルの返り値型の結合テスト (ADR 46)。
  *
- * **Behavior を書いてから実装したので、このファイルは 3 番目に書いた。**
- *
- * 始める前の予想は「waived() が 1 つ出る。型検査が落ちることの証明は
- * tsc を子プロセスで回さないと書けないので、費用を見てから決める」だった。
- * 測った結果、1 プロジェクトあたり数秒で、`test/core/build/typegen.test.ts` に
- * 同じ形の前例もあった。**waiver は 1 つも要らなかった** (予想が外れた)。
+ * 型検査が落ちることは tsc を子プロセスで回して確かめる。1 プロジェクトあたり
+ * 0.1 秒ほどで、`test/core/build/typegen.test.ts` に同じ形の前例がある。
  *
  * 当て木は `test/fixtures/` の専用 tsconfig から検査する。`app/` や
- * `test/intent/` に置くと、ルートの `bun run typecheck` が拾ってしまう
+ * `test/integration/` に置くと、ルートの `bun run typecheck` が拾ってしまう
  * (ルートの tsconfig は fixtures を exclude している)
  */
 import { afterAll, beforeAll, describe, expect, test } from 'bun:test';
@@ -20,12 +16,9 @@ import { join } from 'node:path';
 import {
   annotateDeclarations,
   annotateReturnSource,
-} from '../../../src/core/build/annotate.ts';
-import { generate } from '../../../src/core/build/index.ts';
-import { scan } from '../../../src/core/build/scanner.ts';
-import { toDocument, toReport } from '../core.ts';
-import { describeBehavior, proves, report } from '../evidence.bun.ts';
-import { IMPLEMENTATION as RETURNS } from './implementation.ts';
+} from '../../src/core/build/annotate.ts';
+import { generate } from '../../src/core/build/index.ts';
+import { scan } from '../../src/core/build/scanner.ts';
 
 const UNTYPED = 'test/fixtures/untyped';
 const TYPED = 'test/fixtures/typed';
@@ -137,70 +130,50 @@ async function appDir(files: Record<string, string>): Promise<string> {
   return dir;
 }
 
-describeBehavior(RETURNS, 'declares-what-each-file-returns', () => {
-  proves(
-    '要素でないものを返すと型検査が落ちる',
-    async () => {
-      const result = await typecheck(`${UNTYPED}/returns-ng.json`);
-      expect(result.code).not.toBe(0);
-      // JSX が運べるのは「要素であること」まで (ADR 9)
-      expect(result.output).toContain(
-        "Type 'null' is not assignable to type 'Element'"
-      );
-      expect(result.output).toContain(
-        "Type 'string' is not assignable to type 'Element'"
-      );
-    },
-    60_000
-  );
+describe('argv/stdin/output/env/version/shell の宣言ファイルに返り値型があり、要素でないもの (null・文字列) を返すと型検査が落ちる', () => {
+  test('要素でないものを返すと型検査が落ちる', async () => {
+    const result = await typecheck(`${UNTYPED}/returns-ng.json`);
+    expect(result.code).not.toBe(0);
+    // JSX が運べるのは「要素であること」まで (ADR 9)
+    expect(result.output).toContain(
+      "Type 'null' is not assignable to type 'Element'"
+    );
+    expect(result.output).toContain(
+      "Type 'string' is not assignable to type 'Element'"
+    );
+  }, 60_000);
 
-  proves(
-    '要素を返す宣言はそのまま通る',
-    async () => {
-      const result = await typecheck(`${UNTYPED}/returns.json`);
-      expect(result.output).toBe('');
-      expect(result.code).toBe(0);
-    },
-    60_000
-  );
+  test('要素を返す宣言はそのまま通る', async () => {
+    const result = await typecheck(`${UNTYPED}/returns.json`);
+    expect(result.output).toBe('');
+    expect(result.code).toBe(0);
+  }, 60_000);
 });
 
-describeBehavior(RETURNS, 'ties-data-to-output', () => {
-  proves(
-    'output.tsx の宣言と食い違う data は実行前に落ちる',
-    async () => {
-      const result = await typecheck(`${TYPED}/returns-ng.json`);
-      expect(result.code).not.toBe(0);
-      expect(result.output).toContain(
-        "Type 'string' is not assignable to type 'number'"
-      );
-      expect(result.output).toContain("Property 'files' is missing");
-    },
-    60_000
-  );
+describe('output.tsx があるコマンドの data.tsx が宣言と食い違う値を返すと、実行前に型検査が落ちる', () => {
+  test('output.tsx の宣言と食い違う data は実行前に落ちる', async () => {
+    const result = await typecheck(`${TYPED}/returns-ng.json`);
+    expect(result.code).not.toBe(0);
+    expect(result.output).toContain(
+      "Type 'string' is not assignable to type 'number'"
+    );
+    expect(result.output).toContain("Property 'files' is missing");
+  }, 60_000);
 
-  proves(
-    '宣言どおりの data は通る',
-    async () => {
-      const result = await typecheck(`${TYPED}/returns.json`);
-      expect(result.output).toBe('');
-      expect(result.code).toBe(0);
-    },
-    60_000
-  );
+  test('宣言どおりの data は通る', async () => {
+    const result = await typecheck(`${TYPED}/returns.json`);
+    expect(result.output).toBe('');
+    expect(result.code).toBe(0);
+  }, 60_000);
 });
 
-describeBehavior(RETURNS, 'falls-back-before-generation', () => {
-  proves(
-    '型が未生成なら DataResult は何でも受け付ける',
-    async () => {
-      // 同じ当て木の Data() が `{ whatever: true }` を返している
-      const result = await typecheck(`${UNTYPED}/returns.json`);
-      expect(result.output).toBe('');
-      expect(result.code).toBe(0);
-    },
-    60_000
-  );
+describe('.decopin/types.d.ts が無い状態では DataResult は緩い型になり、型検査を止めない', () => {
+  test('型が未生成なら DataResult は何でも受け付ける', async () => {
+    // 同じ当て木の Data() が `{ whatever: true }` を返している
+    const result = await typecheck(`${UNTYPED}/returns.json`);
+    expect(result.output).toBe('');
+    expect(result.code).toBe(0);
+  }, 60_000);
 });
 
 const ENV_SOURCE = [
@@ -216,8 +189,8 @@ const ENV_SOURCE = [
   '',
 ].join('\n');
 
-describeBehavior(RETURNS, 'annotates-while-developing', () => {
-  proves('返り値型と import を書き足す', () => {
+describe('dev --annotate が、注釈の無い宣言ファイルの default export に返り値型と import を書き足す', () => {
+  test('返り値型と import を書き足す', () => {
     expect(annotateReturnSource(ENV_SOURCE, 'EnvDefinition')).toBe(
       [
         "import { Env, Var, type EnvDefinition } from 'decopin-cli';",
@@ -234,7 +207,7 @@ describeBehavior(RETURNS, 'annotates-while-developing', () => {
     );
   });
 
-  proves('async な宣言は Promise に包む', () => {
+  test('async な宣言は Promise に包む', () => {
     const source =
       "import { Output } from 'decopin-cli';\n" +
       'export default async function DefineOutput() {\n' +
@@ -244,7 +217,7 @@ describeBehavior(RETURNS, 'annotates-while-developing', () => {
     );
   });
 
-  proves('data.tsx にはコマンド名を型引数で入れる', () => {
+  test('data.tsx にはコマンド名を型引数で入れる', () => {
     const source =
       'export default function Data() {\n  return { counted: 0 };\n}\n';
     const next = annotateReturnSource(source, 'DataResult', 'stats');
@@ -252,7 +225,7 @@ describeBehavior(RETURNS, 'annotates-while-developing', () => {
     expect(next).toContain("import { type DataResult } from 'decopin-cli';");
   });
 
-  proves('宣言ファイルを実際に書き換える', async () => {
+  test('宣言ファイルを実際に書き換える', async () => {
     const dir = await appDir({
       'argv.tsx':
         "import { Argv } from 'decopin-cli';\n" +
@@ -272,8 +245,8 @@ describeBehavior(RETURNS, 'annotates-while-developing', () => {
   });
 });
 
-describeBehavior(RETURNS, 'never-touches-annotated-files', () => {
-  proves('既に返り値型があるファイルは触らない', () => {
+describe('既に返り値型があるファイルと、対象外のファイルは 1 バイトも変えない', () => {
+  test('既に返り値型があるファイルは触らない', () => {
     const source =
       "import { Env, type EnvDefinition } from 'decopin-cli';\n" +
       'export default function DefineEnv(): EnvDefinition {\n' +
@@ -281,21 +254,21 @@ describeBehavior(RETURNS, 'never-touches-annotated-files', () => {
     expect(annotateReturnSource(source, 'EnvDefinition')).toBeUndefined();
   });
 
-  proves('default export でない宣言は触らない', () => {
+  test('default export でない宣言は触らない', () => {
     const source =
       "import { Env } from 'decopin-cli';\n" +
       'export function DefineEnv() {\n  return <Env />;\n}\n';
     expect(annotateReturnSource(source, 'EnvDefinition')).toBeUndefined();
   });
 
-  proves('関数宣言でない default export は触らない', () => {
+  test('関数宣言でない default export は触らない', () => {
     const source =
       "import { Env } from 'decopin-cli';\n" +
       'export default () => <Env />;\n';
     expect(annotateReturnSource(source, 'EnvDefinition')).toBeUndefined();
   });
 
-  proves('対象外のファイルは 1 バイトも変えない', async () => {
+  test('対象外のファイルは 1 バイトも変えない', async () => {
     const cmd = 'export default function Command() {\n  return null;\n}\n';
     const help = "export default function Help() {\n  return 'help';\n}\n";
     const dir = await appDir({ 'cmd.tsx': cmd, 'help.tsx': help });
@@ -306,8 +279,8 @@ describeBehavior(RETURNS, 'never-touches-annotated-files', () => {
   });
 });
 
-describeBehavior(RETURNS, 'annotates-data-only-when-declared', () => {
-  proves('output.tsx が無いコマンドの data.tsx には書かない', async () => {
+describe('output.tsx が無いコマンドの data.tsx には返り値型を書かない', () => {
+  test('output.tsx が無いコマンドの data.tsx には書かない', async () => {
     const data = 'export default function Data() {\n  return { n: 1 };\n}\n';
     const dir = await appDir({
       'plain/cmd.tsx':
@@ -333,26 +306,3 @@ describeBehavior(RETURNS, 'annotates-data-only-when-declared', () => {
     );
   });
 });
-
-describe('対応表', () => {
-  test('担い手のファイルが実在する', async () => {
-    const missing: string[] = [];
-    for (const carriers of Object.values(RETURNS.carriers)) {
-      for (const carrier of carriers) {
-        if (!(await Bun.file(join(process.cwd(), carrier.where)).exists())) {
-          missing.push(carrier.where);
-        }
-      }
-    }
-    expect(missing).toEqual([]);
-  });
-
-  test('ここまでの Evidence でドキュメントが組み立つ', () => {
-    const doc = toDocument(toReport(RETURNS));
-    expect(doc).toContain('Intent: notice-declaration-mistakes-while-typing');
-    expect(doc).not.toContain('✗');
-  });
-});
-
-// 全 Behavior が証明されたかを見て、.decopin-intent/ へ書き出す。必ず最後に呼ぶ
-report(RETURNS);

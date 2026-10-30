@@ -1,21 +1,15 @@
 /**
- * Intent `run-commands-as-declared` の Evidence。
+ * 生成された CLI の結合テスト。
  *
- * 旧 `test/integration/` の build テストの `describe('生成された CLI')` 22 テストを
- * ここへ移して Behavior に結び直したもの。検証の中身は変えていない。
- *
- * ビルドは自前でやる。この Intent が見ているのは「生成物が宣言どおりに動くか」
- * で、build の Evidence には依存しない (どちらが落ちたのか混ざらないように)。
+ * ビルドは自前でやる。見ているのは「生成物が宣言どおりに動くか」で、
+ * build.test.ts には依存しない (どちらが落ちたのか混ざらないように)。
  */
 import { afterAll, beforeAll, describe, expect, test } from 'bun:test';
 import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
-import { build } from '../../../src/core/build/index.ts';
-import { toDocument, toReport } from '../core.ts';
-import { describeBehavior, proves, report } from '../evidence.bun.ts';
-import { IMPLEMENTATION as RUNTIME } from './implementation.ts';
+import { build } from '../../src/core/build/index.ts';
 
 const REPO = process.cwd();
 let workspace: string;
@@ -56,39 +50,39 @@ async function cli(args: string[], input?: string) {
   return { stdout, stderr, code };
 }
 
-describeBehavior(RUNTIME, 'routes-directories-to-commands', () => {
-  proves('app/hello/cmd.tsx が hello で動く', async () => {
+describe('app/ の階層がそのままコマンドの階層になり、入れ子も引数なしで辿れる', () => {
+  test('app/hello/cmd.tsx が hello で動く', async () => {
     const result = await cli(['hello']);
     expect(result.stdout).toBe('hello, world\n');
     expect(result.stderr).toBe('');
     expect(result.code).toBe(0);
   });
 
-  proves('ディレクトリの入れ子がサブコマンドになる', async () => {
+  test('ディレクトリの入れ子がサブコマンドになる', async () => {
     const result = await cli(['user', 'list']);
     expect(result.stdout).toBe('USERS\nalice\nbob\n');
     expect(result.code).toBe(0);
   });
 });
 
-describeBehavior(RUNTIME, 'parses-argv-as-declared', () => {
-  proves('宣言どおりに位置引数とオプションを受け取る', async () => {
+describe('argv.tsx の宣言どおりに位置引数・オプション・短縮形・既定値・繰り返し・束ねを受け取る', () => {
+  test('宣言どおりに位置引数とオプションを受け取る', async () => {
     const result = await cli(['hello', 'Alice', '--loud']);
     expect(result.stdout).toBe('HELLO, ALICE!\n');
     expect(result.code).toBe(0);
   });
 
-  proves('短縮形と既定値が効く', async () => {
+  test('短縮形と既定値が効く', async () => {
     const result = await cli(['hello', 'Bob', '-t', '2']);
     expect(result.stdout).toBe('hello, Bob\nhello, Bob\n');
   });
 
-  proves('繰り返し指定は配列になる', async () => {
+  test('繰り返し指定は配列になる', async () => {
     const result = await cli(['user', 'list', '-n', '1', '--tag', 'x']);
     expect(result.stdout).toBe('USERS\nalice\nfiltered by: x\n');
   });
 
-  proves('boolean の alias を束ねられる (-nu)', async () => {
+  test('boolean の alias を束ねられる (-nu)', async () => {
     const bundled = await cli(['count', '-nu'], 'a\n\na\nb\n');
     const separate = await cli(['count', '-n', '-u'], 'a\n\na\nb\n');
     expect(bundled.stdout).toBe('2\n');
@@ -97,24 +91,24 @@ describeBehavior(RUNTIME, 'parses-argv-as-declared', () => {
   });
 });
 
-describeBehavior(RUNTIME, 'reads-stdin-as-declared', () => {
-  proves('mode="lines" はパイプした行を数える', async () => {
+describe('stdin.tsx の宣言どおりに標準入力を lines / text / json として読む', () => {
+  test('mode="lines" はパイプした行を数える', async () => {
     const result = await cli(['count'], 'a\nb\n\nc\n');
     expect(result.stdout).toBe('4\n');
     expect(result.code).toBe(0);
   });
 
-  proves('stdin とオプションを組み合わせられる', async () => {
+  test('stdin とオプションを組み合わせられる', async () => {
     const result = await cli(['count', '--non-empty'], 'a\n\nb\n');
     expect(result.stdout).toBe('2\n');
   });
 
-  proves('mode="text" の trim が効く', async () => {
+  test('mode="text" の trim が効く', async () => {
     const result = await cli(['upper'], 'hello\n');
     expect(result.stdout).toBe('HELLO\n');
   });
 
-  proves('JSON の構造を宣言どおりに検証する', async () => {
+  test('JSON の構造を宣言どおりに検証する', async () => {
     const result = await cli(
       ['user', 'import'],
       '[{"name":"alice","admin":true},{"name":"bob"}]'
@@ -124,43 +118,43 @@ describeBehavior(RUNTIME, 'reads-stdin-as-declared', () => {
   });
 });
 
-describeBehavior(RUNTIME, 'rejects-invalid-input', () => {
-  proves('検証に失敗すると exit 2 で stderr に理由が出る', async () => {
+describe('宣言に合わない引数・入力は実行せず、理由を stderr に出して exit 2', () => {
+  test('検証に失敗すると exit 2 で stderr に理由が出る', async () => {
     const result = await cli(['hello', '--times', '9']);
     expect(result.stdout).toBe('');
     expect(result.stderr).toContain('--times:');
     expect(result.code).toBe(2);
   });
 
-  proves('未知のオプションも exit 2', async () => {
+  test('未知のオプションも exit 2', async () => {
     const result = await cli(['hello', '--nope']);
     expect(result.stderr).toContain('Unknown option: --nope');
     expect(result.code).toBe(2);
   });
 
-  proves('非配列オプションの重複は exit 2', async () => {
+  test('非配列オプションの重複は exit 2', async () => {
     const result = await cli(['hello', '-t', '1', '-t', '2']);
     expect(result.stdout).toBe('');
     expect(result.stderr).toContain('takes only one value');
     expect(result.code).toBe(2);
   });
 
-  proves('JSON が構造に合わなければ exit 2', async () => {
+  test('JSON が構造に合わなければ exit 2', async () => {
     const result = await cli(['user', 'import'], '[{"admin":true}]');
     expect(result.stdout).toBe('');
     expect(result.stderr).toContain('does not match the declared structure');
     expect(result.code).toBe(2);
   });
 
-  proves('壊れた JSON も exit 2', async () => {
+  test('壊れた JSON も exit 2', async () => {
     const result = await cli(['user', 'import'], 'not json');
     expect(result.stderr).toContain('stdin is not valid JSON');
     expect(result.code).toBe(2);
   });
 });
 
-describeBehavior(RUNTIME, 'explains-usage-from-declarations', () => {
-  proves('--help は宣言から使い方を出して exit 0', async () => {
+describe('--help が宣言から使い方を組み立て、help.tsx があれば足して stdout に exit 0', () => {
+  test('--help は宣言から使い方を出して exit 0', async () => {
     const result = await cli(['hello', '--help']);
     expect(result.stdout).toContain('Usage: decopin-cli hello [name]');
     expect(result.stdout).toContain('-l, --loud');
@@ -168,7 +162,7 @@ describeBehavior(RUNTIME, 'explains-usage-from-declarations', () => {
     expect(result.code).toBe(0);
   });
 
-  proves('コマンド単位の help.tsx を生成された使い方に足せる', async () => {
+  test('コマンド単位の help.tsx を生成された使い方に足せる', async () => {
     const result = await cli(['count', '--help']);
     expect(result.stdout).toContain('Stdin:');
     expect(result.stdout).toContain('Examples:');
@@ -176,7 +170,7 @@ describeBehavior(RUNTIME, 'explains-usage-from-declarations', () => {
     expect(result.code).toBe(0);
   });
 
-  proves('stdin の宣言も使い方に出る', async () => {
+  test('stdin の宣言も使い方に出る', async () => {
     const result = await cli(['count', '--help']);
     expect(result.stdout).toContain('Stdin:');
     expect(result.stdout).toContain('required (pipe something in)');
@@ -184,8 +178,8 @@ describeBehavior(RUNTIME, 'explains-usage-from-declarations', () => {
   });
 });
 
-describeBehavior(RUNTIME, 'guides-when-the-command-is-missing', () => {
-  proves('未知のコマンドは app/not-found.tsx で表示され exit 2', async () => {
+describe('コマンド名が無い・間違っている・グループ止まりのときは、候補か一覧を stderr に出して exit 2', () => {
+  test('未知のコマンドは app/not-found.tsx で表示され exit 2', async () => {
     const result = await cli(['helo']);
     expect(result.stdout).toBe('');
     expect(result.stderr).toContain('no such command: helo');
@@ -193,50 +187,44 @@ describeBehavior(RUNTIME, 'guides-when-the-command-is-missing', () => {
     expect(result.code).toBe(2);
   });
 
-  proves('引数なしはコマンド一覧を stderr に出して exit 2', async () => {
+  test('引数なしはコマンド一覧を stderr に出して exit 2', async () => {
     const result = await cli([]);
     expect(result.stdout).toBe('');
     expect(result.stderr).toContain('Usage: decopin-cli <command> [options]');
     expect(result.code).toBe(2);
   });
 
-  proves(
-    'グループ止まりは配下の一覧、--help なら stdout + exit 0',
-    async () => {
-      const implicit = await cli(['user']);
-      expect(implicit.stdout).toBe('');
-      expect(implicit.stderr).toContain('Usage: decopin-cli user <command>');
-      expect(implicit.code).toBe(2);
+  test('グループ止まりは配下の一覧、--help なら stdout + exit 0', async () => {
+    const implicit = await cli(['user']);
+    expect(implicit.stdout).toBe('');
+    expect(implicit.stderr).toContain('Usage: decopin-cli user <command>');
+    expect(implicit.code).toBe(2);
 
-      const explicit = await cli(['user', '--help']);
-      expect(explicit.stderr).toBe('');
-      expect(explicit.stdout).toContain('Usage: decopin-cli user <command>');
-      // app/user/help.tsx の上書きが効く
-      expect(explicit.stdout).toContain('users are read from');
-      expect(explicit.code).toBe(0);
-    }
-  );
+    const explicit = await cli(['user', '--help']);
+    expect(explicit.stderr).toBe('');
+    expect(explicit.stdout).toContain('Usage: decopin-cli user <command>');
+    // app/user/help.tsx の上書きが効く
+    expect(explicit.stdout).toContain('users are read from');
+    expect(explicit.code).toBe(0);
+  });
 });
 
-describeBehavior(RUNTIME, 'handles-errors-where-declared', () => {
-  proves(
-    '自分の error.tsx が使われ、<Exit> で終了コードを上書きできる',
-    async () => {
-      const result = await cli(['crash']);
-      expect(result.stdout).toBe('');
-      expect(result.stderr).toBe('crash: the command exploded\n');
-      expect(result.code).toBe(42);
-    }
-  );
+describe('一番近い error.tsx が使われ、無ければ上位を辿り、最後は global-error.tsx に落ちる', () => {
+  test('自分の error.tsx が使われ、<Exit> で終了コードを上書きできる', async () => {
+    const result = await cli(['crash']);
+    expect(result.stdout).toBe('');
+    expect(result.stderr).toBe('crash: the command exploded\n');
+    expect(result.code).toBe(42);
+  });
 
-  proves('上位ディレクトリの error.tsx を継承する', async () => {
+  test('上位ディレクトリの error.tsx を継承する', async () => {
     const result = await cli(['user', 'list', '-n', '0']);
     expect(result.stderr).toContain('user: --limit:');
     expect(result.stderr).toContain('Try: user list --help');
     expect(result.code).toBe(2);
   });
 
-  proves('error.tsx が無いコマンドは global-error.tsx に落ちる', async () => {
+  test('error.tsx が無いコマンドは global-error.tsx に落ちる', async () => {
     const result = await cli(['hello', '--times', '99']);
     expect(result.stderr).toContain('Invalid usage: --times:');
     expect(result.stderr).toContain('exit code 2');
@@ -244,13 +232,13 @@ describeBehavior(RUNTIME, 'handles-errors-where-declared', () => {
   });
 });
 
-describeBehavior(RUNTIME, 'wraps-output-in-layout', () => {
-  proves('layout の見出しが出力を包む', async () => {
+describe('layout.tsx が出力を包む。失敗したときは layout ごと stderr 側に出す', () => {
+  test('layout の見出しが出力を包む', async () => {
     const result = await cli(['user', 'list', '-n', '1', '--tag', 'x']);
     expect(result.stdout).toBe('USERS\nalice\nfiltered by: x\n');
   });
 
-  proves('失敗したときは layout ごと stderr 側に出す', async () => {
+  test('失敗したときは layout ごと stderr 側に出す', async () => {
     const result = await cli(['user', 'list', '-n', '0']);
     // 失敗したときに layout の見出しが stdout に出ると誤解を生む
     expect(result.stdout).toBe('');
@@ -259,8 +247,8 @@ describeBehavior(RUNTIME, 'wraps-output-in-layout', () => {
   });
 });
 
-describeBehavior(RUNTIME, 'runs-middleware-around-the-command', () => {
-  proves('middleware は next の後で stderr に足せる', async () => {
+describe('middleware.tsx が next の前後に割り込め、stdout を汚さずに足せる', () => {
+  test('middleware は next の後で stderr に足せる', async () => {
     const result = await cli(['user', 'list', '-n', '1', '--verbose']);
     expect(result.stdout).toBe('USERS\nalice\n');
     expect(result.stderr).toMatch(/took \d+ms/);
@@ -268,34 +256,9 @@ describeBehavior(RUNTIME, 'runs-middleware-around-the-command', () => {
   });
 });
 
-describeBehavior(RUNTIME, 'keeps-pipes-clean', () => {
-  proves('パイプ経由では装飾を落とす', async () => {
+describe('端末でなければ装飾を落とし、パイプの先で読める出力にする', () => {
+  test('パイプ経由では装飾を落とす', async () => {
     const result = await cli(['hello']);
     expect(result.stdout).not.toContain('\x1b[');
   });
 });
-
-/** Graph そのものの検査。Behavior の証明ではないので proves() は使わない */
-describe('Intent Graph', () => {
-  test('Implementation が指すファイルが実在する', async () => {
-    const missing: string[] = [];
-    for (const carriers of Object.values(RUNTIME.carriers)) {
-      for (const carrier of carriers) {
-        if (!(await Bun.file(join(REPO, carrier.where)).exists())) {
-          missing.push(carrier.where);
-        }
-      }
-    }
-    expect(missing).toEqual([]);
-  });
-
-  test('ここまでの Evidence でドキュメントが組み立つ', () => {
-    const doc = toDocument(toReport(RUNTIME));
-    expect(doc).toContain('Intent: run-commands-as-declared');
-    expect(doc).not.toContain('✗');
-  });
-});
-
-// 証明は規約ごとのファイルと分担している (test/features/conventions/not-found/run-not-found.test.tsx など)。
-// 全 Behavior が揃ったかの判定は doc.ts の合流後に移る
-report(RUNTIME, { partial: true });

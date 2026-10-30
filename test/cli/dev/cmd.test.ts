@@ -5,7 +5,7 @@
  * 見るのは cmd.ts が決めること — フラグを watchApp へ渡すこと、生成のたびの
  * 報告の書式 (ルートコマンドは (root))、失敗は stderr に出して監視を続けること、
  * SIGINT/SIGTERM で閉じて 0 を返すこと。再生成の間引きや変更の拾い方は
- * test/intent/dev/ の側にある。
+ * test/integration/dev.test.ts の側にある。
  *
  * 生成される entry.ts が `import { run } from 'decopin-cli'` を含むので、
  * 作業場はリポジトリ配下に置く

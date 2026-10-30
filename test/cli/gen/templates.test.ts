@@ -3,7 +3,7 @@
  *
  * 生成できる名前と雛形の表がずれていないこと、各雛形が TSX として読めて
  * default export を持ち、decopin-cli から実在する値だけを import していることを見る。
- * build・実行まで通す確認は test/intent/gen/ の側にある
+ * build・実行まで通す確認は test/integration/gen.test.ts の側にある
  */
 import { describe, expect, test } from 'bun:test';
 

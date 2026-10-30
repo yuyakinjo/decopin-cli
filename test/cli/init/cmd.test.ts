@@ -3,7 +3,7 @@
  *
  * run() をプロセス内で呼び、書いたファイルの見せ方 (cwd からの相対か絶対か)、
  * 既存ファイルの扱い、次に打つコマンドの並びを見る。`--no-install` を渡すので
- * bun add は走らない。CLI から通した確認は test/intent/init/ の側にある
+ * bun add は走らない。CLI から通した確認は test/integration/init.test.ts の側にある
  */
 import { afterEach, beforeEach, describe, expect, spyOn, test } from 'bun:test';
 import { mkdir, mkdtemp, realpath, rm } from 'node:fs/promises';

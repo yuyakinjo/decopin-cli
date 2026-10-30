@@ -1,7 +1,7 @@
 /**
  * `complete/runtime.ts` と `complete/build.ts` の単体テスト。
  *
- * `__complete` を経由した結末は test/intent/complete/ が見ているので、
+ * `__complete` を経由した結末は test/integration/complete.test.tsx が見ているので、
  * ここでは `completionCandidates` を直に呼んで候補の中身 (説明の出どころ、
  * 隠しオプション、位置引数の数え方、complete.tsx に渡る文脈) と、
  * プロトコル形式への整形 `formatCandidates`、bin 名の解決の落ち方を見る。

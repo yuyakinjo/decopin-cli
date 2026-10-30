@@ -2,7 +2,7 @@
  * Phase 5: layout.tsx の適用順 (ADR 7)。
  * 外側 = 上位ディレクトリ。error.tsx の出力も包まれる。
  */
-import { expect } from 'bun:test';
+import { describe, expect, test } from 'bun:test';
 
 import { Line, run, Stdout } from 'decopin-cli';
 import type {
@@ -11,13 +11,6 @@ import type {
   RouteLoaders,
   RouteTable,
 } from 'decopin-cli';
-
-import {
-  describeBehavior,
-  proves,
-  report,
-} from '../../../intent/evidence.bun.ts';
-import { IMPLEMENTATION as RUNTIME } from '../../../intent/runtime/implementation.ts';
 
 function recorder() {
   const chunks: string[] = [];
@@ -56,8 +49,8 @@ function loader(value: unknown, extra: Record<string, unknown> = {}) {
   return async () => ({ default: value, ...extra });
 }
 
-describeBehavior(RUNTIME, 'wraps-output-in-layout', () => {
-  proves('外側 = 上位ディレクトリの順に包む', async () => {
+describe('layout.tsx が出力を包む。失敗したときは layout ごと stderr 側に出す', () => {
+  test('外側 = 上位ディレクトリの順に包む', async () => {
     const table: RouteTable = {
       x: {
         cmd: loader(() => <Line>body</Line>),
@@ -68,14 +61,14 @@ describeBehavior(RUNTIME, 'wraps-output-in-layout', () => {
     expect(result.stdout).toBe('<root>\n<inner>\nbody\n</inner>\n</root>\n');
   });
 
-  proves('layout が無ければそのまま出す', async () => {
+  test('layout が無ければそのまま出す', async () => {
     const table: RouteTable = {
       x: { cmd: loader(() => <Line>body</Line>) },
     };
     expect((await invoke(table, ['x'])).stdout).toBe('body\n');
   });
 
-  proves('async な layout も待つ', async () => {
+  test('async な layout も待つ', async () => {
     const asyncLayout = async ({ children }: LayoutProps) => {
       await Promise.resolve();
       return (
@@ -94,7 +87,7 @@ describeBehavior(RUNTIME, 'wraps-output-in-layout', () => {
     expect((await invoke(table, ['x'])).stdout).toBe('head\nbody\n');
   });
 
-  proves('children を使わない layout はコマンドの出力を捨てる', async () => {
+  test('children を使わない layout はコマンドの出力を捨てる', async () => {
     const table: RouteTable = {
       x: {
         cmd: loader(() => <Line>body</Line>),
@@ -104,7 +97,7 @@ describeBehavior(RUNTIME, 'wraps-output-in-layout', () => {
     expect((await invoke(table, ['x'])).stdout).toBe('only layout\n');
   });
 
-  proves('cmd.tsx が skipLayout を宣言すれば包まない', async () => {
+  test('cmd.tsx が skipLayout を宣言すれば包まない', async () => {
     const table: RouteTable = {
       x: {
         cmd: loader(() => <Line>body</Line>, { skipLayout: true }),
@@ -114,22 +107,19 @@ describeBehavior(RUNTIME, 'wraps-output-in-layout', () => {
     expect((await invoke(table, ['x'])).stdout).toBe('body\n');
   });
 
-  proves(
-    'default export がコンポーネントでない layout は分かるエラーになる',
-    async () => {
-      const table: RouteTable = {
-        x: {
-          cmd: loader(() => <Line>body</Line>),
-          layouts: [loader('not a component')],
-        },
-      };
-      const result = await invoke(table, ['x']);
-      expect(result.code).toBe(1);
-      expect(result.stderr).toContain(
-        'layout.tsx must default-export a component'
-      );
-    }
-  );
+  test('default export がコンポーネントでない layout は分かるエラーになる', async () => {
+    const table: RouteTable = {
+      x: {
+        cmd: loader(() => <Line>body</Line>),
+        layouts: [loader('not a component')],
+      },
+    };
+    const result = await invoke(table, ['x']);
+    expect(result.code).toBe(1);
+    expect(result.stderr).toContain(
+      'layout.tsx must default-export a component'
+    );
+  });
 
   const failing: RouteLoaders = {
     cmd: loader(() => {
@@ -139,20 +129,17 @@ describeBehavior(RUNTIME, 'wraps-output-in-layout', () => {
     layouts: [loader(wrapper('root'))],
   };
 
-  proves('error.tsx の出力も layout に包まれる', async () => {
+  test('error.tsx の出力も layout に包まれる', async () => {
     const result = await invoke({ x: failing }, ['x']);
     expect(result.stderr).toBe('<root>\nboom\n</root>\n');
   });
 
-  proves(
-    '失敗したときは layout も stderr に出る (stdout を汚さない)',
-    async () => {
-      const result = await invoke({ x: failing }, ['x']);
-      expect(result.stdout).toBe('');
-    }
-  );
+  test('失敗したときは layout も stderr に出る (stdout を汚さない)', async () => {
+    const result = await invoke({ x: failing }, ['x']);
+    expect(result.stdout).toBe('');
+  });
 
-  proves('error.tsx が skipLayout を宣言すれば包まない', async () => {
+  test('error.tsx が skipLayout を宣言すれば包まない', async () => {
     const result = await invoke(
       {
         x: {
@@ -169,7 +156,7 @@ describeBehavior(RUNTIME, 'wraps-output-in-layout', () => {
     expect(result.stderr).toBe('boom\n');
   });
 
-  proves('組み込みの既定表示は layout に包まない', async () => {
+  test('組み込みの既定表示は layout に包まない', async () => {
     const result = await invoke(
       {
         x: {
@@ -185,7 +172,7 @@ describeBehavior(RUNTIME, 'wraps-output-in-layout', () => {
     expect(result.stderr).not.toContain('<root>');
   });
 
-  proves('error.tsx の中で <Stdout> を使えば stdout に出せる', async () => {
+  test('error.tsx の中で <Stdout> を使えば stdout に出せる', async () => {
     const result = await invoke(
       {
         x: {
@@ -207,6 +194,3 @@ describeBehavior(RUNTIME, 'wraps-output-in-layout', () => {
     expect(result.stderr).toBe('');
   });
 });
-
-// この Intent の証明は他のファイルと分担している。必ず末尾で 1 回
-report(RUNTIME, { partial: true });

@@ -2,7 +2,7 @@
  * `decopin build` が出すコマンドの木 (src/cli/build/tree.ts)。
  *
  * 木の形そのものを見る。CLI から通した証拠は
- * test/intent/build/build.test.ts の側にある
+ * test/integration/build.test.ts の側にある
  */
 import { describe, expect, test } from 'bun:test';
 

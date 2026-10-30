@@ -1112,7 +1112,7 @@ test/features/inherited/error/handle-error.test.tsx が「包んでも場所が�
 
 **`.decopin/` の更新は内容が変わったときだけ**なのは変わらない (`writeIfChanged`)。
 `dist/index.js` は毎回書き直すが、これは読む側が tsc ではなく bun の起動なので
-途中の状態を見る心配が薄い。test/intent/dev/dev.test.ts が「保存で型も
+途中の状態を見る心配が薄い。test/integration/dev.test.ts が「保存で型も
 バンドルも追従する」ことを固定する。
 
 ## ADR 44: `decopin dev --annotate` は cmd.tsx の props に生成型を書き足す
@@ -1169,7 +1169,7 @@ Issue #3 の「app/ の構造からドキュメントを生成し、コマンド
 example・help の規約を読む以上、core に置くと ADR 41 を破る。使うのは
 `decopin docs` だけなので、`cli/gen/generate.ts` と同じ形にした。
 
-test/intent/docs/docs.test.ts が「一覧・呼び方・実行結果・宣言のない
+test/integration/docs.test.ts が「一覧・呼び方・実行結果・宣言のない
 コマンドに触らないこと・失敗の載せ方・`--out`」を固定する。
 
 ---
@@ -1209,7 +1209,7 @@ props を補うのと同じ条件 — 注釈が無いものだけ・書き換え
 書く。フラグを分けると「props だけ補って返り値は補わない」状態ができ、
 どちらが効いているのか説明が増える。
 
-test/intent/returns/returns.test.ts が「型が配られていること」
+test/integration/returns.test.ts が「型が配られていること」
 「注釈を足すこと」「既にあるものに触らないこと」「output.tsx が無い data.tsx
 を対象にしないこと」を固定する。
 
@@ -1248,12 +1248,14 @@ test/intent/returns/returns.test.ts が「型が配られていること」
 `INHERITED_FILES`・`ROOT_ONLY_FILES`) と継承の解決を読むので、core には
 置けない (ADR 41)。`cli/docs/document.ts` (ADR 45) と同じ形。
 
-test/cli/build/tree.test.ts が木の形を、test/intent/build/build.test.ts の
+test/cli/build/tree.test.ts が木の形を、test/integration/build.test.ts の
 `shows-what-each-command-is-made-of` が CLI を通した出力を固定する。
 
 ---
 
 ## ADR 48: 目的は `test/intent/` に Intent として置き、証明はテストが担う
+
+**ADR 49 で撤回した。** 以下は決めた時点の記録。
 
 `intent.txt` の開発モデル (Intent → Behavior → Implementation、Test = Evidence) を
 `experiments/intent/` で 7 つの Intent・45 の Behavior に当てて試した
@@ -1314,6 +1316,35 @@ test/docs/decisions.test.ts の lint が「各 Intent ディレクトリに 4 �
 「`report()` が末尾に 1 回」「`src/cli/*` のサブコマンドごとに Intent がある」を
 見る。ランタイム自身の性質 (順序・免除の自壊・落ちた証明の扱い) は
 test/intent/evidence.test.ts が固定する。
+
+---
+
+## ADR 49: Intent の仕組みを外し、手順だけ残す (ADR 48 を撤回)
+
+ADR 48 で本線に入れた `test/intent/` を外す。Evidence だったテストは包みを
+外して普通のテストに戻し、`test/integration/<name>.test.ts` に置く。テストは
+1 件も減らさない。
+
+**本線に入れてから 6 週間 (2026-09-14〜10-30)、誰も使わなかった**。
+`test/intent/` に触れたコミットは配置替え (#72) の 1 件だけ。同じ期間の
+機能追加 (#80 `<Dynamic>` の AbortSignal) は Intent の外を通り、その「なぜ」は
+この decisions.md とガイドに書かれた。**「なぜ」を残す役目は ADR が既に
+担っていた**。
+
+**効いていたのは書く作業で、残った成果物ではなかった**。実験で得たもの
+(誰も証明していない振る舞いの発見、目的を 1 文にする段で設計の選択肢が
+削れたこと — ADR 45 の押せる HTML) は、どれも書いた時点で一度きり出た効果で、
+宣言を保守し続けて得をした場面は観測できなかった。対して、仕組みと宣言で
+約 2,100 行、Behavior あたり 18〜34 行の記述を抱えていた (テスト時間は
+テストそのものの分なので、外しても変わらない)。
+
+**残すのは手順だけ**。新しいサブコマンドは、書く前に目的を 1 文にし、利用者が
+観測できる結末で振る舞いを割る (site/content/project/development.md の
+「Starting a new subcommand」)。書く先は Issue か ADR で、コードではない。
+
+実験の記録 (`test/intent/README.md`) は git の履歴に残る (このコミットの親)。
+
+test/docs/decisions.test.ts の lint が「`test/intent/` が無い」を見る。
 
 ---
 

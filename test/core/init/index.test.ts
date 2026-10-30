@@ -1,7 +1,7 @@
 /**
  * `init()` と `templates()` の単体の振る舞い。
  *
- * 依存を張って build まで通す確認は test/intent/init/init.test.ts が受け持つ。
+ * 依存を張って build まで通す確認は test/integration/init.test.ts が受け持つ。
  * ここでは依存を張らずに (install: false)、ディレクトリ名から package 名を
  * 決めること、雛形の中身、既存ファイルを上書きしないことを見る
  */
