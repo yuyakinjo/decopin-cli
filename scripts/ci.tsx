@@ -41,7 +41,7 @@ const STAGES: Task[][] = [
     { name: 'typecheck', command: ['bun', 'run', 'typecheck'] },
     { name: 'test', command: ['bun', 'test'] },
     { name: 'lint', command: ['bunx', 'oxlint'] },
-    { name: 'format', command: ['bunx', 'oxfmt', '--check'] },
+    { name: 'format', command: ['bun', 'fmt', '--no-script', '--check'] },
     { name: 'layout', command: ['bun', 'run', 'check:layout'] },
   ],
 ];
