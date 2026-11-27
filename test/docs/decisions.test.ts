@@ -356,6 +356,11 @@ const GUARDS: Record<number, Guard> = {
         ? ['test/intent/ が戻っている (ADR 49 で外した)']
         : [],
   },
+  53: {
+    kind: 'test',
+    label: 'ドキュメントサイトの日本語版が英語版とずれない',
+    file: 'test/docs/site-i18n.test.ts',
+  },
   52: {
     kind: 'test',
     label: '環境変数の検証エラーに、読んだ値を載せない',

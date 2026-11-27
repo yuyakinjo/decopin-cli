@@ -1,3 +1,5 @@
+import { SEARCH } from './i18n.ts';
+
 export interface SearchPage {
   title: string;
   description: string;
@@ -56,6 +58,8 @@ function requireElement<K extends keyof HTMLElementTagNameMap>(
 }
 
 if (typeof document !== 'undefined') {
+  const lang = document.documentElement.lang === 'ja' ? 'ja' : 'en';
+  const t = SEARCH[lang];
   const trigger = requireElement('search-open', 'button');
   const dialog = requireElement('search-dialog', 'dialog');
   const input = requireElement('search-input', 'input');
@@ -69,13 +73,11 @@ if (typeof document !== 'undefined') {
     results.replaceChildren();
     if (!pages) return;
     if (!input.value.trim()) {
-      status.textContent = 'Type to search all documentation.';
+      status.textContent = t.empty;
       return;
     }
     const matches = searchPages(pages, input.value);
-    status.textContent = matches.length
-      ? `${matches.length} result${matches.length === 1 ? '' : 's'}`
-      : 'No results found. Try another search term.';
+    status.textContent = matches.length ? t.count(matches.length) : t.none;
     for (const match of matches) {
       const item = document.createElement('li');
       const link = document.createElement('a');
@@ -103,9 +105,14 @@ if (typeof document !== 'undefined') {
       render();
       return;
     }
-    status.textContent = 'Loading documentation…';
+    status.textContent = t.loading;
     try {
-      loading ??= fetch(new URL('./search-index.json', import.meta.url))
+      loading ??= fetch(
+        new URL(
+          lang === 'ja' ? './ja/search-index.json' : './search-index.json',
+          import.meta.url
+        )
+      )
         .then((response) => {
           if (!response.ok) throw new Error('Search index unavailable');
           return response.json();
@@ -126,7 +133,7 @@ if (typeof document !== 'undefined') {
       render();
     } catch {
       loading = undefined;
-      status.textContent = 'Unable to load search. Close and reopen to retry.';
+      status.textContent = t.failed;
     }
   }
 

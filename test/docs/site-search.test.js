@@ -62,13 +62,14 @@ describe('documentation search', () => {
     try {
       await mkdir(join(root, 'scripts'));
       await mkdir(join(root, 'site'));
-      await cp(
-        join(source, 'scripts/build-site.ts'),
-        join(root, 'scripts/build-site.ts')
-      );
+      for (const name of ['build-site.ts', 'site-translate.ts']) {
+        await cp(join(source, 'scripts', name), join(root, 'scripts', name));
+      }
       for (const name of [
         'assets',
         'content',
+        'i18n',
+        'i18n.ts',
         'nav.json',
         'style.css',
         'search.ts',
@@ -109,6 +110,26 @@ describe('documentation search', () => {
           expect(html).toContain('<dialog id="search-dialog"');
           expect(html).toContain(`src="${base}/search.js"`);
           expect(html).toContain(`<small>v${version}</small>`);
+          expect(html).toContain('<html lang="en">');
+          expect(html).toContain(
+            `href="${base}/ja${page.url.slice(base.length)}"`
+          );
+        }
+        const jaIndex = await Bun.file(
+          join(output, 'ja/search-index.json')
+        ).json();
+        expect(jaIndex.length).toBe(index.length);
+        for (const page of jaIndex) {
+          expect(page.url.startsWith(`${base}/ja/`)).toBe(true);
+          const html = await Bun.file(
+            join(output, page.url.slice(base.length), 'index.html')
+          ).text();
+          expect(html).toContain('<html lang="ja">');
+          expect(html).toContain('id="lang"');
+          expect(html).toContain(
+            `href="${base}${page.url.slice(base.length + '/ja'.length)}"`
+          );
+          expect(html).toContain(`src="${base}/search.js"`);
         }
       }
     } finally {
