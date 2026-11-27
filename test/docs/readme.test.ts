@@ -80,14 +80,18 @@ function extractBlocks(source: string, file: string): Block[] {
   return blocks;
 }
 
-let source: string;
-/** 表の桁揃えに左右されないよう、連続する空白を 1 つに潰したもの */
+/**
+ * README とサイト本文を連結し、表の桁揃えに左右されないよう連続する空白を
+ * 1 つに潰したもの。README は薄くしてあり、実行例の多くはサイトにある
+ */
 let normalized: string;
+/** README とサイト本文を連結した生テキスト (リンクの検査用) */
+let docsSource: string;
 let blocks: Block[];
 /** サイトの全ページの tsx ブロック */
 let siteBlocks: Block[];
 
-/** README に (整形の差を無視して) その一節が含まれるか */
+/** README かサイトに (整形の差を無視して) その一節が含まれるか */
 function documented(fragment: string): boolean {
   return normalized.includes(fragment.replace(/\s+/g, ' ').trim());
 }
@@ -95,15 +99,18 @@ let workspace: string;
 let cliPath: string;
 
 beforeAll(async () => {
-  source = await Bun.file(README).text();
-  normalized = source.replace(/[ \t]+/g, ' ');
+  const source = await Bun.file(README).text();
   blocks = extractBlocks(source, README);
   siteBlocks = [];
+  docsSource = source;
   const pages = [...new Bun.Glob('**/*.md').scanSync(SITE_CONTENT)].sort();
   for (const page of pages) {
     const path = join(SITE_CONTENT, page);
-    siteBlocks.push(...extractBlocks(await Bun.file(path).text(), path));
+    const text = await Bun.file(path).text();
+    siteBlocks.push(...extractBlocks(text, path));
+    docsSource += `\n${text}`;
   }
+  normalized = docsSource.replace(/[ \t]+/g, ' ');
   workspace = await mkdtemp(join(tmpdir(), 'decopin-readme-'));
   const built = await build({
     appDir: 'demo/app',
@@ -137,7 +144,7 @@ describe('README のコードブロック', () => {
   test('tsx のブロックがある', () => {
     expect(
       blocks.filter((block) => block.lang === 'tsx').length
-    ).toBeGreaterThan(3);
+    ).toBeGreaterThan(0);
   });
 
   test('サイトにも tsx のブロックがある', () => {
@@ -206,9 +213,9 @@ describe('README のシェル実行例', () => {
   });
 
   test('count の例が書いてある通りに動く', async () => {
-    expect(source).toContain(
-      "$ printf 'a\\nb\\n\\nc\\n' | ./dist/index.js count"
-    );
+    expect(
+      documented("$ printf 'a\\nb\\n\\nc\\n' | ./dist/index.js count")
+    ).toBe(true);
     const result = await runCli(['count'], 'a\nb\n\nc\n');
     expect(result.stdout).toBe('4\n');
   });
@@ -245,10 +252,11 @@ describe('README のシェル実行例', () => {
     expect(result.code).toBe(2);
   });
 
-  test('README が挙げている demo/app/ のサンプルが実在する', async () => {
-    const referenced = [...source.matchAll(/\]\((demo\/app\/[a-z/-]+)\)/g)].map(
-      (match) => match[1] as string
-    );
+  test('README とサイトが挙げている demo/app/ のサンプルが実在する', async () => {
+    // README は相対リンク、サイトは GitHub の tree/main/ へのリンクで指す
+    const referenced = [
+      ...docsSource.matchAll(/(?:\]\(|tree\/main\/)(demo\/app\/[a-z/-]+)\)/g),
+    ].map((match) => match[1] as string);
     expect(referenced.length).toBeGreaterThan(5);
     for (const path of referenced) {
       expect(await Bun.file(join(path, 'cmd.tsx')).exists()).toBe(
