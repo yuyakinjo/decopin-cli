@@ -191,5 +191,8 @@ test/fixtures/watch-app/added/
 # Intent-First の原典。手元にだけ置く
 /intent.txt
 
+# commander との比較ベンチ (scripts/bench-commander.ts) の作業ディレクトリ
+.decopin-bench/
+
 # PPR の GIF を録るためのデモ (scripts/record-ppr.ts) の build 先
 .decopin-demo/

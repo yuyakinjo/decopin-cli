@@ -22,6 +22,7 @@
     "test/**/*",
     "demo/app/**/*",
     "scripts/**/*",
+    "bench/**/*",
     "site/demos/**/*",
     ".decopin/types.d.ts"
   ],

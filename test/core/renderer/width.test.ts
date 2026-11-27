@@ -52,6 +52,33 @@ describe('graphemes', () => {
       'c',
     ]);
   });
+
+  // 印字可能な ASCII は Intl.Segmenter を通さない近道を通る。
+  // 近道が Segmenter と同じ結果を返すことをここで固定する
+  const viaSegmenter = (text: string): string[] =>
+    [
+      ...new Intl.Segmenter(undefined, { granularity: 'grapheme' }).segment(
+        text
+      ),
+    ].map((entry) => entry.segment);
+
+  test('印字可能な ASCII は Intl.Segmenter と同じ結果になる', () => {
+    const printable = Array.from({ length: 0x7e - 0x20 + 1 }, (_, index) =>
+      String.fromCharCode(0x20 + index)
+    ).join('');
+    for (const text of ['', 'a', 'HELLO, ALICE!', printable]) {
+      expect(graphemes(text)).toEqual(viaSegmenter(text));
+    }
+  });
+
+  test('制御文字や非 ASCII を含むと Intl.Segmenter の結果になる', () => {
+    const crlf = `a${String.fromCharCode(13, 10)}b`;
+    // CR LF は 2 文字で 1 書記素
+    expect(graphemes(crlf)).toEqual(['a', String.fromCharCode(13, 10), 'b']);
+    for (const text of [crlf, `a${String.fromCharCode(9)}b`, 'aあb', 'é']) {
+      expect(graphemes(text)).toEqual(viaSegmenter(text));
+    }
+  });
 });
 
 describe('truncate', () => {

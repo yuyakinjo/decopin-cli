@@ -42,20 +42,46 @@ export function nonInteractiveTerminal(): Terminal {
 export function processTerminal(
   env: Record<string, string | undefined> = process.env
 ): Terminal {
-  const stdin = process.stdin as NodeJS.ReadStream & {
+  // process.stdin / process.stderr は読まれたときに初めて触る。run() は
+  // choose() を呼ばないコマンドでも毎回これを作るが、Bun では最初に触った
+  // 時点で stream が組み立てられ、それだけで数 ms かかる
+  type RawStdin = NodeJS.ReadStream & {
     setRawMode?: (mode: boolean) => unknown;
   };
+  const rawStdin = (): RawStdin => process.stdin;
+  // 環境変数は今までどおり作った時点で読む (env は生きた process.env のことがある)
+  const colorAllowed = env.NO_COLOR === undefined;
+  // 端末かどうかだけを最初に読まれたときに決め、以後は同じ値を返す。
+  // setter は、普通のプロパティだったときと同じく代入できるようにするため
+  let interactive: boolean | undefined;
+  let colors: boolean | undefined;
   return {
-    interactive:
-      stdin.isTTY === true &&
-      process.stderr.isTTY === true &&
-      typeof stdin.setRawMode === 'function',
-    colors: env.NO_COLOR === undefined && process.stderr.isTTY === true,
+    get interactive() {
+      if (interactive === undefined) {
+        const stdin = rawStdin();
+        interactive =
+          stdin.isTTY === true &&
+          process.stderr.isTTY === true &&
+          typeof stdin.setRawMode === 'function';
+      }
+      return interactive;
+    },
+    set interactive(value) {
+      interactive = value;
+    },
+    get colors() {
+      colors ??= colorAllowed && process.stderr.isTTY === true;
+      return colors;
+    },
+    set colors(value) {
+      colors = value;
+    },
     unicode: supportsUnicode(env),
     write: (text) => {
       process.stderr.write(text);
     },
     keys: async function* () {
+      const stdin = rawStdin();
       const queue: string[] = [];
       let wake: (() => void) | undefined;
       const onData = (chunk: Buffer | string) => {
