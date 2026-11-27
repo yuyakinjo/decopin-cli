@@ -49,14 +49,31 @@ function codePointWidth(code: number): number {
   return 1;
 }
 
-const segmenter =
-  typeof Intl.Segmenter === 'function'
-    ? new Intl.Segmenter(undefined, { granularity: 'grapheme' })
-    : undefined;
+/**
+ * 最初に要るときに作る。生成 (ICU の初期化) だけで約 0.8ms かかるのに、
+ * ASCII だけの出力では一度も使わないため
+ */
+let segmenter: Intl.Segmenter | undefined;
+
+/**
+ * 印字可能な ASCII (0x20〜0x7E) だけか。この範囲は 1 文字が必ず 1 書記素
+ * なので、`Intl.Segmenter` を通さなくても同じ結果になる。制御文字は含めない
+ * (CR LF は 2 文字で 1 書記素になる)
+ */
+function isPrintableAscii(text: string): boolean {
+  for (let index = 0; index < text.length; index += 1) {
+    const code = text.charCodeAt(index);
+    if (code < 0x20 || code > 0x7e) return false;
+  }
+  return true;
+}
 
 /** 書記素 (人が 1 文字と見なす単位) に分ける */
 export function graphemes(text: string): string[] {
-  if (segmenter === undefined) return [...text];
+  if (typeof Intl.Segmenter !== 'function' || isPrintableAscii(text)) {
+    return [...text];
+  }
+  segmenter ??= new Intl.Segmenter(undefined, { granularity: 'grapheme' });
   return [...segmenter.segment(text)].map((entry) => entry.segment);
 }
 
