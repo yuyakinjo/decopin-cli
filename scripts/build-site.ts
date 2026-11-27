@@ -43,6 +43,13 @@ function readBase(argv: string[]): string {
 
 const BASE = readBase(process.argv.slice(2));
 const nav = (await Bun.file(join(ROOT, 'site/nav.json')).json()) as Nav;
+/**
+ * ヘッダーに出す最新のバージョン。release ワークフローが package.json を
+ * 書き換えてコミットし、その後にこのサイトを組み直す (pages.yml を起動する)
+ */
+const { version } = (await Bun.file(join(ROOT, 'package.json')).json()) as {
+  version: string;
+};
 
 function escapeHtml(text: string): string {
   return text
@@ -168,23 +175,36 @@ function url(slug: string): string {
   return `${BASE}/${slug}/`;
 }
 
+/** サイドメニューの先頭に置く、最新リリースへのリンク */
+function latestRelease(): string {
+  const tag = `v${escapeHtml(version)}`;
+  return `<a class="release" href="${nav.repo}/releases/tag/${tag}" title="Release notes">
+  <span class="release-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z"/><circle cx="7.5" cy="7.5" r=".5" fill="currentColor"/></svg></span>
+  <span class="release-text"><strong>Latest</strong><small>${tag}</small></span>
+</a>`;
+}
+
 function sidebar(current: Page): string {
-  return nav.sections
-    .map((section) => {
-      const items = section.pages
-        .map((slug) => {
-          const page = pages.find((candidate) => candidate.slug === slug);
-          if (page === undefined) return '';
-          const aria = page.slug === current.slug ? ' aria-current="page"' : '';
-          const label = /\.tsx/.test(page.title)
-            ? page.title.replace(/([\w-]+\.tsx)/g, '<code>$1</code>')
-            : escapeHtml(page.title);
-          return `<li><a href="${url(page.slug)}"${aria}>${label}</a></li>`;
-        })
-        .join('');
-      return `<h4>${escapeHtml(section.title)}</h4><ul>${items}</ul>`;
-    })
-    .join('');
+  return (
+    latestRelease() +
+    nav.sections
+      .map((section) => {
+        const items = section.pages
+          .map((slug) => {
+            const page = pages.find((candidate) => candidate.slug === slug);
+            if (page === undefined) return '';
+            const aria =
+              page.slug === current.slug ? ' aria-current="page"' : '';
+            const label = /\.tsx/.test(page.title)
+              ? page.title.replace(/([\w-]+\.tsx)/g, '<code>$1</code>')
+              : escapeHtml(page.title);
+            return `<li><a href="${url(page.slug)}"${aria}>${label}</a></li>`;
+          })
+          .join('');
+        return `<h4>${escapeHtml(section.title)}</h4><ul>${items}</ul>`;
+      })
+      .join('')
+  );
 }
 
 function toc(page: Page): string {
