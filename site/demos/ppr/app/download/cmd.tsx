@@ -6,12 +6,15 @@ interface File {
   got: number;
 }
 
+const FILES = [
+  { name: 'app.js', kb: 180 },
+  { name: 'vendor.js', kb: 420 },
+  { name: 'styles.css', kb: 60 },
+];
+const TOTAL_KB = FILES.reduce((sum, file) => sum + file.kb, 0);
+
 async function* download(): AsyncGenerator<File[]> {
-  let files: File[] = [
-    { name: 'app.js', kb: 180, got: 0 },
-    { name: 'vendor.js', kb: 420, got: 0 },
-    { name: 'styles.css', kb: 60, got: 0 },
-  ];
+  let files: File[] = FILES.map((file) => ({ ...file, got: 0 }));
   while (files.some((file) => file.got < file.kb)) {
     files = files.map((file) => ({
       ...file,
@@ -25,7 +28,7 @@ async function* download(): AsyncGenerator<File[]> {
 export default function Command() {
   return (
     <>
-      <Line>fetching 3 files</Line>
+      <Line>fetching {FILES.length} files</Line>
       <Dynamic source={download()} interval={80}>
         {(files) => (
           <>
@@ -39,7 +42,7 @@ export default function Command() {
           </>
         )}
       </Dynamic>
-      <Line>downloaded 660 KB</Line>
+      <Line>downloaded {TOTAL_KB} KB</Line>
     </>
   );
 }
