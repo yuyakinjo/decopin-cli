@@ -1,6 +1,7 @@
 import { join, relative } from 'node:path';
 
 import { errorTag } from '../../core/errors.ts';
+import { writeChunk } from '../../core/renderer/writer.ts';
 import { EXIT_CODE } from '../../core/runtime/exit.ts';
 import type { Usage } from '../argv.ts';
 import { generate, GenerateUsageError, GENERATOR_KINDS } from './generate.ts';
@@ -30,7 +31,7 @@ Existing files are kept. Root-only files must be placed at the app root.
 
 export default async function run(argv: string[]): Promise<number> {
   if (argv.includes('--help') || argv.includes('-h')) {
-    process.stdout.write(help);
+    writeChunk(process.stdout, help);
     return EXIT_CODE.success;
   }
   try {
@@ -62,20 +63,23 @@ export default async function run(argv: string[]): Promise<number> {
       app: values.get('--app'),
     });
     for (const file of result.created)
-      process.stdout.write(
+      writeChunk(
+        process.stdout,
         `Wrote ${relative(process.cwd(), join(result.dir, file))}\n`
       );
     for (const file of result.skipped)
-      process.stdout.write(
+      writeChunk(
+        process.stdout,
         `Kept ${relative(process.cwd(), join(result.dir, file))} (already exists)\n`
       );
     return EXIT_CODE.success;
   } catch (error) {
-    process.stderr.write(
+    writeChunk(
+      process.stderr,
       `[decopin] ${Error.isError(error) ? error.message : String(error)}\n`
     );
     if (errorTag(error) === 'GenerateUsageError') {
-      process.stderr.write(`\n${help}`);
+      writeChunk(process.stderr, `\n${help}`);
       return EXIT_CODE.usage;
     }
     return EXIT_CODE.runtime;

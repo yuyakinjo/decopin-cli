@@ -10,12 +10,15 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
 import { build } from '../../src/core/build/index.ts';
+import { pipeline } from '../fixtures/pipeline.ts';
 
 const REPO = process.cwd();
 let workspace: string;
 /** 生成物は 'decopin-cli' を import するので、リポジトリ内に置く */
 let workDir: string;
 let outPath: string;
+/** 生成された entry.ts (--compile の入力) */
+let entryPath: string;
 
 beforeAll(async () => {
   workspace = await mkdtemp(join(tmpdir(), 'decopin-runtime-'));
@@ -26,6 +29,7 @@ beforeAll(async () => {
     outDir: join(workspace, 'dist'),
   });
   outPath = result.outPath;
+  entryPath = result.files.entry;
 });
 
 afterAll(async () => {
@@ -261,4 +265,150 @@ describe('端末でなければ装飾を落とし、パイプの先で読める�
     const result = await cli(['hello']);
     expect(result.stdout).not.toContain('\x1b[');
   });
+});
+
+describe('パイプが詰まっても出力を最後まで書いてから終わる。読み手が先に閉じたら黙って終わる', () => {
+  // パイプやソケットのバッファに収まらない大きさを出す。手元の実測では、
+  // 修正前に届いていたのは 8KB (ソケット) 〜 128KB (stderr、速い読み手) まで。
+  // 引数 1 つは Linux で 128KB までなので、長い名前を --times で繰り返す
+  const name = 'x'.repeat(100_000);
+  const HELLO = ['hello', name, '--times', '5'];
+  const greeting = `hello, ${name}\n`.repeat(5);
+
+  /**
+   * CLI の stdout を、シェルのパイプで読み手につなぐ。Bun.spawn の
+   * 'pipe' は親がすぐ読むので、詰まった状態を作れない。
+   * CLI の終了コードは、読み手に渡さない stderr 側に `exit=<code>` で残す
+   */
+  function piped(reader: string, command = ['bun', outPath]) {
+    return pipeline(`{ "$@"; echo "exit=$?" >&2; } | ${reader}`, [
+      'sh',
+      ...command,
+      ...HELLO,
+    ]);
+  }
+
+  test('読み手が遅くても全量が届く', async () => {
+    const result = await piped('(sleep 0.3; cat)');
+    expect(result.stdout.length).toBe(greeting.length);
+    expect(result.stdout === greeting).toBe(true);
+    expect(result.stderr).toBe('exit=0\n');
+  }, 30_000);
+
+  test('読み手が速くても全量が届く', async () => {
+    const result = await piped('cat');
+    expect(result.stdout.length).toBe(greeting.length);
+    expect(result.stdout === greeting).toBe(true);
+    expect(result.stderr).toBe('exit=0\n');
+  }, 30_000);
+
+  test('stderr も、読み手が遅くても全量が届く', async () => {
+    // 未知のコマンドは not-found.tsx が stderr に出す。打った語が長ければ出力も長い。
+    // 期待する中身は、書き込みが同期になるファイル宛てで取る
+    const words = [name, 'y'.repeat(100_000)];
+    const file = join(workspace, 'not-found.txt');
+    const direct = await pipeline(
+      'bun "$0" "$1" "$2" 2>"$3" >/dev/null; echo "exit=$?"',
+      [outPath, ...words, file]
+    );
+    expect(direct.stdout).toBe('exit=2\n');
+    const expected = await Bun.file(file).text();
+    expect(expected.length).toBeGreaterThan(200_000);
+
+    const result = await pipeline(
+      '{ bun "$0" "$1" "$2" 2>&1 >/dev/null; echo "exit=$?" >&2; } | (sleep 0.3; cat)',
+      [outPath, ...words]
+    );
+    expect(result.stdout.length).toBe(expected.length);
+    expect(result.stdout === expected).toBe(true);
+    expect(result.stderr).toBe('exit=2\n');
+  }, 30_000);
+
+  test('ソケットにつながれていても (子プロセスとして呼ばれた形)、読み手が遅くても全量が届く', async () => {
+    // ソケットのバッファはパイプより大きいことがある (Linux の既定は 200KB ほど)。
+    // 収まってしまうと詰まらないので、それより大きいことを確かめておく
+    expect(greeting.length).toBeGreaterThan(256 * 1024);
+
+    const received = join(workspace, 'socket.txt');
+    const proc = Bun.spawn(
+      [
+        'bun',
+        join(REPO, 'test/fixtures/slow-socket.ts'),
+        received,
+        'bun',
+        outPath,
+        ...HELLO,
+      ],
+      { stdin: 'ignore', stdout: 'pipe', stderr: 'pipe', timeout: 20_000 }
+    );
+    const [report, stderr] = await Promise.all([
+      new Response(proc.stdout).text(),
+      new Response(proc.stderr).text(),
+      proc.exited,
+    ]);
+    expect(stderr).toBe('');
+    expect(JSON.parse(report)).toEqual({ code: 0, stderr: '' });
+
+    const got = await Bun.file(received).text();
+    expect(got.length).toBe(greeting.length);
+    expect(got === greeting).toBe(true);
+  }, 30_000);
+
+  test('--compile --bytecode のバイナリでも、読み手が遅くても全量が届く', async () => {
+    const binary = join(workspace, 'demo-bin');
+    const compile = Bun.spawn(
+      [
+        'bun',
+        'build',
+        '--compile',
+        '--bytecode',
+        entryPath,
+        '--outfile',
+        binary,
+      ],
+      { cwd: REPO, stdout: 'ignore', stderr: 'pipe' }
+    );
+    const [problem, compiled] = await Promise.all([
+      new Response(compile.stderr).text(),
+      compile.exited,
+    ]);
+    expect({ compiled, problem: compiled === 0 ? '' : problem }).toEqual({
+      compiled: 0,
+      problem: '',
+    });
+
+    const result = await piped('(sleep 0.3; cat)', [binary]);
+    expect(result.stdout.length).toBe(greeting.length);
+    expect(result.stdout === greeting).toBe(true);
+    expect(result.stderr).toBe('exit=0\n');
+  }, 60_000);
+
+  test('ファイル宛ては、今までどおり全量を書いて終わる', async () => {
+    const file = join(workspace, 'hello.txt');
+    const result = await pipeline(
+      'out="$1"; shift; bun "$@" >"$out"; echo "exit=$?" >&2',
+      ['sh', file, outPath, ...HELLO]
+    );
+    expect(result.stderr).toBe('exit=0\n');
+    expect((await Bun.file(file).text()) === greeting).toBe(true);
+  }, 30_000);
+
+  test('stdout が閉じていても、エラーを出さずに終了コードをそのまま返す', async () => {
+    const result = await pipeline('bun "$@" >&-; echo "exit=$?" >&2', [
+      'sh',
+      outPath,
+      ...HELLO,
+    ]);
+    expect(result).toEqual({ stdout: '', stderr: 'exit=0\n', code: 0 });
+  }, 30_000);
+
+  test('読み手がすぐ閉じたら、エラーを出さずに終了コードをそのまま返す', async () => {
+    const result = await piped('head -c 100 >/dev/null');
+    expect(result.stderr).toBe('exit=0\n');
+  }, 30_000);
+
+  test('書き残しを待っている間に読み手が閉じても同じ', async () => {
+    const result = await piped('(head -c 100 >/dev/null; sleep 0.3)');
+    expect(result.stderr).toBe('exit=0\n');
+  }, 30_000);
 });

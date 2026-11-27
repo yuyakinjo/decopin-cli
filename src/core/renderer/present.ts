@@ -21,7 +21,7 @@ import type { RenderNode } from './node.ts';
 import { colorDepthFor, renderTree, supportsUnicode } from './render.ts';
 import type { RenderOptions } from './render.ts';
 import { displayWidth, graphemes, terminalWidth } from './width.ts';
-import { write } from './writer.ts';
+import { write, writeChunk } from './writer.ts';
 import type { WritableLike, WriteTargets } from './writer.ts';
 
 /** present() の設定。描画の設定に加えて書き出し先を差し替えられる */
@@ -243,7 +243,7 @@ async function driveIsland(
     const text = clampFrame(full, columns, rows, unicode, depth);
     clamped = text !== full;
     tick += 1;
-    err.write(`${eraseSequence(previousRows)}${text}`);
+    writeChunk(err, `${eraseSequence(previousRows)}${text}`);
     previousRows = frameRows(text, columns);
   };
 
@@ -284,7 +284,7 @@ async function driveIsland(
   };
 
   const restoreCursor = (): void => {
-    err.write(SHOW_CURSOR);
+    writeChunk(err, SHOW_CURSOR);
   };
 
   /**
@@ -297,7 +297,7 @@ async function driveIsland(
   let timer: ReturnType<typeof setInterval> | undefined;
   try {
     if (isTTY) {
-      err.write(HIDE_CURSOR);
+      writeChunk(err, HIDE_CURSOR);
       // 途中で殺されてもカーソルは返す。process.exit() は exit を発火するが、
       // ハンドラの無いシグナルの既定終了は exit を発火しない (実測)
       events.once('exit', restoreCursor);
@@ -370,9 +370,10 @@ async function driveIsland(
     // 静的な出力で、パイプに残る形と一致する。非 TTY は最終フレームだけを 1 回
     if (latest === undefined) return;
     if (!isTTY) {
-      err.write(await frameText(latest.value));
+      writeChunk(err, await frameText(latest.value));
     } else if (clamped) {
-      err.write(
+      writeChunk(
+        err,
         `${eraseSequence(previousRows)}${await frameText(latest.value)}`
       );
     }
@@ -386,7 +387,7 @@ async function driveIsland(
         events.removeListener(signal, handler);
       }
       events.removeListener('exit', restoreCursor);
-      err.write(SHOW_CURSOR);
+      writeChunk(err, SHOW_CURSOR);
     }
   }
 }

@@ -63,6 +63,7 @@ import { Json, Line, Stderr } from '../components/index.ts';
 import { resolveHosts } from '../jsx/resolve.ts';
 import type { Renderable, RenderInput } from '../jsx/types.ts';
 import { present as presentDocument } from '../renderer/present.ts';
+import { drainWrites, writeChunk } from '../renderer/writer.ts';
 import type { WriteTargets } from '../renderer/writer.ts';
 import { visibleControls } from '../text.ts';
 import {
@@ -214,6 +215,19 @@ export async function run(
   table: RouteTable,
   options: RunOptions = {}
 ): Promise<number> {
+  try {
+    return await dispatch(table, options);
+  } finally {
+    // 呼び出し側はすぐ process.exit する。パイプに書き残しがあるまま戻ると
+    // 出力が途中で切れるので、流れ切ってから返す (ADR 54)
+    await drainWrites();
+  }
+}
+
+async function dispatch(
+  table: RouteTable,
+  options: RunOptions
+): Promise<number> {
   const rawArgv = options.argv ?? process.argv.slice(2);
   // ルートが決め打ちなら、argv の先頭は入口の名前ではなくコマンドの引数
   const entrance = options.route === undefined ? rawArgv[0] : undefined;
@@ -233,7 +247,7 @@ export async function run(
           cwd: options.cwd,
         })
       );
-      if (text !== '') out.write(text);
+      if (text !== '') writeChunk(out, text);
     } catch {
       // 候補なし扱い。シェル側がファイル補完に落ちる
     }
@@ -265,7 +279,8 @@ export async function run(
     const out = options.targets?.stdout ?? process.stdout;
     if (rawArgv.length !== 2 || !isShellName(shell)) {
       const err = options.targets?.stderr ?? process.stderr;
-      err.write(
+      writeChunk(
+        err,
         `Usage: ${options.program ?? 'cli'} ${SHELL_COMMAND} <${SHELLS.join('|')}>\n`
       );
       return EXIT_CODE.usage;
@@ -279,10 +294,13 @@ export async function run(
     } catch (error) {
       // 名前がシェルコードにできない。eval される stdout には何も書かない
       const err = options.targets?.stderr ?? process.stderr;
-      err.write(`${Error.isError(error) ? error.message : String(error)}\n`);
+      writeChunk(
+        err,
+        `${Error.isError(error) ? error.message : String(error)}\n`
+      );
       return EXIT_CODE.runtime;
     }
-    out.write(hook);
+    writeChunk(out, hook);
     return EXIT_CODE.success;
   }
 

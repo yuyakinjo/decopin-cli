@@ -356,6 +356,36 @@ const GUARDS: Record<number, Guard> = {
         ? ['test/intent/ が戻っている (ADR 49 で外した)']
         : [],
   },
+  54: {
+    kind: 'lint',
+    label:
+      '枠組みの書き込みは writeChunk() を通す (終わる前に書き残しを待てるように)',
+    check: async () => {
+      // writer.ts は writeChunk() の本体。codegen.ts は生成する entry の文面で、
+      // 枠組みのバグを 1 行で知らせる経路 (writeChunk は公開していない)
+      const allowed = [
+        'src/core/renderer/writer.ts',
+        'src/core/build/codegen.ts',
+      ];
+      // choose() の terminal.write は processTerminal() 経由で writeChunk に届く
+      const direct = /(?<![\w.])(?!Bun\.|terminal\.)[\w.]+\.write\(/;
+      const violations = [...srcSources]
+        .filter(
+          ([file, source]) => !allowed.includes(file) && direct.test(source)
+        )
+        .map(([file]) => `${file} (.write() を直接呼んでいる)`);
+
+      // decopin 自身の CLI は run() を通らないので、自分で待つ
+      const bin = srcSources.get('src/cli/bin.ts') ?? '';
+      const waits = bin.indexOf('await drainWrites()');
+      if (waits === -1 || bin.indexOf('process.exit(') < waits) {
+        violations.push(
+          'src/cli/bin.ts (process.exit() の前に drainWrites() を待っていない)'
+        );
+      }
+      return violations;
+    },
+  },
   53: {
     kind: 'test',
     label: 'ドキュメントサイトの日本語版が英語版とずれない',

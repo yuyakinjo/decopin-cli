@@ -1,4 +1,5 @@
 import { supportsUnicode } from '../renderer/render.ts';
+import { writeChunk } from '../renderer/writer.ts';
 /**
  * 端末で候補から 1 つ選ばせる `choose()` (ADR 36)。
  *
@@ -78,7 +79,7 @@ export function processTerminal(
     },
     unicode: supportsUnicode(env),
     write: (text) => {
-      process.stderr.write(text);
+      writeChunk(process.stderr, text);
     },
     keys: async function* () {
       const stdin = rawStdin();

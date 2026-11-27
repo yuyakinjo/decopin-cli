@@ -6,6 +6,7 @@
  * `app/<command>/cmd.tsx` と同じ形だが、JSX と argv.tsx は使わない (ADR 5)。
  * 実行時にディレクトリを走査もしない。表は静的な import で持つ
  */
+import { drainWrites, writeChunk } from '../core/renderer/writer.ts';
 import { EXIT_CODE } from '../core/runtime/exit.ts';
 import type { Usage } from './argv.ts';
 import buildCommand, { usage as buildUsage } from './build/cmd.ts';
@@ -66,7 +67,7 @@ Options:
 async function main(argv: string[]): Promise<number> {
   if (argv[0] === 'gen') return genCommand(argv);
   if (argv.length === 0 || argv.includes('-h') || argv.includes('--help')) {
-    process.stdout.write(USAGE);
+    writeChunk(process.stdout, USAGE);
     return EXIT_CODE.success;
   }
 
@@ -74,8 +75,11 @@ async function main(argv: string[]): Promise<number> {
   const command = name === undefined ? undefined : COMMANDS[name];
   if (command !== undefined) return command.run(argv);
 
-  process.stderr.write(`Unknown command: ${name}\n\n${USAGE}`);
+  writeChunk(process.stderr, `Unknown command: ${name}\n\n${USAGE}`);
   return EXIT_CODE.usage;
 }
 
-process.exit(await main(process.argv.slice(2)));
+const code = await main(process.argv.slice(2));
+// パイプに書き残しがあるまま exit すると出力が途中で切れる (ADR 54)
+await drainWrites();
+process.exit(code);

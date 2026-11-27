@@ -1,4 +1,5 @@
-import { describe, expect, test } from 'bun:test';
+import { afterEach, describe, expect, test } from 'bun:test';
+import { EventEmitter } from 'node:events';
 
 import { Exit, Line, run, Stderr, Text } from 'decopin-cli';
 import type { RouteLoaders, RouteTable, RunOptions } from 'decopin-cli';
@@ -179,5 +180,74 @@ describe('run', () => {
       env: { FORCE_COLOR: '1' },
     });
     expect(result.stdout).toBe('\x1b[32mhi\x1b[0m\n');
+  });
+});
+
+/**
+ * 読み手が追いつかないパイプの代役 (test/core/renderer/writer.test.ts と同じ)。
+ * 書かれたら `wrote` が解ける。'drain' を出すまで書き残しを抱えたままになる
+ */
+function clogged() {
+  const { promise: wrote, resolve } = Promise.withResolvers<void>();
+  const pipe = Object.assign(new EventEmitter(), {
+    writable: true,
+    wrote,
+    write: (_chunk: string) => {
+      resolve();
+      return false;
+    },
+  });
+  made.push(pipe);
+  return pipe;
+}
+
+const made: EventEmitter[] = [];
+
+// 途中で落ちたテストが詰まった先を残すと、このあと run() を呼ぶテストが
+// 巻き添えで止まる (書き残しの控えはプロセスで 1 つ)。必ず流し切る
+afterEach(() => {
+  for (const pipe of made.splice(0)) pipe.emit('drain');
+});
+
+/** 少し待っても決着しないか */
+async function stillWaiting(promise: Promise<unknown>): Promise<boolean> {
+  return Promise.race([
+    promise.then(() => false),
+    new Promise<boolean>((resolve) => setTimeout(() => resolve(true), 10)),
+  ]);
+}
+
+describe('書き残しが流れ切ってから返す。呼び出し側はすぐ process.exit するため (ADR 54)', () => {
+  test('stdout が詰まっていたら、流れ切るまで返さない', async () => {
+    const stdout = clogged();
+    const done = run(table, {
+      argv: ['hello'],
+      env: { NO_COLOR: '1' },
+      program: 'cli',
+      targets: { stdout, stderr: recorder() },
+    });
+
+    // 書き終えたあとも、流れ切るまでは返ってこない
+    await stdout.wrote;
+    expect(await stillWaiting(done)).toBe(true);
+
+    stdout.emit('drain');
+    expect(await done).toBe(0);
+  });
+
+  test('失敗して stderr に出したときも、流れ切るまで返さない', async () => {
+    const stderr = clogged();
+    const done = run(table, {
+      argv: ['boom'],
+      env: { NO_COLOR: '1' },
+      program: 'cli',
+      targets: { stdout: recorder(), stderr },
+    });
+
+    await stderr.wrote;
+    expect(await stillWaiting(done)).toBe(true);
+
+    stderr.emit('drain');
+    expect(await done).toBe(1);
   });
 });
