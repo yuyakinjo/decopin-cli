@@ -22,21 +22,25 @@ interface Progress {
   done: number;
 }
 
+const STEPS = ['building', 'testing', 'pushing'];
+
 async function* deploySteps(): AsyncGenerator<Progress> {
-  yield { step: 'building', done: 0 };
-  // ...do the work between yields...
-  yield { step: 'pushing', done: 1 };
-  yield { step: 'released', done: 2 };
+  for (const [done, step] of STEPS.entries()) {
+    yield { step, done };
+    await Bun.sleep(1200); // stands in for the real work
+  }
+  yield { step: 'released', done: STEPS.length };
 }
 
 export default function Command() {
   return (
     <>
       <Line>deploy started</Line>
-      <Dynamic source={deploySteps()} interval={100}>
+      <Dynamic source={deploySteps()} interval={80}>
         {(progress) => (
           <Line>
-            <Spinner /> <ProgressBar value={progress.done} max={2} width={16} />{' '}
+            <Spinner />{' '}
+            <ProgressBar value={progress.done} max={STEPS.length} width={16} />{' '}
             {progress.step}
           </Line>
         )}
@@ -47,6 +51,11 @@ export default function Command() {
 }
 ```
 
+Running it in a terminal: the first and last lines are printed once, and only
+the line between them is redrawn as each value arrives.
+
+![mycli deploy: the progress line repaints in place between two static lines](/assets/ppr/deploy.gif)
+
 ## How the document streams
 
 The document streams top to bottom: static parts flush as soon as they are
@@ -54,6 +63,65 @@ reached, the `<Dynamic>` region repaints in place until its source is
 exhausted, then the last frame stays put and the rest of the document
 follows. `interval` (ms) repaints even without a new value, for frames that
 read the clock.
+
+## Several lines at once
+
+A frame can be any number of lines. Each new value redraws the whole island,
+so a list of parallel tasks updates as one block, and whatever follows it
+waits until the source is done.
+
+```tsx
+import { Dynamic, Line, ProgressBar, Spinner } from 'decopin-cli';
+
+interface File {
+  name: string;
+  kb: number;
+  got: number;
+}
+
+const FILES = [
+  { name: 'app.js', kb: 180 },
+  { name: 'vendor.js', kb: 420 },
+  { name: 'styles.css', kb: 60 },
+];
+const TOTAL_KB = FILES.reduce((sum, file) => sum + file.kb, 0);
+
+async function* download(): AsyncGenerator<File[]> {
+  let files: File[] = FILES.map((file) => ({ ...file, got: 0 }));
+  while (files.some((file) => file.got < file.kb)) {
+    files = files.map((file) => ({
+      ...file,
+      got: Math.min(file.kb, file.got + 6 + Math.random() * 12),
+    }));
+    yield files;
+    await Bun.sleep(60); // stands in for the real transfer
+  }
+}
+
+export default function Command() {
+  return (
+    <>
+      <Line>fetching {FILES.length} files</Line>
+      <Dynamic source={download()} interval={80}>
+        {(files) => (
+          <>
+            {files.map((file) => (
+              <Line key={file.name}>
+                {file.got < file.kb ? <Spinner /> : '✓'}{' '}
+                <ProgressBar value={file.got} max={file.kb} width={20} />{' '}
+                {file.name.padEnd(10)} {Math.round(file.got)}/{file.kb} KB
+              </Line>
+            ))}
+          </>
+        )}
+      </Dynamic>
+      <Line>downloaded {TOTAL_KB} KB</Line>
+    </>
+  );
+}
+```
+
+![mycli download: three progress bars repaint together, then the summary line follows](/assets/ppr/download.gif)
 
 ## Cancelling the source
 
@@ -92,6 +160,11 @@ decoration (like curl and cargo), so `cli deploy | tee log` stays clean:
 stdout carries only the static document. When stderr is not a TTY (pipes,
 CI), intermediate frames are skipped entirely and only the final frame is
 written once.
+
+Redirecting stdout to a file makes this visible: the progress line still
+animates in the terminal, while the file receives only the static lines.
+
+![mycli deploy > deploy.log: the progress stays on screen, and deploy.log holds only the two static lines](/assets/ppr/redirect.gif)
 
 While the island is live, frames taller than the terminal are trimmed to fit,
 keeping the tail (the latest lines) and replacing the dropped head with a
