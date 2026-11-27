@@ -2,11 +2,14 @@
  * `closest()` の距離としきい値 (ADR 30)。
  *
  * 代表的な当たり・外れは test/core/runtime/signals.test.tsx が見ている。
- * ここでは編集距離の数え方、「入力の長さの半分まで」の境界、同点や空文字の扱いを見る
+ * ここでは編集距離の数え方、「入力の長さの半分まで」の境界、同点や空文字の扱いを見る。
+ *
+ * `visibleControls()` は診断に埋める入力から、端末が命令として読む字を
+ * 見える表記に替える (test/contract/terminal-safety.test.tsx が経路ごとに見ている)
  */
 import { describe, expect, test } from 'bun:test';
 
-import { closest } from '../../src/core/text.ts';
+import { closest, visibleControls } from '../../src/core/text.ts';
 
 describe('closest', () => {
   test('完全一致はそれを返す', () => {
@@ -60,5 +63,54 @@ describe('closest', () => {
     expect(closest('ありがとお', ['ありがとう', 'さようなら'])).toBe(
       'ありがとう'
     );
+  });
+});
+
+describe('visibleControls', () => {
+  const at = (code: number) => String.fromCharCode(code);
+
+  test('制御文字が無ければ同じ文字列を返す', () => {
+    for (const text of [
+      '',
+      'plain',
+      'タブ\tは残す',
+      '絵文字 🎉 と é',
+      'a\nb',
+    ]) {
+      expect(visibleControls(text)).toBe(text);
+    }
+  });
+
+  test('C0 は \\xNN に、復帰は \\r にする', () => {
+    expect(visibleControls(`a${at(0x1b)}[2K${at(0x0d)}b`)).toBe(
+      'a\\x1b[2K\\rb'
+    );
+    expect(
+      visibleControls(`${at(0x00)}${at(0x07)}${at(0x08)}${at(0x1f)}`)
+    ).toBe('\\x00\\x07\\x08\\x1f');
+  });
+
+  test('DEL と C1 (ESC 無しの CSI など) も替える', () => {
+    expect(
+      visibleControls(`${at(0x7f)}${at(0x80)}${at(0x9b)}${at(0x9f)}`)
+    ).toBe('\\x7f\\x80\\x9b\\x9f');
+    // 範囲のすぐ外は触らない
+    expect(visibleControls(`~${at(0xa0)}`)).toBe(`~${at(0xa0)}`);
+  });
+
+  test('改行は既定で残し、escape では \\n にする', () => {
+    expect(visibleControls('a\nb')).toBe('a\nb');
+    expect(visibleControls('a\nb', { newlines: 'escape' })).toBe('a\\nb');
+    expect(visibleControls('a\r\nb', { newlines: 'escape' })).toBe('a\\r\\nb');
+  });
+
+  test('C0・DEL・C1 を一つ残らず替える', () => {
+    for (let code = 0; code <= 0x9f; code++) {
+      const isControl = code < 0x20 || code >= 0x7f;
+      if (!isControl || code === 0x09) continue;
+      const shown = visibleControls(at(code), { newlines: 'escape' });
+      expect(shown).not.toContain(at(code));
+      expect(shown.startsWith('\\')).toBe(true);
+    }
   });
 });

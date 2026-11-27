@@ -148,16 +148,45 @@ export function withDefault(schema: Schema, defaultValue: unknown): Schema {
     : (v.optional(schema, defaultValue as never) as Schema);
 }
 
-/** 検証を実行し、失敗したら人が読めるメッセージの配列を返す */
+/**
+ * valibot の既定の文面から「受け取った値」を外す。
+ *
+ * 既定の文面は `Invalid <label>: Expected <expected> but received <received>`
+ * (expected が無ければ `Invalid <label>: Received <received>`)。`received` は
+ * issue が別に持っているので、文面の末尾と**完全一致で**突き合わせて落とす。
+ * `Type.Custom` の message のように自分で書いた文面は、値を含まないので
+ * そのまま通る
+ */
+function withoutReceived(issue: v.BaseIssue<unknown>): string {
+  for (const tail of [
+    ` but received ${issue.received}`,
+    `: Received ${issue.received}`,
+  ]) {
+    if (issue.message.endsWith(tail)) {
+      return issue.message.slice(0, -tail.length);
+    }
+  }
+  return issue.message;
+}
+
+/**
+ * 検証を実行し、失敗したら人が読めるメッセージの配列を返す。
+ *
+ * `messages` は受け取った値を添えたもの。`expectations` は同じ並びで
+ * **値を含まない**もの (値が秘密でありうる環境変数が使う)
+ */
 export function validateValue(
   schema: Schema,
   value: unknown
-): { ok: true; value: unknown } | { ok: false; messages: string[] } {
+):
+  | { ok: true; value: unknown }
+  | { ok: false; messages: string[]; expectations: string[] } {
   const result = v.safeParse(schema, value);
   if (result.success) return { ok: true, value: result.output };
   return {
     ok: false,
     messages: result.issues.map((issue) => issue.message),
+    expectations: result.issues.map(withoutReceived),
   };
 }
 

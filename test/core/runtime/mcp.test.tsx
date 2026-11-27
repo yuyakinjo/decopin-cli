@@ -6,7 +6,7 @@
  * 実行は `--json` と同じ経路を通る (ADR 25 / 29)。
  */
 import { beforeAll, describe, expect, test } from 'bun:test';
-import { mkdtemp } from 'node:fs/promises';
+import { mkdir, mkdtemp, symlink } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -30,7 +30,7 @@ import {
 import type { EffectVerdicts, McpTool, RouteTable } from 'decopin-cli';
 import * as v from 'valibot';
 
-import { build } from '../../../src/core/build/index.ts';
+import { build, generate } from '../../../src/core/build/index.ts';
 import { assertToolNames } from '../../../src/core/runtime/mcp-names.ts';
 
 function recorder() {
@@ -61,6 +61,7 @@ async function talk(
   options: {
     versionFile?: () => Promise<unknown>;
     envFile?: () => Promise<unknown>;
+    env?: Record<string, string | undefined>;
   } = {}
 ) {
   const stdout = recorder();
@@ -738,5 +739,226 @@ describe('MCP 宣言と入出力の一致', () => {
         outDir: join(workspace, 'out'),
       })
     ).rejects.toThrow('MCP tool name collision');
+  });
+});
+
+describe('選んだツールと走るコマンドは同じ', () => {
+  test('`-` で始まる子を呼んでも、一覧から外した親は走らない', async () => {
+    // CLI のルーターは `-` で始まる語をオプションと読み、`admin -shadow` を
+    // `admin` に解決する。MCP が argv に戻して解決し直すと、shell.tsx で
+    // 外したはずの親が、子のツール名 (と子の annotations) で走ってしまう
+    const ran: string[] = [];
+    const routes: RouteTable = {
+      admin: {
+        cmd: loader(() => {
+          ran.push('admin');
+          return null;
+        }),
+        shell: loader(() => null),
+      },
+      'admin/-shadow': {
+        cmd: loader(() => {
+          ran.push('admin/-shadow');
+          return null;
+        }),
+        effects: NONE,
+      },
+    };
+    const { responses } = await talk(routes, [
+      { jsonrpc: '2.0', id: 1, method: 'tools/list' },
+      call(2, 'admin'),
+      call(3, 'admin_-shadow'),
+    ]);
+    const { tools } = (responses[0] as Response).result as { tools: McpTool[] };
+    expect(tools.map((tool) => tool.name)).toEqual(['admin_-shadow']);
+    expect(responses[1]?.error?.message).toBe('Unknown tool: admin');
+    expect(responses[2]?.result?.isError).toBeUndefined();
+    expect(ran).toEqual(['admin/-shadow']);
+  });
+
+  test('入口と同じ名前のルートも、入口ではなくそのコマンドが走る', async () => {
+    // 手書きの表なら `__shell` という名前も置ける。argv の先頭に戻すと
+    // シェル関数の出力 (ADR 35) の入口に吸われる
+    const ran: string[] = [];
+    const routes: RouteTable = {
+      __shell: {
+        cmd: loader(() => {
+          ran.push('__shell');
+          return <Line>ran</Line>;
+        }),
+      },
+    };
+    const { responses } = await talk(routes, [call(1, '__shell')]);
+    expect(responses[0]?.result).toEqual({
+      content: [{ type: 'text', text: 'ran' }],
+    });
+    expect(ran).toEqual(['__shell']);
+  });
+
+  test('引数はルートの決め打ちの後もそのコマンドに届く', async () => {
+    const { responses } = await talk(table, [
+      call(1, 'user_show', { name: 'ada', raw: true }),
+    ]);
+    expect(responses[0]?.result?.isError).toBeUndefined();
+    expect(responses[0]?.result?.structuredContent).toEqual({
+      name: 'ada',
+      fields: [],
+      raw: true,
+    });
+  });
+
+  test('ビルドは `-` で始まるコマンドディレクトリを断る', async () => {
+    const workspace = await mkdtemp(join(tmpdir(), 'decopin-mcp-dash-'));
+    for (const name of ['admin', 'admin/-shadow']) {
+      await Bun.write(
+        join(workspace, 'app', name, 'cmd.ts'),
+        'export default function Command() { return null; }'
+      );
+    }
+    await expect(
+      build({
+        appDir: join(workspace, 'app'),
+        workDir: join(workspace, 'work'),
+        outDir: join(workspace, 'out'),
+      })
+    ).rejects.toThrow(
+      /admin\/-shadow\/cmd\.ts: a command directory cannot start with "-"/
+    );
+  });
+});
+
+/**
+ * 注釈は、ホストが「このツールは承認なしで呼んでよいか」を決める材料になる。
+ * 解析が見逃すと、**書き込むコマンドが読み取り専用として出る**
+ * (GHSA-mj3j-jwf5-4xcc)。書き方ごとの検出は test/core/build/effects.test.ts
+ * が見ている。ここは、それがビルドを通って tools/list まで届くことを見る
+ */
+describe('書き込むコマンドを読み取り専用と言わない (実際にビルドして)', () => {
+  const READ_ONLY = {
+    readOnlyHint: true,
+    destructiveHint: false,
+    openWorldHint: false,
+  };
+
+  async function project(files: Record<string, string>) {
+    const root = await mkdtemp(join(tmpdir(), 'decopin-mcp-effects-'));
+    for (const [path, source] of Object.entries(files)) {
+      await Bun.write(join(root, path), source);
+    }
+    // `bun add decopin-cli` の代わりに、このリポジトリを node_modules に張る
+    await Bun.write(
+      join(root, 'tsconfig.json'),
+      JSON.stringify({
+        compilerOptions: {
+          jsx: 'react-jsx',
+          jsxImportSource: 'decopin-cli/jsx',
+        },
+      })
+    );
+    await mkdir(join(root, 'node_modules'), { recursive: true });
+    await symlink(process.cwd(), join(root, 'node_modules/decopin-cli'), 'dir');
+    return { appDir: join(root, 'app'), workDir: join(root, '.decopin') };
+  }
+
+  async function builtTools(files: Record<string, string>) {
+    const dirs = await project(files);
+    const generated = await generate(dirs);
+    const { routes } = (await import(generated.files.routes)) as {
+      routes: RouteTable;
+    };
+    const { responses } = await talk(routes, [
+      { jsonrpc: '2.0', id: 1, method: 'tools/list' },
+    ]);
+    const listed = responses[0]?.result as { tools: McpTool[] };
+    const tools = listed.tools;
+    return (name: string) => {
+      const tool = tools.find(
+        (candidate) => candidate.name === name
+      ) as McpTool;
+      return {
+        annotations: tool.annotations,
+        effects: tool._meta?.[EFFECTS_META_KEY] as EffectVerdicts,
+      };
+    };
+  }
+
+  const PURE = "export default function Command() {\n  return 'ok';\n}\n";
+
+  test('テンプレートの中・別名・計算された import() で書いても見逃さない', async () => {
+    const tool = await builtTools({
+      'app/pure/cmd.ts': PURE,
+      'app/template/cmd.ts':
+        "export default async function Command() {\n  return `written=${await Bun.write('./marker.txt', 'x')}`;\n}\n",
+      'app/alias/cmd.ts':
+        "const write = Bun.write;\nexport default async function Command() {\n  return String(await write('./marker.txt', 'x'));\n}\n",
+      'app/computed/cmd.ts':
+        "const moduleName = ['./', 'plugin.ts'].join('');\nexport default async function Command() {\n  return (await import(moduleName)).default();\n}\n",
+    });
+
+    // 何もしないコマンドは、これまでどおり読み取り専用と言える
+    expect(tool('pure').annotations).toEqual(READ_ONLY);
+
+    for (const name of ['template', 'alias']) {
+      expect(tool(name).effects['fs.write']).toBe('detected');
+      expect(tool(name).annotations).toEqual({ openWorldHint: false });
+    }
+    // 何を読み込むか分からないものには、注釈を付けない
+    expect(tool('computed').effects['fs.write']).toBe('unknown');
+    expect(tool('computed').annotations).toBeUndefined();
+  });
+
+  test('env.tsx が届く先は、全部のコマンドに数える', async () => {
+    // env.tsx はどのコマンドの実行でも読み込まれる
+    const tool = await builtTools({
+      'app/pure/cmd.ts': PURE,
+      'app/env.tsx':
+        "import { appendFileSync } from 'node:fs';\nimport { Env, Var } from 'decopin-cli';\n\nexport const audit = (line: string) => appendFileSync('./audit.log', line);\n\nexport default function DefineEnv() {\n  return (\n    <Env>\n      <Var name=\"APP_MODE\" type=\"string\" />\n    </Env>\n  );\n}\n",
+    });
+    expect(tool('pure').effects['fs.write']).toBe('detected');
+    expect(tool('pure').annotations).toEqual({ openWorldHint: false });
+  });
+
+  test('--strict-effects は、計算された import() を通さない', async () => {
+    const dirs = await project({
+      'app/computed/cmd.ts':
+        "const moduleName = ['./', 'plugin.ts'].join('');\nexport default async function Command() {\n  return (await import(moduleName)).default();\n}\n",
+    });
+    await expect(generate({ ...dirs, strictEffects: true })).rejects.toThrow(
+      /computed: analysis gave up[^]*dynamic import/
+    );
+  });
+});
+
+describe('応答に載せないもの', () => {
+  test('環境変数の検証に落ちても、サーバ側の値は応答に出ない', async () => {
+    // 呼び出し元 (モデル) は環境変数を設定した本人とは限らない
+    const secret = 'synthetic-secret-9F3K';
+    const routes: RouteTable = {
+      status: { cmd: loader(() => null), data: loader(() => ({ ok: true })) },
+      plain: { cmd: loader(() => null) },
+    };
+    const tokenFile = loader(() => (
+      <Env>
+        <Var name="APP_TOKEN" required>
+          <Type.String pattern="^expected-prefix-" />
+        </Var>
+        <Var name="RETRIES" default={3}>
+          <Type.Number />
+        </Var>
+      </Env>
+    ));
+    const { responses, stderr } = await talk(
+      routes,
+      [call(1, 'status'), call(2, 'plain')],
+      { envFile: tokenFile, env: { APP_TOKEN: secret, RETRIES: secret } }
+    );
+    for (const response of responses) {
+      expect(response.result?.isError).toBe(true);
+      const text = JSON.stringify(response);
+      expect(text).toContain('APP_TOKEN: Invalid format');
+      expect(text).toContain('RETRIES: expected a number');
+      expect(text).not.toContain(secret);
+    }
+    expect(stderr).not.toContain(secret);
   });
 });

@@ -9,6 +9,7 @@ import { DidYouMean } from '../../../core/components/patterns.tsx';
 import type { Renderable } from '../../../core/jsx/types.ts';
 import { present } from '../../../core/runtime/override.ts';
 import type { Presentation } from '../../../core/runtime/override.ts';
+import { visibleControls } from '../../../core/text.ts';
 
 /**
  * `not-found.tsx` が受け取る props。
@@ -41,13 +42,20 @@ export function presentNotFound(
   return present(loader, props, <NotFound {...props} />);
 }
 
-/** 組み込みの既定表示 */
-export function NotFound({
-  what,
-  requested,
-  suggestion,
-  available,
-}: NotFoundProps): Renderable {
+/**
+ * 組み込みの既定表示。
+ *
+ * `requested` は打たれた値そのもの (`notFound()` なら利用者のコードが渡した値)
+ * なので、制御文字は見える表記にしてから出す。1 行に収まるはずの値なので
+ * 改行も潰す
+ */
+export function NotFound(props: NotFoundProps): Renderable {
+  const clean = (text: string) => visibleControls(text, { newlines: 'escape' });
+  const what = clean(props.what);
+  const requested = clean(props.requested);
+  const suggestion =
+    props.suggestion === undefined ? undefined : clean(props.suggestion);
+  const available = props.available.map(clean);
   return (
     <>
       <Line>

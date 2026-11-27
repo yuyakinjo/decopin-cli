@@ -67,7 +67,7 @@ the CLI can tell a setup problem from a runtime one:
 
 ```sh
 $ DECOPIN_LOG=verbose ./dist/index.js config
-Invalid usage: DECOPIN_LOG: Invalid type: Expected ("debug" | "info" | "warn" | "error") but received "verbose"
+Invalid usage: DECOPIN_LOG: Invalid type: Expected ("debug" | "info" | "warn" | "error")
 exit code 2
 ```
 
@@ -76,11 +76,16 @@ $ DECOPIN_RETRIES=99 ./dist/index.js config --json
 {
   "error": {
     "code": "env",
-    "message": "DECOPIN_RETRIES: Invalid value: Expected <=10 but received 99",
+    "message": "DECOPIN_RETRIES: Invalid value: Expected <=10",
     "exitCode": 2
   }
 }
 ```
+
+The message names the variable and what was expected, never the value it
+found. An environment variable is often a secret, and the error travels
+further than the terminal: into CI logs, and over [MCP](/guides/mcp/) to
+whoever called the tool.
 
 Reading `process.env` directly still works. The point of the file is that the
 list of what the CLI depends on exists, in one place, and that the type

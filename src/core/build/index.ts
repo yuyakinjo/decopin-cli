@@ -2,6 +2,7 @@
 import { mkdir } from 'node:fs/promises';
 import { join, relative } from 'node:path';
 
+import { unreachableRoutes } from '../../features/conventions/cmd/router.ts';
 import {
   completionFileName,
   generateZshCompletion,
@@ -23,7 +24,7 @@ import {
   stdinSchemaWarnings,
 } from './checker.ts';
 import type { Warning } from './checker.ts';
-import { generateEntry, generateRoutes } from './codegen.ts';
+import { generateEntry, generateRoutes, loadedFiles } from './codegen.ts';
 import { acceptsUnknown, analyzeEffects } from './effects.ts';
 import type { EffectReport } from './effects.ts';
 import { evaluateRoutes } from './evaluator.ts';
@@ -130,6 +131,17 @@ export async function generate(
   const { evaluated, problems } = await evaluateRoutes(routes);
   const env = await evaluateEnv(rootFiles.env);
   if (env.problem !== undefined) problems.push(env.problem);
+  // `-` で始まるディレクトリはオプションと読まれ、親のコマンドが走る
+  const unreachable = new Set(unreachableRoutes(routes.map((r) => r.name)));
+  for (const route of routes) {
+    if (!unreachable.has(route.name)) continue;
+    problems.push({
+      file: route.files.cmd as string,
+      message:
+        'a command directory cannot start with "-". It would be read as an option, ' +
+        'so this command could never run. Rename the directory',
+    });
+  }
   if (problems.length > 0) {
     const detail = problems
       .map((problem) => `  ${problem.file}: ${problem.message}`)
@@ -175,19 +187,29 @@ export async function generate(
   const layoutChains = createLayoutChains(routes, inherited);
   const middlewareChains = createMiddlewareChains(routes, inherited);
 
+  // 表 (routes.ts) に書くものと、副作用の入口は同じ元から作る
+  const wiring = {
+    routes,
+    errorChains,
+    notFoundChains,
+    layoutChains,
+    middlewareChains,
+    helpFiles,
+    globalError: rootFiles['global-error'],
+    notFound: rootFiles['not-found'],
+    env: rootFiles.env,
+    version: rootFiles.version,
+  };
+
   // 副作用は「そのコマンドが読み込むもの全部」から数える (ADR 32)。
   // ファイルごとの解析は使い回すので、コマンドが増えても歩き直さない
   const cache = new Map();
   const effects = new Map<string, EffectReport>();
   for (const route of routes) {
-    const entries = [
-      ...Object.values(route.files),
-      ...(errorChains.get(route.name) ?? []),
-      ...(notFoundChains.get(route.name) ?? []),
-      ...(layoutChains.get(route.name) ?? []),
-      ...(middlewareChains.get(route.name) ?? []),
-    ].filter((file): file is string => file !== undefined);
-    effects.set(route.name, await analyzeEffects(entries, cache));
+    effects.set(
+      route.name,
+      await analyzeEffects(loadedFiles(wiring, route), cache)
+    );
   }
 
   // strict: `none` を名乗れないコマンドを通さない (ADR 34)。何に当たったか
@@ -220,16 +242,7 @@ export async function generate(
     files.routes,
     generateRoutes(
       {
-        routes,
-        errorChains,
-        notFoundChains,
-        layoutChains,
-        middlewareChains,
-        helpFiles,
-        globalError: rootFiles['global-error'],
-        notFound: rootFiles['not-found'],
-        env: rootFiles.env,
-        version: rootFiles.version,
+        ...wiring,
         effects: new Map(
           [...effects].map(([name, report]) => [name, report.effects])
         ),

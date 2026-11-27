@@ -3,6 +3,7 @@
  * `error.tsx` はこの `kind` を見て表示を切り替える。
  */
 import { ERROR_TAG, errorTag, LEGACY_ERROR_MARKS } from '../errors.ts';
+import { visibleControls } from '../text.ts';
 import { EXIT_CODE } from './exit.ts';
 
 /** エラーの分類。`error.tsx` はこれを見て表示を切り替える */
@@ -64,12 +65,22 @@ export interface ErrorProps {
   cwd: string;
 }
 
-/** 引数の検証に失敗した。使い方の誤りなので exit 2 */
+/**
+ * 引数の検証に失敗した。使い方の誤りなので exit 2。
+ *
+ * 理由の文面には打たれた値が入る (`received "..."`、`Unknown option: ...`)。
+ * 制御文字はここで見える表記にする。組み込みの表示も同じことをするが、
+ * `error.tsx` は `error.message` をそのまま描くのが普通なので、枠組みが
+ * 入力を文面に埋める境界でも潰しておく。理由は 1 件 1 行なので改行も潰す
+ */
 export function validationError(issues: string[]): CliError {
-  return new CliError(issues[0] ?? 'Invalid arguments', {
+  const safe = issues.map((issue) =>
+    visibleControls(issue, { newlines: 'escape' })
+  );
+  return new CliError(safe[0] ?? 'Invalid arguments', {
     kind: 'validation',
     exitCode: EXIT_CODE.usage,
-    issues,
+    issues: safe,
   });
 }
 

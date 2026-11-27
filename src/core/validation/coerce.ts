@@ -9,33 +9,50 @@ import type { TypeNode } from '../types/type-node.ts';
 /** argv から取り出した生の値。`true` はフラグとして現れたことを表す */
 export type RawValue = string | true;
 
+/**
+ * 失敗には 2 つの文面を持たせる。`message` は受け取った値を添えたもの
+ * (打った本人に見せる argv 用)。`expectation` は**値を含まない**もので、
+ * 値が秘密でありうる経路 (環境変数) はこちらだけを出す
+ */
 export type CoerceResult =
-  { ok: true; value: unknown } | { ok: false; message: string };
+  | { ok: true; value: unknown }
+  | { ok: false; message: string; expectation: string };
+
+/** 「何を期待したか」に、受け取った値を添えた失敗 */
+function mismatch(expectation: string, raw: RawValue): CoerceResult {
+  return {
+    ok: false,
+    message: `${expectation}, received "${String(raw)}"`,
+    expectation,
+  };
+}
+
+/** 値を引用しない失敗。2 つの文面は同じになる */
+function failure(message: string): CoerceResult {
+  return { ok: false, message, expectation: message };
+}
 
 function coerceBoolean(raw: RawValue): CoerceResult {
   if (raw === true) return { ok: true, value: true };
   if (raw === 'true' || raw === '1') return { ok: true, value: true };
   if (raw === 'false' || raw === '0') return { ok: true, value: false };
-  return {
-    ok: false,
-    message: `expected a boolean (true or false), received "${raw}"`,
-  };
+  return mismatch('expected a boolean (true or false)', raw);
 }
 
 function coerceNumber(raw: RawValue): CoerceResult {
   if (raw === true) {
-    return { ok: false, message: 'expected a number but no value was given' };
+    return failure('expected a number but no value was given');
   }
   const value = Number(raw);
   if (raw.trim() === '' || Number.isNaN(value)) {
-    return { ok: false, message: `expected a number, received "${raw}"` };
+    return mismatch('expected a number', raw);
   }
   return { ok: true, value };
 }
 
 function coerceString(raw: RawValue): CoerceResult {
   if (raw === true) {
-    return { ok: false, message: 'expected a value but none was given' };
+    return failure('expected a value but none was given');
   }
   return { ok: true, value: raw };
 }
@@ -57,10 +74,7 @@ export function coerce(type: TypeNode, raw: RawValue): CoerceResult {
       if (!asString.ok) return asString;
       const date = new Date(asString.value as string);
       if (Number.isNaN(date.getTime())) {
-        return {
-          ok: false,
-          message: `expected a date, received "${String(raw)}"`,
-        };
+        return mismatch('expected a date', raw);
       }
       return { ok: true, value: date };
     }
@@ -77,21 +91,24 @@ export function coerce(type: TypeNode, raw: RawValue): CoerceResult {
     case 'object':
       // argv / env で Type.Object は宣言時に弾いている (ADR 9)。
       // stdin (JSON) は変換を通さないので、ここには来ない
-      return {
-        ok: false,
-        message: 'Type.Object cannot be used for argv or env',
-      };
+      return failure('Type.Object cannot be used for argv or env');
     case 'array':
       // 配列は「同じオプションの繰り返し」で表すので、ここには要素が来る
       return coerce(type.item, raw);
     case 'oneOf': {
       const messages: string[] = [];
+      const expectations: string[] = [];
       for (const option of type.options) {
         const result = coerce(option, raw);
         if (result.ok) return result;
         messages.push(result.message);
+        expectations.push(result.expectation);
       }
-      return { ok: false, message: messages.join(' / ') };
+      return {
+        ok: false,
+        message: messages.join(' / '),
+        expectation: expectations.join(' / '),
+      };
     }
     case 'custom':
       // as が primitive のときだけ変換する。それ以外は生文字列を渡す (ADR 9)
@@ -119,15 +136,12 @@ export function coerceAll(type: TypeNode, raws: RawValue[]): CoerceResult {
   }
 
   if (raws.length > 1) {
-    return {
-      ok: false,
-      message: `was given ${raws.length} times, but takes only one value`,
-    };
+    return failure(`was given ${raws.length} times, but takes only one value`);
   }
 
   const only = raws[0];
   if (only === undefined) {
-    return { ok: false, message: 'expected a value but none was given' };
+    return failure('expected a value but none was given');
   }
   return coerce(type, only);
 }
@@ -143,9 +157,6 @@ function fromTemporal(
   try {
     return { ok: true, value: parse(asString.value as string) };
   } catch {
-    return {
-      ok: false,
-      message: `expected ${expected}, received "${String(raw)}"`,
-    };
+    return mismatch(`expected ${expected}`, raw);
   }
 }

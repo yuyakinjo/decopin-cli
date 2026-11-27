@@ -71,6 +71,23 @@ function leadingWords(argv: string[]): string[] {
   return words;
 }
 
+/**
+ * 名前どおりに打っても届かないコマンド。
+ *
+ * `-` で始まる語はオプションなので、`app/admin/-x/cmd.tsx` を
+ * `admin -x` と打っても探索は `admin` で止まり、`-x` は `admin` の引数になる。
+ * 置いても動かないコマンドは、ビルド時に断るために数える
+ *
+ * @returns 届かないコマンド名 (入力の順)
+ */
+export function unreachableRoutes(names: readonly string[]): string[] {
+  return names.filter((name) => {
+    if (name === '') return false;
+    const words = name.split('/');
+    return leadingWords(words).length !== words.length;
+  });
+}
+
 /** @returns 一致しなければ undefined */
 export function resolveRoute(
   table: RouteTable,

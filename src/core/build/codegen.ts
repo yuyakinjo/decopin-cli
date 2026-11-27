@@ -79,6 +79,29 @@ export interface RoutesInput {
   effects?: Map<string, EffectVerdicts>;
 }
 
+/**
+ * そのコマンドを実行したときに読み込まれうるファイル全部。
+ *
+ * 副作用の解析 (ADR 32) はここを入口にする。**`generateRoutes` が表に
+ * 書くファイルは、必ずここにも入れる** (test/core/build/codegen.test.ts が
+ * 見ている)。表に書いたのに入口に無いファイルは、実行されるのに解析
+ * されない — `app/env.tsx` がそうだった
+ */
+export function loadedFiles(input: RoutesInput, route: Route): string[] {
+  return [
+    ...Object.values(route.files),
+    ...(input.errorChains?.get(route.name) ?? []),
+    ...(input.notFoundChains?.get(route.name) ?? []),
+    ...(input.layoutChains?.get(route.name) ?? []),
+    ...(input.middlewareChains?.get(route.name) ?? []),
+    // ルート共通のファイルは、どのコマンドの実行でも読まれうる
+    input.globalError,
+    input.notFound,
+    input.env,
+    input.version,
+  ].filter((file): file is string => file !== undefined);
+}
+
 export function generateRoutes(input: RoutesInput, outDir: string): string {
   const entries = input.routes.map((route) => {
     if (route.files.cmd === undefined) {

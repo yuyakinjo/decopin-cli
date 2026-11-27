@@ -4,7 +4,15 @@
  */
 import { Line, Stderr, Text } from '../../../core/components/index.ts';
 import type { Renderable } from '../../../core/jsx/types.ts';
+import { visibleControls } from '../../../core/text.ts';
 
+/**
+ * 組み込みの表示は、文面の制御文字を見える表記にしてから出す。
+ *
+ * 文面には入力や、利用者のコードが投げたエラーの中身が入る。どこで作られた
+ * 文面でも最後はここを通るので、ここで 1 度だけ潰す。改行は残す
+ * (複数行の文面は正当)
+ */
 export function ErrorMessage({
   message,
   hints = [],
@@ -16,11 +24,11 @@ export function ErrorMessage({
     <Stderr>
       <Line>
         <Text color="red">✖ </Text>
-        {message}
+        {visibleControls(message)}
       </Line>
       {hints.map((hint) => (
         <Line key={hint}>
-          <Text dim>{hint}</Text>
+          <Text dim>{visibleControls(hint)}</Text>
         </Line>
       ))}
     </Stderr>
@@ -36,7 +44,7 @@ export function ErrorTrace({ lines }: { lines: string[] }): Renderable {
     <Stderr>
       {lines.map((line, index) => (
         <Line key={`${index}:${line}`}>
-          <Text dim>{line}</Text>
+          <Text dim>{visibleControls(line)}</Text>
         </Line>
       ))}
     </Stderr>

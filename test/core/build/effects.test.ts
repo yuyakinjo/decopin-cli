@@ -1,8 +1,10 @@
 /**
  * 副作用の到達判定 (ADR 32)。
  *
- * `none` は「無いことの証明」なので、**取りこぼしが無いこと**が要。
- * 検出できない書き方に当たったら `unknown` に落ち、`none` を名乗らない
+ * `none` は MCP の「読み取り専用」の注釈になる (ADR 33) ので、
+ * **取りこぼしが無いこと**が要。検出できない書き方に当たったら `unknown` に
+ * 落ち、`none` を名乗らない。追わないと決めているもの (値の流れ) は
+ * src/core/build/effects.ts の冒頭に書いてある
  */
 import { afterAll, beforeAll, describe, expect, test } from 'bun:test';
 import { mkdtemp, rm, writeFile } from 'node:fs/promises';
@@ -274,6 +276,326 @@ describe('文面を副作用と間違えない', () => {
   });
 });
 
+/**
+ * 見逃すと、書き込むコマンドが「読み取り専用」の注釈付きで MCP に出る
+ * (GHSA-mj3j-jwf5-4xcc)。**呼び出しの形に頼らず、名前が出た時点で数える**
+ */
+describe('書き方を変えても見逃さない', () => {
+  const detected: [string, string, EffectCategory][] = [
+    [
+      'テンプレートの ${} の中',
+      "export default async () => `w=${await Bun.write('a', 'b')}`;",
+      'fs.write',
+    ],
+    [
+      '入れ子のテンプレートの中',
+      "export default () => `a ${[1].map((n) => `b ${fetch('http://x')} ${n}`)}`;",
+      'network',
+    ],
+    [
+      '別名にしてから呼ぶ',
+      "const write = Bun.write;\nexport default () => write('a', 'b');",
+      'fs.write',
+    ],
+    [
+      '分割代入で取り出す',
+      "const { write } = Bun;\nexport default () => write('a', 'b');",
+      'fs.write',
+    ],
+    ['?. を挟む', "export default () => Bun?.write?.('a', 'b');", 'fs.write'],
+    [
+      'globalThis 経由',
+      "export default () => globalThis.Bun.write('a', 'b');",
+      'fs.write',
+    ],
+    [
+      'fetch を別名にする',
+      "const f = fetch;\nexport default () => f('http://x');",
+      'network',
+    ],
+    ['fetch?.()', "export default () => fetch?.('http://x');", 'network'],
+    [
+      'JSX の文面にアポストロフィ',
+      "import { Line } from 'decopin-cli';\nexport default async () => { const a = <Line>Don't</Line>; await Bun.write('a', 'b'); return <Line>it's {a}</Line>; };",
+      'fs.write',
+    ],
+    [
+      '正規表現の中のクォート',
+      "const re = /'/;\nexport default async () => { await Bun.write('a', 'b'); return re.test(\"'\"); };",
+      'fs.write',
+    ],
+    [
+      'node: を付けない fs',
+      "import { writeFileSync } from 'fs';\nexport default () => writeFileSync('a', 'b');",
+      'fs.write',
+    ],
+    [
+      'node: を付けない child_process',
+      "import { execSync } from 'child_process';\nexport default () => execSync('ls');",
+      'process.spawn',
+    ],
+    [
+      "import { $ } from 'bun'",
+      "import { $ } from 'bun';\nexport default () => $`rm -rf x`;",
+      'process.spawn',
+    ],
+    [
+      "import { write as w } from 'bun'",
+      "import { write as w } from 'bun';\nexport default () => w('a', 'b');",
+      'fs.write',
+    ],
+    [
+      'Bun.file().delete()',
+      "export default () => Bun.file('a').delete();",
+      'fs.write',
+    ],
+    [
+      'Bun.file().writer()',
+      "export default () => Bun.file('a').writer().write('x');",
+      'fs.write',
+    ],
+    [
+      'Bun.file() を変数に入れてから書く',
+      "export default () => { const file = Bun.file('a'); return file.write('x'); };",
+      'fs.write',
+    ],
+    [
+      '同じモジュールを 2 文に分けて import',
+      "import { readFileSync } from 'node:fs';\nimport { writeFileSync } from 'node:fs';\nexport default () => [readFileSync, writeFileSync];",
+      'fs.write',
+    ],
+    [
+      'コメントの中の import に釣られない',
+      "// import { readFileSync } from 'node:fs';\nimport { writeFileSync } from 'node:fs';\nexport default () => writeFileSync('a', 'b');",
+      'fs.write',
+    ],
+    [
+      'import と require の併用',
+      "import { readFileSync } from 'node:fs';\nexport default () => [readFileSync, require('node:fs').writeFileSync];",
+      'fs.write',
+    ],
+    [
+      're-export',
+      "export { writeFileSync } from 'node:fs';\nexport default () => null;",
+      'fs.write',
+    ],
+    [
+      'node:http2',
+      "import { connect } from 'node:http2';\nexport default () => connect('https://x');",
+      'network',
+    ],
+    [
+      'node:dns',
+      "import { lookup } from 'node:dns/promises';\nexport default () => lookup('x');",
+      'network',
+    ],
+    [
+      'process から分割代入',
+      'const { exit } = process;\nexport default () => exit(1);',
+      'process.mutate',
+    ],
+    [
+      'node:process から import',
+      "import { exit } from 'node:process';\nexport default () => exit(1);",
+      'process.mutate',
+    ],
+    [
+      'delete process.env.X',
+      'export default () => { delete process.env.X; };',
+      'process.mutate',
+    ],
+    [
+      'process.env.X ||= ...',
+      "export default () => { process.env.X ||= '1'; };",
+      'process.mutate',
+    ],
+    [
+      'Bun.env への代入',
+      "export default () => { Bun.env.X = '1'; };",
+      'process.mutate',
+    ],
+  ];
+  for (const [label, code, category] of detected) {
+    test(label, async () => {
+      const report = await verdicts(code);
+      expect(report.effects[category]).toBe('detected');
+    });
+  }
+
+  const escaping: [string, string, string][] = [
+    [
+      '式を引数にした import()',
+      "const name = ['./', 'pure.ts'].join('');\nexport default async () => import(name);",
+      'dynamic import',
+    ],
+    [
+      'テンプレートで組んだ import()',
+      'export default async (n: string) => import(`./${n}.ts`);',
+      'dynamic import',
+    ],
+    [
+      'Bun[名前]',
+      "export default (k: 'write') => Bun[k]('a', 'b');",
+      'Bun[...] (a computed name)',
+    ],
+    [
+      'Bun を別名にする',
+      "const B = Bun;\nexport default () => B.write('a', 'b');",
+      'Bun kept as a value',
+    ],
+    [
+      '分類していない Bun の API',
+      'export default () => Bun.someFutureApi;',
+      'Bun.someFutureApi (not classified)',
+    ],
+    [
+      "import * as B from 'bun'",
+      "import * as B from 'bun';\nexport default () => B.write('a', 'b');",
+      'bun imported as B',
+    ],
+    [
+      'process を別名にする',
+      'const p = process;\nexport default () => p.exit(1);',
+      'process kept as a value',
+    ],
+    [
+      'globalThis から別名で取り出す',
+      'const { process: p } = globalThis;\nexport default () => p.exit(1);',
+      'process kept as a value',
+    ],
+    [
+      'process[名前]',
+      "export default (k: 'exit') => process[k](1);",
+      'process[...] (a computed name)',
+    ],
+    [
+      'process.getBuiltinModule',
+      "export default () => process.getBuiltinModule('node:fs');",
+      'process.getBuiltinModule',
+    ],
+    [
+      'globalThis[名前]',
+      "export default (k: 'fetch') => globalThis[k]('http://x');",
+      'globalThis[...] (a computed name)',
+    ],
+    [
+      'new を付けない Function()',
+      "export default () => Function('return 1')();",
+      'Function()',
+    ],
+    ['間接 eval', "export default () => (0, eval)('1');", 'eval'],
+    [
+      'require を別名にする',
+      'const load = require;\nexport default (n: string) => load(n);',
+      'require kept as a value',
+    ],
+    [
+      'import.meta.require',
+      "export default () => import.meta.require('./pure.ts');",
+      'require through a property',
+    ],
+    [
+      'node:module (createRequire)',
+      "import { createRequire } from 'node:module';\nexport default (n: string) => createRequire(import.meta.url)(n);",
+      'unclassified Node module node:module',
+    ],
+    [
+      'node:vm',
+      "import { runInThisContext } from 'node:vm';\nexport default (c: string) => runInThisContext(c);",
+      'unclassified Node module node:vm',
+    ],
+    ['Worker', "export default () => new Worker('./pure.ts');", 'Worker'],
+  ];
+  for (const [label, code, via] of escaping) {
+    test(`${label} は保証しない`, async () => {
+      const report = await verdicts(code);
+      expect(Object.values(report.effects)).not.toContain('none');
+      expect(report.escapes.map((e) => e.via)).toContain(via);
+    });
+  }
+
+  test('読めないファイルを「何も無い」とは言わない', async () => {
+    const report = await analyzeEffects([join(dir, 'does-not-exist.ts')]);
+    expect(report.escapes.map((e) => e.via)).toEqual(['unreadable file']);
+    expect(Object.values(report.effects)).not.toContain('none');
+  });
+
+  test('JS でもデータでもないファイルの import は保証しない', async () => {
+    await writeFile(join(dir, 'native.node'), '');
+    const report = await verdicts(
+      "import addon from './native.node';\nexport default () => addon;"
+    );
+    expect(Object.values(report.effects)).not.toContain('none');
+  });
+});
+
+/** 厳しくした分、素直なコードを unknown に落としていないこと */
+describe('見逃さないための規則が、無害なコードを巻き込まない', () => {
+  const harmless: [string, string][] = [
+    [
+      'テンプレートと node:path',
+      "import { join } from 'node:path';\nexport default (n: number) => join('a', `b${n}`);",
+    ],
+    [
+      'process の読み取り',
+      'export default () => [process.argv, process.env.HOME, process.platform, process.cwd(), process.stdout.isTTY];',
+    ],
+    [
+      'process の存在確認',
+      "export default () => typeof process !== 'undefined' && process.env.CI === '1';",
+    ],
+    [
+      '実行環境が生やす名前を読むだけ',
+      'export default () => Boolean((process as { defaultApp?: boolean }).defaultApp);',
+    ],
+    [
+      'Bun の読み取り',
+      "export default () => [Bun.version, Bun.env.HOME, Bun.argv, Bun.stringWidth('x')];",
+    ],
+    [
+      '同名の別物 (job.process / process(item))',
+      'const job = { process: (n: number) => n };\nexport default () => job.process(1);',
+    ],
+    [
+      '割り算と正規表現が混ざる',
+      "export default (a: number) => (a + 1) / 2 > 1 ? /it's/.test('x') : a / 3;",
+    ],
+    [
+      'データの import',
+      "import data from './data.json';\nexport default () => data;",
+    ],
+    [
+      '文字列で書いた import() と require()',
+      "export default async () => [await import('./pure.ts'), require('./pure.ts')];",
+    ],
+    [
+      'Map の delete',
+      'export default () => { const m = new Map<string, number>(); m.delete("a"); return m; };',
+    ],
+  ];
+  for (const [label, code] of harmless) {
+    test(label, async () => {
+      await writeFile(join(dir, 'data.json'), '{}');
+      const report = await verdicts(code);
+      expect(report.escapes).toEqual([]);
+      expect(notable(report.effects)).toEqual([]);
+    });
+  }
+
+  test('Bun.file() を読むだけなら fs.read だけ', async () => {
+    for (const code of [
+      "export default () => Bun.file('a').text();",
+      "export default async () => (await Bun.file('a').exists()) ? Bun.file('a').json() : null;",
+      // 変数に入れても、書き換えるメソッドがどこにも無ければ読み取り
+      "export default async () => { const file = Bun.file('a'); return (await file.exists()) ? file.text() : ''; };",
+    ]) {
+      const report = await verdicts(code);
+      expect(notable(report.effects)).toEqual(['fs.read=detected']);
+      expect(report.escapes).toEqual([]);
+    }
+  });
+});
+
 describe('stripLiterals', () => {
   test('文字列とコメントを落とす', () => {
     const out = stripLiterals("const a = 'x'; // y\n/* z */ const b = 1;");
@@ -285,6 +607,33 @@ describe('stripLiterals', () => {
 });
 
 describe('importedNames', () => {
+  test('同じモジュールの import が複数あれば、名前を合わせる', () => {
+    expect(
+      importedNames(
+        "import { readFile } from 'node:fs';\nimport { writeFile } from 'node:fs';",
+        'node:fs'
+      )
+    ).toEqual(['readFile', 'writeFile']);
+  });
+
+  test('型だけの import は数えない', () => {
+    expect(
+      importedNames(
+        "import type { Stats } from 'node:fs';\nimport { type Dirent, readFile } from 'node:fs';",
+        'node:fs'
+      )
+    ).toEqual(['readFile']);
+  });
+
+  test('re-export があれば絞れない', () => {
+    expect(
+      importedNames(
+        "import { readFile } from 'node:fs';\nexport * from 'node:fs';",
+        'node:fs'
+      )
+    ).toBeUndefined();
+  });
+
   test('名前付き import を拾う', () => {
     expect(
       importedNames("import { readFile, writeFile } from 'node:fs';", 'node:fs')
