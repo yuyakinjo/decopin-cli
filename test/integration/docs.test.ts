@@ -10,6 +10,7 @@ import { join } from 'node:path';
 
 import { documentApp } from '../../src/cli/docs/document.ts';
 import type { DocsResult } from '../../src/cli/docs/document.ts';
+import { pipeline } from '../fixtures/pipeline.ts';
 
 const REPO = process.cwd();
 const BIN = join(REPO, 'src/cli/bin.ts');
@@ -247,5 +248,55 @@ describe('既定は標準出力に出し、--out を渡したときだけその�
     expect(written.stdout).toBe('');
     expect(written.stderr).toContain(`Wrote ${out}`);
     expect(await Bun.file(out).text()).toBe(printed.stdout);
+  }, 120_000);
+});
+
+describe('大きいドキュメントも、パイプの先まで最後まで届く', () => {
+  let big: string | undefined;
+
+  afterAll(async () => {
+    if (big !== undefined) await rm(big, { recursive: true, force: true });
+  });
+
+  test('読み手が遅くても、--out で書いたのと同じ中身が全量届く', async () => {
+    big = await mkdtemp(join(REPO, '.decopin-test-docs-big-'));
+    const appDir = join(big, 'app');
+    // 説明が長いコマンドを 1 つ。パイプのバッファ (64KB) に収まらない文書になる
+    await mkdir(join(appDir, 'explain'), { recursive: true });
+    await writeFile(
+      join(appDir, 'explain/argv.tsx'),
+      `import { Argv } from 'decopin-cli';
+
+export default function DefineArgv() {
+  return <Argv description="${'Explains itself at length. '.repeat(4000)}" />;
+}
+`
+    );
+    await writeFile(
+      join(appDir, 'explain/cmd.tsx'),
+      `import { Line } from 'decopin-cli';
+
+export default function Command() {
+  return <Line>explained</Line>;
+}
+`
+    );
+    const shared = ['--app', appDir, '--work', join(big, 'work'), '--no-run'];
+
+    // 期待する中身は、書き込みが同期になるファイル宛てで取る
+    const out = join(big, 'commands.md');
+    const written = await docs([...shared, '--out', out]);
+    expect(written.code).toBe(0);
+    const expected = await Bun.file(out).text();
+    expect(expected.length).toBeGreaterThan(65_536);
+
+    const result = await pipeline(
+      '{ bun "$@"; echo "exit=$?" >&2; } | (sleep 0.3; cat)',
+      ['sh', BIN, 'docs', ...shared],
+      { cwd: REPO, limit: 60_000 }
+    );
+    expect(result.stdout.length).toBe(expected.length);
+    expect(result.stdout === expected).toBe(true);
+    expect(result.stderr).toBe('exit=0\n');
   }, 120_000);
 });

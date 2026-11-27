@@ -2,6 +2,7 @@ import { relative } from 'node:path';
 
 import { build } from '../../core/build/index.ts';
 import { supportsUnicode } from '../../core/renderer/render.ts';
+import { writeChunk } from '../../core/renderer/writer.ts';
 import { EXIT_CODE } from '../../core/runtime/exit.ts';
 import { hasFlag, optionValue, type Usage } from '../argv.ts';
 import { commandTree } from './tree.ts';
@@ -22,9 +23,9 @@ export default function run(argv: string[]): Promise<number> {
   }).then((result) => {
     const elapsed = Math.round(performance.now() - started);
     for (const warning of result.warnings) {
-      process.stderr.write(`[decopin] warning: ${warning.message}\n`);
+      writeChunk(process.stderr, `[decopin] warning: ${warning.message}\n`);
       if (warning.hint !== undefined) {
-        process.stderr.write(`[decopin]   ${warning.hint}\n`);
+        writeChunk(process.stderr, `[decopin]   ${warning.hint}\n`);
       }
     }
     // 副作用は「無いことの証明」が価値なので、あるものだけ挙げる (ADR 32)。
@@ -60,7 +61,8 @@ export default function run(argv: string[]): Promise<number> {
         ? 'No effects reachable from any command\n'
         : `Effects reachable (? = analysis gave up):\n${notable.join('\n')}\n`;
 
-    process.stdout.write(
+    writeChunk(
+      process.stdout,
       `Found ${result.routes.length} command(s)\n` +
         commandTree({
           appDir,

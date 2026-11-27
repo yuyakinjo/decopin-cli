@@ -36,6 +36,7 @@ import { loadVersionSpec } from '../../features/root-only/version/runtime.ts';
  */
 import { schemaToJsonSchema } from '../build/schema-introspect.ts';
 import { ERROR_TAG, errorTag } from '../errors.ts';
+import { writeChunk } from '../renderer/writer.ts';
 import type { EffectVerdicts } from '../types/effects.ts';
 import { toJsonSchema } from '../types/json-schema.ts';
 import type { JsonSchema } from '../types/json-schema.ts';
@@ -612,7 +613,7 @@ export async function serveMcp(
   output: { write: (chunk: string) => unknown }
 ): Promise<number> {
   const respond = (response: RpcResponse) => {
-    output.write(`${JSON.stringify(response)}\n`);
+    writeChunk(output, `${JSON.stringify(response)}\n`);
   };
 
   for await (const line of lines(input)) {

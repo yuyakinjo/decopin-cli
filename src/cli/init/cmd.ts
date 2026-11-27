@@ -1,6 +1,7 @@
 import { join, relative } from 'node:path';
 
 import { init, installDependencies } from '../../core/init/index.ts';
+import { writeChunk } from '../../core/renderer/writer.ts';
 import { EXIT_CODE } from '../../core/runtime/exit.ts';
 import { hasFlag, positionals, type Usage } from '../argv.ts';
 
@@ -19,19 +20,20 @@ export default async function run(argv: string[]): Promise<number> {
   const rel = relative(here, result.dir);
   const where = rel === '' ? '.' : rel.startsWith('..') ? result.dir : rel;
   for (const path of result.created) {
-    process.stdout.write(`Wrote ${join(where, path)}\n`);
+    writeChunk(process.stdout, `Wrote ${join(where, path)}\n`);
   }
   for (const path of result.skipped) {
-    process.stdout.write(`Kept ${join(where, path)} (already exists)\n`);
+    writeChunk(process.stdout, `Kept ${join(where, path)} (already exists)\n`);
   }
   if (result.created.length === 0) {
-    process.stdout.write('Nothing to do: every file already exists\n');
+    writeChunk(process.stdout, 'Nothing to do: every file already exists\n');
   }
 
   const skipInstall = hasFlag(argv, '--no-install');
   const installed = skipInstall ? false : await installDependencies(result.dir);
   if (!skipInstall && !installed) {
-    process.stderr.write(
+    writeChunk(
+      process.stderr,
       '[decopin] bun add failed; add the dependencies by hand\n'
     );
   }
@@ -42,7 +44,8 @@ export default async function run(argv: string[]): Promise<number> {
     'bun run build',
     './dist/index.js hello',
   ];
-  process.stdout.write(
+  writeChunk(
+    process.stdout,
     `\nNext:\n${steps.map((step) => `  ${step}`).join('\n')}\n`
   );
   return installed || skipInstall ? EXIT_CODE.success : EXIT_CODE.runtime;

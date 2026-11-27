@@ -8,6 +8,7 @@
 import { mkdir, writeFile } from 'node:fs/promises';
 import { dirname } from 'node:path';
 
+import { writeChunk } from '../../core/renderer/writer.ts';
 import { EXIT_CODE } from '../../core/runtime/exit.ts';
 import { hasFlag, optionValue, type Usage } from '../argv.ts';
 import { documentApp } from './document.ts';
@@ -29,7 +30,7 @@ export default async function run(argv: string[]): Promise<number> {
   });
 
   if (out === undefined) {
-    process.stdout.write(result.markdown);
+    writeChunk(process.stdout, result.markdown);
     return EXIT_CODE.success;
   }
   await mkdir(dirname(out), { recursive: true });
@@ -40,7 +41,8 @@ export default async function run(argv: string[]): Promise<number> {
     command.runs.filter((run) => !run.skipped && run.exitCode !== 0)
   ).length;
   const note = failed === 0 ? '' : `, ${failed} failing example(s)`;
-  process.stderr.write(
+  writeChunk(
+    process.stderr,
     `[decopin] Wrote ${out} (${result.commands.length} command(s)${note})\n`
   );
   return EXIT_CODE.success;
