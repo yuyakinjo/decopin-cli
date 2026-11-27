@@ -289,6 +289,14 @@ main pre code {
   padding: 0;
   font-size: inherit;
 }
+main p img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin: 1rem 0 1.5rem;
+}
 main table {
   border-collapse: collapse;
   width: 100%;

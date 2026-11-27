@@ -25,5 +25,18 @@ export default {
     '## Spinner and ProgressBar': '## Spinner と ProgressBar',
     '`<Spinner>` and `<ProgressBar>` are ordinary inline components, so compose them inside a `<Line>` with anything else. The spinner advances on each repaint rather than reading the clock, which keeps frames a pure function of their input: the same input always renders the same output, and animation falls out of the repaint loop (pair it with `interval`). In static output a spinner simply shows its first frame. Both fall back to ASCII (`|/-\\\\`, `#-`) when the terminal is not UTF-8.':
       '`<Spinner>` と `<ProgressBar>` は普通のインラインコンポーネントなので、`<Line>` の中でほかのものと組み合わせられます。スピナーは時計を読まず、描き直すたびに 1 コマ進みます。そうすることでフレームは入力だけで決まる純粋な関数のままになり、同じ入力からは常に同じ出力が描かれ、アニメーションは描き直しのループから自然に生まれます (`interval` と組み合わせてください)。静的な出力では、スピナーは最初のコマを表示するだけです。端末が UTF-8 でない場合、どちらも ASCII (`|/-\\\\`、`#-`) に切り替わります。',
+    'Running it in a terminal: the first and last lines are printed once, and only the line between them is redrawn as each value arrives.':
+      '端末で実行するとこうなります。最初と最後の行は一度だけ出力され、その間の行だけが値が届くたびに描き直されます。',
+    '![mycli deploy: the progress line repaints in place between two static lines](/assets/ppr/deploy.gif)':
+      '![mycli deploy: 2 つの静的な行の間で、進捗の行だけがその場で描き直される](/assets/ppr/deploy.gif)',
+    '## Several lines at once': '## 複数行をまとめて描き直す',
+    'A frame can be any number of lines. Each new value redraws the whole island, so a list of parallel tasks updates as one block, and whatever follows it waits until the source is done.':
+      '1 フレームは何行でもかまいません。新しい値が届くたびに島全体を描き直すので、並行して進むタスクの一覧も 1 つのかたまりとして更新され、その後ろに続く出力はソースが終わるまで待ちます。',
+    '![mycli download: three progress bars repaint together, then the summary line follows](/assets/ppr/download.gif)':
+      '![mycli download: 3 本のプログレスバーがまとめて描き直され、そのあとにまとめの行が続く](/assets/ppr/download.gif)',
+    'Redirecting stdout to a file makes this visible: the progress line still animates in the terminal, while the file receives only the static lines.':
+      'stdout をファイルにリダイレクトすると、この違いが目に見えます。進捗の行は端末で動き続け、ファイルには静的な行だけが書き込まれます。',
+    '![mycli deploy > deploy.log: the progress stays on screen, and deploy.log holds only the two static lines](/assets/ppr/redirect.gif)':
+      '![mycli deploy > deploy.log: 進捗は画面に残り、deploy.log には 2 つの静的な行だけが入る](/assets/ppr/redirect.gif)',
   },
 } satisfies PageTranslation;
