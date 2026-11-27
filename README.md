@@ -41,6 +41,13 @@ bun run build
 
 Visit **[Document](https://yuyakinjo.github.io/decopin-cli/)** to view the full documentation.
 
+## Versioning
+
+Versions are timestamps (`YYYY.MMdd.HHmm`), not SemVer, so `^` and `~` do not
+mean what they usually do: `^2026.828.1430` accepts any release in the same
+year. Pin an exact version (`bun add -E decopin-cli`). See
+[Versioning](https://yuyakinjo.github.io/decopin-cli/project/versioning/).
+
 ## License
 
 MIT
