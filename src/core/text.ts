@@ -45,3 +45,41 @@ function editDistance(a: string, b: string): number {
   }
   return previous[cols - 1] ?? 0;
 }
+
+/**
+ * 制御文字を、端末が解釈しない見える表記 (`\x1b`, `\r`) にする。
+ *
+ * 診断には入力がそのまま入る (`Unknown command: <打たれた語>`、
+ * `received "<値>"`)。入力が ESC や復帰文字を含むと、端末はそれを**命令として**
+ * 読み、行を消したり、別のエラーを描いたりできる。色を切っても
+ * (`--no-color`) 止まらない — 切れるのは枠組みが付ける装飾だけで、入力の
+ * 中身ではないから。
+ *
+ * 対象は C0 (タブと改行以外)・DEL・C1。C1 (`U+0080`〜`U+009F`) は 8 ビットの
+ * CSI を含み、ESC 無しで同じことができる。タブは残す (位置を動かすだけ)。
+ * 改行は呼び出し側が決める: 文面の構造として自分で入れた改行は残し、
+ * 入力から来た 1 行のはずの値では潰す (1 行増やせると、偽の行を足せる)
+ */
+export function visibleControls(
+  text: string,
+  options: { newlines?: 'keep' | 'escape' } = {}
+): string {
+  const keepNewlines = options.newlines !== 'escape';
+  let out = '';
+  let start = 0;
+  for (let index = 0; index < text.length; index += 1) {
+    const code = text.charCodeAt(index);
+    const control = code < 0x20 || (code >= 0x7f && code <= 0x9f);
+    if (!control || code === 0x09 || (code === 0x0a && keepNewlines)) continue;
+    out += text.slice(start, index) + controlName(code);
+    start = index + 1;
+  }
+  // 制御文字が無ければ同じ文字列を返す (ほとんどの文面はここを通る)
+  return start === 0 ? text : out + text.slice(start);
+}
+
+function controlName(code: number): string {
+  if (code === 0x0a) return '\\n';
+  if (code === 0x0d) return '\\r';
+  return `\\x${code.toString(16).padStart(2, '0')}`;
+}

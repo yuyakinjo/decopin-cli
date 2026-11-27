@@ -356,6 +356,21 @@ const GUARDS: Record<number, Guard> = {
         ? ['test/intent/ が戻っている (ADR 49 で外した)']
         : [],
   },
+  52: {
+    kind: 'test',
+    label: '環境変数の検証エラーに、読んだ値を載せない',
+    file: 'test/core/validation/env.test.ts',
+  },
+  51: {
+    kind: 'test',
+    label: '診断に入る入力は、制御文字を見える表記にしてから出す',
+    file: 'test/contract/terminal-safety.test.tsx',
+  },
+  50: {
+    kind: 'test',
+    label: '副作用は源で数え、表に無いものは諦める (none は証明ではない)',
+    file: 'test/core/build/effects.test.ts',
+  },
   40: {
     kind: 'test',
     label: '端末より高い <Dynamic> のフレームは末尾を優先して切り詰める',
@@ -393,7 +408,7 @@ const GUARDS: Record<number, Guard> = {
   },
   32: {
     kind: 'test',
-    label: '副作用はビルド時に数える (none は無いことの証明)',
+    label: '副作用はビルド時に数える (数え方は ADR 50)',
     file: 'test/core/build/effects.test.ts',
   },
   31: {

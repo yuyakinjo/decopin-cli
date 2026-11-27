@@ -165,6 +165,59 @@ describe('__shell', () => {
     expect(result.stderr).toContain('__shell <zsh|bash>');
   });
 
+  /**
+   * 名前は関数名とコマンド名として**そのまま**シェルコードに書かれ、rc
+   * ファイルから eval される。`$(...)` を含む名前を通すと、package.json の
+   * `bin` を書いた人のコードが、フックを入れた人のシェルで走る
+   */
+  const unusable = [
+    'demo$(<<<shell-audit-marker>&2)',
+    'a;b',
+    'a b',
+    'a`b`',
+    'a\u0027b',
+    'a"b',
+    'a\nb',
+    'a/b',
+    '-rf',
+    '.hidden',
+    '',
+  ];
+
+  test('シェルコードにできない名前では関数を作らない', () => {
+    for (const name of unusable) {
+      for (const shell of ['zsh', 'bash'] as const) {
+        expect(() => generateShellHook(name, shell)).toThrow(
+          'cannot be used in shell code'
+        );
+      }
+    }
+    // 普通に使われる形は通す
+    for (const name of ['cli', 'my-cli', 'my_cli', 'my.cli', 'cli2', '2fa']) {
+      expect(generateShellHook(name, 'zsh')).toContain(`${name}() {`);
+    }
+  });
+
+  test('その名前の CLI は __shell で何も出さず、理由を stderr に言う', async () => {
+    for (const bin of unusable) {
+      const stdout = recorder();
+      const stderr = recorder();
+      const code = await run(table, {
+        argv: ['__shell', 'zsh'],
+        program: 'cli',
+        bin,
+        env: {},
+        targets: { stdout, stderr },
+      });
+      // stdout は eval される。1 バイトでも出すとそれが走る
+      expect(stdout.text).toBe('');
+      expect(code).toBe(1);
+      expect(stderr.text).toContain('cannot be used in shell code');
+      // 名前は JSON の形で引用する (制御文字を端末にそのまま出さない)
+      expect(stderr.text).toContain(JSON.stringify(bin));
+    }
+  });
+
   test('出した関数は zsh と bash がそのまま読める', async () => {
     // CI の runner には zsh が無いことがある。手元にある shell だけ確かめる
     const available = (['zsh', 'bash'] as const).filter(

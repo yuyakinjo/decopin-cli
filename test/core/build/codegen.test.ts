@@ -3,7 +3,9 @@ import { describe, expect, test } from 'bun:test';
 import {
   generateEntry,
   generateRoutes,
+  loadedFiles,
 } from '../../../src/core/build/codegen.ts';
+import type { RoutesInput } from '../../../src/core/build/codegen.ts';
 import type { Route } from '../../../src/core/build/scanner.ts';
 import { createNotFoundChains } from '../../../src/features/inherited/not-found/build.ts';
 
@@ -221,3 +223,77 @@ describe('generateRoutes — layout / middleware の連鎖', () => {
 });
 
 // entry.ts / routes.ts の形そのものは test/contract/build.test.ts にある
+
+/**
+ * 副作用の解析 (ADR 32) は `loadedFiles` を入口にする。表に書いたのに入口に
+ * 無いファイルは、**実行されるのに解析されない**。`app/env.tsx` がそうで、
+ * そこで書き込んでも MCP には読み取り専用と出ていた (GHSA-mj3j-jwf5-4xcc)
+ */
+describe('loadedFiles', () => {
+  const input: RoutesInput = {
+    routes: [
+      {
+        name: 'hello',
+        dir: 'hello',
+        files: {
+          cmd: 'app/hello/cmd.tsx',
+          argv: 'app/hello/argv.tsx',
+          stdin: 'app/hello/stdin.tsx',
+          data: 'app/hello/data.tsx',
+          output: 'app/hello/output.tsx',
+          shell: 'app/hello/shell.tsx',
+          complete: 'app/hello/complete.tsx',
+          help: 'app/hello/help.tsx',
+        },
+      },
+      {
+        name: 'user/create',
+        dir: 'user/create',
+        files: { cmd: 'app/user/create/cmd.tsx' },
+      },
+    ],
+    errorChains: new Map([['user/create', ['app/user/error.tsx']]]),
+    notFoundChains: new Map([['user/create', ['app/user/not-found.tsx']]]),
+    layoutChains: new Map([['hello', ['app/layout.tsx']]]),
+    middlewareChains: new Map([['hello', ['app/middleware.tsx']]]),
+    helpFiles: new Map([['hello', 'app/hello/help.tsx']]),
+    globalError: 'app/global-error.tsx',
+    notFound: 'app/not-found.tsx',
+    env: 'app/env.tsx',
+    version: 'app/version.tsx',
+  };
+
+  test('表に書いたファイルは、どれかのコマンドの入口に必ず入っている', () => {
+    const code = generateRoutes(input, '.decopin');
+    const wired = [...code.matchAll(/import\("\.\.\/([^"]+)"\)/g)].map(
+      (match) => match[1] as string
+    );
+    // 取りこぼしなく拾えていること (規約ファイルが増えたらここも増える)
+    expect(wired).toHaveLength(17);
+    const reachable = new Set(
+      input.routes.flatMap((route) => loadedFiles(input, route))
+    );
+    expect(wired.filter((file) => !reachable.has(file))).toEqual([]);
+  });
+
+  test('ルート共通のファイルは、全部のコマンドの入口に入る', () => {
+    for (const route of input.routes) {
+      expect(loadedFiles(input, route)).toEqual(
+        expect.arrayContaining([
+          'app/global-error.tsx',
+          'app/not-found.tsx',
+          'app/env.tsx',
+          'app/version.tsx',
+        ])
+      );
+    }
+  });
+
+  test('ほかのコマンドのファイルは入らない', () => {
+    const files = loadedFiles(input, input.routes[1] as Route);
+    expect(files).toContain('app/user/create/cmd.tsx');
+    expect(files).toContain('app/user/error.tsx');
+    expect(files).not.toContain('app/hello/cmd.tsx');
+    expect(files).not.toContain('app/layout.tsx');
+  });
+});

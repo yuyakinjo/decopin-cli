@@ -61,15 +61,30 @@ fail silently is hidden.
 
 Annotations are not something you assert. `decopin build` counts which side
 effects each command can reach (file writes, network, spawning, mutating the
-process) and the server turns a proven absence into a hint: `readOnlyHint`
-and `destructiveHint: false` only when writes, spawning, process mutation
-and network are all unreachable; `openWorldHint: false` only when network and
-spawning are. If the analysis had to give up on a command (`eval`, an import
-it could not resolve), no hints are sent and the host falls back to the
-protocol's conservative defaults. A hint is still a hint, not a sandbox.
-The raw verdicts ride along in each tool's `_meta` under `decopin-cli/effects`,
-so a host that wants its own policy can read `none` / `detected` / `unknown`
-per category instead of trusting the hints.
+process) and the server sends a hint only when the analysis found nothing:
+`readOnlyHint` and `destructiveHint: false` only when writes, spawning,
+process mutation and network all came back empty; `openWorldHint: false` only
+when network and spawning did. The count covers every file the command
+loads: its own files, the layouts, middleware and error handlers around it,
+and the root `env.tsx`.
+
+The analysis counts a name where it appears, not how it is called:
+`const write = Bun.write` counts the same as `Bun.write(...)`, and code
+inside a template literal counts like any other code. What it cannot follow,
+it does not guess at. An `eval`, an `import()` or `require()` with a computed
+path, an import it could not resolve, `Bun` or `process` passed around as a
+value, a Bun API or Node module it has no entry for: each of these makes the
+command `unknown`, no hints are sent, and the host falls back to the
+protocol's conservative defaults.
+
+A hint is still a hint, not a sandbox. The analysis reads names, not values.
+It does not follow a function handed to other code, a member picked with a
+computed key on some other object, or a global that was reassigned. It is
+there to keep honest code from being mislabelled, not to stop a command that
+is trying to hide what it does. The raw verdicts ride along in each tool's
+`_meta` under `decopin-cli/effects`, so a host that wants its own policy can
+read `none` / `detected` / `unknown` per category instead of trusting the
+hints.
 
 When a command does reach something, `decopin build` shows the import chain
 that gets there, so you know what to change:
@@ -82,13 +97,14 @@ Effects reachable (? = analysis gave up):
 
 ## --strict-effects
 
-To turn the analysis into a guarantee, build with `--strict-effects`: any
-command the analysis had to give up on (`eval`, `new Function`, an import
-Bun cannot resolve) fails the build, with the chain that led there. A
-command that genuinely needs one of those can opt out by exporting
-`unsafeEval = true` from its `cmd.tsx`, the same way `skipLayout` works.
-It still builds, its verdicts stay `unknown`, and it gets no hints. There is
-no way to declare effects by hand: the point is that nobody has to.
+To refuse what the analysis could not read, build with `--strict-effects`:
+any command it had to give up on (`eval`, `new Function`, a computed
+`import()`, an import Bun cannot resolve, an API it has no entry for) fails
+the build, with the chain that led there. A command that genuinely needs one
+of those can opt out by exporting `unsafeEval = true` from its `cmd.tsx`, the
+same way `skipLayout` works. It still builds, its verdicts stay `unknown`,
+and it gets no hints. There is no way to declare effects by hand: the point
+is that nobody has to.
 
 The server has no dependencies: it is a few hundred lines of newline-delimited
 JSON-RPC, because that is all stdio MCP needs.

@@ -30,7 +30,9 @@ import { loadVersionSpec } from '../../features/root-only/version/runtime.ts';
  *
  * ツールの実行は `run()` をそのまま呼ぶ。引数を argv に戻して `--json` を
  * 付けるので、検証・middleware・output.tsx の検査・エラーの構造化 (ADR 29)
- * がすべて CLI と同じ経路を通る。MCP のためだけの経路を持たない
+ * がすべて CLI と同じ経路を通る。MCP のためだけの経路を持たない。
+ * 例外はコマンドの選択だけで、こちらは argv に戻さず名前で渡す
+ * (`RunOptions.route`)。選ばせたツールと走るコマンドを一致させるため
  */
 import { schemaToJsonSchema } from '../build/schema-introspect.ts';
 import { ERROR_TAG, errorTag } from '../errors.ts';
@@ -443,11 +445,10 @@ export async function callTool(
   const stderr = recorder();
   const code = await run(table, {
     ...options,
-    argv: [
-      ...routeName.split('/').filter(Boolean),
-      ...(structured ? [JSON_FLAG] : []),
-      ...converted.argv,
-    ],
+    // ルートは名前で渡す。argv の語に戻すと CLI のルーターが解決し直し、
+    // 一覧から外したコマンド (shell.tsx を持つ親など) に落ちうる
+    route: routeName,
+    argv: [...(structured ? [JSON_FLAG] : []), ...converted.argv],
     targets: { stdout, stderr },
     isTTY: { stdout: false, stderr: false },
     stdin:

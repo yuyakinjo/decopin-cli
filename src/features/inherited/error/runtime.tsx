@@ -9,6 +9,7 @@ import { errorTag } from '../../../core/errors.ts';
 import type { Renderable, RenderInput } from '../../../core/jsx/types.ts';
 import { CliError } from '../../../core/runtime/errors.ts';
 import type { ErrorProps } from '../../../core/runtime/errors.ts';
+import { visibleControls } from '../../../core/text.ts';
 import { ErrorMessage } from '../../conventions/error/messages.tsx';
 
 export type ErrorHandlerLoader = () => Promise<unknown>;
@@ -47,6 +48,36 @@ function builtinView(error: CliError, extraHints: string[]): RenderInput {
   );
 }
 
+/**
+ * 表示係に渡す形。文面の制御文字を見える表記にする (ADR 51)。
+ *
+ * 枠組みが組み立てた文面は、組み立てた所で直してある。ここで拾うのは
+ * 利用者のコードが投げたエラーで、文面に入力が混ざっていることがある
+ * (`could not open <渡された名前>`)。`error.tsx` は `error.message` を
+ * そのまま描くのが普通なので、渡す前に直す。直す所が無ければ同じ
+ * オブジェクトを返す (ほとんどのエラーはここを通る)
+ */
+function presentable(error: CliError): CliError {
+  const message = visibleControls(error.message);
+  const issues = error.issues.map((issue) => visibleControls(issue));
+  const hints = error.hints.map((hint) => visibleControls(hint));
+  const same =
+    message === error.message &&
+    issues.every((issue, index) => issue === error.issues[index]) &&
+    hints.every((hint, index) => hint === error.hints[index]);
+  if (same) return error;
+  const shown = new CliError(message, {
+    kind: error.kind,
+    exitCode: error.exitCode,
+    issues,
+    hints,
+    cause: error.cause,
+  });
+  // スタックの 1 行目は文面の写しなので、同じように直す
+  if (error.stack !== undefined) shown.stack = visibleControls(error.stack);
+  return shown;
+}
+
 export async function handleError({
   error,
   handlers,
@@ -68,7 +99,7 @@ export async function handleError({
         continue;
       }
       const props: ErrorProps = {
-        error,
+        error: presentable(error),
         exitCode: error.exitCode,
         argv,
         cwd,

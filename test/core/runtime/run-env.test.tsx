@@ -70,6 +70,37 @@ describe('env.tsx', () => {
     );
   });
 
+  test('検証に落ちた値は stderr にも --json にも載らない', async () => {
+    // 環境変数は秘密でありうる。言うのは変数名と、満たさなかった宣言だけ
+    const secret = 'synthetic-secret-9F3K';
+    const tokenFile = loader(() => (
+      <Env>
+        <Var name="APP_TOKEN" required>
+          <Type.String pattern="^expected-prefix-" />
+        </Var>
+        <Var name="RETRIES" default={3}>
+          <Type.Number />
+        </Var>
+      </Env>
+    ));
+    const withData: RouteTable = {
+      x: { cmd: loader(showEnv), data: loader(() => ({ ok: true })) },
+    };
+    for (const argv of [['x'], ['x', '--json']]) {
+      const result = await invoke(withData, argv, {
+        envFile: tokenFile,
+        env: { APP_TOKEN: secret, RETRIES: `${secret}-2` },
+      });
+      expect(result.code).toBe(2);
+      expect(result.stdout).toBe('');
+      expect(result.stderr).toContain(
+        'APP_TOKEN: Invalid format: Expected /^expected-prefix-/'
+      );
+      expect(result.stderr).toContain('RETRIES: expected a number');
+      expect(result.stderr).not.toContain(secret);
+    }
+  });
+
   test('env.tsx が無ければ空のまま何も検証しない', async () => {
     const result = await invoke(table, ['x'], { env: { TOKEN: 'x' } });
     expect(result.stdout).toBe('{}\n');

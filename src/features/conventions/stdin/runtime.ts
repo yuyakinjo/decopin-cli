@@ -9,6 +9,7 @@ import { resolveHosts } from '../../../core/jsx/resolve.ts';
 import type { Renderable } from '../../../core/jsx/types.ts';
 import { CliError } from '../../../core/runtime/errors.ts';
 import { EXIT_CODE } from '../../../core/runtime/exit.ts';
+import { visibleControls } from '../../../core/text.ts';
 import { toSchema, validateValue } from '../../../core/validation/schema.ts';
 import type { GenericSchema } from '../../../core/validation/schema.ts';
 import { parseStdinSpec } from './parse.ts';
@@ -48,11 +49,19 @@ export interface StdinSource {
   stream?: () => AsyncIterable<Uint8Array | string>;
 }
 
+/**
+ * 理由 (`hints`) には標準入力の中身が入る (JSON のパーサが引用する文字、
+ * 検証が言う `received ...`)。パイプの向こうは他人が書いたファイルかも
+ * しれないので、制御文字は見える表記にする (argv の validationError と同じ)
+ */
 function stdinError(message: string, hints: string[] = []): CliError {
+  const safe = hints.map((hint) =>
+    visibleControls(hint, { newlines: 'escape' })
+  );
   return new CliError(message, {
     kind: 'stdin',
     exitCode: EXIT_CODE.usage,
-    issues: [message, ...hints],
+    issues: [message, ...safe],
   });
 }
 

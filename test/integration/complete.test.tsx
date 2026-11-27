@@ -6,6 +6,9 @@
  * 候補の情報源は --help と同じ argv.tsx の宣言 (ADR 8)。
  */
 import { describe, expect, test } from 'bun:test';
+import { mkdir, mkdtemp, rm, symlink } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 
 import { Arg, Argv, Line, Option, run, Type } from 'decopin-cli';
 import type { RouteTable } from 'decopin-cli';
@@ -399,6 +402,73 @@ describe('zsh のシムは bin 名で CLI に聞く手順だけを持ち、コ�
     const odd = generateZshCompletion('my.cli');
     expect(odd).toContain('_my_cli() {');
     expect(odd).toContain('compdef _my_cli my.cli');
+  });
+
+  test('シェルコードにできない名前ではシムを作らない', () => {
+    // シムは fpath から読み込まれ、名前はコマンドと compdef の引数に
+    // そのまま書かれる。`$(...)` を含む名前は書く前に断る
+    for (const name of [
+      'demo$(<<<shell-audit-marker>&2)',
+      'a;b',
+      'a b',
+      '-rf',
+      '.hidden',
+    ]) {
+      expect(() => generateZshCompletion(name)).toThrow(
+        'cannot be used in shell code'
+      );
+    }
+  });
+
+  test('build は package.json の bin 名を確かめ、使えなければ何も書かない', async () => {
+    const project = await mkdtemp(join(tmpdir(), 'decopin-bin-name-'));
+    try {
+      await Bun.write(
+        join(project, 'package.json'),
+        JSON.stringify({
+          name: 'demo',
+          bin: { 'demo$(<<<shell-audit-marker>&2)': './dist/index.js' },
+        })
+      );
+      await Bun.write(
+        join(project, 'app/demo/cmd.ts'),
+        'export default () => null;'
+      );
+      // `bun add decopin-cli` の代わりに、このリポジトリを node_modules に張る
+      await Bun.write(
+        join(project, 'tsconfig.json'),
+        JSON.stringify({
+          compilerOptions: {
+            jsx: 'react-jsx',
+            jsxImportSource: 'decopin-cli/jsx',
+          },
+        })
+      );
+      await mkdir(join(project, 'node_modules'));
+      await symlink(
+        process.cwd(),
+        join(project, 'node_modules/decopin-cli'),
+        'dir'
+      );
+      const proc = Bun.spawn(
+        ['bun', join(process.cwd(), 'src/cli/bin.ts'), 'build'],
+        { cwd: project, stdout: 'pipe', stderr: 'pipe' }
+      );
+      const [stderr, code] = await Promise.all([
+        new Response(proc.stderr).text(),
+        proc.exited,
+      ]);
+      expect(code).not.toBe(0);
+      expect(stderr).toContain(
+        'The first key of "bin" in package.json "demo$(<<<shell-audit-marker>&2)" cannot be used in shell code'
+      );
+      // 補完シムも bundle も出来ていない (読み込めるものが残らない)
+      expect(
+        await Array.fromAsync(new Bun.Glob('dist/**').scan(project))
+      ).toEqual([]);
+    } finally {
+      await rm(project, { recursive: true, force: true });
+    }
   });
 
   test('コマンド名は package.json の bin のキー (name ではない)', async () => {

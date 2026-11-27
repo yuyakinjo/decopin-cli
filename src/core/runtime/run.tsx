@@ -5,6 +5,7 @@ import {
   commandsUnder,
   resolveTarget,
   type RouteTable,
+  type Target,
 } from '../../features/conventions/cmd/router.ts';
 import { loadCommand } from '../../features/conventions/cmd/runtime.ts';
 import {
@@ -63,6 +64,7 @@ import { resolveHosts } from '../jsx/resolve.ts';
 import type { Renderable, RenderInput } from '../jsx/types.ts';
 import { present as presentDocument } from '../renderer/present.ts';
 import type { WriteTargets } from '../renderer/writer.ts';
+import { visibleControls } from '../text.ts';
 import {
   nonInteractiveTerminal,
   processTerminal,
@@ -95,6 +97,16 @@ export type { CommandContext } from '../../features/conventions/cmd/context.ts';
 export interface RunOptions {
   /** 省略時は process.argv.slice(2) */
   argv?: string[];
+  /**
+   * 実行するコマンドを名前 (`user/create`、ルートは空文字) で決め打ちする。
+   * argv からコマンド名を探さず、argv は全部そのコマンドの引数として扱う。
+   *
+   * MCP (ADR 33) が使う。一覧に出して選ばせたルートを argv の語に戻して
+   * 解決し直すと、ルーターが別のルートに落ちたとき (`-` で始まる語は
+   * オプションと読まれ、親で止まる) に**選ばれていないコマンドが走る**。
+   * 名前で渡せば、選んだものと走るものが構造的に一致する
+   */
+  route?: string;
   /** help に出す実行ファイル名 */
   program?: string;
   /** 実際に打つコマンド名。シェル関数 (ADR 35) が包む相手。省略時は program から */
@@ -203,13 +215,15 @@ export async function run(
   options: RunOptions = {}
 ): Promise<number> {
   const rawArgv = options.argv ?? process.argv.slice(2);
+  // ルートが決め打ちなら、argv の先頭は入口の名前ではなくコマンドの引数
+  const entrance = options.route === undefined ? rawArgv[0] : undefined;
 
   // シェル補完 (ADR 21)。人間ではなく補完シムが読むので、描画は通さず
   // 1 回の write で返す。補完中に落ちると Tab のたびにエラーが出るため、
   // 何があっても黙って成功にする。
   // シムが必ず付ける 2 語目の `--` まで見て判定する。1 語目だけで判定すると、
   // ルートコマンドが `__complete` という文字列を位置引数に取れなくなる
-  if (rawArgv[0] === COMPLETE_COMMAND && rawArgv[1] === '--') {
+  if (entrance === COMPLETE_COMMAND && rawArgv[1] === '--') {
     const words = rawArgv.slice(2);
     const out = options.targets?.stdout ?? process.stdout;
     try {
@@ -229,7 +243,7 @@ export async function run(
   // MCP サーバ (ADR 33)。`__complete` と同じく機械が読むので描画は通さない。
   // 2 語目まで見るのも同じ理由 (ルートコマンドが `__mcp` を引数に取れるように)。
   // 入力は届いた順に読む。全文を待つと initialize に応答できない
-  if (rawArgv[0] === MCP_COMMAND && rawArgv.length === 1) {
+  if (entrance === MCP_COMMAND && rawArgv.length === 1) {
     const source = options.stdin ?? processStdin();
     const input =
       source.stream?.() ??
@@ -246,7 +260,7 @@ export async function run(
   }
 
   // シェル関数の出力 (ADR 35)。rc ファイルの eval が読むので描画は通さない
-  if (rawArgv[0] === SHELL_COMMAND) {
+  if (entrance === SHELL_COMMAND) {
     const shell = rawArgv[1] ?? '';
     const out = options.targets?.stdout ?? process.stdout;
     if (rawArgv.length !== 2 || !isShellName(shell)) {
@@ -256,12 +270,19 @@ export async function run(
       );
       return EXIT_CODE.usage;
     }
-    out.write(
-      generateShellHook(
+    let hook: string;
+    try {
+      hook = generateShellHook(
         options.bin ?? binaryName(options.program ?? 'cli'),
         shell
-      )
-    );
+      );
+    } catch (error) {
+      // 名前がシェルコードにできない。eval される stdout には何も書かない
+      const err = options.targets?.stderr ?? process.stderr;
+      err.write(`${Error.isError(error) ? error.message : String(error)}\n`);
+      return EXIT_CODE.runtime;
+    }
+    out.write(hook);
     return EXIT_CODE.success;
   }
 
@@ -323,7 +344,10 @@ export async function run(
         : nonInteractiveTerminal())
   );
 
-  const target = resolveTarget(table, argv);
+  const target: Target =
+    options.route === undefined
+      ? resolveTarget(table, argv)
+      : { kind: 'command', name: options.route, rest: argv };
 
   // コマンドが確定しない経路 (表は test/contract/routing.test.tsx)。
   // 明示的に --help を求められたら stdout + exit 0、
@@ -335,7 +359,9 @@ export async function run(
     if (target.kind === 'unknown') {
       const shown = await presentRootNotFound(options.notFound, {
         what: 'command',
-        requested: target.requested,
+        // 打たれた語そのもの。not-found.tsx はこれをそのまま描くので、
+        // 制御文字は渡す前に見える表記にする (生の値は argv にある)
+        requested: visibleControls(target.requested, { newlines: 'escape' }),
         suggestion: target.suggestion?.split('/').join(' '),
         available: commands.map(display),
         program,
