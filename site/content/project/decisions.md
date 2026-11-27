@@ -8,7 +8,8 @@ The reasoning lives in
 why not Ink, why types are generated at build time, why middleware takes
 `next` instead of `children`, and so on. It is written in Japanese, as are the
 code comments. Everything that leaves the repository (CLI output, generated
-files, this site, the README) is in English.
+files, the README) is in English. This site is the one exception: it also has a
+Japanese edition, kept in step by `test/docs/site-i18n.test.ts`.
 
 ## No spec document
 

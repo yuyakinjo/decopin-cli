@@ -19,5 +19,6 @@ is no `NPM_TOKEN`, and `--provenance` attaches provenance to the release.
 
 The site is built by `bun run site` from the Markdown under `site/content/`
 and deployed to GitHub Pages by the `pages` workflow on every push to `main`.
-The generator is a single Bun script with no dependencies; Markdown is
+The Japanese edition (served under `/ja/`) is rendered from the same Markdown,
+swapping each paragraph for its translation in `site/i18n/ja/`. The generator is a single Bun script with no dependencies; Markdown is
 rendered by `Bun.markdown`.

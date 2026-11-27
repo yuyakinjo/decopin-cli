@@ -8,6 +8,7 @@ import { describe, expect, test } from 'bun:test';
 
 import {
   DOC,
+  DOC_JA,
   END,
   renderLifecycle,
   splice,
@@ -21,6 +22,11 @@ describe('ライフサイクル図', () => {
   test('project-structure.md の図が今の実行順と一致する (古ければ bun run docs:lifecycle)', async () => {
     const document = await Bun.file(DOC).text();
     expect(document).toBe(splice(document, renderLifecycle(scenarios)));
+  });
+
+  test('日本語版 (site/i18n/ja) の図も今の実行順と一致する', async () => {
+    const document = await Bun.file(DOC_JA).text();
+    expect(document).toBe(splice(document, renderLifecycle(scenarios, 'ja')));
   });
 
   test('目印が無ければ黙って素通りせずに投げる', () => {
