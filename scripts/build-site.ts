@@ -160,9 +160,14 @@ function addHeadingIds(
   return { html: withIds, headings };
 }
 
-/** サイト内リンク (`/guides/mcp/`) にその言語の置き場を付ける */
+/**
+ * サイト内リンク (`/guides/mcp/`) にその言語の置き場を付ける。
+ * 画像 (`/assets/...`) は言語で分けないので BASE だけを付ける
+ */
 function rebase(html: string, lang: Lang): string {
-  return html.replace(/href="\/(?!\/)/g, `href="${prefix(lang)}/`);
+  return html
+    .replace(/href="\/(?!\/)/g, `href="${prefix(lang)}/`)
+    .replace(/src="\/(?!\/)/g, `src="${BASE}/`);
 }
 
 function fail(message: string): never {
@@ -524,6 +529,14 @@ await Bun.write(
   join(OUT, 'decopin-logo-long.webp'),
   Bun.file(join(ROOT, 'site/assets/decopin-logo-long.webp'))
 );
+// 本文に埋め込む画像 (`![](/assets/ppr/deploy.gif)`)。録り方は scripts/record-ppr.ts
+for (const name of await readdir(join(ROOT, 'site/assets/ppr'))) {
+  if (!name.endsWith('.gif')) continue;
+  await Bun.write(
+    join(OUT, 'assets/ppr', name),
+    Bun.file(join(ROOT, 'site/assets/ppr', name))
+  );
+}
 const searchBuild = await Bun.build({
   entrypoints: [join(ROOT, 'site/search.ts')],
   outdir: OUT,
