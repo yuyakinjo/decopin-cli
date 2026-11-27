@@ -77,6 +77,8 @@ describe('documentation search', () => {
           recursive: true,
         });
       }
+      await cp(join(source, 'package.json'), join(root, 'package.json'));
+      const { version } = await Bun.file(join(source, 'package.json')).json();
       for (const base of ['', '/decopin-cli']) {
         const build = Bun.spawn(
           [process.execPath, 'scripts/build-site.ts', '--base', base],
@@ -106,6 +108,7 @@ describe('documentation search', () => {
           expect(html).toContain('id="search-open"');
           expect(html).toContain('<dialog id="search-dialog"');
           expect(html).toContain(`src="${base}/search.js"`);
+          expect(html).toContain(`<small>v${version}</small>`);
         }
       }
     } finally {
