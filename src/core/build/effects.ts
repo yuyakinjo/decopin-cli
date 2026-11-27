@@ -753,7 +753,7 @@ export async function analyzeEffects(
   // `.delete()` があれば、それが届きうる。値の流れは追わないので、
   // 到達できる範囲に両方あれば書き込みとして数える
   let held: string | undefined;
-  const writers: EffectSite[] = [];
+  const writers: { name: string; file: string; path: string[] }[] = [];
 
   const queue = [...entries];
   while (queue.length > 0) {
@@ -768,12 +768,7 @@ export async function analyzeEffects(
     );
     if (analyzed.holdsFile) held ??= file;
     for (const name of analyzed.fileWriters) {
-      writers.push({
-        category: 'fs.write',
-        via: `.${name}() while a Bun.file() value is kept in ${held ?? file}`,
-        file,
-        path,
-      });
+      writers.push({ name, file, path });
     }
     for (const dep of analyzed.deps) {
       if (!parents.has(dep)) parents.set(dep, file);
@@ -784,9 +779,11 @@ export async function analyzeEffects(
   if (held !== undefined) {
     const where = held;
     state.sites.push(
-      ...writers.map((site) => ({
-        ...site,
-        via: site.via.replace(/ in .*$/, ` in ${where}`),
+      ...writers.map(({ name, file, path }): EffectSite => ({
+        category: 'fs.write',
+        via: `.${name}() while a Bun.file() value is kept in ${where}`,
+        file,
+        path,
       }))
     );
   }
